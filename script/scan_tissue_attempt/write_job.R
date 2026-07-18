@@ -37,7 +37,7 @@ genes <- readLines("%s")
 for (target_gene in genes) {
   cat(sprintf("[%%s] starting %%s\\n", Sys.time(), target_gene))
   out <- tryCatch(
-    run_susie_gene(target_gene ),
+    run_susie_gene(target_gene= target_gene),
     error = function(e) list(gene = target_gene, error = conditionMessage(e))
   )
   saveRDS(out, file.path("%s", paste0(target_gene, ".rds")))

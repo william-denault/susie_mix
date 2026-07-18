@@ -34,10 +34,10 @@ run_susie_gene <- function(
 
     # --- susie parameters ---
     L                     = 10,
-    standardize           = FALSE,
-    estimate_prior_method = "EM",
-    min_abs_corr          = 0,
-    verbose               = TRUE,
+    standardize           = TRUE,
+    estimate_prior_method = "optim",
+    min_abs_corr          = 0.5,
+    verbose               = FALSE,
 
     # --- misc ---
     plink_out_prefix  = tempfile("plink_")  # avoids collisions across parallel calls
@@ -206,7 +206,8 @@ run_susie_gene <- function(
                      min_abs_corr = min_abs_corr,verbose = verbose)
 
     fits[[target_tissue]] <- list(susie_add= fit,
-                                  susie_mix=fit_mix)
+                                  susie_mix=fit_mix,
+                                  n_SNP= ncol(geno))
 
   }
 
