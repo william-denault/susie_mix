@@ -1,0 +1,311 @@
+library(data.table)
+library(vcfR)
+library(fsusieR)
+library(susieR)
+ensembl_id= "ENSG00000154146"
+                            windows= 200000
+                            n_bins=1024
+
+  recode_snp_matrix <- function(X, warn = TRUE) {
+    X <- as.matrix(X)
+    if (warn && !all(X %in% c(0L, 1L, 2L)))
+      warning("recode_snp_matrix: entries are not all in {0,1,2}; ",
+              "expecting additive 0/1/2 dosages.", call. = FALSE)
+    
+    storage.mode(X) <- "integer"          # additive, unchanged
+    dominant  <- (X >= 1L) * 1L           # 1 if 1 or 2, else 0
+    recessive <- (X == 2L) * 1L           # 1 if 2,      else 0
+    dimnames(dominant) <- dimnames(recessive) <- dimnames(X)
+    
+    list(additive = X, dominant = dominant, recessive = recessive)
+  }
+  
+  
+  #loading GTF3C6
+  lf= list.files("/project2/mstephens/cfbuenabadn/gtex-stm/code/coverage/counts_filtered/")
+  
+  id_gene= grep(ensembl_id,lf)
+  i = id_gene
+  desired_bins=n_bins
+  library(data.table)
+  library(vcfR)
+  library(fsusieR)
+  tt = fread(paste0("/project2/mstephens/cfbuenabadn/gtex-stm/code/coverage/counts_filtered/", lf[i]),
+             sep = ",",header = TRUE)
+  tt[1:10,1:10]
+  
+  
+  
+  # Assuming 'tt' is your data frame, and the column names are in the format 'chrX:100627058'
+  
+  # Get the column names of the dataframe
+  col_names <- colnames(tt)
+  
+  # Extract the chromosome number and base pair using string manipulation
+  # This assumes the format is 'chrX:basepair'
+  
+  # Define a function to extract chromosome and base pair
+  
+  
+  
+  extract_chromosome_basepair <- function(column_name) {
+    parts <- strsplit(column_name, ":")[[1]]  # Split by colon
+    if(length(parts) == 2) {  # If it follows the expected format
+      chromosome <- sub("^chr", "", parts[1])  # Remove 'chr' prefix from 'chrX' to get 'X'
+      basepair <- parts[2]  # '100627058'
+      return(c(chromosome, basepair))
+    } else {
+      return(NA)  # If it doesn't match the format
+    }
+  }
+  
+  # Apply the function to each column name
+  extracted_info <- lapply(col_names, extract_chromosome_basepair)
+  
+  # Convert the list into a data frame for easier viewing
+  extracted_df <- do.call(rbind, extracted_info)
+  colnames(extracted_df) <- c("Chromosome", "BasePair")
+  # Print the extracted information
+  print(extracted_df)
+  extracted_df =data.frame( extracted_df)
+  extracted_df$BasePair =as.numeric(extracted_df$BasePair)
+  
+  
+  # Find the minimum and maximum base pair values
+  min_basepair <- min(extracted_df$BasePair, na.rm = TRUE)
+  max_basepair <- max(extracted_df$BasePair, na.rm = TRUE)
+  
+  # Define a 200kb window around the lowest and highest base pairs
+  lower_bound <- min_basepair - windows
+  upper_bound <- max_basepair + windows
+  
+  # Define the output path in the folder /project2/mstephens/fsusie_gtex/
+  output_vcf <- paste0( "/project2/mstephens/fsusie_gtex/temp/extracted_snps_",i,".vcf")
+  
+  
+  if(! file.exists(paste0(output_vcf, ".vcf"))){
+    
+    # Define PLINK command to extract SNPs in the specified region
+    # Replace 'lf_geno' with the actual path to your genotype file (VCF or BED format)
+    lf_geno <- "/project2/mstephens/fsusie_gtex/genotype/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.vcf.gz"
+    
+    # Construct the PLINK command
+    plink_command <- paste("plink --vcf", lf_geno,
+                           "--chr", extracted_df$Chromosome[2],  # Assuming all in the same chromosome (adjust if needed)
+                           "--from-bp", lower_bound,
+                           "--to-bp", upper_bound,
+                           "--recode vcf",  # Output in VCF format
+                           "--out", output_vcf)  # Output file path and prefix
+    
+    # Print the PLINK command for verification
+    cat("PLINK command: ", plink_command, "\n")
+    
+    # Run the PLINK command using system call
+    system("module load plink")
+    system(plink_command)
+  }
+  
+  file.exists(paste0(output_vcf, ".vcf"))
+  vcf_data <- read.vcfR(paste0(output_vcf, ".vcf"))
+  # Extract metadata (positions, chromosomes, etc.)
+  vcf_meta <- getFIX(vcf_data)  # Extract fixed data (like CHROM, POS, etc.)
+  vcf_genotypes <- extract.gt(vcf_data)  # Extract genotypes
+  
+  
+  info_SNP =  data.frame(vcf_meta )
+  
+  
+  rm(vcf_data)
+  rm(vcf_meta)
+  
+  
+  # Function to transform genotypes
+  transform_genotype <- function(genotype) {
+    
+    if (genotype == "0/0") {
+      return(0)
+    } else if (genotype == "0/1" || genotype == "1/0") {
+      return(1)
+    } else if (genotype == "1/1") {
+      return(2)
+    } else {
+      return(NA)  # Handle missing or unexpected values
+    }
+  }
+  
+  
+  # Assuming your matrix is called 'matrix_data'
+  vcf_genotypes[is.na(vcf_genotypes)] <- -9
+  
+  # Apply the transformation across the whole dataframe
+  transformed_genotypes <- apply(as.matrix(vcf_genotypes) , 2, function(col) {
+    sapply(col, transform_genotype)
+  })
+  
+  # Convert the transformed data back into a data frame for easy handling
+  X <- as.data.frame(t(transformed_genotypes))
+  dim(X)
+  keep <- colSums(is.na(X)) == 0
+  X <- X[, keep]
+  info_SNP <- info_SNP[keep, ]   # add this so info_SNP tracks X's columns
+  
+  
+    
+    ind_names=  tt[,1]
+    data=tt[,-1]
+    data=data.frame(data)
+    
+    # Assuming ind_names and data are already correctly defined
+    base_pair <- extracted_df$BasePair[-1]
+    
+    # Calculate bin size
+    total_bp <- ncol(data)
+    # Calculate bin size
+    total_bp <- ncol(data)
+    if ( total_bp<n_bins){
+      
+      n_bins=  2^ max( which (2^(1:9)< total_bp))
+      desired_bins=n_bins
+    }
+    bin_size <- total_bp / desired_bins
+    
+    base_pair =extracted_df$BasePair[-1]
+    # Initialize the binned data frame
+    binned_data <- (matrix(ncol = desired_bins, nrow = nrow(data)))
+    start_bin <- rep(NA, desired_bins)
+    
+    for (i in 1:desired_bins) {
+      # Calculate the start and end of the current bin
+      start_col <- which.min(abs(base_pair - (min(base_pair) + (i - 1) * bin_size)))
+      end_col <- which.min(abs(base_pair - (min(base_pair) + i * bin_size)))
+      
+      if (length(start_col:end_col) <floor( bin_size)  ) {
+        start_bin[i] <- start_bin[i-1]+floor(bin_size)
+        if(length(start_col:end_col)==1){
+          binned_data[, i] =  data[, start_col]
+        }else{
+          binned_data[, i] = rowSums(data[, start_col:end_col], na.rm = TRUE)
+        }
+        
+      } else {
+        
+        
+        
+        start_bin[i] <- base_pair[start_col]
+        binned_data[, i] = rowSums(data[, start_col:end_col], na.rm = TRUE)
+      }
+      
+    }
+    
+    Y=   binned_data
+    
+    pos= start_bin
+    start_bin
+    # View the binned data with positions
+    
+    info_ind_gen= data.frame(ind=rep(NA, nrow(tt)),
+                             tissue=  rep(NA, nrow(tt)),
+                             full_name= rep(NA, nrow(tt)))
+    
+    for ( i in 1: nrow(tt)){
+      
+      ind_name <-  tt[i,1]
+      # Extract everything before the second hyphen using a regular expression
+      before_second_hyphen <- sub("^([^\\-]+\\-[^\\-]+).*", "\\1", ind_name)
+      
+      # Extract everything after the period
+      after_period <- sub(".*\\.", "", ind_name)
+      
+      info_ind_gen$ind[i]= before_second_hyphen
+      info_ind_gen $tissue[i]=after_period
+      info_ind_gen $ full_name[i] =  unlist(   ind_name)
+      
+    }
+    
+    idx=which(info_ind_gen$tissue=="Brain_Cortex" )
+    
+    sub_ind= info_ind_gen[idx,]
+    sub_ind=data.frame(sub_ind)
+    sub_ind$extracted <- sub("\\..*", "", sub_ind$full_name)
+    sub_ind$extracted <- gsub("-", ".", sub_ind$extracted)
+    
+    # View the updated data frame
+    
+    temp_name = rep(NA, nrow(X))
+    for (  i in 1:nrow(X)){
+      
+      temp_name[i] =   sub("_.*", "", rownames(X)[i])
+      
+      
+    }
+    
+    
+    susbset_ind= temp_name[which(temp_name %in% sub_ind[,1])]
+    
+    temp = info_ind_gen$ind [which (info_ind_gen$ind %in% susbset_ind & info_ind_gen$tissue=="Brain_Cortex" )]
+    #Y=binned_data[which (info_ind_gen$ind %in% susbset_ind),]
+    Y = binned_data[which(info_ind_gen$ind %in% susbset_ind & info_ind_gen$tissue=="Brain_Cortex"),]
+    
+    Y= Y[order(temp),]
+    X= X[which(temp_name %in% susbset_ind), ]
+    
+    temp2= temp_name[which(temp_name %in% susbset_ind)]
+    X=X[order(temp2),]
+    
+    maf_filter <-  apply(X , 2, sum)/(2*nrow(X))
+    if (any(maf_filter < 0.05)) {
+      info_SNP=info_SNP[which(maf_filter >0.05),]
+      
+      X <- X[, maf_filter >=  0.05]
+    }
+    
+    
+    # adjusting for the library size
+    load("/project2/mstephens/wdenault/GTEX_analysis_Fsusie/sum_count.RData")
+    #sum_count
+    row_names <- row.names(sum_count)
+    modify_row_names <- function(x) {
+      # Split each string by "."
+      parts <- strsplit(x, "\\.")[[1]]
+      # Keep only the first two parts, and replace the first dot with a hyphen
+      modified_name <- paste(parts[1], parts[2], sep = "-")
+      return(modified_name)
+    }
+    
+    # Apply the function to all row names
+    modified_names <- sapply(row_names, modify_row_names)
+    
+    # Print the modified row names
+    print(modified_names)
+    # Apply the function to all row names
+    
+    ind_name =temp[order(temp)]
+    
+    temp = sub_ind[which (sub_ind$ind %in% ind_name),]
+    sub_count =sum_count [which(row.names(sum_count) %in% temp$extracted ),]
+    sub_count = sub_count [ order ( row.names(sum_count)[which(row.names(sum_count) %in% temp$extracted )])]
+    
+    library_size= matrix(sub_count , ncol=1)
+    size_factor= library_size/(mean(library_size))
+    ####acounting for the library size
+    
+    Y_cor =   (  Y /as.vector(size_factor))
+    X_cor = as.matrix(X)
+    
+    X_mix= recode_snp_matrix( X_cor)
+    X_mix=cbind( X_mix$additive,
+                 X_mix$recessive,
+                 X_mix$dominant)
+    
+    X_mix=  matrix(as.double(X_mix),
+                   ncol=ncol(X_mix),
+                   nrow = nrow(X_mix))
+    res_add <- susie(y=  log1p(apply( Y_cor,1,sum) ) ,
+                     X= X_cor   ,
+                     L=20)
+    
+    res_mix <- susie(y=  log1p(apply( Y_cor,1,sum) ) ,
+                     X= (X_mix )  ,
+                     L=20)
+    
+    

@@ -1,0 +1,14 @@
+#!/bin/bash
+#SBATCH --job-name=test_mv_pois
+#SBATCH --output=testmix.out
+#SBATCH --error=testmix.err
+#SBATCH --time=23:00:00
+#SBATCH --partition=mstephens
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --mem-per-cpu=15000
+#SBATCH --array=1-400
+
+module load plink
+module load R/4.2.0
+Rscript /project2/mstephens/wdenault/susie_mix/script/scan_job/job_fsusie_$SLURM_ARRAY_TASK_ID.R

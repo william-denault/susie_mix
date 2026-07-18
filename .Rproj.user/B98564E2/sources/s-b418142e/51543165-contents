@@ -1,0 +1,14 @@
+#!/bin/bash
+#SBATCH --job-name=test_plink
+#SBATCH --output=test_plink.out
+#SBATCH --error=test_plink.err
+#SBATCH --time=23:00:00
+#SBATCH --partition=broadwl
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=4
+#SBATCH --mem-per-cpu=5000
+
+
+module load plink
+module load R/4.1.0
+Rscript /home/wdenault/Gtex_brain_RNA_seq/script/brouillon.R

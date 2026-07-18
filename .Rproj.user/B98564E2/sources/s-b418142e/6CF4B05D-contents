@@ -1,0 +1,12 @@
+file.exists("/project2/mstephens/fsusie_gtex/temp/extracted_snps_12660.vcf.nosex")
+paste0(output_vcf, ".nosex")
+
+
+
+tt=  rep(0, ncol(X))
+
+for ( k in 1:ncol(X)){
+  
+  tt[k]=sum(is.na(X))
+}
+plot(tt)
