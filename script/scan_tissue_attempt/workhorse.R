@@ -138,7 +138,28 @@ run_susie_gene <- function(
   geno_all <- geno_all[,j]
 
   pos <- as.numeric(sapply(strsplit(colnames(geno_all),"_"),"[[",2))/1e6
+  recode_snp_matrix <- function(X, warn = TRUE) {
+    X <- as.matrix(X)
+    if (warn && !all(X %in% c(0L, 1L, 2L)))
+      warning("recode_snp_matrix: entries are not all in {0,1,2}; ",
+              "expecting additive 0/1/2 dosages.", call. = FALSE)
 
+    storage.mode(X) <- "integer"          # additive, unchanged
+    dominant  <- (X >= 1L) * 1L           # 1 if 1 or 2, else 0
+    recessive <- (X == 2L) * 1L           # 1 if 2,      else 0
+    dimnames(dominant) <- dimnames(recessive) <- dimnames(X)
+
+    list(additive = X, dominant = dominant, recessive = recessive)
+  }
+  geno_mix_all= recode_snp_matrix( geno_all)
+  geno_mix_all=cbind( geno_mix_all$additive,
+                      geno_mix_all$recessive,
+                      geno_mix_all$dominant)
+
+  geno_mix_all=  matrix(as.double(geno_mix_all),
+                        ncol=ncol(geno_mix_all),
+                        nrow = nrow(geno_mix_all))
+  row.names(geno_mix_all)= row.names(geno_all)
   # Store per-tissue results.
   fits <- list()
 
@@ -164,7 +185,9 @@ run_susie_gene <- function(
     ids   <- intersect(pheno$SUBJID,rownames(geno_all))
     rows  <- match(ids,pheno$SUBJID)
     pheno <- pheno[rows,]
+
     geno  <- geno_all[ids,]
+    geno_mix  <- geno_mix_all[ids,]
     print(all(pheno$SUBJID == rownames(geno))) # Sanity check.
 
     # Skip tissues with too few samples for a meaningful fine-mapping fit.
@@ -178,8 +201,13 @@ run_susie_gene <- function(
     fit <- susie(geno,pheno$y,L = L,standardize = standardize,
                  estimate_prior_method = estimate_prior_method,
                  min_abs_corr = min_abs_corr,verbose = verbose)
+    fit_mix <- susie(geno_mix,pheno$y,L = L,standardize = standardize,
+                     estimate_prior_method = estimate_prior_method,
+                     min_abs_corr = min_abs_corr,verbose = verbose)
 
-    fits[[target_tissue]] <- fit
+    fits[[target_tissue]] <- list(susie_add= fit,
+                                  susie_mix=fit_mix)
+
   }
 
   # Clean up the temporary plink output files for this call.
