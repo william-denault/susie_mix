@@ -6,26 +6,62 @@ res_l=list()
 for ( k in 1:length(lf)){
   out= readRDS(paste0(path_res, lf[k]))
   if( length(out)>2){
-    print(k)
+
     dif_elbo=unlist(lapply( 1 : length(out), function(k)
       -max(out[[k]]$susie_add$elbo)+max(out[[k]]$susie_mix$elbo)))
 
-  cs_s=do.call( rbind,lapply( 1 : length(out), function(k) c( length(out[[k]]$susie_add$sets$cs) ,
+    cs_s=do.call( rbind,lapply( 1 : length(out), function(k) c( length(out[[k]]$susie_add$sets$cs) ,
                                                    length(out[[k]]$susie_mix$sets$cs))))
 
-  overlap=do.call(c,lapply( 1 : length(out),
+    overlap=do.call(c,
+                    lapply( 1 : length(out),
                           function (k)  sum(susie_cs_overlap(out[[k]]$susie_add,
-                                                             out[[k]]$susie_mix)$overlap_matrix)))
+                                                             out[[k]]$susie_mix)$overlap_matrix)
+                          )
+                    )
 
+    type_cs=do.call(rbind,
+                    lapply( 1 : length(out),
+                           function(k){
+                                n_add=0
+                                n_rec=0
+                                n_dom=0
+                              if (length(out[[k]]$susie_mix$sets$cs)>0){
+                                    for( l in 1:length(out[[k]]$susie_mix$sets$cs)){
+                                          div_num= out[[k]]$susie_mix$sets$cs[[l]][1] %/% out[[k]]$n_SNP
+                                          if(div_num==0){
+                                            n_add=n_add+1
+                                          }
+                                          if(div_num==1){
+                                            n_rec=n_rec+1
+                                          }
+                                          if(div_num==2){
+                                            n_dom=n_dom+1
+                                          }
+                                        }
+                              }
+                                return(c(n_add,
+                                         n_rec,
+                                         n_dom)
+                                )
 
-    res_l[[k]]= data.frame(dif_elbo = dif_elbo,
+                           }
+                    )
+    )
+
+    type_cs=as.data.frame(type_cs)
+    colnames(type_cs)=c("n_add",
+                        "n_rec",
+                        "n_dom")
+
+    temp_r =  data.frame(dif_elbo = dif_elbo,
                            tissue   = names(out),
                            gene    = rep(sub("\\.rds$", "", lf[k]), length(out)),
                            ncs_susie=cs_s[,1],
                            ncs_susie_mix=cs_s[,2],
                            overlap=overlap)
 
-
+    res_l[[k]]= cbind(temp_r, type_cs)
 
   }
 
@@ -46,6 +82,10 @@ hist(res_summary$dif_elbo[idx], nclass=100,
 abline(v=0, col="red", lty=2)
 
 
+table(res_summary$n_add)
+table(res_summary$n_rec)
+
+table(res_summary$n_dom)
 
 
 sum(res_summary$ncs_susie[idx])
@@ -54,7 +94,7 @@ table( res_summary$ncs_susie, res_summary$ncs_susie_mix)
 table( res_summary$ncs_susie[idx], res_summary$ncs_susie_mix[idx])
 
 res_summary[order(res_summary$dif_elbo, decreasing=TRUE)[1:10],]
- out<- readRDS("/project2/mstephens/wdenault/susie_mix/results/APOA4.rds")
+ out<- readRDS("/project2/mstephens/wdenault/susie_mix/results/APOBEC4.rds")
 k=1
 par(mfrow=c(1,2))
 plot(out[[k]]$susie_add$pip)

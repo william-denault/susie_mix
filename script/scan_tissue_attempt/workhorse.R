@@ -196,17 +196,32 @@ run_susie_gene <- function(
       next
     }
 
-    # Run susie.
+
     cat("Running susie.\n")
+    set.seed(1)
+    perm_y=sample(pheno$y)
+
     fit <- susie(geno,pheno$y,L = L,standardize = standardize,
                  estimate_prior_method = estimate_prior_method,
                  min_abs_corr = min_abs_corr,verbose = verbose)
+
+    fit_perm <- susie(geno,perm_y,L = L,standardize = standardize,
+                 estimate_prior_method = estimate_prior_method,
+                 min_abs_corr = min_abs_corr,verbose = verbose)
+
     fit_mix <- susie(geno_mix,pheno$y,L = L,standardize = standardize,
                      estimate_prior_method = estimate_prior_method,
                      min_abs_corr = min_abs_corr,verbose = verbose)
 
+    fit_mix_perm <- susie(geno_mix,perm_y,L = L,standardize = standardize,
+                     estimate_prior_method = estimate_prior_method,
+                     min_abs_corr = min_abs_corr,verbose = verbose)
+
     fits[[target_tissue]] <- list(susie_add= fit,
+                                  susie_add_perm= fit_perm,
+
                                   susie_mix=fit_mix,
+                                  susie_mix_perm= fit_mix_perm,
                                   n_SNP= ncol(geno))
 
   }
