@@ -100,6 +100,12 @@ for ( k in 1:length(lf)){
                                        function (k)  length(out[[k]]$susie_mix_perm$sets$cs)
                                )
     )
+
+    n_ind            = do.call(c,
+                               lapply( 1 : length(out),
+                                       function (k)   (out[[k]]$n_ind)
+                               )
+    )
     temp_r =  data.frame(dif_elbo = dif_elbo,
                          dif_elbo_perm=dif_elbo_perm,
                          tissue   = names(out),
@@ -108,7 +114,9 @@ for ( k in 1:length(lf)){
                          ncs_susie_mix=cs_s[,2],
                          overlap=overlap,
                          perm_cs_susie=perm_cs_susie,
-                         perm_cs_susie_mix=  perm_cs_susie_mix)
+                         perm_cs_susie_mix=  perm_cs_susie_mix,
+
+                         n_ind=  n_ind )
     print(k)
     res_l[[k]]= cbind(temp_r, type_cs,type_cs_perm)
 
@@ -121,12 +129,20 @@ for ( k in 1:length(lf)){
  res_summary= do.call( rbind, res_l)
 
 
-
  sum(res_summary$perm_cs_susie)
  sum(res_summary$perm_cs_susie_mix)
 
  sum(res_summary$ncs_susie)
  sum(res_summary$ncs_susie_mix)
+
+ idx= which(res_summary$n_ind>400)
+
+ sum(res_summary$perm_cs_susie[idx])
+ sum(res_summary$perm_cs_susie_mix[idx])
+
+ sum(res_summary$ncs_susie[idx])
+ sum(res_summary$ncs_susie_mix[idx])
+
 
  hist(res_summary$dif_elbo, nclass=1000,
       main="Difference in ELBO between fit with additive coding vs \n

@@ -9,12 +9,12 @@
 # enough samples, e.g. fits[["Lung"]]$sets
 
 run_susie_gene <- function(
-    target_gene="A1BG",
+    target_gene="CBX8",
 
     # --- paths ---
     datadir          = "/project2/mstephens/gtex",
     plink_exec       = file.path(datadir,"plink2"),
-    gene_annot_fun   = "/project2/mstephens/wdenault/susie_mix/script/pc_script/get_gene_annotations.R",
+    gene_annot_fun   = "/project2/mstephens/wdenault/susie_mix/script/scan_tissue_attempt/get_gene_annotations.R",
     gtf_file         = file.path(datadir,
                                  "Homo_sapiens.GRCh38.103.chr.reformatted.collapse_only.gene.gtf.gz"),
     geno_file        = file.path(datadir,
@@ -35,7 +35,7 @@ run_susie_gene <- function(
     # --- susie parameters ---
     L                     = 10,
     standardize           = FALSE,
-    estimate_prior_method = "optim",
+    estimate_prior_method = "EM",
     min_abs_corr          = 0.5,
     verbose               = FALSE,
 
@@ -226,7 +226,7 @@ run_susie_gene <- function(
                                   n_ind= length(perm_y),
                                   mean_phe= mean(perm_y),
 
-                                  median_phe= median(perm_y),
+                                  median_phe= median(perm_y)
                                   )
 
   }
