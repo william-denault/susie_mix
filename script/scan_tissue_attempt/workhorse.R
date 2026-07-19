@@ -223,7 +223,11 @@ run_susie_gene <- function(
                                   susie_mix=fit_mix,
                                   susie_mix_perm= fit_mix_perm,
                                   n_SNP= ncol(geno),
-                                  n_ind= length(perm_y))
+                                  n_ind= length(perm_y),
+                                  mean_phe= mean(perm_y),
+
+                                  median_phe= median(perm_y),
+                                  )
 
   }
 
