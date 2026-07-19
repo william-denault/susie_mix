@@ -119,6 +119,15 @@ for ( k in 1:length(lf)){
 
 
  res_summary= do.call( rbind, res_l)
+
+
+
+ sum(res_summary$perm_cs_susie)
+ sum(res_summary$perm_cs_susie_mix)
+
+ sum(res_summary$ncs_susie)
+ sum(res_summary$ncs_susie_mix)
+
  hist(res_summary$dif_elbo, nclass=1000,
       main="Difference in ELBO between fit with additive coding vs \n
       additive, recessive and dominant coding")
@@ -147,12 +156,6 @@ table(res_summary$n_rec_perm)
 
 table(res_summary$n_dom_perm)
 
-
-
-sum(res_summary$ncs_susie[idx])
-sum(res_summary$ncs_susie_mix[idx])
-sum(res_summary$perm_cs_susie)
-sum(res_summary$perm_cs_susie_mix)
 
 
 
