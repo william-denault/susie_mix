@@ -34,7 +34,7 @@ run_susie_gene <- function(
 
     # --- susie parameters ---
     L                     = 10,
-    standardize           = TRUE,
+    standardize           = FALSE,
     estimate_prior_method = "optim",
     min_abs_corr          = 0.5,
     verbose               = FALSE,
@@ -222,7 +222,8 @@ run_susie_gene <- function(
 
                                   susie_mix=fit_mix,
                                   susie_mix_perm= fit_mix_perm,
-                                  n_SNP= ncol(geno))
+                                  n_SNP= ncol(geno),
+                                  n_ind= length(perm_y))
 
   }
 
