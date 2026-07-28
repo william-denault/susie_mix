@@ -9,7 +9,7 @@
 # enough samples, e.g. fits[["Lung"]]$sets
 
 run_susie_gene <- function(
-    target_gene="CBX8",
+    target_gene="A1BG",#,"CBX8",
 
     # --- paths ---
     datadir          = "/project2/mstephens/gtex",
@@ -209,7 +209,10 @@ run_susie_gene <- function(
     pv= rep(1, ncol(geno))
     for ( k in 1: ncol(geno)){
 
-      pv[k]= summary(lm( pheno$y~geno[,k]))$coefficients[2,4]
+      if(var(geno[,k])>0){
+
+        pv[k]= summary(lm( pheno$y~geno[,k]))$coefficients[2,4]
+      }
     }
 
     fit <- susie(geno,pheno$y,L = L,standardize = standardize,
