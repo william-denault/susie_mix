@@ -36,7 +36,7 @@ run_susie_gene <- function(
     L                     = 10,
     standardize           = FALSE,
     estimate_prior_method = "EM",
-    min_abs_corr          = 0.5,
+    min_abs_corr          = 0.0,
     verbose               = FALSE,
 
     # --- misc ---
@@ -162,7 +162,7 @@ run_susie_gene <- function(
   row.names(geno_mix_all)= row.names(geno_all)
   # Store per-tissue results.
   fits <- list()
-
+  #target_tissue = all_tissues[1]
   for (target_tissue in all_tissues) {
 
     cat("\n=====================================\n")
@@ -171,6 +171,12 @@ run_susie_gene <- function(
 
     # Extract the data for this tissue.
     pheno <- subset(pheno_gene,SMTS == target_tissue)
+
+    ids         <- intersect(pheno$SUBJID,rownames(geno_all))
+    rows        <- match(ids,pheno$SUBJID)
+    median_read <- median( pheno$count[ rows])
+    mean_read   <- mean(pheno$count[ rows])
+
     pheno <- transform(pheno,SMGEBTCHT = factor(SMGEBTCHT))
 
     # From Sec. 4.1 of the GTEx supplement: "We concluded that 5 PCs is a
@@ -182,8 +188,7 @@ run_susie_gene <- function(
     pheno$y <- resid(lm(count ~ SEX,pheno))
 
     # Align genotype and phenotype data for this tissue's samples.
-    ids   <- intersect(pheno$SUBJID,rownames(geno_all))
-    rows  <- match(ids,pheno$SUBJID)
+
     pheno <- pheno[rows,]
 
     geno  <- geno_all[ids,]
@@ -200,6 +205,12 @@ run_susie_gene <- function(
     cat("Running susie.\n")
     set.seed(1)
     perm_y=sample(pheno$y)
+
+    pv= rep(1, ncol(geno))
+    for ( k in 1: ncol(geno)){
+
+      pv[k]= summary(lm( pheno$y~geno[,k]))$coefficients[2,4]
+    }
 
     fit <- susie(geno,pheno$y,L = L,standardize = standardize,
                  estimate_prior_method = estimate_prior_method,
@@ -226,7 +237,10 @@ run_susie_gene <- function(
                                   n_ind= length(perm_y),
                                   mean_phe= mean(perm_y),
 
-                                  median_phe= median(perm_y)
+                                  median_phe= median(perm_y),
+                                  min_pv=min(pv),
+                                  median_read  =median_read,
+                                  mean_read = mean_read
                                   )
 
   }
