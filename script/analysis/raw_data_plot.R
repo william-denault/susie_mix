@@ -1,47 +1,47 @@
-# run_susie_gene.R
-#
-# Function version of the per-gene, all-tissue SuSiE fine-mapping script.
-# Everything that was hardcoded in the original script is now a function
-# argument (with the original value kept as the default), and target_gene
-# is the primary argument.
-#
-# Returns: a named list of susie fit objects, one per tissue that had
-# enough samples, e.g. fits[["Lung"]]$sets
 
-run_susie_gene <- function(
-    target_gene="ACTL10",#,"CBX8",
 
-    # --- paths ---
-    datadir          = "/project2/mstephens/gtex",
-    plink_exec       = file.path(datadir,"plink2"),
-    gene_annot_fun   = "/project2/mstephens/wdenault/susie_mix/script/scan_tissue_attempt/get_gene_annotations.R",
-    gtf_file         = file.path(datadir,
-                                 "Homo_sapiens.GRCh38.103.chr.reformatted.collapse_only.gene.gtf.gz"),
-    geno_file        = file.path(datadir,
-                                 "GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv"),
-    subject_pheno_file = file.path(datadir,
-                                   "GTEx_Analysis_v8_Annotations_SubjectPhenotypesDS.txt.gz"),
-    sample_attr_file   = file.path(datadir,
-                                   "GTEx_Analysis_v8_Annotations_SampleAttributesDS.txt.gz"),
-    expr_file          = file.path(datadir,
-                                   "GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_reads.gct.gz"),
+res_1cs[order(res_1cs$n_ind, decreasing = TRUE), c(  "tissue",    "gene" , "n_ind", "n_add", "n_rec", "n_dom" )]
 
-    # --- analysis parameters ---
-    min_maf           = 0.05,
-    cis_window        = 5e5,
-    min_samples       = 50,
-    seed              = 1,
 
-    # --- susie parameters ---
-    L                     = 10,
-    standardize           = FALSE,
-    estimate_prior_method = "EM",
-    min_abs_corr          = 0.0,
-    verbose               = FALSE,
+target_gene="AKR1C2"
+tissue =  "Skin"
+target_gene="ASB14"
+tissue =  "Skin"
+target_gene="ARPC2"
+tissue =  "Muscle"
 
-    # --- misc ---
-    plink_out_prefix  = tempfile("plink_")  # avoids collisions across parallel calls
-) {
+
+# --- paths ---
+datadir          = "/project2/mstephens/gtex"
+plink_exec       = file.path(datadir,"plink2")
+gene_annot_fun   = "/project2/mstephens/wdenault/susie_mix/script/scan_tissue_attempt/get_gene_annotations.R"
+gtf_file         = file.path(datadir,
+                             "Homo_sapiens.GRCh38.103.chr.reformatted.collapse_only.gene.gtf.gz")
+geno_file        = file.path(datadir,
+                             "GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv")
+subject_pheno_file = file.path(datadir,
+                               "GTEx_Analysis_v8_Annotations_SubjectPhenotypesDS.txt.gz")
+sample_attr_file   = file.path(datadir,
+                               "GTEx_Analysis_v8_Annotations_SampleAttributesDS.txt.gz")
+expr_file          = file.path(datadir,
+                               "GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_reads.gct.gz")
+
+# --- analysis parameters ---
+min_maf           = 0.05 # I found problem in the coding better load everything then filter
+cis_window        = 5e5
+min_samples       = 50
+seed              = 1
+
+# --- susie parameters ---
+L                     = 10
+standardize           = FALSE
+estimate_prior_method = "EM"
+min_abs_corr          = 0.0
+verbose               = FALSE
+
+# --- misc ---
+plink_out_prefix  = tempfile("plink_")  # avoids collisions across parallel calls
+
 
   library(tools)
   library(data.table)
@@ -163,7 +163,7 @@ run_susie_gene <- function(
   # Store per-tissue results.
   fits <- list()
   #target_tissue = all_tissues[1]
-  for (target_tissue in all_tissues) {
+ target_tissue  =tissue
 
     cat("\n=====================================\n")
     cat("Tissue:",target_tissue,"\n")
@@ -196,61 +196,27 @@ run_susie_gene <- function(
     print(all(pheno$SUBJID == rownames(geno))) # Sanity check.
 
     # Skip tissues with too few samples for a meaningful fine-mapping fit.
-    if (nrow(geno) < min_samples) {
-      cat("Skipping",target_tissue,"- only",nrow(geno),"samples.\n")
-      next
-    }
+
+    out<- readRDS(paste0("/project2/mstephens/wdenault/susie_mix/results/",
+                         target_gene,
+                         ".rds"))
+     k = which ( names(out)== target_tissue)
 
 
-    cat("Running susie.\n")
-    set.seed(1)
-    perm_y=sample(pheno$y)
+     fit <- susie(geno,pheno$y,L = L,standardize = standardize,
+                  estimate_prior_method = estimate_prior_method,
+                  min_abs_corr = min_abs_corr,verbose = verbose)
 
-    pv= rep(1, ncol(geno))
-    for ( k in 1: ncol(geno)){
+     fit$sets
+     fit_mix <- susie(geno_mix,pheno$y,L = L,standardize = standardize,
+                      estimate_prior_method = estimate_prior_method,
+                      min_abs_corr = min_abs_corr,verbose = verbose)
 
-      if(var(geno[,k])>0){
+     fit_mix$sets
+     ncol(geno)+fit$sets$cs$L1[1]
+SNP=geno[ , out[[k]]$susie_add$sets$cs$L1[1]]
+     boxplot(pheno$y~ SNP, main= paste(target_gene, "Expression level vs SNP fine mapped\n n = " , length(pheno$y)))
 
-        pv[k]= summary(lm( pheno$y~geno[,k]))$coefficients[2,4]
-      }
-    }
 
-    fit <- susie(geno,pheno$y,L = L,standardize = standardize,
-                 estimate_prior_method = estimate_prior_method,
-                 min_abs_corr = min_abs_corr,verbose = verbose)
+     table(geno[ , out[[k]]$susie_add$sets$cs$L1[1]] )
 
-    fit_perm <- susie(geno,perm_y,L = L,standardize = standardize,
-                 estimate_prior_method = estimate_prior_method,
-                 min_abs_corr = min_abs_corr,verbose = verbose)
-
-    fit_mix <- susie(geno_mix,pheno$y,L = L,standardize = standardize,
-                     estimate_prior_method = estimate_prior_method,
-                     min_abs_corr = min_abs_corr,verbose = verbose)
-
-    fit_mix_perm <- susie(geno_mix,perm_y,L = L,standardize = standardize,
-                     estimate_prior_method = estimate_prior_method,
-                     min_abs_corr = min_abs_corr,verbose = verbose)
-
-    fits[[target_tissue]] <- list(susie_add= fit,
-                                  susie_add_perm= fit_perm,
-
-                                  susie_mix=fit_mix,
-                                  susie_mix_perm= fit_mix_perm,
-                                  n_SNP= ncol(geno),
-                                  n_ind= length(perm_y),
-                                  mean_phe= mean(perm_y),
-
-                                  median_phe= median(perm_y),
-                                  min_pv=min(pv),
-                                  median_read  =median_read,
-                                  mean_read = mean_read
-                                  )
-
-  }
-
-  # Clean up the temporary plink output files for this call.
-  file.remove(Sys.glob(paste0(plink_out_prefix,".*")))
-
-  # fits is a named list keyed by tissue, e.g. fits[["Lung"]]$sets
-  fits
-}
