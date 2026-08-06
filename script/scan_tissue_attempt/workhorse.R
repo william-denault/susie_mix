@@ -27,7 +27,8 @@ run_susie_gene <- function(
                                    "GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_reads.gct.gz"),
 
     # --- analysis parameters ---
-    min_maf           = 0.05,
+    min_maf_plink         = 0.00,
+    min_maf           = 0.05,# I found problem in the coding better load everything then filter
     cis_window        = 5e5,
     min_samples       = 50,
     seed              = 1,
@@ -115,7 +116,7 @@ run_susie_gene <- function(
                               "--snps-only --max-alleles 2 --rm-dup exclude-all",
                               "--threads 2 --memory 8000 --maf %g",
                               "--recode A --out %s"),
-                        plink_exec,geno_file,chr,pos0,pos1,min_maf,
+                        plink_exec,geno_file,chr,pos0,pos1,min_maf_plink,
                         plink_out_prefix)
   system(plink_call)
   geno_file_raw <- paste0(plink_out_prefix,".raw")
@@ -135,7 +136,28 @@ run_susie_gene <- function(
   # Remove SNPs that do not vary (across all individuals, done once).
   x <- colSds(geno_all)
   j <- which(x > 0)
+
   geno_all <- geno_all[,j]
+
+
+  counted_af <- colMeans(geno_all) / 2
+  flip <- counted_af > 0.5
+  if ( sum(flip)>0){
+
+    geno_all[, flip] <- 2 - geno_all[, flip, drop = FALSE]
+  }
+  maf <- colMeans(geno_all) / 2
+
+
+  keep <- is.finite(maf) & maf >= min_maf & maf <= 0.5
+  if(sum(keep)>0){
+
+    geno_all <- geno_all[, keep, drop = FALSE]
+  }
+  if( sum(keep)==0){
+
+    return(c("No SNP with MAF>5%"))
+  }
 
   pos <- as.numeric(sapply(strsplit(colnames(geno_all),"_"),"[[",2))/1e6
   recode_snp_matrix <- function(X, warn = TRUE) {
