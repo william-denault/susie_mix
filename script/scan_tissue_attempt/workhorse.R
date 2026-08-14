@@ -39,6 +39,7 @@ run_susie_gene <- function(
     estimate_prior_method = "EM",
     min_abs_corr          = 0.0,
     verbose               = FALSE,
+    min_n_rec=5,
 
     # --- misc ---
     plink_out_prefix  = tempfile("plink_")  # avoids collisions across parallel calls
@@ -140,12 +141,25 @@ run_susie_gene <- function(
   geno_all <- geno_all[,j]
 
 
-  counted_af <- colMeans(geno_all) / 2
-  flip <- counted_af > 0.5
-  if ( sum(flip)>0){
+  recode_matrix_by_freq <- function(X) {
+    storage.mode(X) <- "integer"
+    counts <- rbind(colSums(X == 0L),
+                    colSums(X == 1L),
+                    colSums(X == 2L))                 # 3 x ncol(X)
+    # rank 1 = most frequent -> new code 0; ties broken by original value
+    new_code <- apply(counts, 2, function(cnt) rank(-cnt, ties.method = "first") - 1L)
 
-    geno_all[, flip] <- 2 - geno_all[, flip, drop = FALSE]
+    out <- X
+    for (v in 0:2) {
+      idx <- which(X == v, arr.ind = TRUE)
+      out[idx] <- new_code[v + 1L, idx[, "col"]]
+    }
+    dimnames(out) <- dimnames(X)
+    out
   }
+
+  geno_all <- recode_matrix_by_freq(geno_all)
+
   maf <- colMeans(geno_all) / 2
 
 
@@ -174,13 +188,24 @@ run_susie_gene <- function(
     list(additive = X, dominant = dominant, recessive = recessive)
   }
   geno_mix_all= recode_snp_matrix( geno_all)
-  geno_mix_all=cbind( geno_mix_all$additive,
-                      geno_mix_all$recessive,
-                      geno_mix_all$dominant)
+  SNP_rec_enough_point =  which( apply(geno_mix_all$recessive,2,sum)>min_n_rec)
+  n_rec_SNP= length(SNP_rec_enough_point)
 
-  geno_mix_all=  matrix(as.double(geno_mix_all),
-                        ncol=ncol(geno_mix_all),
-                        nrow = nrow(geno_mix_all))
+  if( n_rec_SNP==0){
+    n_rec_SNP= ncol(geno_mix_all$additive)
+    geno_mix_all=cbind( geno_mix_all$additive,
+                        0*geno_mix_all$recessive  ,
+                        geno_mix_all$dominant)
+  }else{
+    geno_mix_all=cbind( geno_mix_all$additive,
+                        geno_mix_all$recessive[,SNP_rec_enough_point]  ,
+                        geno_mix_all$dominant)
+  }
+
+
+ #geno_mix_all=  matrix(as.double(geno_mix_all),
+  #                      ncol=ncol(geno_mix_all),
+  #                      nrow = nrow(geno_mix_all))
   row.names(geno_mix_all)= row.names(geno_all)
   # Store per-tissue results.
   fits <- list()
@@ -214,7 +239,12 @@ run_susie_gene <- function(
     pheno <- pheno[rows,]
 
     geno  <- geno_all[ids,]
+
+
     geno_mix  <- geno_mix_all[ids,]
+
+
+
     print(all(pheno$SUBJID == rownames(geno))) # Sanity check.
 
     # Skip tissues with too few samples for a meaningful fine-mapping fit.
