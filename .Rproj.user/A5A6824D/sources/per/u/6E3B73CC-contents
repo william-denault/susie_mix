@@ -1,0 +1,22 @@
+set.seed(1)
+n = 1000
+p = 1000
+beta = rep(0,p)
+beta[1:4] = 1
+X = matrix(rnorm(n*p),nrow = n,ncol = p)
+X = scale(X,center = TRUE,scale = TRUE)
+y = drop(X %*% beta + rnorm(n))
+res1 = susie(X,y,L = 10)
+susie_get_cs(res1) # extract credible sets from fit
+plot(beta,coef(res1)[-1])
+abline(a = 0,b = 1,col = "skyblue",lty = "dashed")
+plot(y,predict(res1))
+abline(a = 0,b = 1,col = "skyblue",lty = "dashed")
+
+# susie_suff_stat example
+input_ss = compute_suff_stat(X,y)
+res2 = with(input_ss,
+            susie_suff_stat(XtX = XtX,Xty = Xty,yty = yty,n = n,
+                            X_colmeans = X_colmeans,y_mean = y_mean,L = 10))
+plot(coef(res1),coef(res2))
+abline(a = 0,b = 1,col = "skyblue",lty = "dashed")
