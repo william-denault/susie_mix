@@ -9,7 +9,7 @@
 # enough samples, e.g. fits[["Lung"]]$sets
 
 run_susie_gene <- function(
-    target_gene="ACTL10",#,"CBX8",
+    target_gene="GTF2H2",#,"CBX8",
 
     # --- paths ---
     datadir          = "/project2/mstephens/gtex",
@@ -32,7 +32,7 @@ run_susie_gene <- function(
     cis_window        = 5e5,
     min_samples       = 50,
     seed              = 1,
-
+    hwe_thresh= 1e-5,
     # --- susie parameters ---
     L                     = 10,
     standardize           = FALSE,
@@ -146,9 +146,7 @@ run_susie_gene <- function(
     counts <- rbind(colSums(X == 0L),
                     colSums(X == 1L),
                     colSums(X == 2L))                 # 3 x ncol(X)
-    # rank 1 = most frequent -> new code 0; ties broken by original value
     new_code <- apply(counts, 2, function(cnt) rank(-cnt, ties.method = "first") - 1L)
-
     out <- X
     for (v in 0:2) {
       idx <- which(X == v, arr.ind = TRUE)
@@ -158,20 +156,45 @@ run_susie_gene <- function(
     out
   }
 
-  geno_all <- recode_matrix_by_freq(geno_all)
+  qc_recode_geno <- function(X, hwe_thresh = 1e-5, maf_min=0.05) {
+    storage.mode(X) <- "integer"
 
-  maf <- colMeans(geno_all) / 2
+    # 1. orient to minor allele
+    af   <- colMeans(X) / 2
+    flip <- af > 0.5
+    if (any(flip)) X[, flip] <- 2L - X[, flip, drop = FALSE]
 
+    # 2. filter by MAF (drops monomorphic SNPs too, since the comparison is strict >)
+    X  <- X[, which(colMeans(X) / 2 > maf_min), drop = FALSE]
+    n  <- nrow(X)
+    af <- colMeans(X) / 2       # already the MAF post-flip/post-filter — no pmin needed
+    maf <- af
 
-  keep <- is.finite(maf) & maf >= min_maf & maf <= 0.5
-  if(sum(keep)>0){
+    # 3. HWE chi-square test
+    count0 <- colSums(X == 0L); count1 <- colSums(X == 1L); count2 <- colSums(X == 2L)
+    exp0 <- n * (1 - maf)^2; exp1 <- n * 2 * maf * (1 - maf); exp2 <- n * maf^2
+    chisq <- (count0 - exp0)^2 / exp0 + (count1 - exp1)^2 / exp1 + (count2 - exp2)^2 / exp2
+    hwe_p <- pchisq(chisq, df = 1, lower.tail = FALSE)
 
-    geno_all <- geno_all[, keep, drop = FALSE]
+    # 3. frequency-recode only the columns that fail HWE
+    fail <- which(!is.na(hwe_p) & hwe_p < hwe_thresh)
+    if (length(fail) > 0) {
+      cat(length(fail), "SNP(s) failed HWE (p <", hwe_thresh, ") - recoding by frequency:\n")
+      print(colnames(X)[fail])
+      X[, fail] <- recode_matrix_by_freq(X[, fail, drop = FALSE])
+    }
+
+    list(X = X, maf = maf, hwe_p = hwe_p, flipped = which(flip), recoded = fail)
   }
-  if( sum(keep)==0){
 
-    return(c("No SNP with MAF>5%"))
-  }
+  geno_all <-   qc_recode_geno(X=geno_all,
+                               hwe_thresh =  hwe_thresh,
+                               maf_min=min_maf)$X
+
+  ### 1 check for allele flip
+  ### 2 remove SNP with maf below 5% then
+  ### 3 test for HWE and recode by frequency
+
 
   pos <- as.numeric(sapply(strsplit(colnames(geno_all),"_"),"[[",2))/1e6
   recode_snp_matrix <- function(X, warn = TRUE) {
