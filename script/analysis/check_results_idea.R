@@ -191,7 +191,23 @@ load("/project2/mstephens/wdenault/susie_mix/res_summary.RData")
       main="Difference in ELBO between fit with additive coding vs \n
       additive, recessive and dominant coding")
 abline(v=0, col="red", lty=2)
+hist(-2 *(res_summary$log_lik_add- res_summary$log_lik_mix), nclass=1000,
+     main="-2 (log lik additive coding - log lik mix coding")
+abline(v=0, col="red", lty=2)
 
+hist(-2 *(res_summary$log_lik_add- res_summary$log_lik_mix), nclass=300,
+     xlim=c(-100, 300),
+     xlab="-2 (log lik additive coding - log lik mix coding)",
+     main="-2 (log lik additive coding - log lik mix coding)")
+abline(v=0, col="red", lty=2)
+
+
+
+hist(-2 *(res_summary$log_lik_add_perm- res_summary$log_lik_mix_perm), nclass=1000,
+     xlim=c(-100, 300),
+     main="-2 (log lik diff with additive coding vs \n
+      additive, recessive and dominant coding")
+abline(v=0, col="red", lty=2)
 
 
 hist(res_summary$dif_elbo_perm, nclass=1000,
@@ -204,7 +220,16 @@ hist(res_summary$dif_elbo[idx], nclass=100,
      main="Difference in ELBO between fit with additive coding vs \n
       additive, recessive and dominant coding")
 abline(v=0, col="red", lty=2)
+
+idx= which(res_summary$ncs_susie>0)
+hist(-2 *(res_summary$log_lik_add_perm- res_summary$log_lik_mix_perm)[idx], nclass=300,
+     xlab="-2 (log lik additive coding - log lik mix coding)",
+     main="-2 (log lik additive coding - log lik mix coding) with more than 0 cs")
+abline(v=0, col="red", lty=2)
+
 res_idx= res_idx[which(res_idx$mean_count>100),]
+
+
 
 
 table(res_idx$n_add)
@@ -250,14 +275,23 @@ length(which(!(res_idx$ncs_susie ==res_idx$ncs_susie_mix)) )/ nrow(res_idx)
 
  table(res_idx$tissue[which(!(res_idx$ncs_susie ==res_idx$ncs_susie_mix)) ])
 
-### region in which suise and susie mix give a single CS that are different
 
+# percentage in which SUSiE and SuSiE mix output 1 CS but disagree on the "variant" coding
+table( res_idx$ overlap[which(res_idx$ncs_susie==1 & res_idx$ncs_susie_mix==1  )  ])[1]/ length(which(res_idx$ncs_susie==1 & res_idx$ncs_susie_mix==1  ))
+
+
+
+### region in which suise and susie mix give a single CS that are different -----
 
  res_1cs=  res_idx[which(res_idx$ncs_susie==1 & res_idx$ncs_susie_mix==1 & res_idx$overlap==0),]
+res_1cs[ which(res_1cs$n_dom== 1),]
 
+res_1cs$t_log_d=-2*(res_1cs$log_lik_add- res_1cs$log_lik_mix)
 
-res_1cs
+table(res_1cs$gene)
 
+ #ZFAT, #KRT6A #TTC38    TXNL4B
+res_1cs[ which(res_1cs$gene== "ZFAT"),]
 
 res_idx[ order(res_idx$ncs_susie_mix, decreasing = TRUE),]
 res_idx[ order(res_idx$ncs_susie_mix),]
