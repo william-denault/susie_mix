@@ -147,7 +147,11 @@ for ( k in 1:length(lf)){
                          perm_cs_susie_mix=  perm_cs_susie_mix,
                          median_count=   median_count,
                          dif_elbo_perm=dif_elbo_perm,
-                         n_ind=  n_ind )
+                         n_ind=  n_ind ,
+                         log_lik_add= log_lik_add,
+                         log_lik_mix=  log_lik_mix,
+                         log_lik_add_perm= log_lik_add_perm,
+                         log_lik_mix_perm= log_lik_mix_perm)
     print(k)
     res_l[[k]]= cbind(temp_r, type_cs,type_cs_perm)
 
