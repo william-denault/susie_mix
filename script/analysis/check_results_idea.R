@@ -22,6 +22,24 @@ for ( k in 1:length(lf)){
                     )
     )
 
+    log_lik_add=do.call( rbind,lapply( 1 : length(out), function(k) {
+      out[[k]]$susie_add$elbo[length(out[[k]]$susie_add$elbo)]+sum(out[[k]]$susie_add$KL)}))
+
+    log_lik_mix=do.call( rbind,lapply( 1 : length(out), function(k) {
+      out[[k]]$susie_mix$elbo[length(out[[k]]$susie_mix$elbo)]+sum(out[[k]]$susie_mix$KL)
+
+              }))
+
+    log_lik_add_perm=do.call( rbind,lapply( 1 : length(out), function(k) {
+      out[[k]]$susie_add_perm$elbo[length(out[[k]]$susie_add_perm$elbo)]+sum(out[[k]]$susie_add_perm$KL)
+    }))
+
+
+    log_lik_mix_perm=do.call( rbind,lapply( 1 : length(out), function(k) {
+      out[[k]]$susie_mix_perm$elbo[length(out[[k]]$susie_mix_perm$elbo)]+sum(out[[k]]$susie_mix_perm$KL)
+    }))
+
+
     type_cs=do.call(rbind,
                     lapply( 1 : length(out),
                             function(k){
