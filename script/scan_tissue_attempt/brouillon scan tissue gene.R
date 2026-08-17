@@ -8,43 +8,40 @@
 # Returns: a named list of susie fit objects, one per tissue that had
 # enough samples, e.g. fits[["Lung"]]$sets
 
-run_susie_gene <- function(
-    target_gene="GTF2H2",#,"CBX8",
+    target_gene="CCDC40" #"AATK"
 
     # --- paths ---
-    datadir          = "/project2/mstephens/gtex",
-    plink_exec       = file.path(datadir,"plink2"),
-    gene_annot_fun   = "/project2/mstephens/wdenault/susie_mix/script/scan_tissue_attempt/get_gene_annotations.R",
+    datadir          = "/project2/mstephens/gtex"
+    plink_exec       = file.path(datadir,"plink2")
+    gene_annot_fun   = "/project2/mstephens/wdenault/susie_mix/script/scan_tissue_attempt/get_gene_annotations.R"
     gtf_file         = file.path(datadir,
-                                 "Homo_sapiens.GRCh38.103.chr.reformatted.collapse_only.gene.gtf.gz"),
+                                 "Homo_sapiens.GRCh38.103.chr.reformatted.collapse_only.gene.gtf.gz")
     geno_file        = file.path(datadir,
-                                 "GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv"),
+                                 "GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv")
     subject_pheno_file = file.path(datadir,
-                                   "GTEx_Analysis_v8_Annotations_SubjectPhenotypesDS.txt.gz"),
+                                   "GTEx_Analysis_v8_Annotations_SubjectPhenotypesDS.txt.gz")
     sample_attr_file   = file.path(datadir,
-                                   "GTEx_Analysis_v8_Annotations_SampleAttributesDS.txt.gz"),
+                                   "GTEx_Analysis_v8_Annotations_SampleAttributesDS.txt.gz")
     expr_file          = file.path(datadir,
-                                   "GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_reads.gct.gz"),
+                                   "GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_reads.gct.gz")
 
     # --- analysis parameters ---
-    min_maf_plink         = 0.00,
-    min_maf           = 0.05,# I found problem in the coding better load everything then filter
-    cis_window        = 5e5,
-    min_samples       = 50,
-    seed              = 1,
-    hwe_thresh= 1e-5,
+    min_maf_plink         = 0.00
+    min_maf           = 0.05 # I found problem in the coding better load everything then filter
+    cis_window        = 5e5
+    min_samples       = 50
+    seed              = 1
+    hwe_thresh= 1e-5
     # --- susie parameters ---
-    L                     = 10,
-    standardize           = FALSE,
-    estimate_prior_method = "EM",
-    min_abs_corr          = 0.0,
-    verbose               = FALSE,
-    min_n_rec=5,
+    L                     = 10
+    standardize           = FALSE
+    estimate_prior_method = "EM"
+    min_abs_corr          = 0.0
+    verbose               = FALSE
+    min_n_rec=5
 
     # --- misc ---
     temp_dir= "/project2/mstephens/wdenault/susie_mix/temp_plink/"
-    # avoids collisions across parallel calls
-) {
 
   library(tools)
   library(data.table)
@@ -222,11 +219,11 @@ run_susie_gene <- function(
   #SNP_rec_enough_point =  which( apply(geno_mix_all$recessive,2,sum)>min_n_rec)
   #n_rec_SNP= length(SNP_rec_enough_point)
 
- # if( n_rec_SNP==0){
- #    n_rec_SNP= ncol(geno_mix_all$additive)
-     geno_mix_all=cbind( geno_mix_all$additive,
-                          geno_mix_all$recessive  ,
-                          geno_mix_all$dominant)
+  # if( n_rec_SNP==0){
+  #    n_rec_SNP= ncol(geno_mix_all$additive)
+  geno_mix_all=cbind( geno_mix_all$additive,
+                      geno_mix_all$recessive  ,
+                      geno_mix_all$dominant)
   #}else{
   #  geno_mix_all=cbind( geno_mix_all$additive,
   #                      geno_mix_all$recessive[,SNP_rec_enough_point]  ,
@@ -235,17 +232,20 @@ run_susie_gene <- function(
 
 
   geno_all      =  matrix(as.double(geno_all),
-                         ncol=ncol(geno_all),
-                         nrow = nrow(geno_all))
+                          ncol=ncol(geno_all),
+                          nrow = nrow(geno_all))
   row.names(geno_all ) = row_name_geno
   geno_mix_all =  matrix(as.double(geno_mix_all),
-                       ncol=ncol(geno_mix_all),
-                       nrow = nrow(geno_mix_all))
+                         ncol=ncol(geno_mix_all),
+                         nrow = nrow(geno_mix_all))
   row.names(geno_mix_all)= row.names(geno_all)
   # Store per-tissue results.
   fits <- list()
   #target_tissue = all_tissues[1]
-  for (target_tissue in all_tissues) {
+
+
+  #### fine mapping ---
+ target_tissue = all_tissues[10]
 
     cat("\n=====================================\n")
     cat("Tissue:",target_tissue,"\n")
@@ -275,19 +275,9 @@ run_susie_gene <- function(
 
     geno  <- geno_all[ids,]
 
+
     geno_mix  <- geno_mix_all[ids,]
-    #remove also in sample to few counts
-    pb_col_insample= which(apply(geno,2,sum)< min_n_rec)
-    length( pb_col_insample)
-    dim(geno)
-    if ( length( pb_col_insample)>1){
-
-
-
-      geno = geno[ ,- pb_col]
-    }
-
-
+dim(geno_mix)
     pb_col= which(apply(geno_mix,2,sum)< min_n_rec)
     length(pb_col)
     if ( length(pb_col)>1){
@@ -310,7 +300,7 @@ run_susie_gene <- function(
       n_rec_rm= 0
       n_dom_rm=0
     }
-
+    dim(geno_mix)
     print(all(pheno$SUBJID == rownames(geno))) # Sanity check.
 
     # Skip tissues with too few samples for a meaningful fine-mapping fit.
@@ -338,16 +328,16 @@ run_susie_gene <- function(
                  min_abs_corr = min_abs_corr,verbose = verbose)
 
     fit_perm <- susie(geno,perm_y,L = L,standardize = standardize,
-                 estimate_prior_method = estimate_prior_method,
-                 min_abs_corr = min_abs_corr,verbose = verbose)
+                      estimate_prior_method = estimate_prior_method,
+                      min_abs_corr = min_abs_corr,verbose = verbose)
 
     fit_mix <- susie(geno_mix,pheno$y,L = L,standardize = standardize,
                      estimate_prior_method = estimate_prior_method,
                      min_abs_corr = min_abs_corr,verbose = verbose)
 
     fit_mix_perm <- susie(geno_mix,perm_y,L = L,standardize = standardize,
-                     estimate_prior_method = estimate_prior_method,
-                     min_abs_corr = min_abs_corr,verbose = verbose)
+                          estimate_prior_method = estimate_prior_method,
+                          min_abs_corr = min_abs_corr,verbose = verbose)
 
     fits[[target_tissue]] <- list(susie_add= fit,
                                   susie_add_perm= fit_perm,
@@ -364,13 +354,8 @@ run_susie_gene <- function(
                                   min_pv=min(pv),
                                   median_read  =median_read,
                                   mean_read = mean_read
-                                  )
+    )
 
-  }
 
-  # Clean up the temporary plink output files for this call.
-  file.remove(Sys.glob(paste0(plink_out_prefix,".*")))
 
-  # fits is a named list keyed by tissue, e.g. fits[["Lung"]]$sets
-  fits
-}
+
