@@ -42,7 +42,8 @@ run_susie_gene <- function(
     min_n_rec=5,
 
     # --- misc ---
-    plink_out_prefix  = tempfile("plink_")  # avoids collisions across parallel calls
+    temp_dir= "/project2/mstephens/wdenault/susie_mix/temp_plink/"
+    # avoids collisions across parallel calls
 ) {
 
   library(tools)
@@ -52,6 +53,8 @@ run_susie_gene <- function(
   source(gene_annot_fun)
 
   set.seed(seed)
+
+  plink_out_prefix  = paste0( temp_dir, "plink_",target_gene)
 
   # Read in the covariate data.
   cat("Importing covariate data.\n")
@@ -110,16 +113,21 @@ run_susie_gene <- function(
   pos0  <- tss - cis_window
   pos1  <- tss + cis_window
 
-  # Read in the genotype data for SNPs near the target gene (done once,
-  # reused across tissues since the cis-window doesn't change).
-  cat("Extracting genotype data from PLINK file.\n")
-  plink_call <- sprintf(paste("%s --bfile %s --chr %d --from-bp %d --to-bp %d",
-                              "--snps-only --max-alleles 2 --rm-dup exclude-all",
-                              "--threads 2 --memory 8000 --maf %g",
-                              "--recode A --out %s"),
-                        plink_exec,geno_file,chr,pos0,pos1,min_maf_plink,
-                        plink_out_prefix)
-  system(plink_call)
+
+  if (!file.exists (  paste0(plink_out_prefix,".raw"))){
+    # Read in the genotype data for SNPs near the target gene (done once,
+    # reused across tissues since the cis-window doesn't change).
+    cat("Extracting genotype data from PLINK file.\n")
+    plink_call <- sprintf(paste("%s --bfile %s --chr %d --from-bp %d --to-bp %d",
+                                "--snps-only --max-alleles 2 --rm-dup exclude-all",
+                                "--threads 2 --memory 8000 --maf %g",
+                                "--recode A --out %s"),
+                          plink_exec,geno_file,chr,pos0,pos1,min_maf_plink,
+                          plink_out_prefix)
+    system(plink_call)
+  }
+
+
   geno_file_raw <- paste0(plink_out_prefix,".raw")
   geno_all <- fread(geno_file_raw,sep = "\t",header = TRUE)
   class(geno_all) <- "data.frame"
@@ -128,7 +136,7 @@ run_susie_gene <- function(
   geno_all <- geno_all[,-(1:6)]
   geno_all <- as.matrix(geno_all)
   storage.mode(geno_all) <- "double"
-
+  row_name_geno= row.names(geno_all)
   # Remove SNPs with missing genotypes (across all individuals, done once).
   x <- colSums(is.na(geno_all))
   j <- which(x == 0)
@@ -211,24 +219,28 @@ run_susie_gene <- function(
     list(additive = X, dominant = dominant, recessive = recessive)
   }
   geno_mix_all= recode_snp_matrix( geno_all)
-  SNP_rec_enough_point =  which( apply(geno_mix_all$recessive,2,sum)>min_n_rec)
-  n_rec_SNP= length(SNP_rec_enough_point)
+  #SNP_rec_enough_point =  which( apply(geno_mix_all$recessive,2,sum)>min_n_rec)
+  #n_rec_SNP= length(SNP_rec_enough_point)
 
-  if( n_rec_SNP==0){
-    n_rec_SNP= ncol(geno_mix_all$additive)
-    geno_mix_all=cbind( geno_mix_all$additive,
-                        0*geno_mix_all$recessive  ,
-                        geno_mix_all$dominant)
-  }else{
-    geno_mix_all=cbind( geno_mix_all$additive,
-                        geno_mix_all$recessive[,SNP_rec_enough_point]  ,
-                        geno_mix_all$dominant)
-  }
+ # if( n_rec_SNP==0){
+ #    n_rec_SNP= ncol(geno_mix_all$additive)
+     geno_mix_all=cbind( geno_mix_all$additive,
+                          geno_mix_all$recessive  ,
+                          geno_mix_all$dominant)
+  #}else{
+  #  geno_mix_all=cbind( geno_mix_all$additive,
+  #                      geno_mix_all$recessive[,SNP_rec_enough_point]  ,
+  #                      geno_mix_all$dominant)
+  #}
 
 
- #geno_mix_all=  matrix(as.double(geno_mix_all),
-  #                      ncol=ncol(geno_mix_all),
-  #                      nrow = nrow(geno_mix_all))
+  geno_all      =  matrix(as.double(geno_all),
+                         ncol=ncol(geno_all),
+                         nrow = nrow(geno_all))
+  row.names(geno_all ) = row_name_geno
+  geno_mix_all =  matrix(as.double(geno_mix_all),
+                       ncol=ncol(geno_mix_all),
+                       nrow = nrow(geno_mix_all))
   row.names(geno_mix_all)= row.names(geno_all)
   # Store per-tissue results.
   fits <- list()
@@ -267,6 +279,29 @@ run_susie_gene <- function(
     geno_mix  <- geno_mix_all[ids,]
 
 
+    geno_mix  <- geno_mix_all[ids,]
+
+    pb_col= which(apply(geno_mix,2,sum)< min_n_rec)
+    if ( length(pb_col)>1){
+      n_rec_rm= 0
+      n_dom_rm=0
+
+      if( length( which(pb_col <2*ncol(geno)+1))>1){
+        n_rec_rm=length( which(pb_col <2*ncol(geno)+1))
+
+      }
+      if(length( which(pb_col >2*ncol(geno)+1))){
+        n_dom_rm=length( which(pb_col <2*ncol(geno)+1))
+      }
+
+
+
+      geno_mix[ , -pb_col]= geno_mix[ ,- pb_col]
+    }else{
+
+      n_rec_rm= 0
+      n_dom_rm=0
+    }
 
     print(all(pheno$SUBJID == rownames(geno))) # Sanity check.
 
@@ -312,6 +347,8 @@ run_susie_gene <- function(
                                   susie_mix=fit_mix,
                                   susie_mix_perm= fit_mix_perm,
                                   n_SNP= ncol(geno),
+                                  n_rec_rm= n_rec_rm,
+                                  n_dom_rm=n_dom_rm,
                                   n_ind= length(perm_y),
                                   mean_phe= mean(perm_y),
 
