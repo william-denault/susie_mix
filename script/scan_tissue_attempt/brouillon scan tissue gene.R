@@ -275,9 +275,19 @@
 
     geno  <- geno_all[ids,]
 
-
     geno_mix  <- geno_mix_all[ids,]
-dim(geno_mix)
+    #remove also in sample to few counts
+    pb_col_insample= which(apply(geno,2,sum)< min_n_rec)
+    length( pb_col_insample)
+    dim(geno)
+    if ( length( pb_col_insample)>1){
+
+
+
+      geno = geno[ ,- pb_col]
+    }
+
+
     pb_col= which(apply(geno_mix,2,sum)< min_n_rec)
     length(pb_col)
     if ( length(pb_col)>1){

@@ -59,8 +59,9 @@ int_df= res_1cs[ which(res_1cs$n_dom== 1),]
    verbose               = FALSE
 
    # --- misc ---
-   plink_out_prefix  = tempfile("plink_")  # avoids collisions across parallel calls
+   # avoids collisions across parallel calls
 
+   temp_dir= "/project2/mstephens/wdenault/susie_mix/temp_plink/"
 
    library(tools)
    library(data.table)
@@ -69,7 +70,7 @@ int_df= res_1cs[ which(res_1cs$n_dom== 1),]
    source(gene_annot_fun)
 
    set.seed(seed)
-
+   plink_out_prefix  = paste0( temp_dir, "plink_",target_gene)
    # Read in the covariate data.
    cat("Importing covariate data.\n")
    cov1 <- read.table(subject_pheno_file,
@@ -129,14 +130,21 @@ int_df= res_1cs[ which(res_1cs$n_dom== 1),]
 
    # Read in the genotype data for SNPs near the target gene (done once,
    # reused across tissues since the cis-window doesn't change).
-   cat("Extracting genotype data from PLINK file.\n")
-   plink_call <- sprintf(paste("%s --bfile %s --chr %d --from-bp %d --to-bp %d",
-                               "--snps-only --max-alleles 2 --rm-dup exclude-all",
-                               "--threads 2 --memory 8000 --maf %g",
-                               "--recode A --out %s"),
-                         plink_exec,geno_file,chr,pos0,pos1,min_maf_plink,
-                         plink_out_prefix)
-   system(plink_call)
+
+   if (!file.exists (  paste0(plink_out_prefix,".raw"))){
+     # Read in the genotype data for SNPs near the target gene (done once,
+     # reused across tissues since the cis-window doesn't change).
+     cat("Extracting genotype data from PLINK file.\n")
+     plink_call <- sprintf(paste("%s --bfile %s --chr %d --from-bp %d --to-bp %d",
+                                 "--snps-only --max-alleles 2 --rm-dup exclude-all",
+                                 "--threads 2 --memory 8000 --maf %g",
+                                 "--recode A --out %s"),
+                           plink_exec,geno_file,chr,pos0,pos1,min_maf_plink,
+                           plink_out_prefix)
+     system(plink_call)
+   }
+
+
    geno_file_raw <- paste0(plink_out_prefix,".raw")
    geno_all <- fread(geno_file_raw,sep = "\t",header = TRUE)
    class(geno_all) <- "data.frame"
@@ -232,8 +240,42 @@ int_df= res_1cs[ which(res_1cs$n_dom== 1),]
    pheno <- pheno[rows,]
 
    geno  <- geno_all[ids,]
+
    geno_mix  <- geno_mix_all[ids,]
-   print(all(pheno$SUBJID == rownames(geno))) # Sanity check.
+   #remove also in sample to few counts
+   pb_col_insample= which(apply(geno,2,sum)< min_n_rec)
+   length( pb_col_insample)
+   dim(geno)
+   if ( length( pb_col_insample)>1){
+
+
+
+     geno = geno[ ,- pb_col]
+   }
+
+
+   pb_col= which(apply(geno_mix,2,sum)< min_n_rec)
+   length(pb_col)
+   if ( length(pb_col)>1){
+     n_rec_rm= 0
+     n_dom_rm=0
+
+     if( length( which(pb_col <2*ncol(geno)+1))>1){
+       n_rec_rm=length( which(pb_col <2*ncol(geno)+1))
+
+     }
+     if(length( which(pb_col >2*ncol(geno)+1))>1){
+       n_dom_rm=length( which(pb_col >2*ncol(geno)+1))
+     }
+
+
+
+     geno_mix = geno_mix[ ,- pb_col]
+   }else{
+
+     n_rec_rm= 0
+     n_dom_rm=0
+   }
 
    # Skip tissues with too few samples for a meaningful fine-mapping fit.
 

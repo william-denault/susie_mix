@@ -10,7 +10,8 @@ tissue =  "Skin"
 target_gene="ARPC2"
 tissue =  "Muscle"
 
-target_gene="CCZ1"
+target_gene="GTF2H2"
+tissue="Breast"
 
 
 # --- paths ---
@@ -238,8 +239,8 @@ fits <- list()
 
      fit_mix$sets
      ncol(geno)+fit$sets$cs$L1[1]
-SNP=geno[ , out[[k]]$susie_add$sets$cs [[1]][1]]
-     boxplot(pheno$y~ SNP, main= paste(target_gene, "Expression level vs SNP fine mapped\n n = " , length(pheno$y)))
+SNP=geno[ , out[[k]]$susie_mix$sets$cs [[2]][1]  - 2* out[[k]]$n_SNP]
+     boxplot(pheno$y~ SNP, main= paste(target_gene, "Expression level vs SNP fine mapped\n n 0 variant = 14, n 1 variant = 245, n 0 variant = 10 " ))
 
 
      table(geno[ , out[[k]]$susie_add$sets$cs$L1[[1]][1]] )

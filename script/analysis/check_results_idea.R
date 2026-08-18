@@ -290,11 +290,6 @@ res_1cs$t_log_d=-2*(res_1cs$log_lik_add- res_1cs$log_lik_mix)
 
 table(res_1cs$gene)
 
- #ZFAT, #KRT6A #TTC38    TXNL4B
-res_1cs[ which(res_1cs$gene== "ZFAT"),]
-
-res_idx[ order(res_idx$ncs_susie_mix, decreasing = TRUE),]
-res_idx[ order(res_idx$ncs_susie_mix),]
 
 
 res_idx[ order(res_idx$ncs_susie, decreasing = TRUE),]
@@ -392,3 +387,4 @@ par(mfrow=c(1,1))
 out[[k]]$mean_read
 out[[k]]$susie_add$sets
 out[[k]]$susie_mix$sets
+
