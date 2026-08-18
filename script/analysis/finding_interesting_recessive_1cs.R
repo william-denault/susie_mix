@@ -15,7 +15,7 @@ res_1cs[ which(res_1cs$n_dom== 1),]
 int_df= res_1cs[ which(res_1cs$n_rec== 1),]
 
 
-
+min_n_rec=5
 
 for (  l in 1:nrow(int_df) ){
 
