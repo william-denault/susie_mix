@@ -564,7 +564,7 @@ for (l in 1:nrow(int_df)) {
     selected_snp_name,
     " (",
     selected_coding,
-    "): n0 = ",
+    "):\n n0 = ",
     number["0"],
     ", n1 = ",
     number["1"],
