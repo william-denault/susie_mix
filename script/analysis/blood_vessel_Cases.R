@@ -2,11 +2,26 @@
 #checking at Blood vessel Braim and Nerve
 # Found a lot of case in blood vessel in which additive and recessive coding
 #seems to improve fitt
-
-
+"ABCA1"
+"RIN3"
 "ECHDC3"
 "GRN"
-
+"AGRN"
+"IDUA"#check nerve as well
+"FAM193B"#nerve intereting case as well
+"USP6NL"
+"CLU"
+"ICA1"
+"ABCA1"
+"PLEKHA1"
+"VMAC"
+"MAF"
+"KAT8"
+"ABCA7"
+"CD33"
+"ADAM10"
+"REXO1"
+"CD33"
 ## Case disagrement ----
 
 gene_name= "RIN3"
