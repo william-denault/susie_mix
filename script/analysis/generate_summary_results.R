@@ -1,7 +1,7 @@
 # summarize_susie_results.R
 
 path_res <- "/project2/mstephens/wdenault/susie_mix/results/"
-
+length(list.files(path_res))
 summary_file <- paste0(
   "/project2/mstephens/wdenault/susie_mix/",
   "res_summary.RData"

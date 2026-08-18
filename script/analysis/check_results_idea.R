@@ -1,5 +1,6 @@
 
 load("/project2/mstephens/wdenault/susie_mix/res_summary.RData")
+par(mfrow=c(1,1))
  sum(res_summary$perm_cs_susie)
  sum(res_summary$perm_cs_susie_mix)
 
@@ -118,6 +119,20 @@ table( res_idx$ overlap[which(res_idx$ncs_susie==1 & res_idx$ncs_susie_mix==1  )
 
 ### region in which suise and susie mix give a single CS that are different -----
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
  res_1cs=  res_idx[which(res_idx$ncs_susie==1 & res_idx$ncs_susie_mix==1 & res_idx$overlap==0),]
 res_1cs[ which(res_1cs$n_dom== 1),]
 
@@ -201,7 +216,7 @@ susie_plot(out[[k]]$susie_add, y="PIP", main="Blood")
 susie_plot(out[[k]]$susie_mix, y="PIP")
 
 abline(v=out[[k]]$n_SNP+1, col="red", lty=2)
-abline(v=2*out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
 par(mfrow=c(1,1))
 
 
@@ -217,6 +232,9 @@ k=9
 par(mfrow=c(1,2))
 susie_plot(out[[k]]$susie_add, y="PIP", main="Heart")
 susie_plot(out[[k]]$susie_mix, y="PIP")
+
+abline(v=out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
 par(mfrow=c(1,1))
 
 

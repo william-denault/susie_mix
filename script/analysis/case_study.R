@@ -1,12 +1,114 @@
 ####Simple cases study
 
+## Nice secondary recessive secondary signal that is additive ----
+out<- readRDS("/project2/mstephens/wdenault/susie_mix/results/AGAP4.rds")
+names(out)
+k=7
+par(mfrow=c(1,2))
 
-## leaninng torward dominant ----
+susie_plot(out[[k]]$susie_add, y="PIP", main="Colon")
+susie_plot(out[[k]]$susie_mix, y="PIP")
 
-gene_name= "SCAMP5"
+
+abline(v=out[[k]]$n_SNP+1, col="red", lty=2)
+
+abline(v=out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
+par(mfrow=c(1,1))
+out[[k]]$mean_read
+## Case disagrement ----
+
+gene_name= "RIN3"
 out<- readRDS(paste0("/project2/mstephens/wdenault/susie_mix/results/",gene_name,".rds"))
 names(out)
-k=8
+
+par(mfrow=c(1,2))
+
+k=4
+susie_plot(out[[k]]$susie_add, y="PIP", main=paste( gene_name, names(out)[k], "addivite"))
+susie_plot(out[[k]]$susie_mix, y="PIP", main=paste( gene_name, names(out)[k], "mix"))
+
+abline(v= out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
+par(mfrow=c(1,1))
+
+
+
+### Case susie prefere recessive
+
+gene_name= "ABCA1"
+out<- readRDS(paste0("/project2/mstephens/wdenault/susie_mix/results/",gene_name,".rds"))
+names(out)
+
+par(mfrow=c(1,2))
+
+k=4
+susie_plot(out[[k]]$susie_add, y="PIP", main=paste( gene_name, names(out)[k], "addivite"))
+susie_plot(out[[k]]$susie_mix, y="PIP", main=paste( gene_name, names(out)[k], "mix"))
+
+abline(v= out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
+par(mfrow=c(1,1))
+
+## Case 2 recessive 0 ----
+
+gene_name= "ABCA7"
+out<- readRDS(paste0("/project2/mstephens/wdenault/susie_mix/results/",gene_name,".rds"))
+names(out)
+
+par(mfrow=c(1,2))
+
+k=4
+susie_plot(out[[k]]$susie_add, y="PIP", main=paste( gene_name, names(out)[k], "addivite"))
+susie_plot(out[[k]]$susie_mix, y="PIP", main=paste( gene_name, names(out)[k], "mix"))
+
+abline(v= out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
+par(mfrow=c(1,1))
+
+
+
+gene_name= "CD33"
+out<- readRDS(paste0("/project2/mstephens/wdenault/susie_mix/results/",gene_name,".rds"))
+names(out)
+
+par(mfrow=c(1,2))
+
+k=4
+susie_plot(out[[k]]$susie_add, y="PIP", main=paste( gene_name, names(out)[k], "addivite"))
+susie_plot(out[[k]]$susie_mix, y="PIP", main=paste( gene_name, names(out)[k], "mix"))
+
+abline(v= out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
+par(mfrow=c(1,1))
+
+
+
+
+
+
+gene_name= "ADAM10"
+out<- readRDS(paste0("/project2/mstephens/wdenault/susie_mix/results/",gene_name,".rds"))
+names(out)
+
+par(mfrow=c(1,2))
+
+k=4
+susie_plot(out[[k]]$susie_add, y="PIP", main=paste( gene_name, names(out)[k], "addivite"))
+susie_plot(out[[k]]$susie_mix, y="PIP", main=paste( gene_name, names(out)[k], "mix"))
+
+abline(v= out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
+par(mfrow=c(1,1))
+
+### ABO recoding effect more concentrated posterior-----
+gene_name= "ABO"#"ABO"#"CCZ1"
+out<- readRDS(paste0("/project2/mstephens/wdenault/susie_mix/results/",gene_name,".rds"))
+
+
+
+names(out)
+k=20
 par(mfrow=c(1,2))
 
 
@@ -15,20 +117,14 @@ susie_plot(out[[k]]$susie_mix, y="PIP", main=paste( gene_name, names(out)[k], "m
 
 
 abline(v= out[[k]]$n_SNP+1, col="red", lty=2)
-abline(v=out[[k]]$n_rec_SNP+out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
 par(mfrow=c(1,1))
-out[[k]]$mean_read
-
-out[[k]]$n_SNP
-
 out[[k]]$susie_add$sets
-
 out[[k]]$susie_mix$sets
 
+offset= -out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1
 
-
-out[[k]]$n_SNP+out[[k]]$susie_add$sets$cs$L1
-
+out[[k]]$susie_mix$sets$cs$L1-offset
 
 
 
@@ -39,15 +135,24 @@ gene_name= "SCAMP5"
 out<- readRDS(paste0("/project2/mstephens/wdenault/susie_mix/results/",gene_name,".rds"))
 names(out)
 k=9
-par(mfrow=c(1,2))
+par(mfrow=c(2,2))
 
-
+k=9
 susie_plot(out[[k]]$susie_add, y="PIP", main=paste( gene_name, names(out)[k], "addivite"))
 susie_plot(out[[k]]$susie_mix, y="PIP", main=paste( gene_name, names(out)[k], "mix"))
 
 
 abline(v=+out[[k]]$n_SNP+1, col="red", lty=2)
-abline(v=out[[k]]$n_rec_SNP+out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
+
+
+k=20
+susie_plot(out[[k]]$susie_add, y="PIP", main=paste( gene_name, names(out)[k], "addivite"))
+susie_plot(out[[k]]$susie_mix, y="PIP", main=paste( gene_name, names(out)[k], "mix"))
+
+
+abline(v=+out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
 par(mfrow=c(1,1))
 out[[k]]$mean_read
 
@@ -70,7 +175,7 @@ susie_plot(out[[k]]$susie_mix, y="PIP", main=paste( gene_name, names(out)[k], "m
 
 
 abline(v=+out[[k]]$n_SNP+1, col="red", lty=2)
-abline(v=out[[k]]$n_rec_SNP+out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
 par(mfrow=c(1,1))
 out[[k]]$mean_read
 
@@ -88,7 +193,7 @@ susie_plot(out[[k]]$susie_mix, y="PIP", main=paste( gene_name, names(out)[k], "m
 
 
 abline(v=+out[[k]]$n_SNP+1, col="red", lty=2)
-abline(v=out[[k]]$n_rec_SNP+out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
 par(mfrow=c(1,1))
 out[[k]]$mean_read
 
@@ -122,7 +227,7 @@ susie_plot(out[[k]]$susie_mix, y="PIP", main=paste( gene_name, names(out)[k], "m
 
 
 abline(v=+out[[k]]$n_SNP+1, col="red", lty=2)
-abline(v=out[[k]]$n_rec_SNP+out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
 par(mfrow=c(1,1))
 out[[k]]$mean_read
 
@@ -156,7 +261,7 @@ for ( k in which(names(out) %in% res_idx$tissue[ which (res_idx$gene==gene_name)
 
 
   abline(v=out[[k]]$n_SNP+1, col="red", lty=2)
- abline(v=out[[k]]$n_rec_SNP+out[[k]]$n_SNP+1, col="red", lty=2)
+ abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
 
 }
 
@@ -169,7 +274,7 @@ susie_plot(out[[k]]$susie_mix, y="PIP", main=paste( gene_name, names(out)[k], "m
 
 
 abline(v=out[[k]]$n_SNP+1, col="red", lty=2)
-abline(v=out[[k]]$n_rec_SNP+out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
 
 
 
@@ -180,7 +285,7 @@ susie_plot(out[[k]]$susie_mix, y="PIP", main=paste( gene_name, names(out)[k], "m
 
 
 abline(v=out[[k]]$n_SNP+1, col="red", lty=2)
-abline(v=out[[k]]$n_rec_SNP+out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
 
 
 k=20
@@ -190,7 +295,7 @@ susie_plot(out[[k]]$susie_mix, y="PIP", main=paste( gene_name, names(out)[k], "m
 
 
 abline(v=out[[k]]$n_SNP+1, col="red", lty=2)
-abline(v=out[[k]]$n_rec_SNP+out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
 
 
 k=25
@@ -200,7 +305,7 @@ susie_plot(out[[k]]$susie_mix, y="PIP", main=paste( gene_name, names(out)[k], "m
 
 
 abline(v=out[[k]]$n_SNP+1, col="red", lty=2)
-abline(v=out[[k]]$n_rec_SNP+out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
 
 par(mfrow=c(1,1))
 out[[k]]$mean_read
@@ -231,7 +336,7 @@ susie_plot(out[[k]]$susie_mix, y="PIP", main=paste( gene_name, names(out)[k], "m
 
 
 abline(v=out[[k]]$n_SNP+1, col="red", lty=2)
-abline(v=out[[k]]$n_rec_SNP+out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
 par(mfrow=c(1,1))
 out[[k]]$mean_read
 
@@ -263,7 +368,7 @@ susie_plot(out[[k]]$susie_mix, y="PIP")
 
 
 abline(v=out[[k]]$n_SNP+1, col="red", lty=2)
-abline(v=out[[k]]$n_rec_SNP+out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
 
 k=14
 
@@ -271,7 +376,7 @@ k=14
 susie_plot(out[[k]]$susie_add, y="PIP", main="Nerve")
 susie_plot(out[[k]]$susie_mix, y="PIP")
 abline(v=out[[k]]$n_SNP+1, col="red", lty=2)
-abline(v=out[[k]]$n_rec_SNP+out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
 
 k=20
 
@@ -279,7 +384,7 @@ k=20
 susie_plot(out[[k]]$susie_add, y="PIP", main="Skin")
 susie_plot(out[[k]]$susie_mix, y="PIP")
 abline(v=out[[k]]$n_SNP+1, col="red", lty=2)
-abline(v=out[[k]]$n_rec_SNP+out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
 
 
 
@@ -303,7 +408,7 @@ susie_plot(out[[k]]$susie_mix, y="PIP")
 
 
 abline(v=out[[k]]$n_SNP+1, col="red", lty=2)
-abline(v=out[[k]]$n_rec_SNP+out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
 
 k=4
 
@@ -311,7 +416,7 @@ k=4
 susie_plot(out[[k]]$susie_add, y="PIP", main="Blood Vessel")
 susie_plot(out[[k]]$susie_mix, y="PIP")
 abline(v=out[[k]]$n_SNP+1, col="red", lty=2)
-abline(v=out[[k]]$n_rec_SNP+out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
 
 k=8
 
@@ -319,25 +424,25 @@ k=8
 susie_plot(out[[k]]$susie_add, y="PIP", main="Esophagus")
 susie_plot(out[[k]]$susie_mix, y="PIP")
 abline(v=out[[k]]$n_SNP+1, col="red", lty=2)
-abline(v=out[[k]]$n_rec_SNP+out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
 k=14
 
 susie_plot(out[[k]]$susie_add, y="PIP", main="Nerve")
 susie_plot(out[[k]]$susie_mix, y="PIP")
 abline(v=out[[k]]$n_SNP+1, col="red", lty=2)
-abline(v=out[[k]]$n_rec_SNP+out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
 k=20
 
 susie_plot(out[[k]]$susie_add, y="PIP", main="Skin")
 susie_plot(out[[k]]$susie_mix, y="PIP")
 abline(v=out[[k]]$n_SNP+1, col="red", lty=2)
-abline(v=out[[k]]$n_rec_SNP+out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
 k=25
 
 susie_plot(out[[k]]$susie_add, y="PIP", main="Thyroid")
 susie_plot(out[[k]]$susie_mix, y="PIP")
 abline(v=out[[k]]$n_SNP+1, col="red", lty=2)
-abline(v=out[[k]]$n_rec_SNP+out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
 par(mfrow=c(1,1))
 out[[k]]$mean_read
 
@@ -366,7 +471,7 @@ susie_plot(out[[k]]$susie_mix, y="PIP")
 
 
 abline(v=out[[k]]$n_SNP+1, col="red", lty=2)
-abline(v=out[[k]]$n_rec_SNP+out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
 par(mfrow=c(1,1))
 out[[k]]$mean_read
 
@@ -381,20 +486,7 @@ out[[k]]$susie_mix$sets
 out[[k]]$n_SNP+out[[k]]$susie_add$sets$cs$L1
 
 
-## Nice secondary recessive secondary signal that is additive ----
-out<- readRDS("/project2/mstephens/wdenault/susie_mix/results/AGAP4.rds")
-names(out)
-k=7
-par(mfrow=c(1,2))
 
-susie_plot(out[[k]]$susie_add, y="PIP", main="Colon")
-susie_plot(out[[k]]$susie_mix, y="PIP")
-
-
-abline(v=out[[k]]$n_SNP+1, col="red", lty=2)
-abline(v=out[[k]]$n_rec_SNP+out[[k]]$n_SNP+1, col="red", lty=2)
-par(mfrow=c(1,1))
-out[[k]]$mean_read
 
 
 
@@ -415,7 +507,7 @@ k=20
 susie_plot(out[[k]]$susie_add, y="PIP", main="Skin")
 susie_plot(out[[k]]$susie_mix, y="PIP")
 abline(v=out[[k]]$n_SNP+1, col="red", lty=2)
-abline(v=out[[k]]$n_rec_SNP+out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
 par(mfrow=c(1,1))
 
 out[[k]]$n_SNP
@@ -431,5 +523,6 @@ k=4
 susie_plot(out[[k]]$susie_add, y="PIP", main="Blood Vessel")
 susie_plot(out[[k]]$susie_mix, y="PIP")
 abline(v=out[[k]]$n_SNP+1, col="red", lty=2)
-abline(v=out[[k]]$n_rec_SNP+out[[k]]$n_SNP+1, col="red", lty=2)
+abline(v=-out[[k]]$n_rec_rm+2*out[[k]]$n_SNP+1, col="red", lty=2)
 par(mfrow=c(1,1))
+
