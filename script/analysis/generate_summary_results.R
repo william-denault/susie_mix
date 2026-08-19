@@ -1,7 +1,7 @@
 # summarize_susie_results.R
 
 path_res <- "/project2/mstephens/wdenault/susie_mix/results/"
-length(list.files(path_res))
+
 summary_file <- paste0(
   "/project2/mstephens/wdenault/susie_mix/",
   "res_summary.RData"
@@ -92,6 +92,35 @@ value_or_na <- function(x) {
 }
 
 
+safe_percentage <- function(
+    numerator,
+    denominator) {
+
+  if (
+    length(denominator) == 0L ||
+    is.na(denominator) ||
+    denominator <= 0
+  ) {
+    return(NA_real_)
+  }
+
+  100 * numerator / denominator
+}
+
+
+clean_snp_vector <- function(x) {
+
+  x <- as.character(x)
+
+  unique(
+    x[
+      !is.na(x) &
+        nzchar(x)
+    ]
+  )
+}
+
+
 validate_predictor_map <- function(
     fit,
     predictor_map,
@@ -135,6 +164,20 @@ validate_predictor_map <- function(
     )
   }
 
+  expected_index <- seq_len(
+    nrow(predictor_map)
+  )
+
+  if (!identical(
+    as.integer(predictor_map$predictor_index),
+    expected_index
+  )) {
+    stop(
+      map_name,
+      "$predictor_index is not aligned with its row order."
+    )
+  }
+
   invisible(TRUE)
 }
 
@@ -159,15 +202,125 @@ get_cs_snp_sets <- function(
     cs,
     function(index) {
 
-      snps <- predictor_map$snp[index]
+      index <- as.integer(index)
 
-      unique(
-        snps[
-          !is.na(snps)
-        ]
+      if (
+        anyNA(index) ||
+        any(index < 1L) ||
+        any(index > nrow(predictor_map))
+      ) {
+        stop(
+          "A credible set contains an invalid predictor index."
+        )
+      }
+
+      clean_snp_vector(
+        predictor_map$snp[index]
       )
     }
   )
+}
+
+
+get_cs_predictor_indices <- function(fit) {
+
+  cs <- get_cs(fit)
+
+  if (length(cs) == 0L) {
+    return(integer(0))
+  }
+
+  index <- unique(
+    as.integer(
+      unlist(
+        cs,
+        use.names = FALSE
+      )
+    )
+  )
+
+  index[
+    !is.na(index)
+  ]
+}
+
+
+get_preferred_mix_coding <- function(
+    fit,
+    mix_predictor_map,
+    snps,
+    tie_tolerance = 1e-10) {
+
+  if (length(snps) == 0L) {
+    return(
+      setNames(
+        character(0),
+        character(0)
+      )
+    )
+  }
+
+  if (
+    is.null(fit$pip) ||
+    length(fit$pip) != nrow(mix_predictor_map)
+  ) {
+    stop(
+      "The mixed-model PIP vector does not match ",
+      "the mixed predictor map."
+    )
+  }
+
+  preferred_coding <- vapply(
+    snps,
+    function(snp) {
+
+      index <- which(
+        mix_predictor_map$snp == snp
+      )
+
+      if (length(index) == 0L) {
+        return("unresolved")
+      }
+
+      snp_pip <- fit$pip[index]
+      valid <- is.finite(snp_pip)
+
+      if (!any(valid)) {
+        return("unresolved")
+      }
+
+      index <- index[valid]
+      snp_pip <- snp_pip[valid]
+
+      maximum_pip <- max(snp_pip)
+
+      winner <- index[
+        snp_pip >= maximum_pip - tie_tolerance
+      ]
+
+      winner_coding <- unique(
+        as.character(
+          mix_predictor_map$coding[winner]
+        )
+      )
+
+      winner_coding <- winner_coding[
+        !is.na(winner_coding) &
+          nzchar(winner_coding)
+      ]
+
+      if (length(winner_coding) == 1L) {
+        return(winner_coding)
+      }
+
+      "ambiguous"
+    },
+    character(1L)
+  )
+
+  names(preferred_coding) <- snps
+
+  preferred_coding
 }
 
 
@@ -176,6 +329,18 @@ calculate_cs_overlap <- function(
     mix_fit,
     add_predictor_map,
     mix_predictor_map) {
+
+  validate_predictor_map(
+    add_fit,
+    add_predictor_map,
+    "add_predictor_map"
+  )
+
+  validate_predictor_map(
+    mix_fit,
+    mix_predictor_map,
+    "mix_predictor_map"
+  )
 
   add_cs <- get_cs_snp_sets(
     add_fit,
@@ -187,6 +352,7 @@ calculate_cs_overlap <- function(
     mix_predictor_map
   )
 
+  # Pairwise biological-SNP overlap between credible sets.
   overlap_matrix <- matrix(
     0L,
     nrow = length(add_cs),
@@ -215,41 +381,265 @@ calculate_cs_overlap <- function(
     }
   }
 
-  add_union <- unique(
-    unlist(
-      add_cs,
-      use.names = FALSE
+  # Collect all predictor indices appearing in reported CSs.
+  add_cs_index <- get_cs_predictor_indices(
+    add_fit
+  )
+
+  mix_cs_index <- get_cs_predictor_indices(
+    mix_fit
+  )
+
+  if (
+    any(add_cs_index < 1L) ||
+    any(add_cs_index > nrow(add_predictor_map))
+  ) {
+    stop(
+      "The additive fit contains an invalid CS predictor index."
+    )
+  }
+
+  if (
+    any(mix_cs_index < 1L) ||
+    any(mix_cs_index > nrow(mix_predictor_map))
+  ) {
+    stop(
+      "The mixed fit contains an invalid CS predictor index."
+    )
+  }
+
+  add_cs_members <- add_predictor_map[
+    add_cs_index,
+    ,
+    drop = FALSE
+  ]
+
+  mix_cs_members <- mix_predictor_map[
+    mix_cs_index,
+    ,
+    drop = FALSE
+  ]
+
+  # Distinct biological SNPs across all reported CSs.
+  add_snps <- clean_snp_vector(
+    add_cs_members$snp
+  )
+
+  mix_snps <- clean_snp_vector(
+    mix_cs_members$snp
+  )
+
+  # Biological SNPs represented by each coding in mixed CSs.
+  mix_additive_snps <- clean_snp_vector(
+    mix_cs_members$snp[
+      mix_cs_members$coding == "additive"
+    ]
+  )
+
+  mix_nonadditive_snps <- clean_snp_vector(
+    mix_cs_members$snp[
+      mix_cs_members$coding %in%
+        c("dominant", "recessive")
+    ]
+  )
+
+  # SNP overlap ignores coding.
+  shared_snps <- intersect(
+    add_snps,
+    mix_snps
+  )
+
+  add_snps_not_retained <- setdiff(
+    add_snps,
+    mix_snps
+  )
+
+  # Coding overlap requires the additive coding itself to occur
+  # in a mixed-model credible set.
+  additive_coding_overlap <- intersect(
+    add_snps,
+    mix_additive_snps
+  )
+
+  # Additive-CS SNPs retained in mixed CSs only through a
+  # dominant or recessive predictor.
+  other_coding_only <- intersect(
+    add_snps,
+    setdiff(
+      mix_nonadditive_snps,
+      mix_additive_snps
     )
   )
 
-  mix_union <- unique(
-    unlist(
-      mix_cs,
-      use.names = FALSE
-    )
+  # Among shared biological SNPs, identify the coding-specific
+  # predictor with the largest mixed-model PIP.
+  preferred_shared_coding <- get_preferred_mix_coding(
+    fit = mix_fit,
+    mix_predictor_map = mix_predictor_map,
+    snps = shared_snps
+  )
+
+  n_preferred_additive <- sum(
+    preferred_shared_coding == "additive"
+  )
+
+  n_preferred_dominant <- sum(
+    preferred_shared_coding == "dominant"
+  )
+
+  n_preferred_recessive <- sum(
+    preferred_shared_coding == "recessive"
+  )
+
+  n_preferred_nonadditive <- sum(
+    preferred_shared_coding %in%
+      c("dominant", "recessive")
+  )
+
+  n_preference_ambiguous <- sum(
+    preferred_shared_coding %in%
+      c("ambiguous", "unresolved")
   )
 
   list(
     overlap_matrix = overlap_matrix,
 
-    # Number of distinct biological SNPs in both analyses.
-    n_shared_snps = length(
-      intersect(
-        add_union,
-        mix_union
+    n_add_cs_snps = length(add_snps),
+    n_mix_cs_snps = length(mix_snps),
+
+    # Biological-SNP overlap, irrespective of coding.
+    overlap_snp = length(shared_snps),
+
+    pct_add_cs_snps_retained = safe_percentage(
+      length(shared_snps),
+      length(add_snps)
+    ),
+
+    n_add_cs_snps_not_retained = length(
+      add_snps_not_retained
+    ),
+
+    pct_add_cs_snps_not_retained = safe_percentage(
+      length(add_snps_not_retained),
+      length(add_snps)
+    ),
+
+    # Additive-coding overlap.
+    overlap_coding = length(
+      additive_coding_overlap
+    ),
+
+    pct_add_cs_snps_retained_additive_coding = (
+      safe_percentage(
+        length(additive_coding_overlap),
+        length(add_snps)
       )
     ),
 
-    # Number of CS pairs sharing at least one biological SNP.
+    # Additive-CS SNPs retained only under nonadditive coding.
+    n_add_cs_snps_other_coding_only = length(
+      other_coding_only
+    ),
+
+    pct_add_cs_snps_other_coding_only = (
+      safe_percentage(
+        length(other_coding_only),
+        length(add_snps)
+      )
+    ),
+
+    pct_shared_snps_other_coding_only = (
+      safe_percentage(
+        length(other_coding_only),
+        length(shared_snps)
+      )
+    ),
+
+    # Highest-PIP coding among shared SNPs.
+    n_shared_snps_preferred_additive = (
+      n_preferred_additive
+    ),
+
+    n_shared_snps_preferred_dominant = (
+      n_preferred_dominant
+    ),
+
+    n_shared_snps_preferred_recessive = (
+      n_preferred_recessive
+    ),
+
+    n_shared_snps_preferred_nonadditive = (
+      n_preferred_nonadditive
+    ),
+
+    n_shared_snps_preference_ambiguous = (
+      n_preference_ambiguous
+    ),
+
+    pct_shared_snps_preferred_nonadditive = (
+      safe_percentage(
+        n_preferred_nonadditive,
+        length(shared_snps)
+      )
+    ),
+
+    # Existing CS-pair overlap summaries.
     n_overlapping_cs_pairs = sum(
       overlap_matrix > 0L
     ),
 
-    # Total pairwise number of shared SNPs.
     pairwise_overlap_sum = sum(
       overlap_matrix
     )
   )
+}
+
+
+get_cs_lead_predictor <- function(
+    fit,
+    cs,
+    cs_number) {
+
+  index <- as.integer(
+    cs[[cs_number]]
+  )
+
+  if (length(index) == 0L) {
+    return(NA_integer_)
+  }
+
+  cs_index <- fit$sets$cs_index
+
+  if (
+    !is.null(cs_index) &&
+    length(cs_index) >= cs_number &&
+    !is.na(cs_index[cs_number]) &&
+    cs_index[cs_number] >= 1L &&
+    cs_index[cs_number] <= nrow(fit$alpha)
+  ) {
+
+    probability <- fit$alpha[
+      cs_index[cs_number],
+      index
+    ]
+
+  } else {
+
+    probability <- fit$pip[index]
+  }
+
+  valid <- is.finite(probability)
+
+  if (!any(valid)) {
+    return(index[1])
+  }
+
+  index <- index[valid]
+  probability <- probability[valid]
+
+  index[
+    which.max(probability)
+  ]
 }
 
 
@@ -275,19 +665,21 @@ count_mix_cs_types <- function(
     return(type_count)
   }
 
-  for (index in cs) {
+  for (i in seq_along(cs)) {
 
-    if (length(index) == 0L) {
+    lead_index <- get_cs_lead_predictor(
+      fit = fit,
+      cs = cs,
+      cs_number = i
+    )
+
+    if (is.na(lead_index)) {
       next
     }
 
-    # Preserve the original definition: classify each CS using
-    # its first, highest-priority predictor.
-    lead_index <- as.integer(index[1])
-
-    coding <- mix_predictor_map$coding[
-      lead_index
-    ]
+    coding <- as.character(
+      mix_predictor_map$coding[lead_index]
+    )
 
     if (
       !is.na(coding) &&
@@ -428,8 +820,23 @@ summarize_tissue <- function(
       get_cs(x$susie_mix_perm)
     ),
 
-    # SNP-level overlap.
-    overlap = overlap_real$n_shared_snps,
+    # Biological-SNP overlap, ignoring coding.
+    n_add_cs_snps = overlap_real$n_add_cs_snps,
+    n_mix_cs_snps = overlap_real$n_mix_cs_snps,
+    overlap_snp = overlap_real$overlap_snp,
+    pct_add_cs_snps_retained = (
+      overlap_real$pct_add_cs_snps_retained
+    ),
+    n_add_cs_snps_not_retained = (
+      overlap_real$n_add_cs_snps_not_retained
+    ),
+    pct_add_cs_snps_not_retained = (
+      overlap_real$pct_add_cs_snps_not_retained
+    ),
+
+    # Backward-compatible alias for older descriptive code.
+    overlap = overlap_real$overlap_snp,
+
     overlap_cs_pairs = (
       overlap_real$n_overlapping_cs_pairs
     ),
@@ -437,13 +844,92 @@ summarize_tissue <- function(
       overlap_real$pairwise_overlap_sum
     ),
 
-    # Permuted SNP-level overlap.
-    overlap_perm = overlap_perm$n_shared_snps,
+    # Coding-aware overlap.
+    overlap_coding = overlap_real$overlap_coding,
+    pct_add_cs_snps_retained_additive_coding = (
+      overlap_real$
+        pct_add_cs_snps_retained_additive_coding
+    ),
+    n_add_cs_snps_other_coding_only = (
+      overlap_real$n_add_cs_snps_other_coding_only
+    ),
+    pct_add_cs_snps_other_coding_only = (
+      overlap_real$pct_add_cs_snps_other_coding_only
+    ),
+    pct_shared_snps_other_coding_only = (
+      overlap_real$pct_shared_snps_other_coding_only
+    ),
+
+    # Highest-PIP coding among shared biological SNPs.
+    n_shared_snps_preferred_additive = (
+      overlap_real$n_shared_snps_preferred_additive
+    ),
+    n_shared_snps_preferred_dominant = (
+      overlap_real$n_shared_snps_preferred_dominant
+    ),
+    n_shared_snps_preferred_recessive = (
+      overlap_real$n_shared_snps_preferred_recessive
+    ),
+    n_shared_snps_preferred_nonadditive = (
+      overlap_real$n_shared_snps_preferred_nonadditive
+    ),
+    n_shared_snps_preference_ambiguous = (
+      overlap_real$n_shared_snps_preference_ambiguous
+    ),
+    pct_shared_snps_preferred_nonadditive = (
+      overlap_real$pct_shared_snps_preferred_nonadditive
+    ),
+
+    # Permuted biological-SNP overlap.
+    n_add_cs_snps_perm = overlap_perm$n_add_cs_snps,
+    n_mix_cs_snps_perm = overlap_perm$n_mix_cs_snps,
+    overlap_snp_perm = overlap_perm$overlap_snp,
+    overlap_perm = overlap_perm$overlap_snp,
+    pct_add_cs_snps_retained_perm = (
+      overlap_perm$pct_add_cs_snps_retained
+    ),
+    n_add_cs_snps_not_retained_perm = (
+      overlap_perm$n_add_cs_snps_not_retained
+    ),
+    pct_add_cs_snps_not_retained_perm = (
+      overlap_perm$pct_add_cs_snps_not_retained
+    ),
     overlap_cs_pairs_perm = (
       overlap_perm$n_overlapping_cs_pairs
     ),
     overlap_pairwise_sum_perm = (
       overlap_perm$pairwise_overlap_sum
+    ),
+
+    # Permuted coding-aware overlap and preference.
+    overlap_coding_perm = overlap_perm$overlap_coding,
+    pct_add_cs_snps_retained_additive_coding_perm = (
+      overlap_perm$
+        pct_add_cs_snps_retained_additive_coding
+    ),
+    n_add_cs_snps_other_coding_only_perm = (
+      overlap_perm$n_add_cs_snps_other_coding_only
+    ),
+    pct_add_cs_snps_other_coding_only_perm = (
+      overlap_perm$pct_add_cs_snps_other_coding_only
+    ),
+    n_shared_snps_preferred_additive_perm = (
+      overlap_perm$n_shared_snps_preferred_additive
+    ),
+    n_shared_snps_preferred_dominant_perm = (
+      overlap_perm$n_shared_snps_preferred_dominant
+    ),
+    n_shared_snps_preferred_recessive_perm = (
+      overlap_perm$n_shared_snps_preferred_recessive
+    ),
+    n_shared_snps_preferred_nonadditive_perm = (
+      overlap_perm$n_shared_snps_preferred_nonadditive
+    ),
+    n_shared_snps_preference_ambiguous_perm = (
+      overlap_perm$n_shared_snps_preference_ambiguous
+    ),
+    pct_shared_snps_preferred_nonadditive_perm = (
+      overlap_perm$pct_shared_snps_preferred_nonadditive
     ),
 
     # Coding of the lead predictor in each mixed-model CS.
@@ -456,7 +942,6 @@ summarize_tissue <- function(
     n_dom = unname(
       type_real["dominant"]
     ),
-
     n_add_perm = unname(
       type_perm["additive"]
     ),
@@ -528,7 +1013,6 @@ for (file_index in seq_along(result_files)) {
     error = function(e) e
   )
 
-  # The RDS file itself could not be read.
   if (inherits(out, "error")) {
 
     record_error(
@@ -569,7 +1053,6 @@ for (file_index in seq_along(result_files)) {
     next
   }
 
-  # Successful workhorse output must be a list of tissues.
   if (!is.list(out)) {
 
     record_error(
@@ -623,11 +1106,9 @@ for (file_index in seq_along(result_files)) {
       )
     }
 
-    if (
-      !is_successful_tissue_result(
-        tissue_result
-      )
-    ) {
+    if (!is_successful_tissue_result(
+      tissue_result
+    )) {
 
       record_error(
         file = result_file,
@@ -787,8 +1268,6 @@ cat(
   "\n"
 )
 cat("Saved:", summary_file, "\n")
+cat("Saved:", summary_csv, "\n")
 cat("Saved:", error_csv, "\n")
 cat("Saved:", failed_gene_file, "\n")
-
-
-load(summary_file)

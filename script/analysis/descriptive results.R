@@ -13,6 +13,17 @@ res <- as.data.table(res_summary)
 association_threshold <- 1e-6
 minimum_mean_reads <- 100
 
+strong_label <- sprintf(
+  "P < %.1e",
+  association_threshold
+)
+
+primary_label <- sprintf(
+  "P < %.1e and mean reads >= %g",
+  association_threshold,
+  minimum_mean_reads
+)
+
 required_columns <- c(
   "gene",
   "tissue",
@@ -20,11 +31,23 @@ required_columns <- c(
   "mean_count",
   "ncs_susie",
   "ncs_susie_mix",
-  "overlap",
+  "overlap_snp",
+  "n_add_cs_snps",
+  "n_mix_cs_snps",
+  "overlap_coding",
+  "n_add_cs_snps_not_retained",
+  "n_add_cs_snps_other_coding_only",
+  "n_shared_snps_preferred_additive",
+  "n_shared_snps_preferred_dominant",
+  "n_shared_snps_preferred_recessive",
+  "n_shared_snps_preferred_nonadditive",
+  "n_shared_snps_preference_ambiguous",
   "perm_cs_susie",
   "perm_cs_susie_mix",
   "dif_elbo",
   "dif_elbo_perm",
+  "log_lik_add",
+  "log_lik_mix",
   "n_add",
   "n_rec",
   "n_dom",
@@ -41,36 +64,69 @@ missing_columns <- setdiff(
 if (length(missing_columns) > 0L) {
   stop(
     "Missing columns: ",
-    paste(missing_columns, collapse = ", ")
+    paste(missing_columns, collapse = ", "),
+    ". Rerun summarize_susie_results.R with the new overlap calculations."
   )
 }
 
 
 # ============================================================
-# Define the primary analysis set
+# Helper functions
+# ============================================================
+
+safe_percent <- function(x) {
+
+  if (
+    length(x) == 0L ||
+    all(is.na(x))
+  ) {
+    return(NA_real_)
+  }
+
+  100 * mean(
+    x,
+    na.rm = TRUE
+  )
+}
+
+
+safe_ratio_percent <- function(
+    numerator,
+    denominator) {
+
+  if (
+    length(denominator) == 0L ||
+    is.na(denominator) ||
+    denominator <= 0
+  ) {
+    return(NA_real_)
+  }
+
+  100 * numerator / denominator
+}
+
+
+# ============================================================
+# Define analysis sets
 # ============================================================
 
 res_strong <- res[
- # is.finite(min_pv) &
+  is.finite(min_pv) &
     min_pv < association_threshold
 ]
 
 res_idx <- res[
-  #is.finite(min_pv) &
+  is.finite(min_pv) &
     min_pv < association_threshold &
     is.finite(mean_count) &
     mean_count >= minimum_mean_reads &
     !is.na(ncs_susie) &
     !is.na(ncs_susie_mix) &
-    !is.na(overlap)
+    !is.na(overlap_snp)
 ]
 
 cat("All gene-tissue pairs:", nrow(res), "\n")
-cat(
-  "Strong association pairs:",
-  nrow(res_strong),
-  "\n"
-)
+cat("Strong association pairs:", nrow(res_strong), "\n")
 cat(
   "Strong, sufficiently expressed pairs:",
   nrow(res_idx),
@@ -91,22 +147,6 @@ cat(
 # ============================================================
 # General credible-set summaries
 # ============================================================
-
-safe_percent <- function(x) {
-
-  if (
-    length(x) == 0L ||
-    all(is.na(x))
-  ) {
-    return(NA_real_)
-  }
-
-  100 * mean(
-    x,
-    na.rm = TRUE
-  )
-}
-
 
 describe_subset <- function(x, label) {
 
@@ -163,11 +203,11 @@ overall_summary <- rbindlist(
     ),
     describe_subset(
       res_strong,
-      "P < 5e-8"
+      strong_label
     ),
     describe_subset(
       res_idx,
-      "P < 5e-8 and mean reads >= 100"
+      primary_label
     )
   )
 )
@@ -176,9 +216,201 @@ print(overall_summary)
 
 
 # ============================================================
-# Define agreement categories
+# SNP overlap and coding-aware overlap
 # ============================================================
 
+summarize_overlap_and_coding <- function(
+    x,
+    label) {
+
+  total_add_cs_snps <- sum(
+    x$n_add_cs_snps,
+    na.rm = TRUE
+  )
+
+  total_mix_cs_snps <- sum(
+    x$n_mix_cs_snps,
+    na.rm = TRUE
+  )
+
+  total_shared_snps <- sum(
+    x$overlap_snp,
+    na.rm = TRUE
+  )
+
+  total_not_retained <- sum(
+    x$n_add_cs_snps_not_retained,
+    na.rm = TRUE
+  )
+
+  total_additive_coding_overlap <- sum(
+    x$overlap_coding,
+    na.rm = TRUE
+  )
+
+  total_other_coding_only <- sum(
+    x$n_add_cs_snps_other_coding_only,
+    na.rm = TRUE
+  )
+
+  preferred_additive <- sum(
+    x$n_shared_snps_preferred_additive,
+    na.rm = TRUE
+  )
+
+  preferred_dominant <- sum(
+    x$n_shared_snps_preferred_dominant,
+    na.rm = TRUE
+  )
+
+  preferred_recessive <- sum(
+    x$n_shared_snps_preferred_recessive,
+    na.rm = TRUE
+  )
+
+  preferred_nonadditive <- sum(
+    x$n_shared_snps_preferred_nonadditive,
+    na.rm = TRUE
+  )
+
+  preference_ambiguous <- sum(
+    x$n_shared_snps_preference_ambiguous,
+    na.rm = TRUE
+  )
+
+  data.table(
+    subset = label,
+    gene_tissue_pairs = nrow(x),
+
+    additive_cs_snp_occurrences = total_add_cs_snps,
+    mixed_cs_snp_occurrences = total_mix_cs_snps,
+
+    shared_snp_occurrences = total_shared_snps,
+
+    pct_additive_cs_snps_retained_any_coding = (
+      safe_ratio_percent(
+        total_shared_snps,
+        total_add_cs_snps
+      )
+    ),
+
+    additive_cs_snps_not_retained = total_not_retained,
+
+    pct_additive_cs_snps_not_retained = (
+      safe_ratio_percent(
+        total_not_retained,
+        total_add_cs_snps
+      )
+    ),
+
+    additive_coding_overlap = (
+      total_additive_coding_overlap
+    ),
+
+    pct_additive_cs_snps_retained_as_additive = (
+      safe_ratio_percent(
+        total_additive_coding_overlap,
+        total_add_cs_snps
+      )
+    ),
+
+    additive_cs_snps_retained_other_coding_only = (
+      total_other_coding_only
+    ),
+
+    pct_additive_cs_snps_retained_other_coding_only = (
+      safe_ratio_percent(
+        total_other_coding_only,
+        total_add_cs_snps
+      )
+    ),
+
+    pct_shared_snps_other_coding_only = (
+      safe_ratio_percent(
+        total_other_coding_only,
+        total_shared_snps
+      )
+    ),
+
+    shared_snps_preferred_additive = preferred_additive,
+    shared_snps_preferred_dominant = preferred_dominant,
+    shared_snps_preferred_recessive = preferred_recessive,
+    shared_snps_preferred_nonadditive = preferred_nonadditive,
+    shared_snps_preference_ambiguous = preference_ambiguous,
+
+    pct_shared_snps_preferred_nonadditive = (
+      safe_ratio_percent(
+        preferred_nonadditive,
+        total_shared_snps
+      )
+    )
+  )
+}
+
+
+overlap_coding_summary <- rbindlist(
+  list(
+    summarize_overlap_and_coding(
+      res,
+      "All gene-tissue pairs"
+    ),
+    summarize_overlap_and_coding(
+      res_strong,
+      strong_label
+    ),
+    summarize_overlap_and_coding(
+      res_idx,
+      primary_label
+    )
+  ),
+  use.names = TRUE,
+  fill = TRUE
+)
+
+print(overlap_coding_summary)
+
+
+coding_preference_summary <- data.table(
+  preferred_coding = c(
+    "Additive",
+    "Dominant",
+    "Recessive",
+    "Ambiguous or unresolved"
+  ),
+  shared_snp_occurrences = c(
+    sum(
+      res_idx$n_shared_snps_preferred_additive,
+      na.rm = TRUE
+    ),
+    sum(
+      res_idx$n_shared_snps_preferred_dominant,
+      na.rm = TRUE
+    ),
+    sum(
+      res_idx$n_shared_snps_preferred_recessive,
+      na.rm = TRUE
+    ),
+    sum(
+      res_idx$n_shared_snps_preference_ambiguous,
+      na.rm = TRUE
+    )
+  )
+)
+
+coding_preference_summary[
+  ,
+  percentage := safe_ratio_percent(
+    shared_snp_occurrences,
+    sum(shared_snp_occurrences)
+  )
+]
+
+print(coding_preference_summary)
+
+
+# ============================================================
+# Define agreement categories
+# ============================================================
 
 agreement_levels <- c(
   "Same CS count; SNP overlap",
@@ -205,11 +437,11 @@ res_idx[
     "Mixed model only",
 
     ncs_susie == ncs_susie_mix &
-      overlap > 0,
+      overlap_snp > 0,
     "Same CS count; SNP overlap",
 
     ncs_susie == ncs_susie_mix &
-      overlap == 0,
+      overlap_snp == 0,
     "Same CS count; no SNP overlap",
 
     default = "Different CS count"
@@ -224,7 +456,6 @@ res_idx[
   )
 ]
 
-# Retain categories with zero observations.
 agreement_summary <- data.table(
   agreement_category = agreement_levels,
   count = vapply(
@@ -241,14 +472,15 @@ agreement_summary <- data.table(
 
 agreement_summary[
   ,
-  percentage := if (sum(count) > 0L) {
-    100 * count / sum(count)
-  } else {
-    NA_real_
-  }
+  percentage := safe_ratio_percent(
+    count,
+    sum(count)
+  )
 ]
 
 print(agreement_summary)
+
+
 # ============================================================
 # Main agreement statistics
 # ============================================================
@@ -273,11 +505,10 @@ make_metric <- function(
     metric = metric,
     count = count,
     denominator = denominator,
-    percentage = if (denominator > 0L) {
-      100 * count / denominator
-    } else {
-      NA_real_
-    }
+    percentage = safe_ratio_percent(
+      count,
+      denominator
+    )
   )
 }
 
@@ -309,10 +540,9 @@ agreement_statistics <- rbindlist(
     ),
 
     make_metric(
-      "Any s
-      hared SNP when both models reported CSs",
+      "Any shared SNP when both models reported CSs",
       sum(
-        both_models_cs$overlap > 0
+        both_models_cs$overlap_snp > 0
       ),
       nrow(both_models_cs)
     ),
@@ -320,7 +550,7 @@ agreement_statistics <- rbindlist(
     make_metric(
       "No shared SNP when both models reported CSs",
       sum(
-        both_models_cs$overlap == 0
+        both_models_cs$overlap_snp == 0
       ),
       nrow(both_models_cs)
     ),
@@ -334,7 +564,7 @@ agreement_statistics <- rbindlist(
     make_metric(
       "One CS each with at least one shared SNP",
       sum(
-        one_cs_each$overlap > 0
+        one_cs_each$overlap_snp > 0
       ),
       nrow(one_cs_each)
     ),
@@ -342,7 +572,7 @@ agreement_statistics <- rbindlist(
     make_metric(
       "One CS each with no shared SNP",
       sum(
-        one_cs_each$overlap == 0
+        one_cs_each$overlap_snp == 0
       ),
       nrow(one_cs_each)
     )
@@ -374,7 +604,10 @@ setnames(
 
 cs_count_table[
   ,
-  percentage := 100 * count / sum(count)
+  percentage := safe_ratio_percent(
+    count,
+    sum(count)
+  )
 ]
 
 print(cs_count_table)
@@ -390,7 +623,6 @@ coding_summary <- data.table(
     "Recessive",
     "Dominant"
   ),
-
   credible_sets = c(
     sum(res_idx$n_add, na.rm = TRUE),
     sum(res_idx$n_rec, na.rm = TRUE),
@@ -400,16 +632,15 @@ coding_summary <- data.table(
 
 coding_summary[
   ,
-  percentage := (
-    100 * credible_sets /
-      sum(credible_sets)
+  percentage := safe_ratio_percent(
+    credible_sets,
+    sum(credible_sets)
   )
 ]
 
 print(coding_summary)
 
 
-# Coding combinations found within each gene-tissue analysis.
 res_idx[
   ,
   coding_pattern := paste0(
@@ -435,13 +666,14 @@ res_idx[
 
 coding_pattern_summary <- res_idx[
   ,
-  .(
-    count = .N
-  ),
+  .(count = .N),
   by = coding_pattern
 ][
   ,
-  percentage := 100 * count / sum(count)
+  percentage := safe_ratio_percent(
+    count,
+    sum(count)
+  )
 ][
   order(-count)
 ]
@@ -474,7 +706,6 @@ permutation_summary <- data.table(
     "Additive",
     "Mixed"
   ),
-
   total_credible_sets = c(
     sum(
       res_idx$perm_cs_susie,
@@ -485,7 +716,6 @@ permutation_summary <- data.table(
       na.rm = TRUE
     )
   ),
-
   analyses_with_at_least_one_cs = c(
     sum(
       res_idx$perm_cs_susie > 0,
@@ -501,9 +731,10 @@ permutation_summary <- data.table(
 permutation_summary[
   ,
   percentage_with_at_least_one_cs := (
-    100 *
-      analyses_with_at_least_one_cs /
+    safe_ratio_percent(
+      analyses_with_at_least_one_cs,
       nrow(res_idx)
+    )
   )
 ]
 
@@ -518,7 +749,7 @@ res_1cs <- copy(
   res_idx[
     ncs_susie == 1 &
       ncs_susie_mix == 1 &
-      overlap == 0
+      overlap_snp == 0
   ]
 )
 
@@ -560,7 +791,12 @@ candidate_columns <- intersect(
     "n_add",
     "n_rec",
     "n_dom",
-    "overlap"
+    "n_add_cs_snps",
+    "n_mix_cs_snps",
+    "overlap_snp",
+    "overlap_coding",
+    "n_add_cs_snps_other_coding_only",
+    "n_shared_snps_preferred_nonadditive"
   ),
   names(res_1cs)
 )
@@ -575,8 +811,6 @@ top_discordant_candidates <- head(
 
 print(top_discordant_candidates)
 
-
-# Separate candidates by mixed-model coding.
 dominant_candidates <- res_1cs[
   n_dom > 0
 ]
@@ -591,7 +825,7 @@ additive_candidates <- res_1cs[
 
 
 # ============================================================
-# Tissue-specific disagreement
+# Tissue-specific disagreement and coding preference
 # ============================================================
 
 res_idx[
@@ -606,7 +840,7 @@ res_idx[
   no_snp_overlap_when_both_detect := (
     ncs_susie > 0 &
       ncs_susie_mix > 0 &
-      overlap == 0
+      overlap_snp == 0
   )
 ]
 
@@ -621,6 +855,16 @@ tissue_summary <- res_idx[
 
     no_snp_overlap = sum(
       no_snp_overlap_when_both_detect
+    ),
+
+    shared_snp_occurrences = sum(
+      overlap_snp,
+      na.rm = TRUE
+    ),
+
+    shared_snps_preferred_nonadditive = sum(
+      n_shared_snps_preferred_nonadditive,
+      na.rm = TRUE
     )
   ),
   by = tissue
@@ -629,18 +873,30 @@ tissue_summary <- res_idx[
 tissue_summary[
   ,
   pct_different_cs_number := (
-    100 *
-      different_cs_number /
+    safe_ratio_percent(
+      different_cs_number,
       total
+    )
   )
 ]
 
 tissue_summary[
   ,
   pct_no_snp_overlap := (
-    100 *
-      no_snp_overlap /
+    safe_ratio_percent(
+      no_snp_overlap,
       total
+    )
+  )
+]
+
+tissue_summary[
+  ,
+  pct_shared_snps_preferred_nonadditive := (
+    safe_ratio_percent(
+      shared_snps_preferred_nonadditive,
+      shared_snp_occurrences
+    )
   )
 ]
 
@@ -661,17 +917,17 @@ par(
   mar = c(5, 5, 4, 1)
 )
 
-elbo_values <- -2* (res_idx$log_lik_add-res_idx$log_lik_mix)
+likelihood_values <- -2 * (
+  res_idx$log_lik_add -
+    res_idx$log_lik_mix
+)
 
 hist(
-  elbo_values,
-  xlim=c(-20,50),
+  likelihood_values,
+  xlim = c(-20, 50),
   nclass = 1000,
-  main = paste0(
-    "-2( log lik additive - log lik mixed)"
-  ),
-  xlab = "-2( log lik additive - log lik mixed)",
-
+  main = "-2(log lik additive - log lik mixed)",
+  xlab = "-2(log lik additive - log lik mixed)",
   border = "gray80"
 )
 
@@ -682,24 +938,18 @@ abline(
   lwd = 2
 )
 
+#permuted_elbo <- res_idx$dif_elbo_perm[
+#  is.finite(res_idx$dif_elbo_perm)
+#]
 
-permuted_elbo <- res_idx$dif_elbo_perm[
-  is.finite(res_idx$dif_elbo_perm)
-]
-
-
-hist(
-  permuted_elbo,
- # breaks = "FD",
- xlim=c(-20,50),
- nclass = 1000,
-  main = paste0(
-    "-2( log lik additive - log lik mixed)\n permuted"
-  ),
-  xlab = "-2( log lik additive - log lik mixed)",
-
-  border = "gray80"
-)
+#hist(
+#  permuted_elbo,
+#  xlim = c(-20, 50),
+#  nclass = 1000,
+#  main = "ELBO difference, permuted phenotype",
+#  xlab = "ELBO mixed - ELBO additive",
+#  border = "gray80"
+#)
 
 abline(
   v = 0,
@@ -707,16 +957,6 @@ abline(
   lty = 2,
   lwd = 2
 )
-
-
-
-abline(
-  v = 0,
-  col = "red",
-  lty = 2,
-  lwd = 2
-)
-
 
 plot(
   -log10(res_idx$min_pv),
@@ -736,26 +976,50 @@ abline(
 )
 
 agreement_plot_labels <- c(
-  "Same CS count;\nSNP overlap",
+  "Same count;\nSNP overlap",
   "Different\nCS count",
-  "Same CS count;\nno SNP overlap",
+  "Same count;\nno SNP overlap",
   "Neither model\nreported a CS",
   "Additive\nmodel only",
   "Mixed\nmodel only"
 )
 
-par(mar = c(9, 5, 4, 1))
+par(mar = c(8, 5, 4, 1))
 
 barplot(
   agreement_summary$percentage,
   names.arg = agreement_plot_labels,
-  #las = 2,
-  cex.names = 0.70,
+  cex.names = 0.65,
   ylab = "Percentage",
   main = "Agreement between fine-mapping models",
   col = "steelblue"
 )
+
+
+if (
+  sum(
+    coding_preference_summary$shared_snp_occurrences
+  ) > 0
+) {
+
+  barplot(
+    coding_preference_summary$percentage,
+    names.arg = coding_preference_summary$preferred_coding,
+    #las = 2,
+    cex.names = 0.8,
+    ylab = "Percentage of shared SNP occurrences",
+    main = "Mixed-model preferred coding",
+    col = c(
+      "steelblue",
+      "darkorange",
+      "firebrick",
+      "gray70"
+    )
+  )
+}
+
 par(mfrow = c(1, 1))
+
 
 
 # ============================================================
@@ -778,6 +1042,22 @@ fwrite(
   file.path(
     output_dir,
     "overall_summary.csv"
+  )
+)
+
+fwrite(
+  overlap_coding_summary,
+  file.path(
+    output_dir,
+    "overlap_coding_summary.csv"
+  )
+)
+
+fwrite(
+  coding_preference_summary,
+  file.path(
+    output_dir,
+    "shared_snp_coding_preference.csv"
   )
 )
 
@@ -822,6 +1102,14 @@ fwrite(
 )
 
 fwrite(
+  permutation_summary,
+  file.path(
+    output_dir,
+    "permutation_summary.csv"
+  )
+)
+
+fwrite(
   tissue_summary,
   file.path(
     output_dir,
@@ -856,12 +1144,16 @@ same_cs_percentage <- safe_percent(
 )
 
 one_cs_overlap_percentage <- safe_percent(
-  one_cs_each$overlap > 0
+  one_cs_each$overlap_snp > 0
 )
 
 one_cs_no_overlap_percentage <- safe_percent(
-  one_cs_each$overlap == 0
+  one_cs_each$overlap_snp == 0
 )
+
+primary_overlap_summary <- overlap_coding_summary[
+  subset == primary_label
+]
 
 cat("\nSuggested results sentence:\n\n")
 
@@ -876,7 +1168,11 @@ cat(
       "of analyses. Among the %s gene-tissue pairs for which both ",
       "models inferred exactly one credible set, %.1f%% shared at ",
       "least one biological SNP, whereas %.1f%% showed no SNP-level ",
-      "overlap."
+      "overlap. Across additive credible-set SNP occurrences, %.1f%% ",
+      "were retained by the mixed model under any coding and %.1f%% ",
+      "were retained specifically under additive coding. Among SNPs ",
+      "shared by both analyses, %.1f%% received their largest ",
+      "mixed-model predictor PIP under dominant or recessive coding."
     ),
     association_threshold,
     minimum_mean_reads,
@@ -885,7 +1181,13 @@ cat(
     same_cs_percentage,
     format(nrow(one_cs_each), big.mark = ","),
     one_cs_overlap_percentage,
-    one_cs_no_overlap_percentage
+    one_cs_no_overlap_percentage,
+    primary_overlap_summary$
+      pct_additive_cs_snps_retained_any_coding,
+    primary_overlap_summary$
+      pct_additive_cs_snps_retained_as_additive,
+    primary_overlap_summary$
+      pct_shared_snps_preferred_nonadditive
   ),
   "\n"
 )
