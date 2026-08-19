@@ -94,15 +94,16 @@ safe_ratio_percent <- function(
     numerator,
     denominator) {
 
-  if (
-    length(denominator) == 0L ||
-    is.na(denominator) ||
-    denominator <= 0
-  ) {
-    return(NA_real_)
-  }
+  percentage <- 100 * numerator / denominator
 
-  100 * numerator / denominator
+  invalid_denominator <- (
+    is.na(denominator) |
+      denominator <= 0
+  )
+
+  percentage[invalid_denominator] <- NA_real_
+
+  percentage
 }
 
 
@@ -644,9 +645,9 @@ print(coding_summary)
 res_idx[
   ,
   coding_pattern := paste0(
-    ifelse(n_add > 0, "A", ""),
-    ifelse(n_rec > 0, "R", ""),
-    ifelse(n_dom > 0, "D", "")
+    ifelse(!is.na(n_add) & n_add > 0, "A", ""),
+    ifelse(!is.na(n_rec) & n_rec > 0, "R", ""),
+    ifelse(!is.na(n_dom) & n_dom > 0, "D", "")
   )
 ]
 
@@ -655,30 +656,90 @@ res_idx[
   coding_pattern := "none"
 ]
 
+# Use ADR as the canonical label for analyses containing all three
+# coding types, while retaining the existing two-type labels.
+res_idx[
+  coding_pattern == "ARD",
+  coding_pattern := "ADR"
+]
+
 res_idx[
   ,
   number_coding_types := (
-    (n_add > 0) +
-      (n_rec > 0) +
-      (n_dom > 0)
+    (!is.na(n_add) & n_add > 0) +
+      (!is.na(n_rec) & n_rec > 0) +
+      (!is.na(n_dom) & n_dom > 0)
   )
 ]
 
-coding_pattern_summary <- res_idx[
-  ,
-  .(count = .N),
-  by = coding_pattern
+coding_pattern_levels <- c(
+  "none",
+  "A",
+  "R",
+  "D",
+  "AR",
+  "AD",
+  "RD",
+  "ADR"
+)
+
+coding_pattern_summary <- merge(
+  data.table(
+    coding_pattern = coding_pattern_levels
+  ),
+  res_idx[
+    ,
+    .(count = .N),
+    by = coding_pattern
+  ],
+  by = "coding_pattern",
+  all.x = TRUE,
+  sort = FALSE
+)[
+  is.na(count),
+  count := 0L
 ][
   ,
   percentage := safe_ratio_percent(
     count,
-    sum(count)
+    nrow(res_idx)
   )
 ][
   order(-count)
 ]
 
 print(coding_pattern_summary)
+
+adr_regions <- res_idx[
+  coding_pattern == "ADR",
+  .(
+    gene,
+    tissue,
+    min_pv,
+    mean_count,
+    ncs_susie_mix,
+    n_add,
+    n_dom,
+    n_rec
+  )
+][
+  order(gene, tissue)
+]
+
+cat(
+  "Gene-tissue pairs with additive, dominant, and recessive coding (ADR):",
+  nrow(adr_regions),
+  "\n"
+)
+
+cat(
+  "Percentage with ADR coding:",
+  safe_ratio_percent(
+    nrow(adr_regions),
+    nrow(res_idx)
+  ),
+  "\n"
+)
 
 cat(
   "Gene-tissue pairs with at least two coding types:",
@@ -912,6 +973,87 @@ print(tissue_summary)
 # Descriptive plots
 # ============================================================
 
+plot_coding_pattern_summary <- function(x) {
+
+  plot_data <- copy(x)
+  setorder(plot_data, -count)
+
+  valid_percentage <- is.finite(
+    plot_data$percentage
+  )
+
+  if (!any(valid_percentage)) {
+    plot.new()
+    title("Mixed-model coding patterns")
+    text(
+      0.5,
+      0.5,
+      "No gene-tissue pairs in the analysis set"
+    )
+    return(invisible(NULL))
+  }
+
+  bar_heights <- ifelse(
+    valid_percentage,
+    plot_data$percentage,
+    0
+  )
+
+  y_max <- max(
+    1,
+    1.15 * max(bar_heights)
+  )
+
+  pattern_colors <- c(
+    A = "#0072B2",
+    R = "#009E73",
+    D = "#D55E00",
+    AR = "#56B4E9",
+    AD = "#CC79A7",
+    RD = "#E69F00",
+    ADR = "#6A3D9A",
+    none = "#999999"
+  )
+
+  bar_colors <- unname(
+    pattern_colors[
+      plot_data$coding_pattern
+    ]
+  )
+
+  par(mar = c(5, 5, 4, 1))
+
+  bar_positions <- barplot(
+    bar_heights,
+    names.arg = plot_data$coding_pattern,
+    ylim = c(0, y_max),
+    xlab = "Coding pattern",
+    ylab = "Percentage of gene-tissue pairs",
+    main = "Mixed-model coding patterns",
+    col = bar_colors,
+    border = NA
+  )
+
+  text(
+    x = bar_positions,
+    y = bar_heights,
+    labels = plot_data$count,
+    pos = 3,
+    cex = 0.8
+  )
+
+  mtext(
+    "A = additive; R = recessive; D = dominant; counts above bars",
+    side = 3,
+    line = 0.25,
+    adj = 1,
+    cex = 0.7
+  )
+
+  invisible(bar_positions)
+}
+
+
 par(
   mfrow = c(2, 2),
   mar = c(5, 5, 4, 1)
@@ -938,18 +1080,18 @@ abline(
   lwd = 2
 )
 
-#permuted_elbo <- res_idx$dif_elbo_perm[
-#  is.finite(res_idx$dif_elbo_perm)
-#]
+permuted_elbo <- res_idx$dif_elbo_perm[
+  is.finite(res_idx$dif_elbo_perm)
+]
 
-#hist(
-#  permuted_elbo,
-#  xlim = c(-20, 50),
-#  nclass = 1000,
-#  main = "ELBO difference, permuted phenotype",
-#  xlab = "ELBO mixed - ELBO additive",
-#  border = "gray80"
-#)
+hist(
+  permuted_elbo,
+  xlim = c(-20, 50),
+  nclass = 1000,
+  main = "ELBO difference, permuted phenotype",
+  xlab = "ELBO mixed - ELBO additive",
+  border = "gray80"
+)
 
 abline(
   v = 0,
@@ -995,7 +1137,36 @@ barplot(
   col = "steelblue"
 )
 
+par(mfrow = c(1, 1))
 
+
+par(
+  mfrow = c(2, 2),
+  mar = c(5, 5, 4, 1)
+)
+
+
+
+
+agreement_plot_labels <- c(
+  "Same count;\nSNP overlap",
+  "Different\nCS count",
+  "Same count;\nno SNP overlap",
+  "Neither model\nreported a CS",
+  "Additive\nmodel only",
+  "Mixed\nmodel only"
+)
+
+par(mar = c(8, 5, 4, 1))
+
+barplot(
+  agreement_summary$percentage,
+  names.arg = agreement_plot_labels,
+  cex.names = 0.65,
+  ylab = "Percentage",
+  main = "Agreement between fine-mapping models",
+  col = "steelblue"
+)
 if (
   sum(
     coding_preference_summary$shared_snp_occurrences
@@ -1005,7 +1176,7 @@ if (
   barplot(
     coding_preference_summary$percentage,
     names.arg = coding_preference_summary$preferred_coding,
-    #las = 2,
+    las = 2,
     cex.names = 0.8,
     ylab = "Percentage of shared SNP occurrences",
     main = "Mixed-model preferred coding",
@@ -1018,9 +1189,12 @@ if (
   )
 }
 
+plot_coding_pattern_summary(
+  coding_pattern_summary
+)
+
+
 par(mfrow = c(1, 1))
-
-
 
 # ============================================================
 # Save descriptive results
@@ -1036,6 +1210,21 @@ dir.create(
   recursive = TRUE,
   showWarnings = FALSE
 )
+
+pdf(
+  file.path(
+    output_dir,
+    "coding_patterns_barplot.pdf"
+  ),
+  width = 8,
+  height = 5
+)
+
+plot_coding_pattern_summary(
+  coding_pattern_summary
+)
+
+invisible(dev.off())
 
 fwrite(
   overall_summary,
@@ -1098,6 +1287,14 @@ fwrite(
   file.path(
     output_dir,
     "coding_patterns.csv"
+  )
+)
+
+fwrite(
+  adr_regions,
+  file.path(
+    output_dir,
+    "adr_gene_tissue_pairs.csv"
   )
 )
 
