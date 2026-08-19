@@ -40,7 +40,7 @@ run_susie_gene <- function(
     cis_window = 5e5,
     min_samples = 50,
     seed = 1,
-    hwe_thresh = 1e-5,
+    hwe_thresh = 1e-8,
     min_n_rec = 5,
 
     # --- SuSiE parameters ---
@@ -273,7 +273,8 @@ run_susie_gene <- function(
     plink_out_prefix,
     ".raw"
   )
-
+  hwe_thresh = 1e-8
+  maf_min = 0.05
   geno_all <- fread(
     geno_file_raw,
     sep = "\t",
@@ -287,7 +288,7 @@ run_susie_gene <- function(
 
   geno_all <- geno_all[, -(1:6)]
   geno_all <- as.matrix(geno_all)
-
+  dim(geno_all)
   storage.mode(geno_all) <- "double"
 
   # Remove SNPs with missing genotypes.
@@ -355,27 +356,30 @@ run_susie_gene <- function(
     out
   }
 
-  qc_recode_geno <- function(
+
+  qc_filter_geno <- function(
     X,
-    hwe_thresh = 1e-5,
+    hwe_thresh = 1e-8,
     maf_min = 0.05) {
 
+    X <- as.matrix(X)
     storage.mode(X) <- "integer"
 
     # Orient all SNPs to the minor allele.
     af <- colMeans(X) / 2
-    flip <- af > 0.5
+    flip <- is.finite(af) & af > 0.5
 
     if (any(flip)) {
       X[, flip] <- 2L - X[, flip, drop = FALSE]
     }
 
-    # Filter by MAF.
-    keep <- colMeans(X) / 2 > maf_min
+    # Filter by minor-allele frequency.
+    maf <- colMeans(X) / 2
+    keep_maf <- is.finite(maf) & maf > maf_min
 
     X <- X[
       ,
-      keep,
+      keep_maf,
       drop = FALSE
     ]
 
@@ -398,10 +402,24 @@ run_susie_gene <- function(
     exp1 <- n * 2 * maf * (1 - maf)
     exp2 <- n * maf^2
 
-    chisq <- (
-      (count0 - exp0)^2 / exp0 +
-        (count1 - exp1)^2 / exp1 +
-        (count2 - exp2)^2 / exp2
+    valid_hwe <- (
+      exp0 > 0 &
+        exp1 > 0 &
+        exp2 > 0
+    )
+
+    chisq <- rep(
+      NA_real_,
+      ncol(X)
+    )
+
+    chisq[valid_hwe] <- (
+      (count0[valid_hwe] - exp0[valid_hwe])^2 /
+        exp0[valid_hwe] +
+        (count1[valid_hwe] - exp1[valid_hwe])^2 /
+        exp1[valid_hwe] +
+        (count2[valid_hwe] - exp2[valid_hwe])^2 /
+        exp2[valid_hwe]
     )
 
     hwe_p <- pchisq(
@@ -410,25 +428,38 @@ run_susie_gene <- function(
       lower.tail = FALSE
     )
 
-    # Frequency-recode SNPs that fail HWE.
-    fail <- which(
+    # Remove SNPs with HWE P < hwe_thresh.
+    fail_hwe <- (
       !is.na(hwe_p) &
         hwe_p < hwe_thresh
     )
 
-    if (length(fail) > 0L) {
+    removed_hwe_snps <- colnames(X)[fail_hwe]
 
+    if (any(fail_hwe)) {
       cat(
-        length(fail),
-        "SNP(s) failed HWE (p <",
-        hwe_thresh,
-        ") - recoding by frequency:\n"
+        sum(fail_hwe),
+        "SNP(s) removed because HWE P <",
+        format(hwe_thresh, scientific = TRUE),
+        ":\n"
       )
 
-      print(colnames(X)[fail])
+      print(removed_hwe_snps)
 
-      X[, fail] <- recode_matrix_by_freq(
-        X[, fail, drop = FALSE]
+      X <- X[
+        ,
+        !fail_hwe,
+        drop = FALSE
+      ]
+
+      maf <- maf[!fail_hwe]
+      hwe_p <- hwe_p[!fail_hwe]
+    }
+
+    if (ncol(X) == 0L) {
+      stop(
+        "No SNPs remained after HWE filtering for ",
+        target_gene
       )
     }
 
@@ -437,16 +468,20 @@ run_susie_gene <- function(
       maf = maf,
       hwe_p = hwe_p,
       flipped = which(flip),
-      recoded = fail
+      removed_hwe_snps = removed_hwe_snps,
+      n_removed_hwe = length(removed_hwe_snps)
     )
   }
 
-  geno_all <- qc_recode_geno(
+
+
+
+
+  geno_all<- qc_filter_geno(
     X = geno_all,
     hwe_thresh = hwe_thresh,
     maf_min = min_maf
   )$X
-
   # ------------------------------------------------------------
   # Construct additive, recessive and dominant predictors
   # ------------------------------------------------------------
