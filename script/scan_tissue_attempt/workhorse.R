@@ -56,65 +56,6 @@ run_susie_gene <- function(
     temp_dir = "/project2/mstephens/wdenault/susie_mix/temp_plink/"
 ) {
 
-  library(tools)
-  library(data.table)
-  library(matrixStats)
-  library(susieR)
-
-  source(gene_annot_fun)
-
-  plink_out_prefix="/project2/mstephens/wdenault/susie_mix/temp_plink/plink_ICA1"
-
-  source("/project2/mstephens/wdenault/susie_mix/script/scan_tissue_attempt/workhorse_utils.R")
-
-
-  target_gene="RIN3"
-  # --- paths ---
-  datadir = "/project2/mstephens/gtex"
-  plink_exec = file.path(datadir, "plink2")
-  gene_annot_fun = paste0(
-    "/project2/mstephens/wdenault/susie_mix/",
-    "script/scan_tissue_attempt/get_gene_annotations.R"
-  )
-  gtf_file = file.path(
-    datadir,
-    "Homo_sapiens.GRCh38.103.chr.reformatted.collapse_only.gene.gtf.gz"
-  )
-  geno_file = file.path(
-    datadir,
-    "GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv"
-  )
-  subject_pheno_file = file.path(
-    datadir,
-    "GTEx_Analysis_v8_Annotations_SubjectPhenotypesDS.txt.gz"
-  )
-  sample_attr_file = file.path(
-    datadir,
-    "GTEx_Analysis_v8_Annotations_SampleAttributesDS.txt.gz"
-  )
-  expr_file = file.path(
-    datadir,
-    "GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_reads.gct.gz"
-  )
-
-  # --- analysis parameters ---
-  min_maf_plink = 0.00
-  min_maf = 0.05
-  cis_window = 5e5
-  min_samples = 50
-  seed = 1
-  hwe_thresh = 1e-8
-  min_n_rec = 5
-
-  # --- SuSiE parameters ---
-  L = 10
-  standardize = FALSE
-  estimate_prior_method = "EM"
-  min_abs_corr = 0.0
-  verbose = FALSE
-
-  # --- misc ---
-  temp_dir = "/project2/mstephens/wdenault/susie_mix/temp_plink/"
 
   library(tools)
   library(data.table)
@@ -260,6 +201,18 @@ run_susie_gene <- function(
     data.frame(count = pheno_all[, j])
   )
 
+  read_count <- rowSums(
+    pheno_all,
+    na.rm = TRUE
+  )
+
+  pheno_gene <- cbind(
+    cov,
+    data.frame(
+      count = pheno_all[, j],
+      total_read_count = read_count
+    )
+  )
   all_tissues <- levels(
     droplevels(pheno_gene$SMTS)
   )
@@ -441,17 +394,12 @@ run_susie_gene <- function(
   storage.mode(geno_all) <- "double"
   storage.mode(geno_mix_all) <- "double"
 
-  # ------------------------------------------------------------
-  # Run tissue-specific analyses
-  # ------------------------------------------------------------
-
   fits <- list()
   for (target_tissue in all_tissues) {
 
     cat("\n=====================================\n")
     cat("Tissue:", target_tissue, "\n")
     cat("=====================================\n")
-
     pheno <- subset(
       pheno_gene,
       SMTS == target_tissue
@@ -467,12 +415,45 @@ run_susie_gene <- function(
       pheno$SUBJID
     )
 
+    # Subset and order the phenotype data before normalization.
+    pheno <- pheno[
+      rows,
+      ,
+      drop = FALSE
+    ]
+
+    stopifnot(
+      identical(
+        as.character(pheno$SUBJID),
+        as.character(ids)
+      )
+    )
+
+    # Remove samples with invalid expression or library-size values.
+    keep_sample <- (
+      is.finite(pheno$count) &
+        is.finite(pheno$total_read_count) &
+        pheno$total_read_count > 0 &
+        !is.na(pheno$SEX)
+    )
+
+    pheno <- pheno[
+      keep_sample,
+      ,
+      drop = FALSE
+    ]
+
+    # Update IDs after sample filtering so genotypes remain aligned.
+    ids <- as.character(
+      pheno$SUBJID
+    )
+
     median_read <- median(
-      pheno$count[rows]
+      pheno$count
     )
 
     mean_read <- mean(
-      pheno$count[rows]
+      pheno$count
     )
 
     pheno <- transform(
@@ -480,9 +461,23 @@ run_susie_gene <- function(
       SMGEBTCHT = factor(SMGEBTCHT)
     )
 
-    # Residualize expression on sex.
+    # Library-size normalization within the tissue.
+    pheno$library_size_factor <- (
+      pheno$total_read_count /
+        mean(pheno$total_read_count)
+    )
+
+    pheno$normalized_expression <- log1p(
+      pheno$count /
+        pheno$library_size_factor
+    )
+
+    # Residualize normalized expression on sex.
     pheno$y <- resid(
-      lm(count ~ SEX, pheno)
+      lm(
+        normalized_expression ~ SEX,
+        data = pheno
+      )
     )
 
     pheno <- pheno[
