@@ -10,7 +10,7 @@ res <- as.data.table(res_summary)
 # Analysis thresholds
 # ============================================================
 
-association_threshold <- 5e-8
+association_threshold <- 1e-6
 minimum_mean_reads <- 100
 
 required_columns <- c(
@@ -179,6 +179,16 @@ print(overall_summary)
 # Define agreement categories
 # ============================================================
 
+
+agreement_levels <- c(
+  "Same CS count; SNP overlap",
+  "Different CS count",
+  "Same CS count; no SNP overlap",
+  "Neither model reported a CS",
+  "Additive model only",
+  "Mixed model only"
+)
+
 res_idx[
   ,
   agreement_category := fcase(
@@ -202,31 +212,43 @@ res_idx[
       overlap == 0,
     "Same CS count; no SNP overlap",
 
-    ncs_susie != ncs_susie_mix &
-      overlap > 0,
-    "Different CS count; SNP overlap",
-
-    default = "Different CS count; no SNP overlap"
+    default = "Different CS count"
   )
 ]
 
+res_idx[
+  ,
+  agreement_category := factor(
+    agreement_category,
+    levels = agreement_levels
+  )
+]
 
-agreement_summary <- res_idx[
+# Retain categories with zero observations.
+agreement_summary <- data.table(
+  agreement_category = agreement_levels,
+  count = vapply(
+    agreement_levels,
+    function(category) {
+      sum(
+        as.character(res_idx$agreement_category) == category,
+        na.rm = TRUE
+      )
+    },
+    integer(1L)
+  )
+)
+
+agreement_summary[
   ,
-  .(
-    count = .N
-  ),
-  by = agreement_category
-][
-  ,
-  percentage := 100 * count / sum(count)
-][
-  order(-count)
+  percentage := if (sum(count) > 0L) {
+    100 * count / sum(count)
+  } else {
+    NA_real_
+  }
 ]
 
 print(agreement_summary)
-
-
 # ============================================================
 # Main agreement statistics
 # ============================================================
@@ -287,7 +309,8 @@ agreement_statistics <- rbindlist(
     ),
 
     make_metric(
-      "Any shared SNP when both models reported CSs",
+      "Any s
+      hared SNP when both models reported CSs",
       sum(
         both_models_cs$overlap > 0
       ),
@@ -712,17 +735,26 @@ abline(
   lwd = 2
 )
 
+agreement_plot_labels <- c(
+  "Same CS count;\nSNP overlap",
+  "Different\nCS count",
+  "Same CS count;\nno SNP overlap",
+  "Neither model\nreported a CS",
+  "Additive\nmodel only",
+  "Mixed\nmodel only"
+)
+
+par(mar = c(9, 5, 4, 1))
 
 barplot(
   agreement_summary$percentage,
-  names.arg = agreement_summary$agreement_category,
+  names.arg = agreement_plot_labels,
   #las = 2,
-  cex.names = 0.65,
+  cex.names = 0.70,
   ylab = "Percentage",
   main = "Agreement between fine-mapping models",
   col = "steelblue"
 )
-
 par(mfrow = c(1, 1))
 
 

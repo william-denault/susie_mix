@@ -3,6 +3,8 @@
 # Run additive and mixed-coding SuSiE fine-mapping for all tissues
 # available for one gene.
 
+
+source("/project2/mstephens/wdenault/susie_mix/script/scan_tissue_attempt/workhorse_utils.R")
 run_susie_gene <- function(
     target_gene = "GTF2H2",
 
@@ -53,6 +55,66 @@ run_susie_gene <- function(
     # --- misc ---
     temp_dir = "/project2/mstephens/wdenault/susie_mix/temp_plink/"
 ) {
+
+  library(tools)
+  library(data.table)
+  library(matrixStats)
+  library(susieR)
+
+  source(gene_annot_fun)
+
+  plink_out_prefix="/project2/mstephens/wdenault/susie_mix/temp_plink/plink_ICA1"
+
+  source("/project2/mstephens/wdenault/susie_mix/script/scan_tissue_attempt/workhorse_utils.R")
+
+
+  target_gene="RIN3"
+  # --- paths ---
+  datadir = "/project2/mstephens/gtex"
+  plink_exec = file.path(datadir, "plink2")
+  gene_annot_fun = paste0(
+    "/project2/mstephens/wdenault/susie_mix/",
+    "script/scan_tissue_attempt/get_gene_annotations.R"
+  )
+  gtf_file = file.path(
+    datadir,
+    "Homo_sapiens.GRCh38.103.chr.reformatted.collapse_only.gene.gtf.gz"
+  )
+  geno_file = file.path(
+    datadir,
+    "GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv"
+  )
+  subject_pheno_file = file.path(
+    datadir,
+    "GTEx_Analysis_v8_Annotations_SubjectPhenotypesDS.txt.gz"
+  )
+  sample_attr_file = file.path(
+    datadir,
+    "GTEx_Analysis_v8_Annotations_SampleAttributesDS.txt.gz"
+  )
+  expr_file = file.path(
+    datadir,
+    "GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_reads.gct.gz"
+  )
+
+  # --- analysis parameters ---
+  min_maf_plink = 0.00
+  min_maf = 0.05
+  cis_window = 5e5
+  min_samples = 50
+  seed = 1
+  hwe_thresh = 1e-8
+  min_n_rec = 5
+
+  # --- SuSiE parameters ---
+  L = 10
+  standardize = FALSE
+  estimate_prior_method = "EM"
+  min_abs_corr = 0.0
+  verbose = FALSE
+
+  # --- misc ---
+  temp_dir = "/project2/mstephens/wdenault/susie_mix/temp_plink/"
 
   library(tools)
   library(data.table)
@@ -273,6 +335,10 @@ run_susie_gene <- function(
     plink_out_prefix,
     ".raw"
   )
+  geno_file_raw <- paste0(
+    plink_out_prefix,
+    ".raw"
+  )
   hwe_thresh = 1e-8
   maf_min = 0.05
   geno_all <- fread(
@@ -313,167 +379,6 @@ run_susie_gene <- function(
   # Genotype QC functions
   # ------------------------------------------------------------
 
-  recode_matrix_by_freq <- function(X) {
-
-    storage.mode(X) <- "integer"
-
-    counts <- rbind(
-      colSums(X == 0L),
-      colSums(X == 1L),
-      colSums(X == 2L)
-    )
-
-    new_code <- apply(
-      counts,
-      2,
-      function(cnt) {
-        rank(
-          -cnt,
-          ties.method = "first"
-        ) - 1L
-      }
-    )
-
-    out <- X
-
-    for (v in 0:2) {
-
-      idx <- which(
-        X == v,
-        arr.ind = TRUE
-      )
-
-      if (nrow(idx) > 0L) {
-        out[idx] <- new_code[
-          v + 1L,
-          idx[, "col"]
-        ]
-      }
-    }
-
-    dimnames(out) <- dimnames(X)
-
-    out
-  }
-
-
-  qc_filter_geno <- function(
-    X,
-    hwe_thresh = 1e-8,
-    maf_min = 0.05) {
-
-    X <- as.matrix(X)
-    storage.mode(X) <- "integer"
-
-    # Orient all SNPs to the minor allele.
-    af <- colMeans(X) / 2
-    flip <- is.finite(af) & af > 0.5
-
-    if (any(flip)) {
-      X[, flip] <- 2L - X[, flip, drop = FALSE]
-    }
-
-    # Filter by minor-allele frequency.
-    maf <- colMeans(X) / 2
-    keep_maf <- is.finite(maf) & maf > maf_min
-
-    X <- X[
-      ,
-      keep_maf,
-      drop = FALSE
-    ]
-
-    if (ncol(X) == 0L) {
-      stop(
-        "No SNPs remained after MAF filtering for ",
-        target_gene
-      )
-    }
-
-    n <- nrow(X)
-    maf <- colMeans(X) / 2
-
-    # HWE chi-square test.
-    count0 <- colSums(X == 0L)
-    count1 <- colSums(X == 1L)
-    count2 <- colSums(X == 2L)
-
-    exp0 <- n * (1 - maf)^2
-    exp1 <- n * 2 * maf * (1 - maf)
-    exp2 <- n * maf^2
-
-    valid_hwe <- (
-      exp0 > 0 &
-        exp1 > 0 &
-        exp2 > 0
-    )
-
-    chisq <- rep(
-      NA_real_,
-      ncol(X)
-    )
-
-    chisq[valid_hwe] <- (
-      (count0[valid_hwe] - exp0[valid_hwe])^2 /
-        exp0[valid_hwe] +
-        (count1[valid_hwe] - exp1[valid_hwe])^2 /
-        exp1[valid_hwe] +
-        (count2[valid_hwe] - exp2[valid_hwe])^2 /
-        exp2[valid_hwe]
-    )
-
-    hwe_p <- pchisq(
-      chisq,
-      df = 1,
-      lower.tail = FALSE
-    )
-
-    # Remove SNPs with HWE P < hwe_thresh.
-    fail_hwe <- (
-      !is.na(hwe_p) &
-        hwe_p < hwe_thresh
-    )
-
-    removed_hwe_snps <- colnames(X)[fail_hwe]
-
-    if (any(fail_hwe)) {
-      cat(
-        sum(fail_hwe),
-        "SNP(s) removed because HWE P <",
-        format(hwe_thresh, scientific = TRUE),
-        ":\n"
-      )
-
-      print(removed_hwe_snps)
-
-      X <- X[
-        ,
-        !fail_hwe,
-        drop = FALSE
-      ]
-
-      maf <- maf[!fail_hwe]
-      hwe_p <- hwe_p[!fail_hwe]
-    }
-
-    if (ncol(X) == 0L) {
-      stop(
-        "No SNPs remained after HWE filtering for ",
-        target_gene
-      )
-    }
-
-    list(
-      X = X,
-      maf = maf,
-      hwe_p = hwe_p,
-      flipped = which(flip),
-      removed_hwe_snps = removed_hwe_snps,
-      n_removed_hwe = length(removed_hwe_snps)
-    )
-  }
-
-
 
 
 
@@ -482,45 +387,12 @@ run_susie_gene <- function(
     hwe_thresh = hwe_thresh,
     maf_min = min_maf
   )$X
+
   # ------------------------------------------------------------
   # Construct additive, recessive and dominant predictors
   # ------------------------------------------------------------
 
-  recode_snp_matrix <- function(
-    X,
-    warn = TRUE) {
 
-    X <- as.matrix(X)
-
-    if (
-      warn &&
-      !all(X %in% c(0L, 1L, 2L))
-    ) {
-      warning(
-        paste0(
-          "recode_snp_matrix: entries are not all in {0,1,2}; ",
-          "expecting additive 0/1/2 dosages."
-        ),
-        call. = FALSE
-      )
-    }
-
-    storage.mode(X) <- "integer"
-
-    additive <- X
-    dominant <- (X >= 1L) * 1L
-    recessive <- (X == 2L) * 1L
-
-    dimnames(additive) <- dimnames(X)
-    dimnames(dominant) <- dimnames(X)
-    dimnames(recessive) <- dimnames(X)
-
-    list(
-      additive = additive,
-      recessive = recessive,
-      dominant = dominant
-    )
-  }
 
   geno_mix_parts <- recode_snp_matrix(
     geno_all
@@ -574,7 +446,6 @@ run_susie_gene <- function(
   # ------------------------------------------------------------
 
   fits <- list()
-
   for (target_tissue in all_tissues) {
 
     cat("\n=====================================\n")
@@ -801,6 +672,27 @@ run_susie_gene <- function(
       verbose = verbose
     )
 
+
+
+    # ----------------------------------------------------------
+    # Lead SNP and distance to the TSS for each credible set
+    # ----------------------------------------------------------
+
+    susie_add_lead_snp_tss_distance <- (
+      get_cs_lead_tss_distance(
+        fit = fit,
+        predictor_map = add_predictor_map,
+        tss = tss
+      )
+    )
+
+    susie_mix_lead_snp_tss_distance <- (
+      get_cs_lead_tss_distance(
+        fit = fit_mix,
+        predictor_map = mix_predictor_map,
+        tss = tss
+      )
+    )
     # ----------------------------------------------------------
     # Store results and predictor mappings
     # ----------------------------------------------------------
@@ -811,24 +703,28 @@ run_susie_gene <- function(
       susie_mix = fit_mix,
       susie_mix_perm = fit_mix_perm,
 
-      # Predictor maps used to translate SuSiE indices into SNPs.
+      # Lead biological SNP and absolute distance to the TSS.
+      susie_add_lead_snp_tss_distance =
+        susie_add_lead_snp_tss_distance,
+
+      susie_mix_lead_snp_tss_distance =
+        susie_mix_lead_snp_tss_distance,
+
+      # Predictor maps.
       add_predictor_map = add_predictor_map,
       mix_predictor_map = mix_predictor_map,
 
-      # Vectors retained for simple downstream code.
       add_snp_names = add_snp_names,
       mix_snp_names = mix_snp_names,
       mix_coding = mix_coding,
       mix_predictor_names = mix_predictor_names,
 
-      # Dimensions and filtering information.
       n_SNP = ncol(geno),
       n_mix_predictor = ncol(geno_mix),
       n_add_rm = n_add_rm,
       n_rec_rm = n_rec_rm,
       n_dom_rm = n_dom_rm,
 
-      # Sample and phenotype summaries.
       n_ind = length(perm_y),
       mean_phe = mean(pheno$y),
       median_phe = median(pheno$y),
@@ -837,6 +733,7 @@ run_susie_gene <- function(
       mean_read = mean_read
     )
   }
+
 
   # Clean up temporary PLINK files.
   file.remove(
