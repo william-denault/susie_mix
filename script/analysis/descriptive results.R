@@ -642,7 +642,8 @@ elbo_values <- -2* (res_idx$log_lik_add-res_idx$log_lik_mix)
 
 hist(
   elbo_values,
-   breaks = "FD",
+  xlim=c(-20,50),
+  nclass = 1000,
   main = paste0(
     "-2( log lik additive - log lik mixed)"
   ),
@@ -666,7 +667,9 @@ permuted_elbo <- res_idx$dif_elbo_perm[
 
 hist(
   permuted_elbo,
-  breaks = "FD",
+ # breaks = "FD",
+ xlim=c(-20,50),
+ nclass = 1000,
   main = paste0(
     "-2( log lik additive - log lik mixed)\n permuted"
   ),
@@ -713,7 +716,7 @@ abline(
 barplot(
   agreement_summary$percentage,
   names.arg = agreement_summary$agreement_category,
-  las = 2,
+  #las = 2,
   cex.names = 0.65,
   ylab = "Percentage",
   main = "Agreement between fine-mapping models",

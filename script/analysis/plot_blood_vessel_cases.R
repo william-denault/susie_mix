@@ -4,13 +4,13 @@ load("/project2/mstephens/wdenault/susie_mix/res_summary.RData")
 idx= which(res_summary$min_pv< 5e-8)
 
 
-plot_folder= "/project2/mstephens/wdenault/susie_mix/plot/blood_vessle"
-
+plot_folder= "/project2/mstephens/wdenault/susie_mix/plot/blood_vessel"
+par(mfrow=c(1,1))
 gene= c("ABCA1",
         "RIN3",
         "ECHDC3",
         "GRN",
-        "AGRN",
+        #"AGRN",
         "IDUA",#check nerve as well
         "FAM193B",#nerve intereting case as well
         "USP6NL",
