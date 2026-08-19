@@ -12,6 +12,21 @@ summary_csv <- paste0(
   "res_summary.csv"
 )
 
+cs_summary_file <- paste0(
+  "/project2/mstephens/wdenault/susie_mix/",
+  "res_cs_summary.RData"
+)
+
+cs_summary_csv <- paste0(
+  "/project2/mstephens/wdenault/susie_mix/",
+  "res_cs_summary.csv"
+)
+
+cs_error_csv <- paste0(
+  "/project2/mstephens/wdenault/susie_mix/",
+  "res_cs_errors.csv"
+)
+
 error_csv <- paste0(
   "/project2/mstephens/wdenault/susie_mix/",
   "res_errors.csv"
@@ -643,6 +658,1192 @@ get_cs_lead_predictor <- function(
 }
 
 
+find_metadata_scalar <- function(
+    objects,
+    candidate_names,
+    numeric = FALSE) {
+
+  for (object in objects) {
+
+    if (
+      is.null(object) ||
+      is.null(names(object))
+    ) {
+      next
+    }
+
+    for (candidate_name in candidate_names) {
+
+      normalized_object_names <- tolower(
+        gsub(
+          "[^a-z0-9]",
+          "",
+          names(object)
+        )
+      )
+
+      normalized_candidate_name <- tolower(
+        gsub(
+          "[^a-z0-9]",
+          "",
+          candidate_name
+        )
+      )
+
+      matched_name_index <- match(
+        normalized_candidate_name,
+        normalized_object_names
+      )
+
+      if (is.na(matched_name_index)) {
+        next
+      }
+
+      matched_name <- names(object)[matched_name_index]
+      value <- object[[matched_name]]
+
+      if (numeric) {
+
+        value <- suppressWarnings(
+          as.numeric(
+            as.character(value)
+          )
+        )
+
+        value <- value[is.finite(value)]
+
+      } else {
+
+        value <- as.character(value)
+        value <- value[
+          !is.na(value) &
+            nzchar(value)
+        ]
+      }
+
+      if (length(value) > 0L) {
+        return(list(
+          value = value[1],
+          source = matched_name
+        ))
+      }
+    }
+  }
+
+  list(
+    value = if (numeric) NA_real_ else NA_character_,
+    source = NA_character_
+  )
+}
+
+
+get_tss_metadata <- function(
+    x,
+    predictor_map) {
+
+  nested_metadata_names <- intersect(
+    c(
+      "gene_info",
+      "gene_metadata",
+      "gene_annotation",
+      "annotation"
+    ),
+    names(x)
+  )
+
+  metadata_objects <- c(
+    list(x),
+    unname(x[nested_metadata_names]),
+    list(predictor_map)
+  )
+
+  strand_info <- find_metadata_scalar(
+    metadata_objects,
+    c(
+      "strand",
+      "gene_strand",
+      "tx_strand"
+    )
+  )
+
+  strand <- strand_info$value
+
+  if (!is.na(strand)) {
+
+    strand_lower <- tolower(strand)
+
+    if (strand_lower %in% c("-", "-1", "minus", "reverse")) {
+      strand <- "-"
+    } else if (
+      strand_lower %in% c("+", "1", "plus", "forward")
+    ) {
+      strand <- "+"
+    } else {
+      strand <- NA_character_
+    }
+  }
+
+  tss_info <- find_metadata_scalar(
+    metadata_objects,
+    c(
+      "tss",
+      "TSS",
+      "tss_position",
+      "tss_pos",
+      "gene_tss",
+      "transcription_start_site"
+    ),
+    numeric = TRUE
+  )
+
+  if (!is.finite(tss_info$value)) {
+
+    gene_start_info <- find_metadata_scalar(
+      metadata_objects,
+      c(
+        "gene_start",
+        "tx_start",
+        "transcription_start"
+      ),
+      numeric = TRUE
+    )
+
+    gene_end_info <- find_metadata_scalar(
+      metadata_objects,
+      c(
+        "gene_end",
+        "tx_end",
+        "transcription_end"
+      ),
+      numeric = TRUE
+    )
+
+    if (
+      identical(strand, "-") &&
+      is.finite(gene_end_info$value)
+    ) {
+
+      tss_info <- list(
+        value = gene_end_info$value,
+        source = paste0(
+          "derived_from_",
+          gene_end_info$source
+        )
+      )
+
+    } else if (is.finite(gene_start_info$value)) {
+
+      tss_info <- list(
+        value = gene_start_info$value,
+        source = paste0(
+          "derived_from_",
+          gene_start_info$source
+        )
+      )
+    }
+  }
+
+  chromosome_info <- find_metadata_scalar(
+    metadata_objects,
+    c(
+      "chromosome",
+      "chrom",
+      "chr",
+      "gene_chromosome"
+    )
+  )
+
+  list(
+    chromosome = chromosome_info$value,
+    tss_position = as.numeric(tss_info$value),
+    strand = strand,
+    tss_source = tss_info$source
+  )
+}
+
+
+parse_variant_position <- function(snp) {
+
+  snp <- as.character(snp)
+
+  matches <- regexec(
+    paste0(
+      "^(?:chr)?(?:[0-9]+|X|Y|M|MT)",
+      "[:_]([0-9]+)"
+    ),
+    snp,
+    ignore.case = TRUE,
+    perl = TRUE
+  )
+
+  match_values <- regmatches(
+    snp,
+    matches
+  )
+
+  vapply(
+    match_values,
+    function(value) {
+
+      if (length(value) < 2L) {
+        return(NA_real_)
+      }
+
+      suppressWarnings(
+        as.numeric(value[2])
+      )
+    },
+    numeric(1)
+  )
+}
+
+
+parse_variant_chromosome <- function(snp) {
+
+  snp <- as.character(snp)
+
+  matches <- regexec(
+    "^((?:chr)?(?:[0-9]+|X|Y|M|MT))[:_]",
+    snp,
+    ignore.case = TRUE,
+    perl = TRUE
+  )
+
+  match_values <- regmatches(
+    snp,
+    matches
+  )
+
+  vapply(
+    match_values,
+    function(value) {
+
+      if (length(value) < 2L) {
+        return(NA_character_)
+      }
+
+      value[2]
+    },
+    character(1)
+  )
+}
+
+
+get_predictor_coordinates <- function(predictor_map) {
+
+  position_candidates <- c(
+    "position",
+    "pos",
+    "bp",
+    "snp_position",
+    "variant_position"
+  )
+
+  position_column <- intersect(
+    position_candidates,
+    names(predictor_map)
+  )
+
+  position <- rep(
+    NA_real_,
+    nrow(predictor_map)
+  )
+
+  position_source <- rep(
+    NA_character_,
+    nrow(predictor_map)
+  )
+
+  if (length(position_column) > 0L) {
+
+    position_column <- position_column[1]
+
+    position <- suppressWarnings(
+      as.numeric(
+        as.character(
+          predictor_map[[position_column]]
+        )
+      )
+    )
+
+    position_source[is.finite(position)] <- position_column
+  }
+
+  parsed_position <- parse_variant_position(
+    predictor_map$snp
+  )
+
+  use_parsed_position <- (
+    !is.finite(position) &
+      is.finite(parsed_position)
+  )
+
+  position[use_parsed_position] <- (
+    parsed_position[use_parsed_position]
+  )
+
+  position_source[use_parsed_position] <- "parsed_from_snp"
+
+  chromosome_candidates <- c(
+    "chromosome",
+    "chrom",
+    "chr"
+  )
+
+  chromosome_column <- intersect(
+    chromosome_candidates,
+    names(predictor_map)
+  )
+
+  chromosome <- rep(
+    NA_character_,
+    nrow(predictor_map)
+  )
+
+  if (length(chromosome_column) > 0L) {
+
+    chromosome_column <- chromosome_column[1]
+    chromosome <- as.character(
+      predictor_map[[chromosome_column]]
+    )
+  }
+
+  parsed_chromosome <- parse_variant_chromosome(
+    predictor_map$snp
+  )
+
+  use_parsed_chromosome <- (
+    (is.na(chromosome) | !nzchar(chromosome)) &
+      !is.na(parsed_chromosome)
+  )
+
+  chromosome[use_parsed_chromosome] <- (
+    parsed_chromosome[use_parsed_chromosome]
+  )
+
+  list(
+    position = position,
+    position_source = position_source,
+    chromosome = chromosome
+  )
+}
+
+
+get_record_scalar <- function(
+    record,
+    candidate_names,
+    numeric = FALSE) {
+
+  if (
+    is.null(record) ||
+    length(record) == 0L
+  ) {
+    return(list(
+      value = if (numeric) NA_real_ else NA_character_,
+      source = NA_character_
+    ))
+  }
+
+  find_metadata_scalar(
+    objects = list(record),
+    candidate_names = candidate_names,
+    numeric = numeric
+  )
+}
+
+
+get_saved_cs_tss_record <- function(
+    saved_tss_summary,
+    cs_number,
+    cs_name,
+    component) {
+
+  if (
+    is.null(saved_tss_summary) ||
+    length(saved_tss_summary) == 0L
+  ) {
+    return(list())
+  }
+
+  if (
+    is.atomic(saved_tss_summary) &&
+    is.null(dim(saved_tss_summary))
+  ) {
+
+    if (length(saved_tss_summary) < cs_number) {
+      return(list())
+    }
+
+    return(list(
+      distance_to_tss = saved_tss_summary[cs_number]
+    ))
+  }
+
+  if (
+    is.list(saved_tss_summary) &&
+    !is.data.frame(saved_tss_summary)
+  ) {
+
+    field_names <- c(
+      "cs",
+      "cs_number",
+      "cs_name",
+      "component",
+      "lead_snp",
+      "distance",
+      "distance_to_tss",
+      "tss_distance"
+    )
+
+    if (!any(field_names %in% names(saved_tss_summary))) {
+
+      if (
+        !is.null(names(saved_tss_summary)) &&
+        cs_name %in% names(saved_tss_summary)
+      ) {
+        return(saved_tss_summary[[cs_name]])
+      }
+
+      if (length(saved_tss_summary) >= cs_number) {
+        return(saved_tss_summary[[cs_number]])
+      }
+
+      return(list())
+    }
+  }
+
+  saved_tss_summary <- tryCatch(
+    as.data.frame(
+      saved_tss_summary,
+      stringsAsFactors = FALSE
+    ),
+    error = function(e) NULL
+  )
+
+  if (
+    is.null(saved_tss_summary) ||
+    nrow(saved_tss_summary) == 0L
+  ) {
+    return(list())
+  }
+
+  selected_row <- NA_integer_
+
+  name_columns <- intersect(
+    c(
+      "cs_name",
+      "cs",
+      "credible_set"
+    ),
+    names(saved_tss_summary)
+  )
+
+  for (name_column in name_columns) {
+
+    values <- as.character(
+      saved_tss_summary[[name_column]]
+    )
+
+    matched_row <- which(
+      values == cs_name
+    )
+
+    if (length(matched_row) > 0L) {
+      selected_row <- matched_row[1]
+      break
+    }
+  }
+
+  if (is.na(selected_row)) {
+
+    number_columns <- intersect(
+      c(
+        "cs_number",
+        "cs_index",
+        "component",
+        "L"
+      ),
+      names(saved_tss_summary)
+    )
+
+    for (number_column in number_columns) {
+
+      values <- suppressWarnings(
+        as.numeric(
+          as.character(
+            saved_tss_summary[[number_column]]
+          )
+        )
+      )
+
+      target_value <- if (
+        number_column %in% c("component", "L") &&
+        is.finite(component)
+      ) {
+        component
+      } else {
+        cs_number
+      }
+
+      matched_row <- which(
+        values == target_value
+      )
+
+      if (length(matched_row) > 0L) {
+        selected_row <- matched_row[1]
+        break
+      }
+    }
+  }
+
+  if (
+    is.na(selected_row) &&
+    nrow(saved_tss_summary) >= cs_number
+  ) {
+    selected_row <- cs_number
+  }
+
+  if (is.na(selected_row)) {
+    return(list())
+  }
+
+  as.list(
+    saved_tss_summary[
+      selected_row,
+      ,
+      drop = FALSE
+    ]
+  )
+}
+
+
+get_cs_vector_value <- function(
+    values,
+    cs_number,
+    cs_name) {
+
+  if (
+    is.null(values) ||
+    length(values) == 0L
+  ) {
+    return(NA_real_)
+  }
+
+  if (
+    !is.null(names(values)) &&
+    cs_name %in% names(values)
+  ) {
+    return(as.numeric(values[[cs_name]]))
+  }
+
+  if (length(values) < cs_number) {
+    return(NA_real_)
+  }
+
+  as.numeric(values[[cs_number]])
+}
+
+
+get_cs_purity_value <- function(
+    fit,
+    cs_number,
+    cs_name,
+    candidate_columns) {
+
+  purity <- fit$sets$purity
+
+  if (
+    is.null(purity) ||
+    length(purity) == 0L
+  ) {
+    return(NA_real_)
+  }
+
+  purity <- as.data.frame(
+    purity,
+    stringsAsFactors = FALSE
+  )
+
+  purity_column <- intersect(
+    candidate_columns,
+    names(purity)
+  )
+
+  if (length(purity_column) == 0L) {
+    return(NA_real_)
+  }
+
+  purity_row <- cs_number
+
+  if (
+    !is.null(rownames(purity)) &&
+    cs_name %in% rownames(purity)
+  ) {
+    purity_row <- match(
+      cs_name,
+      rownames(purity)
+    )
+  }
+
+  if (
+    is.na(purity_row) ||
+    purity_row > nrow(purity)
+  ) {
+    return(NA_real_)
+  }
+
+  as.numeric(
+    purity[
+      purity_row,
+      purity_column[1]
+    ]
+  )
+}
+
+
+summarize_credible_sets <- function(
+    x,
+    gene,
+    tissue,
+    result_file,
+    tissue_summary) {
+
+  model_inputs <- list(
+    list(
+      model = "SuSiE",
+      model_key = "susie_add",
+      fit = x$susie_add,
+      predictor_map = x$add_predictor_map,
+      saved_tss_summary = (
+        x$susie_add_lead_snp_tss_distance
+      )
+    ),
+    list(
+      model = "SuSiE-mix",
+      model_key = "susie_mix",
+      fit = x$susie_mix,
+      predictor_map = x$mix_predictor_map,
+      saved_tss_summary = (
+        x$susie_mix_lead_snp_tss_distance
+      )
+    )
+  )
+
+  cs_rows <- list()
+  cs_row_counter <- 0L
+
+  repeated_columns <- setdiff(
+    names(tissue_summary),
+    c(
+      "gene",
+      "tissue",
+      "result_file"
+    )
+  )
+
+  repeated_summary <- tissue_summary[
+    1,
+    repeated_columns,
+    drop = FALSE
+  ]
+
+  for (model_input in model_inputs) {
+
+    fit <- model_input$fit
+    predictor_map <- model_input$predictor_map
+
+    validate_predictor_map(
+      fit,
+      predictor_map,
+      paste0(
+        model_input$model_key,
+        "_predictor_map"
+      )
+    )
+
+    cs <- get_cs(fit)
+
+    if (length(cs) == 0L) {
+      next
+    }
+
+    coordinates <- get_predictor_coordinates(
+      predictor_map
+    )
+
+    tss_metadata <- get_tss_metadata(
+      x,
+      predictor_map
+    )
+
+    cs_names <- names(cs)
+
+    for (cs_number in seq_along(cs)) {
+
+      predictor_index <- as.integer(
+        cs[[cs_number]]
+      )
+
+      if (
+        length(predictor_index) == 0L ||
+        anyNA(predictor_index) ||
+        any(predictor_index < 1L) ||
+        any(predictor_index > nrow(predictor_map))
+      ) {
+        stop(
+          "A credible set contains invalid predictor indices."
+        )
+      }
+
+      cs_name <- paste0(
+        "CS",
+        cs_number
+      )
+
+      if (
+        !is.null(cs_names) &&
+        length(cs_names) >= cs_number &&
+        !is.na(cs_names[cs_number]) &&
+        nzchar(cs_names[cs_number])
+      ) {
+        cs_name <- cs_names[cs_number]
+      }
+
+      lead_index <- get_cs_lead_predictor(
+        fit = fit,
+        cs = cs,
+        cs_number = cs_number
+      )
+
+      component <- get_cs_vector_value(
+        fit$sets$cs_index,
+        cs_number,
+        cs_name
+      )
+
+      saved_cs_tss_record <- get_saved_cs_tss_record(
+        saved_tss_summary = model_input$saved_tss_summary,
+        cs_number = cs_number,
+        cs_name = cs_name,
+        component = component
+      )
+
+      saved_lead_snp_info <- get_record_scalar(
+        saved_cs_tss_record,
+        c(
+          "lead_snp",
+          "snp",
+          "variant",
+          "lead_variant"
+        )
+      )
+
+      saved_lead_position_info <- get_record_scalar(
+        saved_cs_tss_record,
+        c(
+          "lead_position",
+          "lead_snp_position",
+          "snp_position",
+          "variant_position",
+          "position",
+          "pos",
+          "bp"
+        ),
+        numeric = TRUE
+      )
+
+      saved_tss_position_info <- get_record_scalar(
+        saved_cs_tss_record,
+        c(
+          "tss_position",
+          "tss_pos",
+          "tss",
+          "TSS"
+        ),
+        numeric = TRUE
+      )
+
+      saved_distance_info <- get_record_scalar(
+        saved_cs_tss_record,
+        c(
+          "distance_to_tss_bp",
+          "distance_to_tss",
+          "distance_tss",
+          "tss_distance",
+          "distance"
+        ),
+        numeric = TRUE
+      )
+
+      saved_distance_kb_info <- get_record_scalar(
+        saved_cs_tss_record,
+        c(
+          "distance_to_tss_kb",
+          "tss_distance_kb"
+        ),
+        numeric = TRUE
+      )
+
+      if (
+        !is.finite(saved_distance_info$value) &&
+        is.finite(saved_distance_kb_info$value)
+      ) {
+        saved_distance_info <- list(
+          value = 1000 * saved_distance_kb_info$value,
+          source = saved_distance_kb_info$source
+        )
+      }
+
+      lead_alpha <- NA_real_
+
+      if (
+        is.finite(component) &&
+        component >= 1L &&
+        component <= nrow(fit$alpha) &&
+        !is.na(lead_index)
+      ) {
+        lead_alpha <- fit$alpha[
+          as.integer(component),
+          lead_index
+        ]
+      }
+
+      lead_pip <- NA_real_
+
+      if (
+        !is.null(fit$pip) &&
+        !is.na(lead_index) &&
+        length(fit$pip) >= lead_index
+      ) {
+        lead_pip <- fit$pip[lead_index]
+      }
+
+      member_snps <- clean_snp_vector(
+        predictor_map$snp[predictor_index]
+      )
+
+      member_codings <- sort(
+        clean_snp_vector(
+          predictor_map$coding[predictor_index]
+        )
+      )
+
+      member_positions <- unique(
+        coordinates$position[predictor_index]
+      )
+
+      member_positions <- member_positions[
+        is.finite(member_positions)
+      ]
+
+      saved_chromosome_info <- get_record_scalar(
+        saved_cs_tss_record,
+        c(
+          "lead_chromosome",
+          "chromosome",
+          "chrom",
+          "chr"
+        )
+      )
+
+      saved_strand_info <- get_record_scalar(
+        saved_cs_tss_record,
+        c(
+          "gene_strand",
+          "strand"
+        )
+      )
+
+      lead_snp <- as.character(
+        predictor_map$snp[lead_index]
+      )
+
+      tss_lead_snp <- lead_snp
+
+      if (!is.na(saved_lead_snp_info$value)) {
+        tss_lead_snp <- saved_lead_snp_info$value
+      }
+
+      lead_position <- coordinates$position[lead_index]
+      lead_position_source <- coordinates$position_source[lead_index]
+
+      if (
+        !is.finite(lead_position) &&
+        is.finite(saved_lead_position_info$value)
+      ) {
+        lead_position <- saved_lead_position_info$value
+        lead_position_source <- paste0(
+          "workhorse:",
+          saved_lead_position_info$source
+        )
+      }
+
+      if (!is.finite(lead_position)) {
+
+        parsed_lead_position <- parse_variant_position(
+          tss_lead_snp
+        )
+
+        if (is.finite(parsed_lead_position)) {
+          lead_position <- parsed_lead_position
+          lead_position_source <- "parsed_from_workhorse_lead_snp"
+        }
+      }
+
+      lead_chromosome <- coordinates$chromosome[lead_index]
+
+      if (
+        (is.na(lead_chromosome) || !nzchar(lead_chromosome)) &&
+        !is.na(saved_chromosome_info$value)
+      ) {
+        lead_chromosome <- saved_chromosome_info$value
+      }
+
+      if (is.na(lead_chromosome) || !nzchar(lead_chromosome)) {
+        lead_chromosome <- parse_variant_chromosome(
+          tss_lead_snp
+        )
+      }
+
+      if (is.finite(saved_tss_position_info$value)) {
+        tss_metadata$tss_position <- saved_tss_position_info$value
+        tss_metadata$tss_source <- paste0(
+          "workhorse:",
+          saved_tss_position_info$source
+        )
+      }
+
+      if (!is.na(saved_strand_info$value)) {
+
+        saved_strand <- tolower(
+          saved_strand_info$value
+        )
+
+        if (saved_strand %in% c("-", "-1", "minus", "reverse")) {
+          tss_metadata$strand <- "-"
+        } else if (
+          saved_strand %in% c("+", "1", "plus", "forward")
+        ) {
+          tss_metadata$strand <- "+"
+        }
+      }
+
+      tss_position <- tss_metadata$tss_position
+      genomic_offset <- lead_position - tss_position
+
+      orientation_multiplier <- 1
+      distance_orientation <- "genomic_coordinate"
+
+      if (identical(tss_metadata$strand, "-")) {
+        orientation_multiplier <- -1
+        distance_orientation <- "transcription_direction"
+      } else if (identical(tss_metadata$strand, "+")) {
+        distance_orientation <- "transcription_direction"
+      }
+
+      distance_to_tss_bp <- (
+        genomic_offset * orientation_multiplier
+      )
+
+      distance_source <- "reconstructed_from_lead_position_and_tss"
+
+      if (
+        !is.finite(distance_to_tss_bp) &&
+        is.finite(saved_distance_info$value)
+      ) {
+        distance_to_tss_bp <- saved_distance_info$value
+        distance_orientation <- "workhorse_saved_unspecified"
+        distance_source <- paste0(
+          "workhorse:",
+          saved_distance_info$source
+        )
+      }
+
+      member_distance_to_tss_bp <- (
+        (member_positions - tss_position) *
+          orientation_multiplier
+      )
+
+      chromosome_matches_tss <- NA
+
+      if (
+        !is.na(lead_chromosome) &&
+        nzchar(lead_chromosome) &&
+        !is.na(tss_metadata$chromosome) &&
+        nzchar(tss_metadata$chromosome)
+      ) {
+
+        normalize_chromosome <- function(value) {
+          tolower(
+            sub(
+              "^chr",
+              "",
+              value,
+              ignore.case = TRUE
+            )
+          )
+        }
+
+        chromosome_matches_tss <- identical(
+          normalize_chromosome(lead_chromosome),
+          normalize_chromosome(tss_metadata$chromosome)
+        )
+      }
+
+      cs_row <- data.frame(
+        gene = gene,
+        tissue = tissue,
+        result_file = basename(result_file),
+        model = model_input$model,
+        model_key = model_input$model_key,
+        cs_number = cs_number,
+        cs_name = cs_name,
+        cs_id = paste(
+          gene,
+          tissue,
+          model_input$model_key,
+          cs_number,
+          sep = "|"
+        ),
+        component = component,
+        cs_size_predictors = length(predictor_index),
+        cs_size_snps = length(member_snps),
+        cs_predictor_indices = paste(
+          predictor_index,
+          collapse = ";"
+        ),
+        cs_predictors = paste(
+          predictor_map$predictor_name[predictor_index],
+          collapse = ";"
+        ),
+        cs_snps = paste(
+          member_snps,
+          collapse = ";"
+        ),
+        cs_coding_types = paste(
+          member_codings,
+          collapse = ";"
+        ),
+        cs_has_multiple_codings = length(member_codings) > 1L,
+        n_additive_predictors = sum(
+          predictor_map$coding[predictor_index] == "additive",
+          na.rm = TRUE
+        ),
+        n_recessive_predictors = sum(
+          predictor_map$coding[predictor_index] == "recessive",
+          na.rm = TRUE
+        ),
+        n_dominant_predictors = sum(
+          predictor_map$coding[predictor_index] == "dominant",
+          na.rm = TRUE
+        ),
+        cs_coverage = get_cs_vector_value(
+          fit$sets$coverage,
+          cs_number,
+          cs_name
+        ),
+        cs_min_abs_corr = get_cs_purity_value(
+          fit,
+          cs_number,
+          cs_name,
+          c(
+            "min.abs.corr",
+            "min_abs_corr"
+          )
+        ),
+        cs_mean_abs_corr = get_cs_purity_value(
+          fit,
+          cs_number,
+          cs_name,
+          c(
+            "mean.abs.corr",
+            "mean_abs_corr"
+          )
+        ),
+        cs_median_abs_corr = get_cs_purity_value(
+          fit,
+          cs_number,
+          cs_name,
+          c(
+            "median.abs.corr",
+            "median_abs_corr"
+          )
+        ),
+        lead_predictor_index = lead_index,
+        lead_predictor = as.character(
+          predictor_map$predictor_name[lead_index]
+        ),
+        lead_snp = lead_snp,
+        workhorse_lead_snp = saved_lead_snp_info$value,
+        tss_lead_snp = tss_lead_snp,
+        lead_coding = as.character(
+          predictor_map$coding[lead_index]
+        ),
+        lead_alpha = as.numeric(lead_alpha),
+        lead_pip = as.numeric(lead_pip),
+        lead_chromosome = lead_chromosome,
+        lead_position = lead_position,
+        lead_position_source = lead_position_source,
+        gene_chromosome = tss_metadata$chromosome,
+        tss_position = tss_position,
+        gene_strand = tss_metadata$strand,
+        tss_source = tss_metadata$tss_source,
+        chromosome_matches_tss = chromosome_matches_tss,
+        genomic_offset_from_tss_bp = genomic_offset,
+        distance_to_tss_bp = distance_to_tss_bp,
+        distance_to_tss_kb = distance_to_tss_bp / 1000,
+        absolute_distance_to_tss_bp = abs(distance_to_tss_bp),
+        distance_orientation = distance_orientation,
+        distance_source = distance_source,
+        workhorse_distance_to_tss_bp = saved_distance_info$value,
+        workhorse_distance_source = saved_distance_info$source,
+        nearest_cs_snp_abs_distance_to_tss_bp = if (
+          length(member_distance_to_tss_bp) > 0L
+        ) {
+          min(abs(member_distance_to_tss_bp))
+        } else {
+          NA_real_
+        },
+        min_cs_snp_distance_to_tss_bp = if (
+          length(member_distance_to_tss_bp) > 0L
+        ) {
+          min(member_distance_to_tss_bp)
+        } else {
+          NA_real_
+        },
+        max_cs_snp_distance_to_tss_bp = if (
+          length(member_distance_to_tss_bp) > 0L
+        ) {
+          max(member_distance_to_tss_bp)
+        } else {
+          NA_real_
+        },
+        stringsAsFactors = FALSE,
+        check.names = FALSE
+      )
+
+      cs_row_counter <- cs_row_counter + 1L
+      cs_rows[[cs_row_counter]] <- cbind(
+        cs_row,
+        repeated_summary
+      )
+    }
+  }
+
+  if (length(cs_rows) == 0L) {
+    return(data.frame())
+  }
+
+  cs_summary <- do.call(
+    rbind,
+    cs_rows
+  )
+
+  rownames(cs_summary) <- NULL
+  cs_summary
+}
+
+
 count_mix_cs_types <- function(
     fit,
     mix_predictor_map) {
@@ -976,10 +2177,15 @@ summarize_tissue <- function(
 # ============================================================
 
 result_rows <- list()
+cs_result_rows <- list()
 error_rows <- list()
+cs_error_rows <- list()
 
 result_counter <- 0L
+cs_result_counter <- 0L
+cs_row_counter <- 0L
 error_counter <- 0L
+cs_error_counter <- 0L
 
 
 record_error <- function(
@@ -1000,7 +2206,26 @@ record_error <- function(
 }
 
 
-for (file_index in seq_along(result_files)) {
+record_cs_error <- function(
+    file,
+    gene,
+    tissue,
+    message) {
+
+  cs_error_counter <<- cs_error_counter + 1L
+
+  cs_error_rows[[cs_error_counter]] <<- data.frame(
+    result_file = basename(file),
+    gene = gene,
+    tissue = tissue,
+    stage = "summarize_credible_sets",
+    error = as.character(message),
+    stringsAsFactors = FALSE
+  )
+}
+
+
+for (file_index in  seq_along(result_files)) {
 
   result_file <- result_files[file_index]
 
@@ -1151,6 +2376,33 @@ for (file_index in seq_along(result_files)) {
 
     result_counter <- result_counter + 1L
     result_rows[[result_counter]] <- temp_row
+
+    temp_cs_rows <- tryCatch(
+      summarize_credible_sets(
+        x = tissue_result,
+        gene = gene_from_file,
+        tissue = tissue,
+        result_file = result_file,
+        tissue_summary = temp_row
+      ),
+      error = function(e) e
+    )
+
+    if (inherits(temp_cs_rows, "error")) {
+
+      record_cs_error(
+        file = result_file,
+        gene = gene_from_file,
+        tissue = tissue,
+        message = conditionMessage(temp_cs_rows)
+      )
+
+    } else if (nrow(temp_cs_rows) > 0L) {
+
+      cs_result_counter <- cs_result_counter + 1L
+      cs_result_rows[[cs_result_counter]] <- temp_cs_rows
+      cs_row_counter <- cs_row_counter + nrow(temp_cs_rows)
+    }
   }
 
   if (
@@ -1165,8 +2417,12 @@ for (file_index in seq_along(result_files)) {
       "files;",
       result_counter,
       "tissue results;",
+      cs_row_counter,
+      "credible sets;",
       error_counter,
-      "errors.\n"
+      "original-summary errors;",
+      cs_error_counter,
+      "CS-summary errors.\n"
     )
   }
 }
@@ -1188,6 +2444,43 @@ if (length(result_rows) > 0L) {
 } else {
 
   res_summary <- data.frame()
+}
+
+
+if (length(cs_result_rows) > 0L) {
+
+  res_cs_summary <- do.call(
+    rbind,
+    cs_result_rows
+  )
+
+  rownames(res_cs_summary) <- NULL
+
+} else {
+
+  res_cs_summary <- data.frame()
+}
+
+
+if (length(cs_error_rows) > 0L) {
+
+  cs_errors <- do.call(
+    rbind,
+    cs_error_rows
+  )
+
+  rownames(cs_errors) <- NULL
+
+} else {
+
+  cs_errors <- data.frame(
+    result_file = character(),
+    gene = character(),
+    tissue = character(),
+    stage = character(),
+    error = character(),
+    stringsAsFactors = FALSE
+  )
 }
 
 
@@ -1218,9 +2511,27 @@ save(
   file = summary_file
 )
 
+save(
+  res_cs_summary,
+  cs_errors,
+  file = cs_summary_file
+)
+
 write.csv(
   res_summary,
   summary_csv,
+  row.names = FALSE
+)
+
+write.csv(
+  res_cs_summary,
+  cs_summary_csv,
+  row.names = FALSE
+)
+
+write.csv(
+  cs_errors,
+  cs_error_csv,
   row.names = FALSE
 )
 
@@ -1258,8 +2569,30 @@ cat(
   "\n"
 )
 cat(
+  "Credible-set summary rows:",
+  nrow(res_cs_summary),
+  "\n"
+)
+if (
+  nrow(res_cs_summary) > 0L &&
+  "distance_to_tss_bp" %in% names(res_cs_summary)
+) {
+  cat(
+    "CS rows with a TSS distance:",
+    sum(
+      is.finite(res_cs_summary$distance_to_tss_bp)
+    ),
+    "\n"
+  )
+}
+cat(
   "Files or tissues with errors:",
   nrow(res_errors),
+  "\n"
+)
+cat(
+  "CS-summary errors:",
+  nrow(cs_errors),
   "\n"
 )
 cat(
@@ -1269,5 +2602,8 @@ cat(
 )
 cat("Saved:", summary_file, "\n")
 cat("Saved:", summary_csv, "\n")
+cat("Saved:", cs_summary_file, "\n")
+cat("Saved:", cs_summary_csv, "\n")
+cat("Saved:", cs_error_csv, "\n")
 cat("Saved:", error_csv, "\n")
 cat("Saved:", failed_gene_file, "\n")
