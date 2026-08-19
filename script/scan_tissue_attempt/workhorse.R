@@ -480,11 +480,7 @@ run_susie_gene <- function(
       )
     )
 
-    pheno <- pheno[
-      rows,
-      ,
-      drop = FALSE
-    ]
+
 
     geno <- geno_all[
       ids,
