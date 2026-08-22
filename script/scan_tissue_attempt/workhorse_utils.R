@@ -129,7 +129,7 @@ get_cs_lead_tss_distance <- function(
     lead_snp
   )
 
-  distance_to_tss <- abs(
+  distance_to_tss <-  (
     lead_snp_position - as.numeric(tss)
   )
 

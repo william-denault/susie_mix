@@ -19,13 +19,13 @@ min_n_rec=5
 
 
 
-min_n_rec <- 5
 
+source("/project2/mstephens/wdenault/susie_mix/script/scan_tissue_attempt/workhorse_utils.R")
 for (l in 1:nrow(int_df)) {
 
   target_gene <- int_df$gene[l]
   tissue <- int_df$tissue[l]
-
+  target_tissue=tissue
   # --- paths ---
   datadir <- "/project2/mstephens/gtex"
   plink_exec <- file.path(datadir, "plink2")
@@ -80,7 +80,6 @@ for (l in 1:nrow(int_df)) {
   set.seed(seed)
 
   plink_out_prefix <- paste0(temp_dir, "plink_", target_gene)
-
   library(tools)
   library(data.table)
   library(matrixStats)
@@ -88,7 +87,18 @@ for (l in 1:nrow(int_df)) {
 
   source(gene_annot_fun)
 
-  # Read in the covariate data.
+  set.seed(seed)
+
+  plink_out_prefix <- paste0(
+    temp_dir,
+    "plink_",
+    target_gene
+  )
+
+  # ------------------------------------------------------------
+  # Import covariates
+  # ------------------------------------------------------------
+
   cat("Importing covariate data.\n")
 
   cov1 <- read.table(
@@ -106,17 +116,34 @@ for (l in 1:nrow(int_df)) {
     stringsAsFactors = FALSE
   )
 
-  cov2 <- transform(cov2, SUBJID = substr(SAMPID, 1, 10))
-  cov <- merge(cov1, cov2, by = "SUBJID")
+  cov2 <- transform(
+    cov2,
+    SUBJID = substr(SAMPID, 1, 10)
+  )
+
+  cov <- merge(
+    cov1,
+    cov2,
+    by = "SUBJID"
+  )
 
   cov <- cov[
     c(
-      "SUBJID", "SAMPID", "SEX", "AGE", "SMTS", "SMTSD",
-      "SMGEBTCHT", "SMAFRZE"
+      "SUBJID",
+      "SAMPID",
+      "SEX",
+      "AGE",
+      "SMTS",
+      "SMTSD",
+      "SMGEBTCHT",
+      "SMAFRZE"
     )
   ]
 
-  cov <- subset(cov, SMAFRZE == "RNASEQ")
+  cov <- subset(
+    cov,
+    SMAFRZE == "RNASEQ"
+  )
 
   cov <- transform(
     cov,
@@ -130,7 +157,10 @@ for (l in 1:nrow(int_df)) {
 
   rownames(cov) <- cov$SAMPID
 
-  # Read in the gene expression data.
+  # ------------------------------------------------------------
+  # Import gene-expression data
+  # ------------------------------------------------------------
+
   cat("Importing gene expression data.\n")
 
   pheno_all <- fread(
@@ -142,43 +172,117 @@ for (l in 1:nrow(int_df)) {
   )
 
   class(pheno_all) <- "data.frame"
+
   gene_info <- pheno_all[1:2]
   pheno_all <- pheno_all[-(1:2)]
   pheno_all <- as.matrix(pheno_all)
   pheno_all <- t(pheno_all)
+
   storage.mode(pheno_all) <- "double"
   colnames(pheno_all) <- gene_info$Name
 
-  # Align the gene expression and covariate data.
-  ids <- intersect(cov$SAMPID, rownames(pheno_all))
-  rows1 <- match(ids, cov$SAMPID)
-  rows2 <- match(ids, rownames(pheno_all))
+  # Align expression and covariate data.
+  ids <- intersect(
+    cov$SAMPID,
+    rownames(pheno_all)
+  )
 
-  cov <- cov[rows1, ]
-  pheno_all <- pheno_all[rows2, ]
+  rows1 <- match(
+    ids,
+    cov$SAMPID
+  )
 
-  # Extract the gene expression data for the target gene.
-  j <- which(gene_info$Description == target_gene)
-  pheno_gene <- cbind(cov, data.frame(count = pheno_all[, j]))
+  rows2 <- match(
+    ids,
+    rownames(pheno_all)
+  )
 
-  # All tissues available for this gene.
-  all_tissues <- levels(droplevels(pheno_gene$SMTS))
+  cov <- cov[rows1, , drop = FALSE]
+  pheno_all <- pheno_all[rows2, , drop = FALSE]
+
+  # Extract expression for the target gene.
+  j <- which(
+    gene_info$Description == target_gene
+  )
+
+  if (length(j) == 0L) {
+    stop("Target gene was not found: ", target_gene)
+  }
+
+  if (length(j) > 1L) {
+    warning(
+      "More than one expression column found for ",
+      target_gene,
+      "; using the first."
+    )
+
+    j <- j[1]
+  }
+
+  pheno_gene <- cbind(
+    cov,
+    data.frame(count = pheno_all[, j])
+  )
+
+  read_count <- rowSums(
+    pheno_all,
+    na.rm = TRUE
+  )
+
+  pheno_gene <- cbind(
+    cov,
+    data.frame(
+      count = pheno_all[, j],
+      total_read_count = read_count
+    )
+  )
+  all_tissues <- levels(
+    droplevels(pheno_gene$SMTS)
+  )
 
   cat(
-    "Found", length(all_tissues),
-    "tissues for gene", target_gene, ":\n"
+    "Found",
+    length(all_tissues),
+    "tissues for gene",
+    target_gene,
+    ":\n"
   )
 
   print(all_tissues)
 
-  # Select the SNPs for the target gene.
-  genes <- get_gene_annotations(gtf_file)
-  genes <- subset(genes, gene_name == target_gene)
+  # ------------------------------------------------------------
+  # Identify the cis-region
+  # ------------------------------------------------------------
 
-  chr <- as.numeric(substr(genes$chromosome, 4, 5))
-  tss <- with(genes, ifelse(strand == "+", start, end))
-  pos0 <- tss - cis_window
+  genes <- get_gene_annotations(gtf_file)
+
+  genes <- subset(
+    genes,
+    gene_name == target_gene
+  )
+
+  if (nrow(genes) == 0L) {
+    stop(
+      "No gene annotation found for: ",
+      target_gene
+    )
+  }
+
+  chr <- as.numeric(
+    substr(genes$chromosome[1], 4, 5)
+  )
+
+  tss <- with(
+    genes[1, ],
+    ifelse(strand == "+", start, end)
+  )
+
+  pos0 <- max(0, tss - cis_window)
   pos1 <- tss + cis_window
+
+  # ------------------------------------------------------------
+  # Extract cis-genotypes
+  # ------------------------------------------------------------
 
   if (!file.exists(paste0(plink_out_prefix, ".raw"))) {
 
@@ -203,8 +307,16 @@ for (l in 1:nrow(int_df)) {
     system(plink_call)
   }
 
-  geno_file_raw <- paste0(plink_out_prefix, ".raw")
-
+  geno_file_raw <- paste0(
+    plink_out_prefix,
+    ".raw"
+  )
+  geno_file_raw <- paste0(
+    plink_out_prefix,
+    ".raw"
+  )
+  hwe_thresh = 1e-8
+  maf_min = 0.05
   geno_all <- fread(
     geno_file_raw,
     sep = "\t",
@@ -218,203 +330,97 @@ for (l in 1:nrow(int_df)) {
 
   geno_all <- geno_all[, -(1:6)]
   geno_all <- as.matrix(geno_all)
+  dim(geno_all)
   storage.mode(geno_all) <- "double"
 
   # Remove SNPs with missing genotypes.
-  x <- colSums(is.na(geno_all))
-  j <- which(x == 0)
-  geno_all <- geno_all[, j, drop = FALSE]
+  keep <- colSums(is.na(geno_all)) == 0
+
+  geno_all <- geno_all[
+    ,
+    keep,
+    drop = FALSE
+  ]
 
   # Remove SNPs that do not vary.
-  x <- colSds(geno_all)
-  j <- which(x > 0)
-  geno_all <- geno_all[, j, drop = FALSE]
+  keep <- colSds(geno_all) > 0
 
-  recode_matrix_by_freq <- function(X) {
+  geno_all <- geno_all[
+    ,
+    keep,
+    drop = FALSE
+  ]
 
-    storage.mode(X) <- "integer"
+  # ------------------------------------------------------------
+  # Genotype QC functions
+  # ------------------------------------------------------------
 
-    counts <- rbind(
-      colSums(X == 0L),
-      colSums(X == 1L),
-      colSums(X == 2L)
-    )
 
-    new_code <- apply(
-      counts,
-      2,
-      function(cnt) rank(-cnt, ties.method = "first") - 1L
-    )
 
-    out <- X
 
-    for (v in 0:2) {
-      idx <- which(X == v, arr.ind = TRUE)
-      out[idx] <- new_code[v + 1L, idx[, "col"]]
-    }
-
-    dimnames(out) <- dimnames(X)
-    out
-  }
-
-  qc_recode_geno <- function(
-    X,
-    hwe_thresh = 1e-5,
-    maf_min = 0.05) {
-
-    storage.mode(X) <- "integer"
-
-    # 1. Orient to the minor allele.
-    af <- colMeans(X) / 2
-    flip <- af > 0.5
-
-    if (any(flip)) {
-      X[, flip] <- 2L - X[, flip, drop = FALSE]
-    }
-
-    # 2. Filter by MAF.
-    X <- X[
-      ,
-      which(colMeans(X) / 2 > maf_min),
-      drop = FALSE
-    ]
-
-    n <- nrow(X)
-    af <- colMeans(X) / 2
-    maf <- af
-
-    # 3. HWE chi-square test.
-    count0 <- colSums(X == 0L)
-    count1 <- colSums(X == 1L)
-    count2 <- colSums(X == 2L)
-
-    exp0 <- n * (1 - maf)^2
-    exp1 <- n * 2 * maf * (1 - maf)
-    exp2 <- n * maf^2
-
-    chisq <- (
-      (count0 - exp0)^2 / exp0 +
-        (count1 - exp1)^2 / exp1 +
-        (count2 - exp2)^2 / exp2
-    )
-
-    hwe_p <- pchisq(
-      chisq,
-      df = 1,
-      lower.tail = FALSE
-    )
-
-    # Recode columns that fail HWE.
-    fail <- which(
-      !is.na(hwe_p) &
-        hwe_p < hwe_thresh
-    )
-
-    if (length(fail) > 0) {
-      cat(
-        length(fail),
-        "SNP(s) failed HWE (p <",
-        hwe_thresh,
-        ") - recoding by frequency:\n"
-      )
-
-      print(colnames(X)[fail])
-
-      X[, fail] <- recode_matrix_by_freq(
-        X[, fail, drop = FALSE]
-      )
-    }
-
-    list(
-      X = X,
-      maf = maf,
-      hwe_p = hwe_p,
-      flipped = which(flip),
-      recoded = fail
-    )
-  }
-
-  geno_all <- qc_recode_geno(
+  geno_all<- qc_filter_geno(
     X = geno_all,
     hwe_thresh = hwe_thresh,
     maf_min = min_maf
   )$X
 
-  pos <- as.numeric(
-    sapply(
-      strsplit(colnames(geno_all), "_"),
-      "[[",
-      2
-    )
-  ) / 1e6
+  # ------------------------------------------------------------
+  # Construct additive, recessive and dominant predictors
+  # ------------------------------------------------------------
 
-  recode_snp_matrix <- function(X, warn = TRUE) {
 
-    X <- as.matrix(X)
 
-    if (warn && !all(X %in% c(0L, 1L, 2L))) {
-      warning(
-        paste0(
-          "recode_snp_matrix: entries are not all in {0,1,2}; ",
-          "expecting additive 0/1/2 dosages."
-        ),
-        call. = FALSE
-      )
-    }
+  geno_mix_parts <- recode_snp_matrix(
+    geno_all
+  )
 
-    storage.mode(X) <- "integer"
+  base_snp_names <- colnames(geno_all)
 
-    dominant <- (X >= 1L) * 1L
-    recessive <- (X == 2L) * 1L
-
-    dimnames(dominant) <- dimnames(X)
-    dimnames(recessive) <- dimnames(X)
-
-    list(
-      additive = X,
-      dominant = dominant,
-      recessive = recessive
-    )
-  }
-
-  geno_mix_all <- recode_snp_matrix(geno_all)
-
-  # Give each mixed predictor a unique name so that its original SNP
-  # can still be identified after columns are removed.
-  snp_names <- colnames(geno_all)
-
-  colnames(geno_mix_all$additive) <- paste0(
-    snp_names,
+  # Give every mixed predictor a unique name.
+  colnames(geno_mix_parts$additive) <- paste0(
+    base_snp_names,
     "__additive"
   )
 
-  colnames(geno_mix_all$recessive) <- paste0(
-    snp_names,
+  colnames(geno_mix_parts$recessive) <- paste0(
+    base_snp_names,
     "__recessive"
   )
 
-  colnames(geno_mix_all$dominant) <- paste0(
-    snp_names,
+  colnames(geno_mix_parts$dominant) <- paste0(
+    base_snp_names,
     "__dominant"
   )
 
   geno_mix_all <- cbind(
-    geno_mix_all$additive,
-    geno_mix_all$recessive,
-    geno_mix_all$dominant
+    geno_mix_parts$additive,
+    geno_mix_parts$recessive,
+    geno_mix_parts$dominant
   )
 
-  # Convert to double without removing row names or column names.
+  # Map every mixed predictor to its biological SNP and coding.
+  geno_mix_snp_all <- rep(
+    base_snp_names,
+    times = 3L
+  )
+
+  geno_mix_coding_all <- rep(
+    c(
+      "additive",
+      "recessive",
+      "dominant"
+    ),
+    each = length(base_snp_names)
+  )
+
+  # Convert to double without losing names.
   storage.mode(geno_all) <- "double"
   storage.mode(geno_mix_all) <- "double"
 
-  target_tissue <- tissue
 
   cat("\n=====================================\n")
   cat("Tissue:", target_tissue, "\n")
   cat("=====================================\n")
-
-  # Extract the data for this tissue.
   pheno <- subset(
     pheno_gene,
     SMTS == target_tissue
@@ -430,83 +436,213 @@ for (l in 1:nrow(int_df)) {
     pheno$SUBJID
   )
 
-  median_read <- median(pheno$count[rows])
-  mean_read <- mean(pheno$count[rows])
+  # Subset and order the phenotype data before normalization.
+  pheno <- pheno[
+    rows,
+    ,
+    drop = FALSE
+  ]
+
+  stopifnot(
+    identical(
+      as.character(pheno$SUBJID),
+      as.character(ids)
+    )
+  )
+
+  # Remove samples with invalid expression or library-size values.
+  keep_sample <- (
+    is.finite(pheno$count) &
+      is.finite(pheno$total_read_count) &
+      pheno$total_read_count > 0 &
+      !is.na(pheno$SEX)
+  )
+
+  pheno <- pheno[
+    keep_sample,
+    ,
+    drop = FALSE
+  ]
+
+  # Update IDs after sample filtering so genotypes remain aligned.
+  ids <- as.character(
+    pheno$SUBJID
+  )
+
+  median_read <- median(
+    pheno$count
+  )
+
+  mean_read <- mean(
+    pheno$count
+  )
 
   pheno <- transform(
     pheno,
     SMGEBTCHT = factor(SMGEBTCHT)
   )
 
+  # Library-size normalization within the tissue.
+  pheno$library_size_factor <- (
+    pheno$total_read_count /
+      mean(pheno$total_read_count)
+  )
+
+  pheno$normalized_expression <- log1p(
+    pheno$count /
+      pheno$library_size_factor
+  )
+
+  # Residualize normalized expression on sex.
   pheno$y <- resid(
-    lm(count ~ SEX, pheno)
+    lm(
+      normalized_expression ~ SEX,
+      data = pheno
+    )
   )
 
-  # Align genotype and phenotype data.
-  pheno <- pheno[rows, ]
 
-  # Keep the original 0/1/2 genotypes for displaying counts.
-  geno_for_counts <- geno_all[ids, , drop = FALSE]
 
-  geno <- geno_all[ids, , drop = FALSE]
-  geno_mix <- geno_mix_all[ids, , drop = FALSE]
+  geno <- geno_all[
+    ids,
+    ,
+    drop = FALSE
+  ]
 
-  # Remove additive predictors with too few minor alleles.
-  pb_col_insample <- which(
-    colSums(geno) < min_n_rec
+  geno_mix <- geno_mix_all[
+    ids,
+    ,
+    drop = FALSE
+  ]
+
+  # ----------------------------------------------------------
+  # Tissue-specific predictor filtering
+  # ----------------------------------------------------------
+
+  # Filter the ordinary additive matrix.
+  keep_add <- colSums(geno) >= min_n_rec
+
+  n_add_rm <- sum(!keep_add)
+
+  geno <- geno[
+    ,
+    keep_add,
+    drop = FALSE
+  ]
+
+  add_snp_names <- colnames(geno)
+
+  # Filter the mixed matrix and its predictor maps together.
+  keep_mix <- colSums(geno_mix) >= min_n_rec
+
+  n_rec_rm <- sum(
+    !keep_mix &
+      geno_mix_coding_all == "recessive"
   )
 
-  length(pb_col_insample)
-  dim(geno)
+  n_dom_rm <- sum(
+    !keep_mix &
+      geno_mix_coding_all == "dominant"
+  )
 
-  if (length(pb_col_insample) > 0) {
-    geno <- geno[
-      ,
-      -pb_col_insample,
-      drop = FALSE
-    ]
+  geno_mix <- geno_mix[
+    ,
+    keep_mix,
+    drop = FALSE
+  ]
+
+  mix_snp_names <- geno_mix_snp_all[
+    keep_mix
+  ]
+
+  mix_coding <- geno_mix_coding_all[
+    keep_mix
+  ]
+
+  mix_predictor_names <- colnames(
+    geno_mix
+  )
+
+  # Convenient data frames for downstream processing.
+  add_predictor_map <- data.frame(
+    predictor_index = seq_len(ncol(geno)),
+    predictor_name = colnames(geno),
+    snp = add_snp_names,
+    coding = rep("additive", ncol(geno)),
+    stringsAsFactors = FALSE
+  )
+
+  mix_predictor_map <- data.frame(
+    predictor_index = seq_len(ncol(geno_mix)),
+    predictor_name = mix_predictor_names,
+    snp = mix_snp_names,
+    coding = mix_coding,
+    stringsAsFactors = FALSE
+  )
+
+  print(
+    all(
+      pheno$SUBJID == rownames(geno)
+    )
+  )
+
+  # Skip tissues with too few samples.
+  if (nrow(geno) < min_samples) {
+
+    cat(
+      "Skipping",
+      target_tissue,
+      "- only",
+      nrow(geno),
+      "samples.\n"
+    )
+
+    next
   }
 
-  # Remove mixed predictors with too few observations.
-  pb_col <- which(
-    colSums(geno_mix) < min_n_rec
-  )
+  # Skip if filtering removed all predictors.
+  if (
+    ncol(geno) == 0L ||
+    ncol(geno_mix) == 0L
+  ) {
 
-  length(pb_col)
-
-  if (length(pb_col) > 0) {
-
-    removed_names <- colnames(geno_mix)[pb_col]
-
-    n_rec_rm <- sum(
-      grepl("__recessive$", removed_names)
+    cat(
+      "Skipping",
+      target_tissue,
+      "- no predictors remained after filtering.\n"
     )
 
-    n_dom_rm <- sum(
-      grepl("__dominant$", removed_names)
-    )
-
-    geno_mix <- geno_mix[
-      ,
-      -pb_col,
-      drop = FALSE
-    ]
-
-  } else {
-
-    n_rec_rm <- 0
-    n_dom_rm <- 0
+    next
   }
 
-  out <- readRDS(
-    paste0(
-      "/project2/mstephens/wdenault/susie_mix/results/",
-      target_gene,
-      ".rds"
-    )
+  # ----------------------------------------------------------
+  # Marginal association analysis
+  # ----------------------------------------------------------
+
+  cat("Running SuSiE.\n")
+
+  set.seed(seed)
+
+  perm_y <- sample(pheno$y)
+
+  pv <- rep(
+    1,
+    ncol(geno)
   )
 
-  k <- which(names(out) == target_tissue)
+  for (k in seq_len(ncol(geno))) {
+
+    if (var(geno[, k]) > 0) {
+
+      pv[k] <- summary(
+        lm(pheno$y ~ geno[, k])
+      )$coefficients[2, 4]
+    }
+  }
+
+  # ----------------------------------------------------------
+  # SuSiE fits
+  # ----------------------------------------------------------
 
   fit <- susie(
     geno,
@@ -518,7 +654,6 @@ for (l in 1:nrow(int_df)) {
     verbose = verbose
   )
 
-  fit$sets
 
   fit_mix <- susie(
     geno_mix,
@@ -529,6 +664,20 @@ for (l in 1:nrow(int_df)) {
     min_abs_corr = min_abs_corr,
     verbose = verbose
   )
+
+  out <- readRDS(
+    paste0(
+      "/project2/mstephens/wdenault/susie_mix/results/",
+      target_gene,
+      ".rds"
+    )
+  )
+
+  k <- which(names(out) == target_tissue)
+
+  fit$sets
+
+
 
   fit_mix$sets
 
@@ -550,7 +699,7 @@ for (l in 1:nrow(int_df)) {
   )
 
   # Use the original 0/1/2 genotype to calculate the displayed counts.
-  SNP <- geno_for_counts[, selected_snp_name]
+  SNP <- geno[, selected_snp_name]
 
   number <- table(
     factor(
@@ -567,7 +716,7 @@ for (l in 1:nrow(int_df)) {
     selected_snp_name,
     " (",
     selected_coding,
-    "):\n  n0 = ",
+    "):\n n0 = ",
     number["0"],
     ", n1 = ",
     number["1"],

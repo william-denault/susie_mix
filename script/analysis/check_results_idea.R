@@ -58,10 +58,25 @@ hist(res_summary$dif_elbo[idx], nclass=100,
 abline(v=0, col="red", lty=2)
 
 idx= which(res_summary$ncs_susie>0)
-hist(-2 *(res_summary$log_lik_add_perm- res_summary$log_lik_mix_perm)[idx], nclass=300,
+tt=-2 *(res_summary$log_lik_add_perm- res_summary$log_lik_mix_perm)[idx]
+tt= tt[ which(tt>-2 &tt<2)]
+hist(tt, nclass=300,
+     #xlim=c(-5,10),
      xlab="-2 (log lik additive coding - log lik mix coding)",
-     main="-2 (log lik additive coding - log lik mix coding) with more than 0 cs")
+     main="-2 (log lik additive coding - log lik mix coding) with more than 0 cs\ permuted")
 abline(v=0, col="red", lty=2)
+
+
+
+tt=-2 *(res_summary$log_lik_add - res_summary$log_lik_mix )[idx]
+tt= tt[ which(tt>-2 &tt<2)]
+hist(tt, nclass=300,
+     #xlim=c(-5,10),
+     xlab="-2 (log lik additive coding - log lik mix coding)",
+     main="-2 (log lik additive coding - log lik mix coding) with more than 0 cs\ permuted")
+abline(v=0, col="red", lty=2)
+
+
 
 res_idx= res_idx[which(res_idx$mean_count>100),]
 
@@ -151,7 +166,7 @@ res_idx[ order(res_idx$ncs_susie, decreasing = TRUE),]
 table(res_1cs$tissue)
 
 # Nice case of susie Mix pointing to dominant coding of an additive version
-
+library(susieR)
 
 out<- readRDS("/project2/mstephens/wdenault/susie_mix/results/AATK.rds")
 names(out)
