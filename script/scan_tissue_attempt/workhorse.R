@@ -467,11 +467,13 @@ run_susie_gene <- function(
         mean(pheno$total_read_count)
     )
 
+    qnorm((rank(x,na.last="keep")-0.5)/sum(!is.na(x)))
     pheno$normalized_expression <- log1p(
       pheno$count /
         pheno$library_size_factor
     )
-
+   x=pheno$normalized_expression
+   pheno$normalized_expression =qnorm((rank(x,na.last="keep")-0.5)/sum(!is.na(x)))
     # Residualize normalized expression on sex.
     pheno$y <- resid(
       lm(
@@ -479,7 +481,8 @@ run_susie_gene <- function(
         data = pheno
       )
     )
-
+    x=pheno$y
+    pheno$y =qnorm((rank(x,na.last="keep")-0.5)/sum(!is.na(x)))
 
 
     geno <- geno_all[
