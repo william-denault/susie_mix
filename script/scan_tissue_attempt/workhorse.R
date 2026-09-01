@@ -72,6 +72,24 @@ run_susie_gene <- function(
     target_gene
   )
 
+  dir.create(
+    temp_dir,
+    recursive = TRUE,
+    showWarnings = FALSE
+  )
+
+  # Always remove gene-specific PLINK intermediates, including when an
+  # error occurs before the end of the gene analysis.
+  on.exit(
+    unlink(
+      Sys.glob(
+        paste0(plink_out_prefix, ".*")
+      ),
+      force = TRUE
+    ),
+    add = TRUE
+  )
+
   # ------------------------------------------------------------
   # Import covariates
   # ------------------------------------------------------------
@@ -254,6 +272,18 @@ run_susie_gene <- function(
   if (chr == "M") {
     chr <- "MT"
   }
+
+  if (
+    length(chr) != 1L ||
+    is.na(chr) ||
+    !nzchar(chr)
+  ) {
+    stop(
+      "Could not determine the chromosome for: ",
+      target_gene
+    )
+  }
+
   tss <- with(
     genes[1, ],
     ifelse(strand == "+", start, end)
@@ -266,7 +296,12 @@ run_susie_gene <- function(
   # Extract cis-genotypes
   # ------------------------------------------------------------
 
-  if (!file.exists(paste0(plink_out_prefix, ".raw"))) {
+  geno_file_raw <- paste0(
+    plink_out_prefix,
+    ".raw"
+  )
+
+  if (!file.exists(geno_file_raw)) {
 
     cat("Extracting genotype data from PLINK file.\n")
 
@@ -286,19 +321,23 @@ run_susie_gene <- function(
       plink_out_prefix
     )
 
-    system(plink_call)
+    plink_status <- system(plink_call)
+
+    if (
+      plink_status != 0L ||
+      !file.exists(geno_file_raw)
+    ) {
+      stop(
+        "PLINK failed for ",
+        target_gene,
+        " on chromosome ",
+        chr,
+        " with exit status ",
+        plink_status
+      )
+    }
   }
 
-  geno_file_raw <- paste0(
-    plink_out_prefix,
-    ".raw"
-  )
-  geno_file_raw <- paste0(
-    plink_out_prefix,
-    ".raw"
-  )
-  hwe_thresh = 1e-8
-  maf_min = 0.05
   geno_all <- fread(
     geno_file_raw,
     sep = "\t",
@@ -399,8 +438,7 @@ run_susie_gene <- function(
   storage.mode(geno_all) <- "double"
   storage.mode(geno_mix_all) <- "double"
 
-  fits <- list()
-  for (target_tissue in all_tissues) {
+  analyze_tissue <- function(target_tissue) {
 
     cat("\n=====================================\n")
     cat("Tissue:", target_tissue, "\n")
@@ -453,6 +491,21 @@ run_susie_gene <- function(
       pheno$SUBJID
     )
 
+    # Skip before normalization and matrix operations if too few matched
+    # samples remain in this tissue.
+    if (nrow(pheno) < min_samples) {
+
+      cat(
+        "Skipping",
+        target_tissue,
+        "- only",
+        nrow(pheno),
+        "samples.\n"
+      )
+
+      return(NULL)
+    }
+
     median_read <- median(
       pheno$count
     )
@@ -488,6 +541,24 @@ run_susie_gene <- function(
     x=pheno$y
     pheno$y =qnorm((rank(x,na.last="keep")-0.5)/sum(!is.na(x)))
 
+    y_variance <- var(
+      pheno$y
+    )
+
+    if (
+      !is.finite(y_variance) ||
+      y_variance <= 1e-12
+    ) {
+
+      cat(
+        "Skipping",
+        target_tissue,
+        "- residual phenotype variance is zero.\n"
+      )
+
+      return(NULL)
+    }
+
 
     geno <- geno_all[
       ids,
@@ -506,7 +577,10 @@ run_susie_gene <- function(
     # ----------------------------------------------------------
 
     # Filter the ordinary additive matrix.
-    keep_add <- colSums(geno) >= min_n_rec
+    keep_add <- (
+      colSums(geno) >= min_n_rec &
+        matrixStats::colSds(geno) > 0
+    )
 
     n_add_rm <- sum(!keep_add)
 
@@ -519,7 +593,10 @@ run_susie_gene <- function(
     add_snp_names <- colnames(geno)
 
     # Filter the mixed matrix and its predictor maps together.
-    keep_mix <- colSums(geno_mix) >= min_n_rec
+    keep_mix <- (
+      colSums(geno_mix) >= min_n_rec &
+        matrixStats::colSds(geno_mix) > 0
+    )
 
     n_rec_rm <- sum(
       !keep_mix &
@@ -572,20 +649,6 @@ run_susie_gene <- function(
       )
     )
 
-    # Skip tissues with too few samples.
-    if (nrow(geno) < min_samples) {
-
-      cat(
-        "Skipping",
-        target_tissue,
-        "- only",
-        nrow(geno),
-        "samples.\n"
-      )
-
-      next
-    }
-
     # Skip if filtering removed all predictors.
     if (
       ncol(geno) == 0L ||
@@ -598,7 +661,7 @@ run_susie_gene <- function(
         "- no predictors remained after filtering.\n"
       )
 
-      next
+      return(NULL)
     }
 
     # ----------------------------------------------------------
@@ -695,7 +758,7 @@ run_susie_gene <- function(
     # Store results and predictor mappings
     # ----------------------------------------------------------
 
-    fits[[target_tissue]] <- list(
+    list(
       susie_add = fit,
       susie_add_perm = fit_perm,
       susie_mix = fit_mix,
@@ -732,13 +795,47 @@ run_susie_gene <- function(
     )
   }
 
+  fits <- list()
+  tissue_errors <- list()
 
-  # Clean up temporary PLINK files.
-  file.remove(
-    Sys.glob(
-      paste0(plink_out_prefix, ".*")
+  for (target_tissue in all_tissues) {
+
+    tissue_result <- tryCatch(
+      analyze_tissue(
+        target_tissue
+      ),
+      error = function(e) e
     )
-  )
+
+    if (inherits(tissue_result, "error")) {
+
+      error_message <- conditionMessage(
+        tissue_result
+      )
+
+      message(
+        "ERROR [",
+        target_gene,
+        " / ",
+        target_tissue,
+        "]: ",
+        error_message
+      )
+
+      tissue_errors[[target_tissue]] <- error_message
+      next
+    }
+
+    if (is.null(tissue_result)) {
+      next
+    }
+
+    fits[[target_tissue]] <- tissue_result
+  }
+
+  # Preserve tissue-level failures for auditing without changing the
+  # existing list-of-successful-tissues result structure.
+  attr(fits, "tissue_errors") <- tissue_errors
 
   fits
 }
