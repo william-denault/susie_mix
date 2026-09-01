@@ -492,7 +492,9 @@ for (l in 1:nrow(int_df)) {
     pheno$count /
       pheno$library_size_factor
   )
-
+  x=pheno$normalized_expression
+  # Residualize normalized expression on sex.
+  pheno$normalized_expression =qnorm((rank(x,na.last="keep")-0.5)/sum(!is.na(x)))
   # Residualize normalized expression on sex.
   pheno$y <- resid(
     lm(
@@ -500,6 +502,8 @@ for (l in 1:nrow(int_df)) {
       data = pheno
     )
   )
+  x=pheno$y
+  pheno$y =qnorm((rank(x,na.last="keep")-0.5)/sum(!is.na(x)))
 
 
 
