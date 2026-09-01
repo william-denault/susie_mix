@@ -1,0 +1,31 @@
+#!/bin/bash
+
+#SBATCH --job-name=susie_mix
+#SBATCH --output=/project2/mstephens/wdenault/susie_mix/job/logs/susie_mix_%A_%a.out
+#SBATCH --error=/project2/mstephens/wdenault/susie_mix/job/logs/susie_mix_%A_%a.err
+#SBATCH --time=23:00:00
+#SBATCH --partition=broadwl
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=15G
+#SBATCH --array=1-100
+
+set -euo pipefail
+
+module load R/4.2.0
+
+chunk_tag=$(printf "%03d" "${SLURM_ARRAY_TASK_ID}")
+
+driver_script="/project2/mstephens/wdenault/susie_mix/script/scan_job/run_chunk_${chunk_tag}.R"
+
+if [[ ! -r "${driver_script}" ]]; then
+echo "ERROR: ${driver_script} does not exist or is not readable."
+exit 1
+fi
+
+echo "Starting chunk ${chunk_tag} at $(date)"
+
+Rscript --vanilla "${driver_script}"
+
+echo "Finished chunk ${chunk_tag} at $(date)"

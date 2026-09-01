@@ -9,7 +9,7 @@ res_idx= res_summary[idx,]
 res_idx= res_idx[which(res_idx$mean_count>100),]
 idx= which(res_summary$ncs_susie>0)
 
-res_1cs=  res_idx[which(res_idx$ncs_susie==1 & res_idx$ncs_susie_mix==1 & res_idx$overlap==0),]
+res_1cs=  res_idx[which(res_idx$ncs_susie==1 & res_idx$ncs_susie_mix==1  ),]
 res_1cs[ which(res_1cs$n_dom== 1),]
 
 int_df= res_1cs[ which(res_1cs$n_rec== 1),]
