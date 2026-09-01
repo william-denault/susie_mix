@@ -245,10 +245,15 @@ run_susie_gene <- function(
     )
   }
 
-  chr <- as.numeric(
-    substr(genes$chromosome[1], 4, 5)
+  chr <- sub(
+    "^chr",
+    "",
+    as.character(genes$chromosome[1])
   )
 
+  if (chr == "M") {
+    chr <- "MT"
+  }
   tss <- with(
     genes[1, ],
     ifelse(strand == "+", start, end)
@@ -267,7 +272,7 @@ run_susie_gene <- function(
 
     plink_call <- sprintf(
       paste(
-        "%s --bfile %s --chr %d --from-bp %d --to-bp %d",
+        "%s --bfile %s --chr %s --from-bp %d --to-bp %d",
         "--snps-only --max-alleles 2 --rm-dup exclude-all",
         "--threads 2 --memory 8000 --maf %g",
         "--recode A --out %s"

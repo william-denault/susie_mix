@@ -14,9 +14,14 @@ get_gene_annotations <- function (gene_file) {
                    source     = factor(source),
                    feature    = factor(feature),
                    strand     = factor(strand))
-  out <- subset(out,
-                source == "ensembl_havana" &
-                  feature == "transcript")
+  #out <- subset(out,
+  #              source == "ensembl_havana" &
+  #                feature == "transcript")
+
+  out <- subset(
+    out,
+    feature == "gene"
+  )
   out <-
     transform(out,
               ensembl   = sapply(strsplit(attributes,";"),
