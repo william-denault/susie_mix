@@ -1,5 +1,5 @@
 ####Simple cases study
-
+library(susieR)
 ## Nice secondary recessive secondary signal that is additive ----
 out<- readRDS("/project2/mstephens/wdenault/susie_mix/results/AGAP4.rds")
 names(out)
