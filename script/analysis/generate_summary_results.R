@@ -658,6 +658,177 @@ get_cs_lead_predictor <- function(
 }
 
 
+calculate_model_agreement <- function(
+    fit_1,
+    fit_2,
+    predictor_map_1,
+    predictor_map_2) {
+
+  cs_1 <- get_cs_snp_sets(
+    fit_1,
+    predictor_map_1
+  )
+
+  cs_2 <- get_cs_snp_sets(
+    fit_2,
+    predictor_map_2
+  )
+
+  overlap_matrix <- matrix(
+    0L,
+    nrow = length(cs_1),
+    ncol = length(cs_2),
+    dimnames = list(
+      names(cs_1),
+      names(cs_2)
+    )
+  )
+
+  if (
+    length(cs_1) > 0L &&
+    length(cs_2) > 0L
+  ) {
+
+    for (i in seq_along(cs_1)) {
+      for (j in seq_along(cs_2)) {
+
+        overlap_matrix[i, j] <- length(
+          intersect(
+            cs_1[[i]],
+            cs_2[[j]]
+          )
+        )
+      }
+    }
+  }
+
+  model_1_snps <- clean_snp_vector(
+    unlist(
+      cs_1,
+      use.names = FALSE
+    )
+  )
+
+  model_2_snps <- clean_snp_vector(
+    unlist(
+      cs_2,
+      use.names = FALSE
+    )
+  )
+
+  shared_snps <- intersect(
+    model_1_snps,
+    model_2_snps
+  )
+
+  union_snps <- union(
+    model_1_snps,
+    model_2_snps
+  )
+
+  canonical_cs <- function(cs_sets) {
+
+    if (length(cs_sets) == 0L) {
+      return(character(0))
+    }
+
+    sort(
+      vapply(
+        cs_sets,
+        function(snps) {
+          paste(
+            sort(clean_snp_vector(snps)),
+            collapse = ";"
+          )
+        },
+        character(1L)
+      )
+    )
+  }
+
+  get_lead_snp_set <- function(
+      fit,
+      predictor_map) {
+
+    cs <- get_cs(fit)
+
+    if (length(cs) == 0L) {
+      return(character(0))
+    }
+
+    lead_index <- vapply(
+      seq_along(cs),
+      function(cs_number) {
+        get_cs_lead_predictor(
+          fit = fit,
+          cs = cs,
+          cs_number = cs_number
+        )
+      },
+      integer(1L)
+    )
+
+    valid <- (
+      !is.na(lead_index) &
+        lead_index >= 1L &
+        lead_index <= nrow(predictor_map)
+    )
+
+    clean_snp_vector(
+      predictor_map$snp[lead_index[valid]]
+    )
+  }
+
+  model_1_lead_snps <- get_lead_snp_set(
+    fit_1,
+    predictor_map_1
+  )
+
+  model_2_lead_snps <- get_lead_snp_set(
+    fit_2,
+    predictor_map_2
+  )
+
+  list(
+    n_model_1_cs_snps = length(model_1_snps),
+    n_model_2_cs_snps = length(model_2_snps),
+    overlap_snp = length(shared_snps),
+    union_snp = length(union_snps),
+    pct_model_1_cs_snps_retained = safe_percentage(
+      length(shared_snps),
+      length(model_1_snps)
+    ),
+    pct_model_2_cs_snps_retained = safe_percentage(
+      length(shared_snps),
+      length(model_2_snps)
+    ),
+    jaccard_snp = if (length(union_snps) > 0L) {
+      length(shared_snps) / length(union_snps)
+    } else {
+      NA_real_
+    },
+    n_overlapping_cs_pairs = sum(
+      overlap_matrix > 0L
+    ),
+    pairwise_overlap_sum = sum(
+      overlap_matrix
+    ),
+    same_cs_count = length(cs_1) == length(cs_2),
+    same_cs_snp_sets = (
+      length(cs_1) == length(cs_2) &&
+        setequal(
+          canonical_cs(cs_1),
+          canonical_cs(cs_2)
+        )
+    ),
+    same_lead_snp_set = setequal(
+      model_1_lead_snps,
+      model_2_lead_snps
+    )
+  )
+}
+
+
 find_metadata_scalar <- function(
     objects,
     candidate_names,
@@ -1328,6 +1499,19 @@ summarize_credible_sets <- function(
       )
     )
   )
+
+  if (!is.null(x$weighted_fit_mix)) {
+
+    model_inputs[[length(model_inputs) + 1L]] <- list(
+      model = "Weighted SuSiE-mix",
+      model_key = "weighted_fit_mix",
+      fit = x$weighted_fit_mix,
+      predictor_map = x$mix_predictor_map,
+      saved_tss_summary = (
+        x$weighted_fit_mix_lead_snp_tss_distance
+      )
+    )
+  }
 
   cs_rows <- list()
   cs_row_counter <- 0L

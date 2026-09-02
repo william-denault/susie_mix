@@ -51,6 +51,11 @@ run_susie_gene <- function(
     estimate_prior_method = "EM",
     min_abs_corr = 0.0,
     verbose = FALSE,
+    mix_coding_prior = c(
+      additive = 0.80,
+      dominant = 0.15,
+      recessive = 0.05
+    ),
 
     # --- misc ---
     temp_dir = "/project2/mstephens/wdenault/susie_mix/temp_plink/"
@@ -61,6 +66,37 @@ run_susie_gene <- function(
   library(data.table)
   library(matrixStats)
   library(susieR)
+
+  required_mix_codings <- c(
+    "additive",
+    "dominant",
+    "recessive"
+  )
+
+  if (
+    !is.numeric(mix_coding_prior) ||
+    is.null(names(mix_coding_prior)) ||
+    anyDuplicated(names(mix_coding_prior)) ||
+    !setequal(names(mix_coding_prior), required_mix_codings) ||
+    any(!is.finite(mix_coding_prior)) ||
+    any(mix_coding_prior < 0) ||
+    sum(mix_coding_prior) <= 0
+  ) {
+    stop(
+      "mix_coding_prior must be a named, non-negative numeric vector ",
+      "with exactly additive, dominant, and recessive entries and a ",
+      "positive sum."
+    )
+  }
+
+  mix_coding_prior <- mix_coding_prior[
+    required_mix_codings
+  ]
+
+  mix_coding_prior <- (
+    mix_coding_prior /
+      sum(mix_coding_prior)
+  )
 
   source(gene_annot_fun)
 
@@ -626,6 +662,29 @@ run_susie_gene <- function(
       geno_mix
     )
 
+    # Convert the coding-class prior masses to predictor-level weights.
+    # Dividing each class mass by its retained predictor count ensures
+    # that the total prior mass remains 80% additive, 15% dominant, and
+    # 5% recessive when each class is represented, even if filtering
+    # retains different numbers of predictors per class. If an entire
+    # class is absent, the final normalization redistributes its mass
+    # proportionally across the coding classes that remain.
+    retained_coding_counts <- table(
+      mix_coding
+    )
+
+    weighted_mix_prior_weights <- unname(
+      mix_coding_prior[mix_coding] /
+        as.numeric(retained_coding_counts[mix_coding])
+    )
+
+    weighted_mix_prior_weights <- (
+      weighted_mix_prior_weights /
+        sum(weighted_mix_prior_weights)
+    )
+
+    names(weighted_mix_prior_weights) <- mix_predictor_names
+
     # Convenient data frames for downstream processing.
     add_predictor_map <- data.frame(
       predictor_index = seq_len(ncol(geno)),
@@ -723,6 +782,17 @@ run_susie_gene <- function(
       verbose = verbose
     )
 
+    weighted_fit_mix <- susie(
+      geno_mix,
+      pheno$y,
+      prior_weights = weighted_mix_prior_weights,
+      L = L,
+      standardize = standardize,
+      estimate_prior_method = estimate_prior_method,
+      min_abs_corr = min_abs_corr,
+      verbose = verbose
+    )
+
     fit_mix_perm <- susie(
       geno_mix,
       perm_y,
@@ -754,6 +824,14 @@ run_susie_gene <- function(
         tss = tss
       )
     )
+
+    weighted_fit_mix_lead_snp_tss_distance <- (
+      get_cs_lead_tss_distance(
+        fit = weighted_fit_mix,
+        predictor_map = mix_predictor_map,
+        tss = tss
+      )
+    )
     # ----------------------------------------------------------
     # Store results and predictor mappings
     # ----------------------------------------------------------
@@ -763,6 +841,7 @@ run_susie_gene <- function(
       susie_add_perm = fit_perm,
       susie_mix = fit_mix,
       susie_mix_perm = fit_mix_perm,
+      weighted_fit_mix = weighted_fit_mix,
 
       # Lead biological SNP and absolute distance to the TSS.
       susie_add_lead_snp_tss_distance =
@@ -770,6 +849,9 @@ run_susie_gene <- function(
 
       susie_mix_lead_snp_tss_distance =
         susie_mix_lead_snp_tss_distance,
+
+      weighted_fit_mix_lead_snp_tss_distance =
+        weighted_fit_mix_lead_snp_tss_distance,
 
       # Predictor maps.
       add_predictor_map = add_predictor_map,
@@ -779,6 +861,8 @@ run_susie_gene <- function(
       mix_snp_names = mix_snp_names,
       mix_coding = mix_coding,
       mix_predictor_names = mix_predictor_names,
+      mix_coding_prior = mix_coding_prior,
+      weighted_mix_prior_weights = weighted_mix_prior_weights,
 
       n_SNP = ncol(geno),
       n_mix_predictor = ncol(geno_mix),

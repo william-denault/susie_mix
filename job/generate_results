@@ -1,0 +1,18 @@
+#!/bin/bash
+
+#SBATCH --job-name=susie_mix
+#SBATCH --output=/project2/mstephens/wdenault/susie_mix/job/logs/desc_stat.out
+#SBATCH --error=/project2/mstephens/wdenault/susie_mix/job/logs/desc_stat.err
+#SBATCH --time=23:00:00
+#SBATCH --partition=broadwl
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=40G
+
+
+module load R/4.2.0
+
+
+
+Rscript /project2/mstephens/wdenault/susie_mix/script/analysis/generate_summary_results.R
