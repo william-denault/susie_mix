@@ -658,177 +658,6 @@ get_cs_lead_predictor <- function(
 }
 
 
-calculate_model_agreement <- function(
-    fit_1,
-    fit_2,
-    predictor_map_1,
-    predictor_map_2) {
-
-  cs_1 <- get_cs_snp_sets(
-    fit_1,
-    predictor_map_1
-  )
-
-  cs_2 <- get_cs_snp_sets(
-    fit_2,
-    predictor_map_2
-  )
-
-  overlap_matrix <- matrix(
-    0L,
-    nrow = length(cs_1),
-    ncol = length(cs_2),
-    dimnames = list(
-      names(cs_1),
-      names(cs_2)
-    )
-  )
-
-  if (
-    length(cs_1) > 0L &&
-    length(cs_2) > 0L
-  ) {
-
-    for (i in seq_along(cs_1)) {
-      for (j in seq_along(cs_2)) {
-
-        overlap_matrix[i, j] <- length(
-          intersect(
-            cs_1[[i]],
-            cs_2[[j]]
-          )
-        )
-      }
-    }
-  }
-
-  model_1_snps <- clean_snp_vector(
-    unlist(
-      cs_1,
-      use.names = FALSE
-    )
-  )
-
-  model_2_snps <- clean_snp_vector(
-    unlist(
-      cs_2,
-      use.names = FALSE
-    )
-  )
-
-  shared_snps <- intersect(
-    model_1_snps,
-    model_2_snps
-  )
-
-  union_snps <- union(
-    model_1_snps,
-    model_2_snps
-  )
-
-  canonical_cs <- function(cs_sets) {
-
-    if (length(cs_sets) == 0L) {
-      return(character(0))
-    }
-
-    sort(
-      vapply(
-        cs_sets,
-        function(snps) {
-          paste(
-            sort(clean_snp_vector(snps)),
-            collapse = ";"
-          )
-        },
-        character(1L)
-      )
-    )
-  }
-
-  get_lead_snp_set <- function(
-      fit,
-      predictor_map) {
-
-    cs <- get_cs(fit)
-
-    if (length(cs) == 0L) {
-      return(character(0))
-    }
-
-    lead_index <- vapply(
-      seq_along(cs),
-      function(cs_number) {
-        get_cs_lead_predictor(
-          fit = fit,
-          cs = cs,
-          cs_number = cs_number
-        )
-      },
-      integer(1L)
-    )
-
-    valid <- (
-      !is.na(lead_index) &
-        lead_index >= 1L &
-        lead_index <= nrow(predictor_map)
-    )
-
-    clean_snp_vector(
-      predictor_map$snp[lead_index[valid]]
-    )
-  }
-
-  model_1_lead_snps <- get_lead_snp_set(
-    fit_1,
-    predictor_map_1
-  )
-
-  model_2_lead_snps <- get_lead_snp_set(
-    fit_2,
-    predictor_map_2
-  )
-
-  list(
-    n_model_1_cs_snps = length(model_1_snps),
-    n_model_2_cs_snps = length(model_2_snps),
-    overlap_snp = length(shared_snps),
-    union_snp = length(union_snps),
-    pct_model_1_cs_snps_retained = safe_percentage(
-      length(shared_snps),
-      length(model_1_snps)
-    ),
-    pct_model_2_cs_snps_retained = safe_percentage(
-      length(shared_snps),
-      length(model_2_snps)
-    ),
-    jaccard_snp = if (length(union_snps) > 0L) {
-      length(shared_snps) / length(union_snps)
-    } else {
-      NA_real_
-    },
-    n_overlapping_cs_pairs = sum(
-      overlap_matrix > 0L
-    ),
-    pairwise_overlap_sum = sum(
-      overlap_matrix
-    ),
-    same_cs_count = length(cs_1) == length(cs_2),
-    same_cs_snp_sets = (
-      length(cs_1) == length(cs_2) &&
-        identical(
-          canonical_cs(cs_1),
-          canonical_cs(cs_2)
-        )
-    ),
-    same_lead_snp_set = setequal(
-      model_1_lead_snps,
-      model_2_lead_snps
-    )
-  )
-}
-
-
 find_metadata_scalar <- function(
     objects,
     candidate_names,
@@ -1500,19 +1329,6 @@ summarize_credible_sets <- function(
     )
   )
 
-  if (!is.null(x$weighted_fit_mix)) {
-
-    model_inputs[[length(model_inputs) + 1L]] <- list(
-      model = "Weighted SuSiE-mix",
-      model_key = "weighted_fit_mix",
-      fit = x$weighted_fit_mix,
-      predictor_map = x$mix_predictor_map,
-      saved_tss_summary = (
-        x$weighted_fit_mix_lead_snp_tss_distance
-      )
-    )
-  }
-
   cs_rows <- list()
   cs_row_counter <- 0L
 
@@ -2131,85 +1947,10 @@ summarize_tissue <- function(
     x$mix_predictor_map
   )
 
-  has_weighted_fit_mix <- !is.null(
-    x$weighted_fit_mix
-  )
-
-  overlap_weighted_real <- NULL
-  mix_weighted_agreement <- NULL
-
-  type_weighted <- c(
-    additive = NA_integer_,
-    recessive = NA_integer_,
-    dominant = NA_integer_
-  )
-
-  if (has_weighted_fit_mix) {
-
-    overlap_weighted_real <- calculate_cs_overlap(
-      add_fit = x$susie_add,
-      mix_fit = x$weighted_fit_mix,
-      add_predictor_map = x$add_predictor_map,
-      mix_predictor_map = x$mix_predictor_map
-    )
-
-    mix_weighted_agreement <- calculate_model_agreement(
-      fit_1 = x$susie_mix,
-      fit_2 = x$weighted_fit_mix,
-      predictor_map_1 = x$mix_predictor_map,
-      predictor_map_2 = x$mix_predictor_map
-    )
-
-    type_weighted <- count_mix_cs_types(
-      x$weighted_fit_mix,
-      x$mix_predictor_map
-    )
-  }
-
-  get_target_prior <- function(coding) {
-
-    prior <- x$mix_coding_prior
-
-    if (
-      is.null(prior) ||
-      is.null(names(prior)) ||
-      !coding %in% names(prior)
-    ) {
-      return(NA_real_)
-    }
-
-    as.numeric(
-      prior[coding]
-    )
-  }
-
-  get_realized_prior <- function(coding) {
-
-    prior_weights <- as.numeric(
-      x$weighted_mix_prior_weights
-    )
-
-    if (
-      length(prior_weights) == 0L ||
-      length(prior_weights) != nrow(x$mix_predictor_map) ||
-      any(!is.finite(prior_weights))
-    ) {
-      return(NA_real_)
-    }
-
-    sum(
-      prior_weights[
-        x$mix_predictor_map$coding == coding
-      ],
-      na.rm = TRUE
-    )
-  }
-
   data.frame(
     gene = gene,
     tissue = tissue,
     result_file = basename(result_file),
-    has_weighted_fit_mix = has_weighted_fit_mix,
 
     # Sample and predictor counts.
     n_ind = as.numeric(
@@ -2251,14 +1992,6 @@ summarize_tissue <- function(
       max_elbo(x$susie_mix_perm) -
         max_elbo(x$susie_add_perm)
     ),
-    dif_elbo_weighted_vs_add = (
-      max_elbo(x$weighted_fit_mix) -
-        max_elbo(x$susie_add)
-    ),
-    dif_elbo_weighted_vs_mix = (
-      max_elbo(x$weighted_fit_mix) -
-        max_elbo(x$susie_mix)
-    ),
 
     # Previous log-likelihood-like summary.
     log_lik_add = get_log_lik_metric(
@@ -2273,9 +2006,6 @@ summarize_tissue <- function(
     log_lik_mix_perm = get_log_lik_metric(
       x$susie_mix_perm
     ),
-    log_lik_weighted_mix = get_log_lik_metric(
-      x$weighted_fit_mix
-    ),
 
     # Credible-set counts.
     ncs_susie = length(
@@ -2289,33 +2019,6 @@ summarize_tissue <- function(
     ),
     perm_cs_susie_mix = length(
       get_cs(x$susie_mix_perm)
-    ),
-    ncs_weighted_fit_mix = if (has_weighted_fit_mix) {
-      length(
-        get_cs(x$weighted_fit_mix)
-      )
-    } else {
-      NA_integer_
-    },
-
-    # Target and realized prior mass of each coding class.
-    weighted_prior_target_additive = get_target_prior(
-      "additive"
-    ),
-    weighted_prior_target_dominant = get_target_prior(
-      "dominant"
-    ),
-    weighted_prior_target_recessive = get_target_prior(
-      "recessive"
-    ),
-    weighted_prior_realized_additive = get_realized_prior(
-      "additive"
-    ),
-    weighted_prior_realized_dominant = get_realized_prior(
-      "dominant"
-    ),
-    weighted_prior_realized_recessive = get_realized_prior(
-      "recessive"
     ),
 
     # Biological-SNP overlap, ignoring coding.
@@ -2377,91 +2080,6 @@ summarize_tissue <- function(
     pct_shared_snps_preferred_nonadditive = (
       overlap_real$pct_shared_snps_preferred_nonadditive
     ),
-
-    # Additive versus weighted-mixed biological-SNP overlap.
-    n_weighted_mix_cs_snps = as.numeric(
-      value_or_na(
-        overlap_weighted_real$n_mix_cs_snps
-      )
-    ),
-    overlap_snp_add_weighted = as.numeric(
-      value_or_na(
-        overlap_weighted_real$overlap_snp
-      )
-    ),
-    pct_add_cs_snps_retained_weighted = as.numeric(
-      value_or_na(
-        overlap_weighted_real$pct_add_cs_snps_retained
-      )
-    ),
-    overlap_coding_add_weighted = as.numeric(
-      value_or_na(
-        overlap_weighted_real$overlap_coding
-      )
-    ),
-    overlap_cs_pairs_add_weighted = as.numeric(
-      value_or_na(
-        overlap_weighted_real$n_overlapping_cs_pairs
-      )
-    ),
-
-    # Direct unweighted-mixed versus weighted-mixed agreement.
-    mix_weighted_overlap_snp = as.numeric(
-      value_or_na(
-        mix_weighted_agreement$overlap_snp
-      )
-    ),
-    mix_weighted_union_snp = as.numeric(
-      value_or_na(
-        mix_weighted_agreement$union_snp
-      )
-    ),
-    mix_weighted_jaccard_snp = as.numeric(
-      value_or_na(
-        mix_weighted_agreement$jaccard_snp
-      )
-    ),
-    pct_mix_cs_snps_retained_weighted = as.numeric(
-      value_or_na(
-        mix_weighted_agreement$pct_model_1_cs_snps_retained
-      )
-    ),
-    pct_weighted_cs_snps_retained_mix = as.numeric(
-      value_or_na(
-        mix_weighted_agreement$pct_model_2_cs_snps_retained
-      )
-    ),
-    mix_weighted_overlap_cs_pairs = as.numeric(
-      value_or_na(
-        mix_weighted_agreement$n_overlapping_cs_pairs
-      )
-    ),
-    mix_weighted_overlap_pairwise_sum = as.numeric(
-      value_or_na(
-        mix_weighted_agreement$pairwise_overlap_sum
-      )
-    ),
-    mix_weighted_same_cs_count = if (has_weighted_fit_mix) {
-      isTRUE(
-        mix_weighted_agreement$same_cs_count
-      )
-    } else {
-      NA
-    },
-    mix_weighted_same_cs_snp_sets = if (has_weighted_fit_mix) {
-      isTRUE(
-        mix_weighted_agreement$same_cs_snp_sets
-      )
-    } else {
-      NA
-    },
-    mix_weighted_same_lead_snp_set = if (has_weighted_fit_mix) {
-      isTRUE(
-        mix_weighted_agreement$same_lead_snp_set
-      )
-    } else {
-      NA
-    },
 
     # Permuted biological-SNP overlap.
     n_add_cs_snps_perm = overlap_perm$n_add_cs_snps,
@@ -2534,15 +2152,6 @@ summarize_tissue <- function(
     n_dom_perm = unname(
       type_perm["dominant"]
     ),
-    n_add_weighted = unname(
-      type_weighted["additive"]
-    ),
-    n_rec_weighted = unname(
-      type_weighted["recessive"]
-    ),
-    n_dom_weighted = unname(
-      type_weighted["dominant"]
-    ),
 
     # Convergence diagnostics.
     converged_add = isTRUE(
@@ -2557,13 +2166,6 @@ summarize_tissue <- function(
     converged_mix_perm = isTRUE(
       x$susie_mix_perm$converged
     ),
-    converged_weighted_fit_mix = if (has_weighted_fit_mix) {
-      isTRUE(
-        x$weighted_fit_mix$converged
-      )
-    } else {
-      NA
-    },
 
     stringsAsFactors = FALSE
   )
