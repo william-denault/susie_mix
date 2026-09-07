@@ -1329,6 +1329,19 @@ summarize_credible_sets <- function(
     )
   )
 
+  # The weighted fit uses the same filtered predictors as susie_mix.
+  # Exact lookup avoids partially matching the saved TSS-distance field
+  # when an older result does not contain the fit itself.
+  if (!is.null(x[["weighted_fit_mix"]])) {
+    model_inputs[[length(model_inputs) + 1L]] <- list(
+      model = "Weighted SuSiE-mix",
+      model_key = "weighted_fit_mix",
+      fit = x[["weighted_fit_mix"]],
+      predictor_map = x$mix_predictor_map,
+      saved_tss_summary = x[["weighted_fit_mix_lead_snp_tss_distance"]]
+    )
+  }
+
   cs_rows <- list()
   cs_row_counter <- 0L
 
@@ -1896,6 +1909,178 @@ count_mix_cs_types <- function(
 }
 
 
+compare_mixed_fits <- function(mix_fit, weighted_fit, predictor_map) {
+
+  # Both fits use the same matrix, so predictor indices also distinguish
+  # coding, while biological SNPs deliberately ignore coding.
+  mix_sets <- get_cs_snp_sets(mix_fit, predictor_map)
+  weighted_sets <- get_cs_snp_sets(weighted_fit, predictor_map)
+  mix_snps <- clean_snp_vector(unlist(mix_sets, use.names = FALSE))
+  weighted_snps <- clean_snp_vector(unlist(weighted_sets, use.names = FALSE))
+  shared_snps <- intersect(mix_snps, weighted_snps)
+  union_snps <- union(mix_snps, weighted_snps)
+
+  overlaps <- matrix(0L, nrow = length(mix_sets), ncol = length(weighted_sets))
+  for (i in seq_along(mix_sets)) {
+    for (j in seq_along(weighted_sets)) {
+      overlaps[i, j] <- length(intersect(mix_sets[[i]], weighted_sets[[j]]))
+    }
+  }
+
+  canonical_sets <- function(sets) {
+    # Ignore component names/order, but preserve repeated sets.
+    unname(sort(vapply(sets, function(members) {
+      paste(sort(unique(as.character(members))), collapse = ";")
+    }, character(1L))))
+  }
+
+  lead_indices <- function(fit) {
+    cs <- get_cs(fit)
+    vapply(seq_along(cs), function(i) {
+      get_cs_lead_predictor(fit, cs, i)
+    }, integer(1L))
+  }
+
+  mix_lead <- lead_indices(mix_fit)
+  weighted_lead <- lead_indices(weighted_fit)
+  valid_leads <- function(index) {
+    length(index) > 0L && !anyNA(index) &&
+      all(index >= 1L & index <= nrow(predictor_map)) &&
+      all(!is.na(predictor_map$snp[index]) & nzchar(predictor_map$snp[index]))
+  }
+  both_have_leads <- valid_leads(mix_lead) && valid_leads(weighted_lead)
+
+  list(
+    mix_weighted_overlap_snp = length(shared_snps),
+    mix_weighted_union_snp = length(union_snps),
+    mix_weighted_jaccard_snp = if (length(union_snps) > 0L) {
+      length(shared_snps) / length(union_snps)
+    } else {
+      NA_real_
+    },
+    pct_mix_cs_snps_retained_weighted = safe_percentage(
+      length(shared_snps), length(mix_snps)
+    ),
+    pct_weighted_cs_snps_retained_mix = safe_percentage(
+      length(shared_snps), length(weighted_snps)
+    ),
+    mix_weighted_overlap_cs_pairs = sum(overlaps > 0L),
+    mix_weighted_overlap_pairwise_sum = sum(overlaps),
+    mix_weighted_same_cs_count = length(mix_sets) == length(weighted_sets),
+    mix_weighted_same_cs_snp_sets = identical(
+      canonical_sets(mix_sets), canonical_sets(weighted_sets)
+    ),
+    mix_weighted_same_cs_predictor_sets = identical(
+      canonical_sets(get_cs(mix_fit)), canonical_sets(get_cs(weighted_fit))
+    ),
+    # No lead-SNP agreement is claimed when either model reports no CS.
+    mix_weighted_same_lead_snp_set = if (both_have_leads) {
+      setequal(predictor_map$snp[mix_lead], predictor_map$snp[weighted_lead])
+    } else {
+      NA
+    },
+    mix_weighted_same_lead_predictor_set = if (both_have_leads) {
+      setequal(mix_lead, weighted_lead)
+    } else {
+      NA
+    }
+  )
+}
+
+
+summarize_weighted_mix <- function(x) {
+
+  fit <- x[["weighted_fit_mix"]]
+  has_fit <- !is.null(fit)
+  codings <- c("additive", "dominant", "recessive")
+  type_count <- setNames(rep(NA_integer_, 3L), codings)
+  target_prior <- realized_prior <- setNames(rep(NA_real_, 3L), codings)
+  overlap_add <- agreement <- list()
+
+  if (has_fit) {
+    if (!is.list(fit) || !is.matrix(fit$alpha)) {
+      stop("weighted_fit_mix is not a SuSiE fit with an alpha matrix.")
+    }
+    predictor_map <- x$mix_predictor_map
+    validate_predictor_map(fit, predictor_map, "weighted_fit_mix_predictor_map")
+    type_count <- count_mix_cs_types(fit, predictor_map)
+    overlap_add <- calculate_cs_overlap(
+      x$susie_add, fit, x$add_predictor_map, predictor_map
+    )
+    agreement <- compare_mixed_fits(x$susie_mix, fit, predictor_map)
+
+    prior <- x[["mix_coding_prior"]]
+    if (!is.null(prior)) {
+      if (!is.numeric(prior) || !all(codings %in% names(prior)) ||
+          anyDuplicated(names(prior)) || any(!is.finite(prior)) || any(prior < 0)) {
+        stop("mix_coding_prior must contain finite, named coding probabilities.")
+      }
+      target_prior <- prior[codings]
+    }
+
+    weights <- x[["weighted_mix_prior_weights"]]
+    if (!is.null(weights)) {
+      if (!is.numeric(weights) || length(weights) != nrow(predictor_map) ||
+          any(!is.finite(weights)) || any(weights < 0) || sum(weights) <= 0) {
+        stop("weighted_mix_prior_weights does not match the mixed predictors.")
+      }
+      if (!is.null(names(weights))) {
+        if (anyDuplicated(names(weights)) ||
+            !setequal(names(weights), predictor_map$predictor_name)) {
+          stop("weighted_mix_prior_weights names do not match mix_predictor_map.")
+        }
+        weights <- weights[match(predictor_map$predictor_name, names(weights))]
+      }
+      realized_prior <- vapply(codings, function(coding) {
+        sum(weights[predictor_map$coding == coding])
+      }, numeric(1L))
+    }
+  }
+
+  number <- function(value) as.numeric(value_or_na(value))
+  flag <- function(value) as.logical(value_or_na(value))
+
+  # Always emit the same columns. Missing fits are NA, not zero-CS fits.
+  # There is no weighted permutation fit in the supplied workhorse.
+  data.frame(
+    has_weighted_fit_mix = has_fit,
+    ncs_weighted_fit_mix = if (has_fit) length(get_cs(fit)) else NA_integer_,
+    elbo_weighted_mix = max_elbo(fit),
+    dif_elbo_weighted_vs_add = max_elbo(fit) - max_elbo(x$susie_add),
+    dif_elbo_weighted_vs_mix = max_elbo(fit) - max_elbo(x$susie_mix),
+    log_lik_weighted_mix = get_log_lik_metric(fit),
+    converged_weighted_fit_mix = flag(fit$converged),
+    n_add_weighted = unname(type_count["additive"]),
+    n_dom_weighted = unname(type_count["dominant"]),
+    n_rec_weighted = unname(type_count["recessive"]),
+    weighted_prior_target_additive = unname(target_prior["additive"]),
+    weighted_prior_target_dominant = unname(target_prior["dominant"]),
+    weighted_prior_target_recessive = unname(target_prior["recessive"]),
+    weighted_prior_realized_additive = unname(realized_prior["additive"]),
+    weighted_prior_realized_dominant = unname(realized_prior["dominant"]),
+    weighted_prior_realized_recessive = unname(realized_prior["recessive"]),
+    n_weighted_mix_cs_snps = number(overlap_add$n_mix_cs_snps),
+    overlap_snp_add_weighted = number(overlap_add$overlap_snp),
+    pct_add_cs_snps_retained_weighted = number(overlap_add$pct_add_cs_snps_retained),
+    overlap_coding_add_weighted = number(overlap_add$overlap_coding),
+    overlap_cs_pairs_add_weighted = number(overlap_add$n_overlapping_cs_pairs),
+    mix_weighted_overlap_snp = number(agreement$mix_weighted_overlap_snp),
+    mix_weighted_union_snp = number(agreement$mix_weighted_union_snp),
+    mix_weighted_jaccard_snp = number(agreement$mix_weighted_jaccard_snp),
+    pct_mix_cs_snps_retained_weighted = number(agreement$pct_mix_cs_snps_retained_weighted),
+    pct_weighted_cs_snps_retained_mix = number(agreement$pct_weighted_cs_snps_retained_mix),
+    mix_weighted_overlap_cs_pairs = number(agreement$mix_weighted_overlap_cs_pairs),
+    mix_weighted_overlap_pairwise_sum = number(agreement$mix_weighted_overlap_pairwise_sum),
+    mix_weighted_same_cs_count = flag(agreement$mix_weighted_same_cs_count),
+    mix_weighted_same_cs_snp_sets = flag(agreement$mix_weighted_same_cs_snp_sets),
+    mix_weighted_same_cs_predictor_sets = flag(agreement$mix_weighted_same_cs_predictor_sets),
+    mix_weighted_same_lead_snp_set = flag(agreement$mix_weighted_same_lead_snp_set),
+    mix_weighted_same_lead_predictor_set = flag(agreement$mix_weighted_same_lead_predictor_set),
+    stringsAsFactors = FALSE
+  )
+}
+
+
 is_successful_tissue_result <- function(x) {
 
   if (!is.list(x)) {
@@ -1947,7 +2132,7 @@ summarize_tissue <- function(
     x$mix_predictor_map
   )
 
-  data.frame(
+  summary_row <- data.frame(
     gene = gene,
     tissue = tissue,
     result_file = basename(result_file),
@@ -2169,6 +2354,8 @@ summarize_tissue <- function(
 
     stringsAsFactors = FALSE
   )
+
+  cbind(summary_row, summarize_weighted_mix(x))
 }
 
 
@@ -2573,6 +2760,24 @@ cat(
   nrow(res_cs_summary),
   "\n"
 )
+if (nrow(res_summary) > 0L) {
+  cat("Gene-tissue analyses with weighted_fit_mix:",
+      sum(res_summary$has_weighted_fit_mix), "\n")
+  cat("Gene-tissue analyses missing weighted_fit_mix:",
+      sum(!res_summary$has_weighted_fit_mix), "\n")
+  cat("Weighted fits with zero credible sets:",
+      sum(res_summary$ncs_weighted_fit_mix == 0L, na.rm = TRUE), "\n")
+  cat("Weighted credible-set summary rows:",
+      sum(res_cs_summary$model_key == "weighted_fit_mix"), "\n")
+  if (!any(res_summary$has_weighted_fit_mix)) {
+    warning(
+      "No weighted_fit_mix was found in the summarized RDS files. ",
+      "Use results produced by the updated workhorse; rerunning this ",
+      "summarizer cannot create the missing fits.",
+      call. = FALSE
+    )
+  }
+}
 if (
   nrow(res_cs_summary) > 0L &&
   "distance_to_tss_bp" %in% names(res_cs_summary)

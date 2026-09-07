@@ -2648,6 +2648,238 @@ plot_coding_tss_2x2 <- function() {
 plot_coding_tss_2x2()
 
 
+plot_tissue_additive_proportion <- function(additivity_summary) {
+
+  plot_data <- as.data.frame(additivity_summary)
+
+  if (nrow(plot_data) == 0L) {
+    plot.new()
+    title("Tissue-specific additive proportion")
+    text(0.5, 0.5, "No mixed-model credible sets available")
+    return(invisible(NULL))
+  }
+
+  plot_data$additive_proportion <- with(
+    plot_data,
+    additive_cs / total_mixed_cs
+  )
+
+  plot_data <- plot_data[
+    plot_data$total_mixed_cs > 0 &
+      is.finite(plot_data$additive_proportion),
+    ,
+    drop = FALSE
+  ]
+
+  if (nrow(plot_data) == 0L) {
+    plot.new()
+    title("Tissue-specific additive proportion")
+    text(0.5, 0.5, "No finite tissue proportions available")
+    return(invisible(NULL))
+  }
+
+  z_value <- qnorm(0.975)
+  n_mixed <- plot_data$total_mixed_cs
+  additive_proportion <- plot_data$additive_proportion
+
+  ci_center <- (
+    additive_proportion + z_value^2 / (2 * n_mixed)
+  ) / (
+    1 + z_value^2 / n_mixed
+  )
+
+  ci_margin <- z_value * sqrt(
+    additive_proportion * (1 - additive_proportion) / n_mixed +
+      z_value^2 / (4 * n_mixed^2)
+  ) / (
+    1 + z_value^2 / n_mixed
+  )
+
+  plot_data$ci_lower <- pmax(
+    0,
+    ci_center - ci_margin
+  )
+
+  plot_data$ci_upper <- pmin(
+    1,
+    ci_center + ci_margin
+  )
+
+  plot_data <- plot_data[
+    order(
+      plot_data$additive_proportion,
+      plot_data$tissue
+    ),
+    ,
+    drop = FALSE
+  ]
+
+  ci_range <- range(
+    c(
+      plot_data$ci_lower,
+      plot_data$ci_upper
+    ),
+    na.rm = TRUE
+  )
+
+  axis_padding <- max(
+    0.005,
+    0.04 * diff(ci_range)
+  )
+
+  x_limits <- ci_range + c(
+    -axis_padding,
+    axis_padding
+  )
+
+  axis_ticks <- pretty(
+    x_limits,
+    n = 7
+  )
+
+  axis_ticks <- axis_ticks[
+    axis_ticks >= 0 & axis_ticks <= 1
+  ]
+
+  overall_proportion <- sum(
+    plot_data$additive_cs
+  ) / sum(
+    plot_data$total_mixed_cs
+  )
+
+  old_par <- par(no.readonly = TRUE)
+  on.exit(
+    par(old_par),
+    add = TRUE
+  )
+
+  par(
+    mar = c(5, 13, 4, 8),
+    las = 1,
+    xaxs = "i"
+  )
+
+  y_positions <- seq_len(nrow(plot_data))
+
+  plot.new()
+  plot.window(
+    xlim = x_limits,
+    ylim = c(
+      0.5,
+      nrow(plot_data) + 0.5
+    ),
+    xaxs = "i",
+    yaxs = "i"
+  )
+
+  abline(
+    v = axis_ticks,
+    col = "grey90",
+    lwd = 0.8
+  )
+
+  rect(
+    xleft = x_limits[1],
+    ybottom = y_positions - 0.28,
+    xright = plot_data$additive_proportion,
+    ytop = y_positions + 0.28,
+    col = "#4C78A8",
+    border = NA
+  )
+
+  segments(
+    x0 = plot_data$ci_lower,
+    y0 = y_positions,
+    x1 = plot_data$ci_upper,
+    y1 = y_positions,
+    col = "#222222",
+    lwd = 1.5
+  )
+
+  segments(
+    x0 = plot_data$ci_lower,
+    y0 = y_positions - 0.09,
+    x1 = plot_data$ci_lower,
+    y1 = y_positions + 0.09,
+    col = "#222222",
+    lwd = 1.5
+  )
+
+  segments(
+    x0 = plot_data$ci_upper,
+    y0 = y_positions - 0.09,
+    x1 = plot_data$ci_upper,
+    y1 = y_positions + 0.09,
+    col = "#222222",
+    lwd = 1.5
+  )
+
+  abline(
+    v = overall_proportion,
+    col = "#222222",
+    lty = 2,
+    lwd = 2
+  )
+
+  axis(
+    side = 1,
+    at = axis_ticks,
+    labels = paste0(
+      round(100 * axis_ticks),
+      "%"
+    )
+  )
+
+  axis(
+    side = 2,
+    at = y_positions,
+    labels = plot_data$tissue,
+    tick = FALSE,
+    las = 1
+  )
+
+  text(
+    x = plot_data$ci_upper + 0.15 * axis_padding,
+    y = y_positions,
+    labels = sprintf(
+      "%.1f%% (%d/%d)",
+      100 * plot_data$additive_proportion,
+      plot_data$additive_cs,
+      plot_data$total_mixed_cs
+    ),
+    pos = 4,
+    cex = 0.70,
+    xpd = NA
+  )
+
+  title("Tissue-specific additive proportion")
+
+  mtext(
+    "Additive credible sets / total mixed credible sets",
+    side = 1,
+    line = 3
+  )
+
+  mtext(
+    sprintf(
+      "Dashed line: overall proportion = %.1f%%",
+      100 * overall_proportion
+    ),
+    side = 3,
+    adj = 1,
+    line = 0.4,
+    cex = 0.8
+  )
+
+  box(bty = "l")
+
+  invisible(NULL)
+}
+
+
+plot_tissue_additive_proportion(
+  tissue_additivity_summary
+)
 # ============================================================
 # Save descriptive results
 # ============================================================
@@ -2662,6 +2894,24 @@ dir.create(
   recursive = TRUE,
   showWarnings = FALSE
 )
+
+pdf(
+  file.path(
+    output_dir,
+    "tissue_additive_proportion.pdf"
+  ),
+  width = 10,
+  height = max(
+    6,
+    2.5 + 0.28 * nrow(tissue_additivity_summary)
+  )
+)
+
+plot_tissue_additive_proportion(
+  tissue_additivity_summary
+)
+
+invisible(dev.off())
 
 pdf(
   file.path(
