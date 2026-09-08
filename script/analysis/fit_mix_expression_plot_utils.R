@@ -347,6 +347,172 @@ plot_fit_mix_lead_expression <- function(
 }
 
 
+conditional_expression_for_cs <- function(
+    y,
+    geno_mix,
+    lead_indices,
+    focal_cs) {
+
+  if (
+    focal_cs < 1L ||
+      focal_cs > length(lead_indices)
+  ) {
+    stop("focal_cs is outside the lead-index vector.")
+  }
+
+  focal_index <- lead_indices[focal_cs]
+
+  other_indices <- setdiff(
+    unique(lead_indices[-focal_cs]),
+    focal_index
+  )
+
+  if (length(other_indices) == 0L) {
+    return(y)
+  }
+
+  focal_predictor <- geno_mix[
+    ,
+    focal_index,
+    drop = FALSE
+  ]
+
+  other_predictors <- geno_mix[
+    ,
+    other_indices,
+    drop = FALSE
+  ]
+
+  # Estimate the other-CS effects jointly with the focal predictor. This
+  # prevents LD between the leads from making the other predictor absorb
+  # part of the focal effect.
+  conditional_fit <- lm.fit(
+    x = cbind(
+      intercept = 1,
+      focal_predictor,
+      other_predictors
+    ),
+    y = y
+  )
+
+  other_coefficient_positions <- seq.int(
+    from = 3L,
+    length.out = ncol(other_predictors)
+  )
+  other_coefficients <- conditional_fit$coefficients[
+    other_coefficient_positions
+  ]
+
+  if (any(!is.finite(other_coefficients))) {
+    stop(
+      "The focal and other CS lead predictors are collinear; ",
+      "their conditional effects cannot be separated."
+    )
+  }
+
+  # Remove only the slopes for the other CS leads. Keeping the intercept
+  # leaves the adjusted phenotype on the same location as the original y.
+  y - as.numeric(
+    other_predictors %*% other_coefficients
+  )
+}
+
+
+plot_fit_mix_expression_panel <- function(
+    lead,
+    raw_genotype,
+    expression_to_plot,
+    main,
+    ylab,
+    ylim = NULL,
+    show_mean_legend = TRUE,
+    jitter_seed = 1L) {
+
+  genotype_factor <- factor(raw_genotype, levels = 0:2)
+  genotype_counts <- table(genotype_factor)
+  expression_groups <- split(
+    expression_to_plot,
+    genotype_factor,
+    drop = FALSE
+  )
+
+  genotype_labels <- sprintf(
+    "%d\n(n = %d)",
+    0:2,
+    as.integer(genotype_counts)
+  )
+
+  boxplot(
+    expression_groups,
+    names = genotype_labels,
+    col = c("#DCEAF7", "#91BCE2", "#4C78A8"),
+    border = "#254E70",
+    outline = FALSE,
+    ylim = ylim,
+    ylab = ylab,
+    xlab = paste0(
+      "Minor-allele dosage for ",
+      lead$lead_snp
+    ),
+    main = main,
+    cex.main = 0.82
+  )
+
+  set.seed(jitter_seed)
+  stripchart(
+    expression_groups,
+    vertical = TRUE,
+    method = "jitter",
+    jitter = 0.18,
+    add = TRUE,
+    pch = 21,
+    cex = 0.65,
+    col = adjustcolor("#1F2937", alpha.f = 0.55),
+    bg = adjustcolor("white", alpha.f = 0.50)
+  )
+
+  group_means <- vapply(
+    expression_groups,
+    function(x) {
+      if (length(x) > 0L) mean(x) else NA_real_
+    },
+    numeric(1L)
+  )
+
+  valid_means <- is.finite(group_means)
+
+  points(
+    which(valid_means),
+    group_means[valid_means],
+    pch = 23,
+    cex = 1.2,
+    lwd = 1.1,
+    col = "#7F2704",
+    bg = "#F28E2B"
+  )
+
+  abline(
+    h = 0,
+    col = "gray75",
+    lty = 3
+  )
+
+  if (show_mean_legend) {
+    legend(
+      "topright",
+      legend = "Group mean",
+      pch = 23,
+      pt.bg = "#F28E2B",
+      col = "#7F2704",
+      bty = "n",
+      cex = 0.72
+    )
+  }
+
+  invisible(genotype_counts)
+}
+
+
 load_fit_mix_expression_inputs <- function(
     subject_pheno_file,
     sample_attr_file,
