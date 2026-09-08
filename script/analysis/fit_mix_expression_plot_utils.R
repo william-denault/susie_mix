@@ -288,6 +288,7 @@ plot_fit_mix_lead_expression <- function(
   boxplot(
     expression_groups,
     names = genotype_labels,
+    xaxt = "n",
     col = c("#DCEAF7", "#91BCE2", "#4C78A8"),
     border = "#254E70",
     outline = FALSE,
@@ -298,6 +299,16 @@ plot_fit_mix_lead_expression <- function(
     ),
     main = plot_title,
     cex.main = 0.9
+  )
+
+  # Draw the genotype labels without vertical tick marks. The default
+  # ticks run through the centered 0/1/2 labels on high-resolution plots.
+  axis(
+    side = 1,
+    at = seq_along(genotype_labels),
+    labels = genotype_labels,
+    tick = FALSE,
+    las = 1
   )
 
   set.seed(1L + lead$cs_number)
@@ -445,6 +456,7 @@ plot_fit_mix_expression_panel <- function(
   boxplot(
     expression_groups,
     names = genotype_labels,
+    xaxt = "n",
     col = c("#DCEAF7", "#91BCE2", "#4C78A8"),
     border = "#254E70",
     outline = FALSE,
@@ -456,6 +468,14 @@ plot_fit_mix_expression_panel <- function(
     ),
     main = main,
     cex.main = 0.82
+  )
+
+  axis(
+    side = 1,
+    at = seq_along(genotype_labels),
+    labels = genotype_labels,
+    tick = FALSE,
+    las = 1
   )
 
   set.seed(jitter_seed)
