@@ -242,7 +242,8 @@ plot_fit_mix_lead_expression <- function(
     lead,
     raw_genotype,
     normalized_expression,
-    output_file) {
+    output_file,
+    genotype_axis_ticks = FALSE) {
 
   genotype_factor <- factor(raw_genotype, levels = 0:2)
   genotype_counts <- table(genotype_factor)
@@ -307,7 +308,7 @@ plot_fit_mix_lead_expression <- function(
     side = 1,
     at = seq_along(genotype_labels),
     labels = genotype_labels,
-    tick = FALSE,
+    tick = genotype_axis_ticks,
     las = 1
   )
 
@@ -437,7 +438,8 @@ plot_fit_mix_expression_panel <- function(
     ylab,
     ylim = NULL,
     show_mean_legend = TRUE,
-    jitter_seed = 1L) {
+    jitter_seed = 1L,
+    genotype_axis_ticks = FALSE) {
 
   genotype_factor <- factor(raw_genotype, levels = 0:2)
   genotype_counts <- table(genotype_factor)
@@ -474,7 +476,7 @@ plot_fit_mix_expression_panel <- function(
     side = 1,
     at = seq_along(genotype_labels),
     labels = genotype_labels,
-    tick = FALSE,
+    tick = genotype_axis_ticks,
     las = 1
   )
 
@@ -957,7 +959,8 @@ run_one_cs_fit_mix_plots <- function(
     hwe_thresh = 1e-8,
     min_n_rec = 5,
     cis_window = 5e5,
-    min_samples = 50) {
+    min_samples = 50,
+    genotype_axis_ticks = FALSE) {
 
   expected_coding <- match.arg(
     expected_coding,
@@ -1153,7 +1156,8 @@ run_one_cs_fit_mix_plots <- function(
             lead = lead,
             raw_genotype = raw_genotype,
             normalized_expression = tissue_data$y,
-            output_file = output_file
+            output_file = output_file,
+            genotype_axis_ticks = genotype_axis_ticks
           )
 
           data.table(

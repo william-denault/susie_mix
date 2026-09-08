@@ -87,5 +87,6 @@ run_one_cs_fit_mix_plots(
     "one_cs_recessive"
   ),
   summary_filename = "fit_mix_one_cs_recessive_plot_summary.csv",
-  project_dir = project_dir
+  project_dir = project_dir,
+  genotype_axis_ticks = FALSE
 )

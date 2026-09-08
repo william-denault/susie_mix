@@ -222,7 +222,8 @@ plot_four_panel_case <- function(
     ylab = "Conditional normalized gene expression",
     ylim = common_expression_limits,
     show_mean_legend = FALSE,
-    jitter_seed = 101L
+    jitter_seed = 101L,
+    genotype_axis_ticks = FALSE
   )
 
   cs2_title <- paste0(
@@ -246,7 +247,8 @@ plot_four_panel_case <- function(
     ylab = "Conditional normalized gene expression",
     ylim = common_expression_limits,
     show_mean_legend = TRUE,
-    jitter_seed = 102L
+    jitter_seed = 102L,
+    genotype_axis_ticks = FALSE
   )
 
   mtext(
