@@ -105,7 +105,7 @@ recode_fit_mix_predictors <- function(X) {
 
 get_fit_mix_cs_leads <- function(fit_mix, predictor_map) {
 
-  cs_list <- fit_mix$sets$cs
+  cs_list <- fit_mix$sets[["cs"]]
 
   if (is.null(cs_list) || length(cs_list) == 0L) {
     return(data.table())
@@ -216,6 +216,96 @@ get_fit_mix_cs_leads <- function(fit_mix, predictor_map) {
   )
 
   rbindlist(lead_rows)
+}
+
+
+add_mix_coding_boundaries <- function(predictor_map) {
+
+  required_columns <- c("predictor_index", "coding")
+  missing_columns <- setdiff(required_columns, names(predictor_map))
+
+  if (length(missing_columns) > 0L) {
+    stop(
+      "mix_predictor_map is missing: ",
+      paste(missing_columns, collapse = ", "),
+      "."
+    )
+  }
+
+  ordered_map <- predictor_map[
+    order(predictor_map$predictor_index),
+    ,
+    drop = FALSE
+  ]
+
+  coding <- as.character(ordered_map$coding)
+
+  if (length(coding) == 0L) {
+    return(invisible(NULL))
+  }
+
+  coding_runs <- rle(coding)
+  run_ends <- cumsum(coding_runs$lengths)
+  run_starts <- c(1L, head(run_ends, -1L) + 1L)
+  run_midpoints <- (run_starts + run_ends) / 2
+
+  if (length(run_ends) > 1L) {
+    abline(
+      v = head(run_ends, -1L) + 0.5,
+      col = "#B22222",
+      lty = 2,
+      lwd = 1.4
+    )
+  }
+
+  plot_limits <- par("usr")
+
+  text(
+    x = run_midpoints,
+    y = plot_limits[4],
+    labels = tools::toTitleCase(coding_runs$values),
+    pos = 3,
+    offset = 0.20,
+    xpd = NA,
+    cex = 0.68,
+    col = "#7A1F1F"
+  )
+
+  invisible(NULL)
+}
+
+
+finite_plot_limits <- function(...) {
+
+  values <- unlist(list(...), use.names = FALSE)
+  values <- values[is.finite(values)]
+
+  if (length(values) == 0L) {
+    stop("The expression values are all non-finite.")
+  }
+
+  limits <- range(values)
+  spread <- diff(limits)
+  padding <- if (spread > 0) 0.06 * spread else 0.25
+
+  limits + c(-padding, padding)
+}
+
+
+open_four_panel_png <- function(filename) {
+
+  png_arguments <- list(
+    filename = filename,
+    width = 3200,
+    height = 2800,
+    res = 250
+  )
+
+  if (capabilities("cairo")) {
+    png_arguments$type <- "cairo-png"
+  }
+
+  do.call(png, png_arguments)
 }
 
 
@@ -947,6 +1037,203 @@ prepare_fit_mix_tissue_data <- function(
 }
 
 
+get_fit_add_plot_lead <- function(fit_add, predictor_map) {
+
+  required_columns <- c("predictor_index", "predictor_name", "snp", "coding")
+  if (!is.data.frame(predictor_map) ||
+      !all(required_columns %in% names(predictor_map))) {
+    stop("add_predictor_map is absent or missing required columns.")
+  }
+  if (nrow(predictor_map) != ncol(fit_add$alpha) ||
+      !identical(sort(as.integer(predictor_map$predictor_index)),
+                 seq_len(ncol(fit_add$alpha))) ||
+      anyNA(predictor_map$snp) || any(!nzchar(predictor_map$snp)) ||
+      anyNA(predictor_map$coding) || any(predictor_map$coding != "additive")) {
+    stop("add_predictor_map does not match the saved additive fit.")
+  }
+  if (length(fit_add$pip) != ncol(fit_add$alpha) ||
+      !any(is.finite(fit_add$pip))) {
+    stop("The saved additive fit has no usable PIPs.")
+  }
+
+  # A single CS uses its component-alpha lead, matching the mixed model.
+  # Keep the original case selection, which only restricts the mixed CS count:
+  # for multiple additive CSs, plot the CS lead with the highest PIP.
+  leads <- get_fit_mix_cs_leads(fit_add, predictor_map)
+  if (nrow(leads) > 0L) {
+    scores <- leads$lead_pip
+    scores[!is.finite(scores)] <- -Inf
+    lead <- leads[which.max(scores)]
+    lead[, lead_selection := if (nrow(leads) == 1L) {
+      "Single credible-set lead"
+    } else {
+      "Highest-PIP credible-set lead"
+    }]
+    return(lead)
+  }
+
+  # With no additive CS, explicitly label the highest-PIP SNP as a fallback.
+  scores <- fit_add$pip
+  scores[!is.finite(scores)] <- -Inf
+  lead_index <- which.max(scores)
+  map_row <- match(lead_index, predictor_map$predictor_index)
+  data.table(
+    cs_number = NA_integer_,
+    cs_name = NA_character_,
+    component_index = NA_integer_,
+    lead_predictor_index = lead_index,
+    lead_predictor_name = as.character(predictor_map$predictor_name[map_row]),
+    lead_snp = as.character(predictor_map$snp[map_row]),
+    lead_coding = "additive",
+    lead_pip = as.numeric(fit_add$pip[lead_index]),
+    cs_size = NA_integer_,
+    lead_selection = "Highest-PIP SNP (no credible set)"
+  )
+}
+
+
+get_one_cs_likelihood_comparison <- function(fit_add, fit_mix) {
+
+  # Match get_log_lik_metric() in generate_summary_results.R exactly.
+  # This is the existing ELBO + KL log-likelihood-like metric, not a pair
+  # of maximized nested-model likelihoods with a calibrated chi-square test.
+  log_lik_metric <- function(fit) {
+    elbo <- fit$elbo
+    elbo <- elbo[is.finite(elbo)]
+    if (length(elbo) == 0L || is.null(fit$KL)) {
+      return(NA_real_)
+    }
+    tail(elbo, 1) + sum(fit$KL, na.rm = TRUE)
+  }
+
+  log_lik_add <- log_lik_metric(fit_add)
+  log_lik_mix <- log_lik_metric(fit_mix)
+  list(
+    log_lik_add = log_lik_add,
+    log_lik_mix = log_lik_mix,
+    likelihood_statistic = -2 * (log_lik_add - log_lik_mix)
+  )
+}
+
+
+describe_one_cs_lead_change <- function(add_lead, mix_lead) {
+  paste0(
+    if (identical(add_lead$lead_snp, mix_lead$lead_snp)) {
+      "Same lead SNP; coding change only: "
+    } else {
+      "Different lead SNP; coding change: "
+    },
+    "additive -> ", mix_lead$lead_coding
+  )
+}
+
+
+plot_one_cs_four_panel_case <- function(
+    gene_name,
+    tissue_name,
+    fit_add,
+    fit_mix,
+    predictor_map,
+    add_lead,
+    mix_lead,
+    raw_genotype_add,
+    raw_genotype_mix,
+    normalized_expression,
+    likelihood_comparison,
+    output_file,
+    genotype_axis_ticks = FALSE) {
+
+  expression_limits <- finite_plot_limits(normalized_expression)
+  n_add_cs <- length(fit_add$sets[["cs"]])
+  lead_comparison <- describe_one_cs_lead_change(add_lead, mix_lead)
+  statistic <- likelihood_comparison$likelihood_statistic
+  statistic_label <- if (is.finite(statistic)) {
+    sprintf(
+      "Likelihood-ratio statistic: 2(log lik mix - log lik additive) = %.2f",
+      statistic
+    )
+  } else {
+    "Likelihood-ratio statistic unavailable (missing finite ELBO/KL metric)"
+  }
+
+  open_four_panel_png(output_file)
+  on.exit(invisible(dev.off()), add = TRUE)
+  par(
+    mfrow = c(2, 2),
+    oma = c(1, 1, 6.5, 1),
+    mar = c(5, 5, 4.5, 2) + 0.1,
+    las = 1
+  )
+
+  susieR::susie_plot(
+    fit_add,
+    y = "PIP",
+    main = paste0("Additive SuSiE: ", n_add_cs, " credible set",
+                  if (n_add_cs == 1L) "" else "s")
+  )
+  susieR::susie_plot(
+    fit_mix,
+    y = "PIP",
+    main = "SuSiE-mix: 1 credible set"
+  )
+  add_mix_coding_boundaries(predictor_map)
+
+  add_title <- paste0(
+    "SuSiE lead: ", add_lead$lead_snp,
+    "\nAdditive; PIP = ", sprintf("%.3f", add_lead$lead_pip),
+    if (n_add_cs == 0L) {
+      " (highest PIP; no CS)"
+    } else if (n_add_cs > 1L) {
+      paste0(" (highest-PIP CS lead; ", add_lead$cs_name, ")")
+    } else {
+      paste0(" (", add_lead$cs_name, ")")
+    }
+  )
+  mix_title <- paste0(
+    "SuSiE-mix lead: ", mix_lead$lead_snp,
+    "\n", tools::toTitleCase(mix_lead$lead_coding),
+    "; PIP = ", sprintf("%.3f", mix_lead$lead_pip),
+    " (", mix_lead$cs_name, ")"
+  )
+
+  # Both panels show the same workhorse-normalized phenotype, grouped by
+  # each biological SNP's raw 0/1/2 dosage. Do not condition one model on the
+  # other: these are alternative explanations of a single mixed-model CS.
+  # Use identical jitter so a coding-only change gives identical boxplots.
+  plot_fit_mix_expression_panel(
+    lead = add_lead,
+    raw_genotype = raw_genotype_add,
+    expression_to_plot = normalized_expression,
+    main = add_title,
+    ylab = "Normalized gene expression",
+    ylim = expression_limits,
+    show_mean_legend = FALSE,
+    jitter_seed = 101L,
+    genotype_axis_ticks = genotype_axis_ticks
+  )
+  plot_fit_mix_expression_panel(
+    lead = mix_lead,
+    raw_genotype = raw_genotype_mix,
+    expression_to_plot = normalized_expression,
+    main = mix_title,
+    ylab = "Normalized gene expression",
+    ylim = expression_limits,
+    show_mean_legend = TRUE,
+    jitter_seed = 101L,
+    genotype_axis_ticks = genotype_axis_ticks
+  )
+
+  mtext(paste(gene_name, tissue_name, sep = " - "), side = 3,
+        outer = TRUE, line = 4.7, font = 2, cex = 1.25)
+  mtext(lead_comparison, side = 3, outer = TRUE, line = 3.2, cex = 0.95)
+  mtext(statistic_label, side = 3, outer = TRUE, line = 1.8, cex = 0.85)
+  mtext("ELBO + KL summary metric; positive favors SuSiE-mix; no calibrated p-value",
+        side = 3, outer = TRUE, line = 0.6, cex = 0.70, col = "gray35")
+
+  invisible(NULL)
+}
+
+
 run_one_cs_fit_mix_plots <- function(
     cases,
     expected_coding,
@@ -1091,13 +1378,18 @@ run_one_cs_fit_mix_plots <- function(
           }
 
           tissue_result <- gene_data$gene_results[[tissue_name]]
+          fit_add <- tissue_result$susie_add
           fit_mix <- tissue_result$susie_mix
+
+          if (is.null(fit_add)) {
+            stop("The saved tissue result has no susie_add fit.")
+          }
 
           if (is.null(fit_mix)) {
             stop("The saved tissue result has no susie_mix fit.")
           }
 
-          cs_list <- fit_mix$sets$cs
+          cs_list <- fit_mix$sets[["cs"]]
           n_cs <- if (is.null(cs_list)) 0L else length(cs_list)
 
           if (n_cs != 1L) {
@@ -1122,6 +1414,15 @@ run_one_cs_fit_mix_plots <- function(
             tissue_data$predictor_map
           )[1]
 
+          add_lead <- get_fit_add_plot_lead(
+            fit_add,
+            tissue_result$add_predictor_map
+          )
+          likelihood_comparison <- get_one_cs_likelihood_comparison(
+            fit_add,
+            fit_mix
+          )
+
           if (!identical(lead$lead_coding, expected_coding)) {
             stop(
               "Summary selected this as ",
@@ -1132,30 +1433,41 @@ run_one_cs_fit_mix_plots <- function(
             )
           }
 
-          if (!lead$lead_snp %in% colnames(tissue_data$geno_for_counts)) {
+          missing_lead_snps <- setdiff(
+            c(add_lead$lead_snp, lead$lead_snp),
+            colnames(tissue_data$geno_for_counts)
+          )
+          if (length(missing_lead_snps) > 0L) {
             stop(
-              "Lead SNP is absent from reconstructed genotypes: ",
-              lead$lead_snp
+              "Lead SNPs are absent from reconstructed genotypes: ",
+              paste(missing_lead_snps, collapse = ", ")
             )
           }
 
           raw_genotype <- tissue_data$geno_for_counts[, lead$lead_snp]
+          raw_genotype_add <- tissue_data$geno_for_counts[, add_lead$lead_snp]
           output_file <- file.path(
             plot_dir,
             paste0(
-              gene_name,
+              sanitize_filename(gene_name),
               "_",
-              tissue_name,
-              "_boxplot.png"
+              sanitize_filename(tissue_name),
+              "_add_vs_mix.png"
             )
           )
 
-          plot_fit_mix_lead_expression(
+          plot_one_cs_four_panel_case(
             gene_name = gene_name,
             tissue_name = tissue_name,
-            lead = lead,
-            raw_genotype = raw_genotype,
+            fit_add = fit_add,
+            fit_mix = fit_mix,
+            predictor_map = tissue_data$predictor_map,
+            add_lead = add_lead,
+            mix_lead = lead,
+            raw_genotype_add = raw_genotype_add,
+            raw_genotype_mix = raw_genotype,
             normalized_expression = tissue_data$y,
+            likelihood_comparison = likelihood_comparison,
             output_file = output_file,
             genotype_axis_ticks = genotype_axis_ticks
           )
@@ -1165,7 +1477,25 @@ run_one_cs_fit_mix_plots <- function(
             tissue = tissue_name,
             expected_coding = expected_coding,
             status = "plotted",
-            message = "Saved fit_mix has one CS with the expected lead coding",
+            message = "Four-panel SuSiE / SuSiE-mix comparison created",
+            additive_n_cs = length(fit_add$sets[["cs"]]),
+            additive_cs_name = add_lead$cs_name,
+            additive_component_index = add_lead$component_index,
+            additive_lead_predictor_index = add_lead$lead_predictor_index,
+            additive_lead_predictor = add_lead$lead_predictor_name,
+            additive_lead_snp = add_lead$lead_snp,
+            additive_lead_coding = add_lead$lead_coding,
+            additive_lead_pip = add_lead$lead_pip,
+            additive_cs_size = add_lead$cs_size,
+            additive_lead_selection = add_lead$lead_selection,
+            additive_n_genotype_0 = sum(raw_genotype_add == 0L),
+            additive_n_genotype_1 = sum(raw_genotype_add == 1L),
+            additive_n_genotype_2 = sum(raw_genotype_add == 2L),
+            same_lead_snp = identical(add_lead$lead_snp, lead$lead_snp),
+            lead_comparison = describe_one_cs_lead_change(add_lead, lead),
+            log_lik_add = likelihood_comparison$log_lik_add,
+            log_lik_mix = likelihood_comparison$log_lik_mix,
+            likelihood_statistic = likelihood_comparison$likelihood_statistic,
             n_cs = 1L,
             cs_name = lead$cs_name,
             component_index = lead$component_index,

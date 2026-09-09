@@ -1,6 +1,10 @@
 # Illustrate gene-tissue pairs for which the saved unweighted SuSiE-mix
 # (fit_mix / susie_mix) has exactly one credible set and its lead predictor
 # uses dominant coding.
+# Each figure compares SuSiE and SuSiE-mix PIPs (top row), then normalized
+# expression by each model's lead SNP (bottom row). The title reports whether
+# the lead SNP changes and the likelihood-ratio statistic used in descriptive
+# results: 2 * (log_lik_mix - log_lik_add), with log_lik = final ELBO + sum(KL).
 
 library(data.table)
 
