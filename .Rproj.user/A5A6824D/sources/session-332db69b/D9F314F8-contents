@@ -1,0 +1,8 @@
+root <- "C:/Document/Serieux/Travail/Data_analysis_and_papers/susie_mix"
+
+source(file.path(root, "script/simulation/summarize_simulation.R"))
+
+simulation_summarize(
+  output = file.path(root, "simulation results/production"),
+  allow_incomplete = TRUE
+)
