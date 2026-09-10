@@ -1,14 +1,25 @@
 # Compare ALL gene-tissue regions with the same positive number of credible
 # sets in SuSiE and the unweighted SuSiE-mix. Requires only base R.
 #
-# Run on RCC after generate_summary_results.R:
-#   Rscript script/analysis/plot_matched_cs_lead_distances.R
-# Other locations / CSV inputs:
-#   Rscript script/analysis/plot_matched_cs_lead_distances.R --project-dir=/path/to/project
-#   Rscript script/analysis/plot_matched_cs_lead_distances.R --summary-file=res_summary.csv --cs-summary-file=res_cs_summary.csv
-# Replot a tissue WITHOUT loading fits or repeating the matching:
-#   Rscript script/analysis/plot_matched_cs_lead_distances.R --pairs-file=plot/matched_cs_lead_distances/matched_cs_pairs.csv --tissue=Blood
-# Source this file to call match_equal_cs_regions() or plot_matched_cs_distances().
+# RSTUDIO: open this file and click Source, or Run as Local Job. The settings
+# below already use the same RCC project as the other analysis scripts.
+# Inputs: res_summary.RData and res_cs_summary.RData in project_dir, produced
+# by generate_summary_results.R. No terminal commands or arguments are needed.
+# Outputs: PNG, PDF and CSV tables in project_dir/plot/matched_cs_lead_distances.
+# Source also displays the figure in Plots and keeps matched_cs_results and
+# matched_cs_pairs in the R session. A Local Job saves the same files to disk.
+
+matched_cs_settings <- list(
+  project_dir = "/project2/mstephens/wdenault/susie_mix",
+  tissue = NULL,       # NULL = all tissues; change to "Blood" for Blood only.
+  pairs_file = NULL,   # NULL = match from summaries. Optional: path to a saved matched_cs_pairs.csv.
+  output_dir = NULL,   # NULL = the default output folder (with by_tissue/Blood for a tissue run).
+  show_plot = TRUE     # Display in RStudio Plots when sourced interactively.
+)
+
+# To replot saved results without rematching, uncomment the following line:
+# matched_cs_settings$pairs_file <- file.path(matched_cs_settings$project_dir, "plot", "matched_cs_lead_distances", "matched_cs_pairs.csv")
+# Command-line use is still supported: Rscript this_file.R [--project-dir=...]
 #
 # Estimand: one observation per paired CS, so a region with k CSs contributes k
 # observations. No association, read-count, convergence, or coding filter is
@@ -28,7 +39,8 @@
 # is predictor/coding-specific, NOT a sum across codings and NOT CS coverage.
 # Parse positions from lead_snp itself, never from a TSS distance or another
 # saved workhorse SNP. Invalid/incomplete regions are audited, never partially
-# matched. Zero-distance pairs are retained and plotted in a separate strip.
+# matched. Zero-distance pairs are retained and summarized by a marginal PIP
+# density beside the positive-distance scatter. Agreement uses SNP identity.
 
 matched_cs_require <- function(x, columns, label) {
   missing <- setdiff(columns, names(x))
@@ -284,7 +296,14 @@ matched_cs_distance_summary <- function(pairs, tissue = "All tissues") {
   data.frame(
     tissue = tissue, n_regions = length(unique(pairs$region_id)), n_pairs = nrow(pairs),
     n_zero_distance = sum(distance == 0), n_same_lead_snp = sum(pairs$same_lead_snp),
-    n_positive_distance = sum(distance > 0), n_over_100kb = sum(distance > 100000),
+    n_different_lead_snp = sum(!pairs$same_lead_snp),
+    n_different_lead_snp_zero_distance = sum(!pairs$same_lead_snp & distance == 0),
+    n_positive_distance = sum(distance > 0),
+    n_over_10kb = sum(distance > 10000), n_over_100kb = sum(distance > 100000),
+    fraction_same_lead_snp = if (length(distance)) mean(pairs$same_lead_snp) else NA_real_,
+    fraction_different_lead_snp = if (length(distance)) mean(!pairs$same_lead_snp) else NA_real_,
+    fraction_over_10kb = if (length(distance)) mean(distance > 10000) else NA_real_,
+    fraction_over_100kb = if (length(distance)) mean(distance > 100000) else NA_real_,
     fraction_zero_distance = if (length(distance)) mean(distance == 0) else NA_real_,
     mean_distance_bp = if (length(distance)) mean(distance) else NA_real_,
     q25_distance_bp = q[1], median_distance_bp = q[2], q75_distance_bp = q[3],
@@ -294,12 +313,34 @@ matched_cs_distance_summary <- function(pairs, tissue = "All tissues") {
   )
 }
 
-plot_matched_cs_distances <- function(pairs, output_file, tissue = NULL) {
+matched_cs_pip_density <- function(pip, n = 1024L) {
+  pip <- pip[is.finite(pip) & pip >= 0 & pip <= 1]
+  if (!length(pip)) return(data.frame(pip = numeric(), density = numeric()))
+  # Reflection at 0 and 1 keeps the smoothed distribution on the PIP support.
+  # Use the usual nrd0 bandwidth; a singleton/constant sample uses 0.02.
+  # The grid-spacing floor prevents unresolved spikes in nearly constant data.
+  bandwidth <- if (length(pip) > 1L && diff(range(pip)) > 0) stats::bw.nrd0(pip) else .02
+  bandwidth <- max(bandwidth, 1 / (n - 1L))
+  smoothed <- stats::density(c(-pip, pip, 2 - pip), bw = bandwidth, from = 0, to = 1, n = n)
+  height <- pmax(smoothed$y, 0)
+  area <- sum(diff(smoothed$x) * (head(height, -1L) + tail(height, -1L)) / 2)
+  result <- data.frame(pip = smoothed$x, density = height / area)
+  attr(result, "bandwidth") <- bandwidth
+  result
+}
+
+plot_matched_cs_distances <- function(pairs, output_file = NULL, tissue = NULL) {
   if (!is.null(tissue)) pairs <- pairs[which(pairs$tissue == tissue), , drop = FALSE]
   valid_pip <- is.finite(pairs$mixed_lead_pip) & pairs$mixed_lead_pip >= 0 & pairs$mixed_lead_pip <= 1
   shown <- pairs[valid_pip, , drop = FALSE]
   zero <- shown[shown$distance_bp == 0, , drop = FALSE]
   positive <- shown[shown$distance_bp > 0, , drop = FALSE]
+  summary <- matched_cs_distance_summary(pairs)
+  zero_density <- matched_cs_pip_density(zero$mixed_lead_pip)
+  count_label <- function(n) format(n, big.mark = ",", trim = TRUE, scientific = FALSE)
+  count_percent <- function(n) {
+    paste0(count_label(n), " (", if (nrow(pairs)) sprintf("%.1f%%", 100 * n / nrow(pairs)) else "NA", ")")
+  }
   coding_names <- c("additive", "dominant", "recessive", "unknown")
   palette <- c(additive = "#68849c", dominant = "#087e83", recessive = "#d58046", unknown = "#777777")
   coding <- function(d) ifelse(d$mixed_lead_coding %in% names(palette), d$mixed_lead_coding, "unknown")
@@ -308,29 +349,41 @@ plot_matched_cs_distances <- function(pairs, output_file, tissue = NULL) {
     points(x, d$mixed_lead_pip, pch = ifelse(d$n_cs == 1L, 16, 4), cex = .53,
            col = grDevices::adjustcolor(palette[coding(d)], alpha.f = .38), lwd = .7)
   }
-  dir.create(dirname(output_file), recursive = TRUE, showWarnings = FALSE)
-  extension <- tolower(tools::file_ext(output_file))
-  if (extension == "pdf") {
-    grDevices::pdf(output_file, width = 10, height = 7.8, useDingbats = FALSE)
-  } else if (extension == "png") {
-    grDevices::png(output_file, width = 2200, height = 1716, res = 220,
-                  type = if (capabilities("cairo")) "cairo" else getOption("bitmapType"))
-  } else stop("Plot output must be .png or .pdf.")
-  on.exit(grDevices::dev.off(), add = TRUE)
-  layout(matrix(c(1, 2), nrow = 1), widths = c(1.35, 6))
-  par(oma = c(3.7, 0, 6.7, .5), family = "sans", col.axis = "#444444", col.lab = "#333333")
+  if (is.null(output_file)) {
+    # Draw on the current RStudio device; keep it open and restore its settings.
+    old_par <- par(no.readonly = TRUE)
+    on.exit(par(old_par), add = TRUE)
+  } else {
+    dir.create(dirname(output_file), recursive = TRUE, showWarnings = FALSE)
+    extension <- tolower(tools::file_ext(output_file))
+    if (extension == "pdf") {
+      grDevices::pdf(output_file, width = 10, height = 8.8, useDingbats = FALSE)
+    } else if (extension == "png") {
+      grDevices::png(output_file, width = 2200, height = 1936, res = 220,
+                    type = if (capabilities("cairo")) "cairo" else getOption("bitmapType"))
+    } else stop("Plot output must be .png or .pdf.")
+    on.exit(grDevices::dev.off(), add = TRUE)
+  }
+  layout(matrix(c(1, 2), nrow = 1), widths = c(2, 6))
+  par(oma = c(4.6, 0, 10.1, .5), family = "sans", col.axis = "#444444", col.lab = "#333333")
   par(mar = c(4.4, 5.1, .7, .6))
-  plot(NA_real_, NA_real_, xlim = c(0, 1), ylim = c(-.025, 1.025), axes = FALSE,
-       xlab = "", ylab = "SuSiE-mix lead PIP (lead coding)", yaxs = "i")
+  density_max <- if (nrow(zero_density)) max(zero_density$density) else 1
+  plot(NA_real_, NA_real_, xlim = c(0, density_max * 1.06), ylim = c(-.025, 1.025), axes = FALSE,
+       xlab = "PIP density", ylab = "SuSiE-mix lead PIP (lead coding)", yaxs = "i", xaxs = "i")
   axis(2, at = seq(0, 1, .25), las = 1)
-  axis(1, at = .5, labels = "0 bp")
+  density_ticks <- pretty(c(0, density_max), n = 2)
+  density_ticks <- density_ticks[density_ticks >= 0 & density_ticks <= density_max * 1.06]
+  axis(1, at = density_ticks)
+  if (nrow(zero_density)) {
+    polygon(c(0, zero_density$density, 0), c(0, zero_density$pip, 1),
+            col = "#d4dde0", border = NA)
+    lines(zero_density$density, zero_density$pip, col = "#596d76", lwd = 1.6)
+  } else {
+    text(density_max / 2, .55, "No valid PIPs\nat 0 bp", cex = .76)
+  }
   abline(h = .5, col = "#d9d9d9", lty = 2)
   box(bty = "l", col = "#444444")
-  # Deterministic horizontal spread is ONLY within the labelled zero strip;
-  # it preserves each PIP, uses no RNG and never changes distance values.
-  zero_x <- if (nrow(zero) <= 1L) rep(.5, nrow(zero)) else .15 + .7 * ((seq_len(nrow(zero)) * .61803398875) %% 1)
-  draw_points(zero, zero_x)
-  mtext(sprintf("(n = %s)", format(nrow(zero), big.mark = ",")), side = 1, line = 2.8, cex = .73)
+  mtext(paste0("0 bp pairs (n = ", count_label(nrow(zero)), ")"), side = 3, line = .05, cex = .76)
   par(mar = c(4.4, .7, .7, 1.2))
   log_limits <- if (nrow(positive)) range(log10(positive$distance_kb)) else c(-3, 3)
   if (diff(log_limits) < .5) log_limits <- mean(log_limits) + c(-.35, .35)
@@ -343,7 +396,11 @@ plot_matched_cs_distances <- function(pairs, output_file, tissue = NULL) {
   tick_labels <- vapply(ticks, function(x) format(x, trim = TRUE, scientific = FALSE, big.mark = ","), character(1))
   axis(1, at = ticks, labels = tick_labels)
   abline(h = .5, col = "#d9d9d9", lty = 2)
-  if (log_limits[1] < 2 && log_limits[2] > 2) abline(v = 100, col = "#d9d9d9", lty = 2)
+  for (cutoff in c(10, 100)) {
+    if (log_limits[1] < log10(cutoff) && log_limits[2] > log10(cutoff)) {
+      abline(v = cutoff, col = "#bfc6ca", lty = 2)
+    }
+  }
   box(bty = "l", col = "#444444")
   draw_points(positive, positive$distance_kb)
   if (!nrow(positive)) text(10^mean(log_limits), .55, "No positive-distance pairs with a valid PIP", cex = .85)
@@ -351,22 +408,31 @@ plot_matched_cs_distances <- function(pairs, output_file, tissue = NULL) {
   par(fig = c(0, 1, 0, 1), mar = rep(0, 4), oma = rep(0, 4), new = TRUE)
   plot.new()
   plot.window(xlim = c(0, 1), ylim = c(0, 1), xaxs = "i", yaxs = "i")
-  text(.065, .967, "Lead-SNP distance and support across matched credible sets", adj = 0, font = 2, cex = 1.1)
+  text(.065, .970, "Lead-SNP distance and support across matched credible sets", adj = 0, font = 2, cex = 1.1)
+  text(.065, .932, paste0("Same lead SNP: ", count_percent(summary$n_same_lead_snp),
+                          "   |   Different lead SNP: ", count_percent(summary$n_different_lead_snp)),
+       adj = 0, font = 2, cex = .94)
   cohort <- if (is.null(tissue)) "All tissues" else tissue
-  text(.065, .929, sprintf("%s | %s regions | %s matched CS pairs | equal CS counts in both models",
+  text(.065, .897, sprintf("%s | %s regions | %s matched CS pairs | equal CS counts in both models",
                            cohort, format(length(unique(pairs$region_id)), big.mark = ","),
                            format(nrow(pairs), big.mark = ",")), adj = 0, cex = .83)
+  text(.065, .864, paste0("Distance >10 kb: ", count_percent(summary$n_over_10kb),
+                          "   |   >100 kb: ", count_percent(summary$n_over_100kb), "   (% of all pairs)"),
+       adj = 0, cex = .84)
   counts <- table(factor(coding(shown), levels = coding_names))
   present <- counts > 0
-  if (any(present)) legend(.065, .908, legend = paste0(c("Additive", "Dominant", "Recessive", "Unknown")[present],
+  if (any(present)) legend(.065, .842, legend = paste0(c("Additive", "Dominant", "Recessive", "Unknown")[present],
       " (", format(as.integer(counts[present]), big.mark = ",", trim = TRUE), ")"),
       col = palette[present], pch = 16, horiz = TRUE, bty = "n", cex = .78, x.intersp = .6)
-  legend(.065, .869, legend = c("1 CS per model", "2+ CSs per model"), pch = c(16, 4),
+  legend(.065, .807, legend = c("1 CS per model", "2+ CSs per model"), pch = c(16, 4),
          col = "#555555", horiz = TRUE, bty = "n", cex = .76, x.intersp = .6)
-  text(.065, .061, "One point per CS pair; one-to-one matching minimizes the total absolute GRCh38 distance.", adj = 0, cex = .75)
-  text(.065, .036, sprintf("Zero distances use a separate strip. %s pairs lack a valid PIP; retained in the distance tables.",
-                           sum(!valid_pip)), adj = 0, cex = .73, col = "#555555")
-  invisible(list(n_pairs = nrow(pairs), n_zero = nrow(zero), n_positive = nrow(positive), n_missing_pip = sum(!valid_pip)))
+  text(.065, .075, "Left: marginal PIP density at 0 bp (area = 1). Right: one point per positive-distance CS pair.", adj = 0, cex = .75)
+  text(.065, .051, sprintf("Exact SNP agreement uses variant IDs; %s different-SNP pairs have 0 bp distance. Counts include all pairs.",
+                           count_label(summary$n_different_lead_snp_zero_distance)), adj = 0, cex = .73, col = "#555555")
+  text(.065, .027, sprintf("Matching minimizes total one-to-one distance. %s pairs lack a valid PIP; retained in counts and distance tables.",
+                           count_label(sum(!valid_pip))), adj = 0, cex = .73, col = "#555555")
+  invisible(list(n_pairs = nrow(pairs), n_zero = nrow(zero), n_positive = nrow(positive),
+                 n_missing_pip = sum(!valid_pip), summary = summary, zero_pip_density = zero_density))
 }
 
 read_matched_cs_input <- function(path, object_name) {
@@ -380,10 +446,13 @@ read_matched_cs_input <- function(path, object_name) {
   as.data.frame(get(object_name, envir = env, inherits = FALSE))
 }
 
-run_matched_cs_lead_distances <- function(args = commandArgs(trailingOnly = TRUE)) {
-  defaults <- list("project-dir" = "/project2/mstephens/wdenault/susie_mix",
+run_matched_cs_lead_distances <- function(args = character(), settings = matched_cs_settings) {
+  # RStudio Source/Jobs use the editable settings above. Only a direct Rscript
+  # invocation passes command-line arguments, which can override these values.
+  defaults <- list("project-dir" = settings$project_dir,
                    "summary-file" = NULL, "cs-summary-file" = NULL,
-                   "output-dir" = NULL, "pairs-file" = NULL, "tissue" = NULL)
+                   "output-dir" = settings$output_dir, "pairs-file" = settings$pairs_file,
+                   "tissue" = settings$tissue)
   if ("--help" %in% args) {
     cat("Match equal-count CS regions and plot lead distance against coding-specific mixed lead PIP.\n",
         "Usage: Rscript plot_matched_cs_lead_distances.R [--name=value ...]\n",
@@ -408,6 +477,7 @@ run_matched_cs_lead_distances <- function(args = commandArgs(trailingOnly = TRUE
     if (!is.null(tissue)) out <- file.path(out, "by_tissue", gsub("[^[:alnum:]_-]", "_", tissue))
   }
   dir.create(out, recursive = TRUE, showWarnings = FALSE)
+  region_audit <- NULL
   if (is.null(opt[["pairs-file"]])) {
     region_path <- if (is.null(opt[["summary-file"]])) file.path(project, "res_summary.RData") else opt[["summary-file"]]
     cs_path <- if (is.null(opt[["cs-summary-file"]])) file.path(project, "res_cs_summary.RData") else opt[["cs-summary-file"]]
@@ -415,6 +485,7 @@ run_matched_cs_lead_distances <- function(args = commandArgs(trailingOnly = TRUE
     result <- match_equal_cs_regions(read_matched_cs_input(region_path, "res_summary"),
                                      read_matched_cs_input(cs_path, "res_cs_summary"))
     pairs <- result$pairs
+    region_audit <- result$region_audit
     write.csv(pairs, file.path(out, "matched_cs_pairs.csv"), row.names = FALSE, na = "")
     write.csv(result$region_audit, file.path(out, "region_matching_audit.csv"), row.names = FALSE, na = "")
     write.csv(result$orphan_cs, file.path(out, "orphan_cs_rows.csv"), row.names = FALSE, na = "")
@@ -432,7 +503,11 @@ run_matched_cs_lead_distances <- function(args = commandArgs(trailingOnly = TRUE
     stop("No matched pairs for tissue '", tissue, "'. Available: ", paste(sort(unique(pairs$tissue)), collapse = ", "))
   }
   selected <- if (is.null(tissue)) pairs else pairs[pairs$tissue == tissue, , drop = FALSE]
-  write.csv(matched_cs_distance_summary(selected, if (is.null(tissue)) "All tissues" else tissue),
+  distance_summary <- matched_cs_distance_summary(selected, if (is.null(tissue)) "All tissues" else tissue)
+  message("Agreement and distance counts (all matched CS pairs, including missing PIPs):")
+  print(distance_summary[c("tissue", "n_pairs", "n_same_lead_snp", "n_different_lead_snp",
+                           "fraction_same_lead_snp", "n_over_10kb", "n_over_100kb")], row.names = FALSE)
+  write.csv(distance_summary,
             file.path(out, "distance_summary.csv"), row.names = FALSE, na = "")
   # Save per-tissue descriptive summaries now, without making any independence
   # assumptions or testing tissues against an overlapping overall population.
@@ -454,7 +529,12 @@ run_matched_cs_lead_distances <- function(args = commandArgs(trailingOnly = TRUE
     "Distance uses lead_snp coordinates, not distance to TSS. Incomplete or invalid regions are excluded in full and audited.",
     "same_lead_snp compares full SNP identifiers. zero_distance compares base-pair positions; these need not coincide.",
     "Y = mixed lead predictor PIP for its coding; neither CS alpha nor summed SNP PIP. Missing/invalid PIP affects scatter only.",
-    "Every zero-distance point is spread horizontally within a separate strip; its PIP and saved distance are unchanged.",
+    "Left panel: marginal mixed-lead PIP density among zero-distance pairs with valid PIP, pooling all lead codings.",
+    "Density uses Gaussian kernels reflected at 0 and 1, with nrd0 bandwidth (0.02 for constant/singleton samples),",
+    "a 1/1023 bandwidth floor, and numerical unit-area normalization on [0,1]. It is a density, not a pair count.",
+    "Right panel: one point per positive-distance CS pair with valid PIP; vertical guides at 10 and 100 kb.",
+    "Title agreement counts compare exact SNP IDs, not just coordinates. Percentages use all matched pairs as denominator.",
+    "Distance exceedance counts are strictly >10,000 bp and >100,000 bp, include missing-PIP rows, and are nested.",
     "Distance summaries include all matched pairs, including zeros and missing-PIP rows; quantiles use R type 7.",
     "Pairs are CS-weighted. region_weight = 1 / n_cs is supplied for a future equal-region-weighted comparison.",
     "Gene and tissue remain on each row. Pairs within a region and genes across tissues may be dependent.",
@@ -462,7 +542,24 @@ run_matched_cs_lead_distances <- function(args = commandArgs(trailingOnly = TRUE
     "matched_cs_pairs.csv contains all matched tissues, even when --tissue selects only the plot and summaries."
   ), file.path(out, "matching_notes.txt"))
   message("Saved ", nrow(selected), " pairs' distance/support plot and tables to ", normalizePath(out, winslash = "/"))
-  invisible(list(pairs = pairs, output_dir = out))
+  if (interactive() && isTRUE(settings$show_plot)) {
+    # Files are already saved if the RStudio Plots pane is too small to draw.
+    tryCatch(plot_matched_cs_distances(pairs, tissue = tissue), error = function(e) {
+      message("The files were saved, but the plot preview could not be displayed: ", conditionMessage(e),
+              "\nOpen matched_cs_lead_distances.png in the output folder, or enlarge the Plots pane.")
+    })
+  }
+  invisible(list(pairs = pairs, region_audit = region_audit,
+                 distance_summary = distance_summary, distance_summary_by_tissue = per_tissue,
+                 output_dir = out))
 }
 
-if (sys.nframe() == 0L) run_matched_cs_lead_distances()
+# Run for Source, Source with Echo, Local Jobs, and direct Rscript execution.
+# Tests/helper-only imports can opt out with options(susie_mix.matched_cs.autorun = FALSE).
+if (isTRUE(getOption("susie_mix.matched_cs.autorun", TRUE))) {
+  matched_cs_results <- run_matched_cs_lead_distances(
+    args = if (sys.nframe() == 0L) commandArgs(trailingOnly = TRUE) else character(),
+    settings = matched_cs_settings
+  )
+  if (!is.null(matched_cs_results)) matched_cs_pairs <- matched_cs_results$pairs
+}

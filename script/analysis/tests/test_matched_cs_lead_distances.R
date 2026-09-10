@@ -1,6 +1,10 @@
 # Run from the repository root with base R:
 # Rscript --vanilla script/analysis/tests/test_matched_cs_lead_distances.R
-source("script/analysis/plot_matched_cs_lead_distances.R")
+local({
+  old_options <- options(susie_mix.matched_cs.autorun = FALSE)
+  on.exit(options(old_options))
+  source("script/analysis/plot_matched_cs_lead_distances.R", local = globalenv())
+})
 
 permutations <- function(x) {
   if (length(x) == 1L) return(matrix(x, nrow = 1))
@@ -121,7 +125,32 @@ dup_region <- try(match_equal_cs_regions(rbind(res_summary, res_summary[1, ]), r
 stopifnot(inherits(dup_region, "try-error"))
 summary <- matched_cs_distance_summary(pairs)
 stopifnot(summary$n_pairs == 11, summary$n_regions == 7, summary$n_zero_distance == 4,
-          summary$n_missing_or_invalid_mixed_pip == 1, summary$median_distance_bp == 100)
+          summary$n_missing_or_invalid_mixed_pip == 1, summary$median_distance_bp == 100,
+          summary$n_same_lead_snp == 3, summary$n_different_lead_snp == 8,
+          summary$n_different_lead_snp_zero_distance == 1,
+          summary$fraction_same_lead_snp == 3 / 11,
+          summary$n_over_10kb == 1, summary$n_over_100kb == 1)
+# "More than" means strictly greater: do not include values exactly on either
+# cutoff. Missing PIPs must not change these counts or their denominator.
+boundary_pairs <- data.frame(
+  region_id = as.character(1:7), distance_bp = c(0, 9999, 10000, 10001, 99999, 100000, 100001),
+  same_lead_snp = c(TRUE, rep(FALSE, 6)), scatter_eligible = c(rep(TRUE, 6), FALSE)
+)
+boundary_summary <- matched_cs_distance_summary(boundary_pairs)
+stopifnot(boundary_summary$n_over_10kb == 4, boundary_summary$n_over_100kb == 1,
+          boundary_summary$fraction_over_10kb == 4 / 7,
+          boundary_summary$fraction_over_100kb == 1 / 7)
+
+# The marginal density is bounded to [0,1], integrates to 1 rather than the
+# group size, ignores invalid PIPs, and handles atoms at the support boundaries.
+for (x in list(c(0, .05, .1, .2, .95, 1), rep(0, 10), rep(1, 10), .4)) {
+  den <- matched_cs_pip_density(x)
+  area <- sum(diff(den$pip) * (head(den$density, -1) + tail(den$density, -1)) / 2)
+  stopifnot(all(is.finite(den$density)), all(den$density >= 0),
+            min(den$pip) == 0, max(den$pip) == 1, abs(area - 1) < 1e-12)
+}
+stopifnot(nrow(matched_cs_pip_density(c(NA, Inf, -1, 2))) == 0,
+          identical(matched_cs_pip_density(c(NA, .1, .3, 2)), matched_cs_pip_density(c(.1, .3))))
 empty <- match_equal_cs_regions(res_summary[res_summary$gene == "ZERO", ], data.frame())
 stopifnot(nrow(empty$pairs) == 0, empty$region_audit$status == "equal_zero_cs")
 
@@ -142,13 +171,56 @@ run_csv <- suppressWarnings(run_matched_cs_lead_distances(c(
   paste0("--output-dir=", out, "/csv")
 )))
 stopifnot(isTRUE(all.equal(run$pairs, run_csv$pairs)))
+
+# Regression for RStudio Source/Local Job: source the WHOLE script with only
+# its top project setting changed to the fixture location. No CLI arguments or
+# explicit runner call, and no reliance on the working directory or global data.
+source_lines <- readLines("script/analysis/plot_matched_cs_lead_distances.R")
+source_lines <- sub('project_dir = "/project2/mstephens/wdenault/susie_mix"',
+                    paste0("project_dir = ", encodeString(normalizePath(out, winslash = "/"), quote = '"')),
+                    source_lines, fixed = TRUE)
+source_path <- file.path(out, "rstudio_source_script.R")
+writeLines(source_lines, source_path)
+source_env <- new.env(parent = globalenv())
+# Source must not accidentally consume arguments belonging to RStudio's job launcher.
+source_env$commandArgs <- function(...) stop("Sourced scripts must not read launcher arguments")
+local({
+  old_options <- options(susie_mix.matched_cs.autorun = TRUE)
+  on.exit(options(old_options))
+  suppressWarnings(source(source_path, local = source_env))
+})
+stopifnot(isTRUE(all.equal(source_env$matched_cs_pairs, pairs)),
+          source_env$matched_cs_results$distance_summary$n_pairs == 11,
+          nrow(source_env$matched_cs_results$region_audit) == nrow(res_summary),
+          file.exists(file.path(source_env$matched_cs_results$output_dir, "matched_cs_lead_distances.png")),
+          file.exists(file.path(source_env$matched_cs_results$output_dir, "matched_cs_lead_distances.pdf")))
+job_env <- new.env(parent = globalenv())
+job_env$commandArgs <- source_env$commandArgs
+local({
+  old_options <- options(susie_mix.matched_cs.autorun = TRUE)
+  on.exit(options(old_options))
+  suppressWarnings(sys.source(source_path, envir = job_env))
+})
+stopifnot(isTRUE(all.equal(job_env$matched_cs_pairs, pairs)))
+
+# Interactive preview draws on the caller's device and leaves it open.
+png(file.path(out, "rstudio_preview.png"), width = 2200, height = 1716, res = 220)
+preview_device <- dev.cur()
+preview_count <- plot_matched_cs_distances(pairs)
+stopifnot(identical(dev.cur(), preview_device), preview_count$n_pairs == 11)
+dev.off()
+
 blood <- run_matched_cs_lead_distances(c(
   paste0("--pairs-file=", out, "/all/matched_cs_pairs.csv"), "--tissue=Blood"
 ))
 blood_summary <- read.csv(file.path(blood$output_dir, "distance_summary.csv"))
 stopifnot(blood_summary$n_pairs == 9, blood_summary$n_regions == 5)
+stopifnot(blood_summary$n_same_lead_snp == 3, blood_summary$n_different_lead_snp == 6,
+          blood_summary$n_over_10kb == 0, blood_summary$n_over_100kb == 0)
 plot_count <- plot_matched_cs_distances(pairs, file.path(out, "fixture_scatter.png"))
-stopifnot(plot_count$n_zero == 4, plot_count$n_positive == 6, plot_count$n_missing_pip == 1)
+stopifnot(plot_count$n_zero == 4, plot_count$n_positive == 6, plot_count$n_missing_pip == 1,
+          plot_count$summary$n_over_10kb == 1,
+          identical(plot_count$zero_pip_density, matched_cs_pip_density(pairs$mixed_lead_pip[pairs$distance_bp == 0])))
 plot_matched_cs_distances(empty$pairs, file.path(out, "empty_scatter.png"))
 zero_count <- plot_matched_cs_distances(pairs[pairs$distance_bp == 0, ], file.path(out, "zero_scatter.png"))
 stopifnot(zero_count$n_zero == 4, zero_count$n_positive == 0)
@@ -161,6 +233,8 @@ dense$gene <- paste0("Synthetic", seq_len(nrow(dense)))
 dense$region_id <- matched_cs_key(dense$gene, dense$tissue)
 dense$distance_bp <- c(rep(0, 400), round(10^runif(nrow(dense) - 400, 0, 6)))
 dense$distance_kb <- dense$distance_bp / 1000
+dense$same_lead_snp <- dense$distance_bp == 0
+dense$zero_distance <- dense$distance_bp == 0
 dense$mixed_lead_pip <- runif(nrow(dense))^3
 dense$n_cs[seq_len(400)] <- 1L
 plot_matched_cs_distances(dense, file.path(out, "synthetic_dense_scatter.png"))
