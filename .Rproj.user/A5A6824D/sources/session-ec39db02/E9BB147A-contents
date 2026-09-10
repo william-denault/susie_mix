@@ -14,11 +14,15 @@ n_value <- 500
 fit_L <- 10                   # SuSiE's fitted upper bound, NOT the true count.
 target_coverage <- 0.95
 exclude_nonconverged <- FALSE # TRUE excludes a replicate if EITHER fit failed.
+interval_level <- 0.95
+bootstrap_reps <- 1000        # Resample whole seeds, keeping methods/configurations paired.
+bootstrap_seed <- 20260910
 
 file_pattern <- "\\.RData$"
 max_reps_per_file <- Inf      # For a quick preview, change this to e.g. 5.
 roc_max_fpr <- 0.25           # Display range, as in Supplementary Figure 6.
-write_roc_all_L <- TRUE       # Also overlay all causal counts in two overview figures.
+fdr_max <- 0.25               # Display range for power versus empirical FDR.
+write_roc_all_L <- TRUE       # Also pool all causal counts into one curve per method.
 write_roc_pages <- FALSE      # Optional extra PDFs collecting the per-L figures.
 write_png <- TRUE            # PDF is always written; PNG is useful for previews.
 
@@ -76,8 +80,113 @@ cs_summary <- function(sets, cs_snps, truth) {
     stop("Missing or invalid minimum-correlation purity for a reported CS.")
   }
   c(n_cs = n_cs, covered_cs = sum(hit), purity_sum = sum(purity),
+    cs_size_sum = sum(vapply(cs_snps, function(cs) length(unique(cs)), integer(1))),
     recovered = sum(unique(truth) %in% unlist(cs_snps, use.names = FALSE)),
     n_causal = length(unique(truth)))
+}
+
+# Pool the same counts as before, and bootstrap independent seed blocks.
+# One seed is reused across methods, causal allocations and PVE values in jobs.
+# We therefore use ONE shared matrix of bootstrap weights for every comparison.
+summarize_metrics <- function(replicates, B = bootstrap_reps,
+                              level = interval_level, seed = bootstrap_seed) {
+  stopifnot(B >= 2, B == as.integer(B), level > 0, level < 1)
+  group_vars <- c("scenario", "pve", "K", "method")
+  cell_vars <- c("scenario", "pve", "K")
+  numerators <- c(coverage = "covered_cs", purity = "purity_sum", power = "recovered")
+  denominators <- c(coverage = "n_cs", purity = "n_cs", power = "n_causal")
+  # Older compact summaries can still supply the other three metrics.
+  if ("cs_size_sum" %in% names(replicates)) {
+    numerators <- c(numerators, cs_size = "cs_size_sum")
+    denominators <- c(denominators, cs_size = "n_cs")
+  }
+  count_vars <- unique(c(unname(numerators), unname(denominators)))
+  seeds <- sort(unique(replicates$seed))
+  set.seed(seed)
+  weights <- rmultinom(B, size = length(seeds), prob = rep(1, length(seeds)))
+  ratio <- function(a, b) ifelse(b > 0, a / b, NA_real_)
+  interval <- function(x, n_blocks) {
+    x <- x[is.finite(x)]
+    if (n_blocks < 2 || length(x) < 2) return(c(NA_real_, NA_real_))
+    unname(quantile(x, c((1 - level) / 2, (1 + level) / 2)))
+  }
+  groups <- split(seq_len(nrow(replicates)),
+                  interaction(replicates[cell_vars], drop = TRUE, sep = "|"))
+  summary_rows <- list()
+  difference_rows <- list()
+  for (ids in groups) {
+    cell <- replicates[ids, , drop = FALSE]
+    draws <- estimates <- list()
+    for (method in method_names) {
+      d <- cell[cell$method == method, , drop = FALSE]
+      if (!nrow(d)) stop("Both methods are required for paired intervals.")
+      totals_by_seed <- rowsum(as.matrix(d[count_vars]), group = d$seed)
+      totals <- matrix(0, nrow = length(seeds), ncol = length(count_vars),
+                       dimnames = list(NULL, count_vars))
+      totals[match(rownames(totals_by_seed), as.character(seeds)), ] <- totals_by_seed
+      boot <- crossprod(weights, totals)
+      point <- colSums(totals)
+      n_blocks <- length(unique(d$seed))
+      row <- data.frame(d[1, group_vars, drop = FALSE], as.list(point),
+                         n_replicates = nrow(d), n_configurations = length(unique(d$configuration)),
+                         n_seed_blocks = n_blocks, row.names = NULL)
+      draws[[method]] <- list()
+      estimates[[method]] <- numeric()
+      for (metric in names(numerators)) {
+        a <- numerators[[metric]]
+        b <- denominators[[metric]]
+        estimate <- ratio(point[a], point[b])
+        values <- ratio(boot[, a], boot[, b])
+        bounds <- interval(values, n_blocks)
+        row[[metric]] <- unname(estimate)
+        row[[paste0(metric, "_lo")]] <- bounds[1]
+        row[[paste0(metric, "_hi")]] <- bounds[2]
+        row[[paste0(metric, "_n_boot")]] <- sum(is.finite(values))
+        draws[[method]][[metric]] <- values
+        estimates[[method]][metric] <- estimate
+      }
+      summary_rows[[length(summary_rows) + 1L]] <- row
+    }
+    # Paired differences answer whether the methods differ; overlap of their
+    # separate marginal intervals is not a test of their difference.
+    for (metric in names(numerators)) {
+      delta <- draws[[method_names[2]]][[metric]] - draws[[method_names[1]]][[metric]]
+      bounds <- interval(delta, length(unique(cell$seed)))
+      difference_rows[[length(difference_rows) + 1L]] <- data.frame(
+        cell[1, cell_vars, drop = FALSE], metric = metric,
+        difference = unname(estimates[[method_names[2]]][metric] - estimates[[method_names[1]]][metric]),
+        lower = bounds[1], upper = bounds[2], n_boot = sum(is.finite(delta)), row.names = NULL
+      )
+    }
+  }
+  list(summary = do.call(rbind, summary_rows), differences = do.call(rbind, difference_rows))
+}
+
+# This is pooled empirical FDP (often labelled empirical FDR in power-FDR plots),
+# not FPR and not the unweighted mean of each replicate's FDP.
+add_fdr <- function(counts) {
+  discoveries <- counts$tp + counts$fp
+  counts$fdr <- ifelse(discoveries > 0, counts$fp / discoveries, 0)
+  counts
+}
+
+# Stack all L values by summing TP/FP at each common threshold, then recalculate
+# rates. Averaging the per-L rates would give different weights to the SNPs.
+pool_curve_counts <- function(counts) {
+  by <- c("scenario", "pve", "method", "threshold")
+  pooled <- aggregate(counts[c("tp", "fp")], counts[by], sum)
+  pooled$tpr <- pooled$fpr <- NA_real_
+  groups <- split(seq_len(nrow(pooled)),
+                  interaction(pooled[c("scenario", "pve", "method")], drop = TRUE))
+  for (ids in groups) {
+    baseline <- ids[pooled$threshold[ids] == 0]
+    if (length(baseline) != 1 || pooled$tp[baseline] <= 0 || pooled$fp[baseline] <= 0) {
+      stop("Pooled curves require threshold zero with all causal and noncausal SNPs.")
+    }
+    pooled$tpr[ids] <- pooled$tp[ids] / pooled$tp[baseline]
+    pooled$fpr[ids] <- pooled$fp[ids] / pooled$fp[baseline]
+  }
+  add_fdr(pooled)
 }
 
 # ------------------------------------------------------------
@@ -220,20 +329,14 @@ replicates <- do.call(rbind, replicate_rows)
 rm(replicate_rows, seen)
 
 # ------------------------------------------------------------
-# Pool counts, rather than averaging per-run CS coverage
+# Pool counts and calculate seed-block bootstrap intervals
 # ------------------------------------------------------------
 
 group_vars <- c("scenario", "pve", "K", "method")
-count_vars <- c("n_cs", "covered_cs", "purity_sum", "recovered", "n_causal")
-summary_table <- aggregate(replicates[count_vars], replicates[group_vars], sum)
-rep_counts <- aggregate(list(n_replicates = replicates$seed), replicates[group_vars], length)
-config_counts <- aggregate(list(n_configurations = replicates$configuration),
-                           replicates[group_vars], function(z) length(unique(z)))
-summary_table <- merge(merge(summary_table, rep_counts, by = group_vars),
-                       config_counts, by = group_vars)
-summary_table$coverage <- with(summary_table, ifelse(n_cs > 0, covered_cs / n_cs, NA_real_))
-summary_table$purity <- with(summary_table, ifelse(n_cs > 0, purity_sum / n_cs, NA_real_))
-summary_table$power <- with(summary_table, recovered / n_causal)
+cat("Calculating", bootstrap_reps, "paired seed-block bootstrap draws...\n")
+metric_analysis <- summarize_metrics(replicates)
+summary_table <- metric_analysis$summary
+write.csv(metric_analysis$differences, file.path(output_dir, "method_comparison.csv"), row.names = FALSE)
 
 # Every causal allocation at a given total K is pooled. If jobs are incomplete,
 # allocations with more completed replicates contribute more observations.
@@ -257,8 +360,10 @@ curve_rows <- lapply(names(curve_counts), function(key) {
              tpr = counts[, "tp"] / total_causal,
              fpr = counts[, "fp"] / total_null)
 })
-roc_table <- do.call(rbind, curve_rows)
+roc_table <- add_fdr(do.call(rbind, curve_rows))
 saveRDS(roc_table, file.path(output_dir, "roc_counts.rds"))
+pooled_roc_table <- pool_curve_counts(roc_table)
+saveRDS(pooled_roc_table, file.path(output_dir, "roc_counts_all_L.rds"))
 rm(curve_counts, curve_rows)
 
 # ------------------------------------------------------------
@@ -273,34 +378,42 @@ draw_figure <- function(metric, scenarios, only_K = NULL) {
   par(oma = c(4.5, 3.5, 3, 0.3), mar = c(2.0, 2.0, 1.7, 0.4),
       mgp = c(1.3, 0.4, 0), tcl = -0.2, family = "sans", cex = 0.9)
   is_roc <- metric == "roc"
+  is_fdr <- metric == "power_fdr"
+  is_curve <- is_roc || is_fdr
   # Use the same coverage scale for pure and mixed figures. Start just below
   # the lowest plotted value, rounded down to 0.05; retain the 0.95 reference.
   if (metric == "coverage") {
-    values <- summary_table$coverage[
-      summary_table$scenario %in% c(pure_rows, mixed_rows) &
-        summary_table$pve %in% pve_values
-    ]
+    selected <- summary_table$scenario %in% c(pure_rows, mixed_rows) &
+      summary_table$pve %in% pve_values
+    values <- c(summary_table$coverage[selected], summary_table$coverage_lo[selected])
     values <- values[is.finite(values)]
     coverage_lower <- max(0, floor((min(c(values, target_coverage)) - .01) / .05) * .05)
     coverage_step <- if (1 - coverage_lower <= .30) .05 else .10
     coverage_ticks <- sort(unique(round(c(coverage_lower,
                                          seq(coverage_lower, 1, by = coverage_step), 1), 2)))
   }
+  if (metric == "cs_size") {
+    values <- c(summary_table$cs_size, summary_table$cs_size_hi)
+    values <- values[is.finite(values)]
+    size_ticks <- pretty(c(0, if (length(values)) max(values) * 1.05 else 1), n = 5)
+  }
 
   for (i in seq_along(scenarios)) {
     min_K <- if (scenarios[i] %in% pure_rows) 1 else if (scenarios[i] == mixed_rows[4]) 3 else 2
     for (j in seq_along(pve_values)) {
-      if (is_roc) {
-        xlim <- c(0, roc_max_fpr)
+      if (is_curve) {
+        xlim <- c(0, if (is_fdr) fdr_max else roc_max_fpr)
         xticks <- pretty(xlim, n = 5)
-        xticks <- xticks[xticks >= 0 & xticks <= roc_max_fpr]
+        xticks <- xticks[xticks >= 0 & xticks <= xlim[2]]
       } else {
         xlim <- c(min_K - 0.35, 5.35)
         xticks <- min_K:5
       }
       ylim <- if (metric == "coverage") c(coverage_lower, 1) else
+        if (metric == "cs_size") range(size_ticks) else
         if (metric == "purity") c(0.5, 1.015) else c(0, 1.015)
       yticks <- if (metric == "coverage") coverage_ticks else
+        if (metric == "cs_size") size_ticks else
         if (metric == "purity") seq(.5, 1, .1) else seq(0, 1, .2)
       plot(NA, xlim = xlim, ylim = ylim, xaxs = "i", yaxs = "i",
            axes = FALSE, xlab = "", ylab = "")
@@ -312,7 +425,8 @@ draw_figure <- function(metric, scenarios, only_K = NULL) {
       if (i == 1) mtext(paste0("PVE = ", round(100 * pve_values[j]), "%"),
                         side = 3, line = 0.55, font = 2)
 
-      d <- if (is_roc) roc_table else summary_table
+      d <- if (is_curve && is.null(only_K)) pooled_roc_table else
+        if (is_curve) roc_table else summary_table
       d <- d[d$scenario == scenarios[i] & d$pve == pve_values[j], , drop = FALSE]
       if (!is.null(only_K)) d <- d[d$K == only_K, , drop = FALSE]
       if (!nrow(d)) {
@@ -322,17 +436,25 @@ draw_figure <- function(metric, scenarios, only_K = NULL) {
       }
       for (m in seq_along(method_names)) {
         dm <- d[d$method == method_names[m], , drop = FALSE]
-        if (is_roc) {
-          # Keep each causal count separate, including in the all-L overview.
-          # Threshold order retains vertical segments and tied-score jumps.
-          for (k in sort(unique(dm$K))) {
-            dk <- dm[dm$K == k, , drop = FALSE]
-            dk <- dk[order(dk$threshold, decreasing = TRUE), ]
-            lines(dk$fpr, dk$tpr, col = method_colors[m],
-                  lty = if (is.null(only_K)) k else 1, lwd = 1.5)
-          }
+        if (is_curve) {
+          # The all-L table already pools the underlying TP/FP counts.
+          # FDR need not increase monotonically: preserve threshold order,
+          # rather than sorting FDR or reporting an optimized envelope.
+          dm <- dm[order(dm$threshold, decreasing = TRUE), ]
+          lines(if (is_fdr) dm$fdr else dm$fpr, dm$tpr, col = method_colors[m],
+                lty = 1, lwd = 1.5)
         } else {
-          points(dm$K + c(-.07, .07)[m], dm[[metric]],
+          xpos <- dm$K + c(-.07, .07)[m]
+          lo <- dm[[paste0(metric, "_lo")]]
+          hi <- dm[[paste0(metric, "_hi")]]
+          if (!is.null(lo) && !is.null(hi)) {
+            ok <- is.finite(lo) & is.finite(hi)
+            bar_color <- adjustcolor(method_colors[m], alpha.f = .65)
+            segments(xpos[ok], lo[ok], xpos[ok], hi[ok], col = bar_color)
+            segments(xpos[ok] - .035, lo[ok], xpos[ok] + .035, lo[ok], col = bar_color)
+            segments(xpos[ok] - .035, hi[ok], xpos[ok] + .035, hi[ok], col = bar_color)
+          }
+          points(xpos, dm[[metric]],
                  pch = 16, cex = 0.95, col = method_colors[m],
                  xpd = metric == "coverage")
         }
@@ -347,16 +469,18 @@ draw_figure <- function(metric, scenarios, only_K = NULL) {
     text(.05, .5, label, adj = c(0, .5), font = 2, cex = .85)
   }
   titles <- c(coverage = "Credible-set coverage", purity = "Credible-set purity",
-              power = "Causal SNP recovery by credible sets", roc = "Detection of causal SNPs using PIPs")
+              power = "Causal SNP recovery by credible sets", cs_size = "Credible-set size",
+              roc = "Detection of causal SNPs using PIPs", power_fdr = "Power versus empirical FDR using PIPs")
   title_text <- paste0(titles[metric], "  |  n = ", n_value)
   if (!is.null(only_K)) title_text <- paste0(title_text, "  |  L = ", only_K, " causal SNP",
                                           if (only_K == 1) "" else "s")
-  if (is_roc && is.null(only_K)) title_text <- paste0(title_text, "  |  All L")
+  if (is_curve && is.null(only_K)) title_text <- paste0(title_text, "  |  All L pooled")
   mtext(title_text, side = 3, outer = TRUE, line = 1.2, font = 2, cex = 1.1)
-  mtext(if (is_roc) "False positive rate" else "Number of causal SNPs",
+  mtext(if (is_fdr) "Empirical FDR" else if (is_roc) "False positive rate" else "Number of causal SNPs",
         side = 1, outer = TRUE, line = 0.5)
   ylab <- c(coverage = "Coverage", purity = "Mean minimum absolute correlation",
-            power = "Power", roc = "True positive rate (power)")
+            power = "Power", cs_size = "Mean number of unique SNPs per CS",
+            roc = "True positive rate (power)", power_fdr = "Power (true positive rate)")
   mtext(ylab[metric], side = 2, outer = TRUE, line = 1.8)
 
   # Draw a common legend in the outer bottom margin.
@@ -364,12 +488,10 @@ draw_figure <- function(metric, scenarios, only_K = NULL) {
   plot.new()
   plot.window(xlim = c(0, 1), ylim = c(0, 1), xaxs = "i", yaxs = "i")
   legend(.5, .045, legend = method_names, col = method_colors,
-         pch = if (is_roc) NA else 16, lty = if (is_roc) 1 else NA,
+         pch = if (is_curve) NA else 16, lty = if (is_curve) 1 else NA,
          lwd = 1.5, horiz = TRUE, xjust = .5, yjust = .5, bty = "n", cex = .95)
-  if (is_roc && is.null(only_K)) {
-    ks <- if (all(scenarios %in% pure_rows)) 1:5 else 2:5
-    legend(.5, .015, legend = paste("L =", ks), lty = ks, horiz = TRUE,
-           xjust = .5, yjust = .5, bty = "n", cex = .85, seg.len = 2.8)
+  if (!is_curve && paste0(metric, "_lo") %in% names(summary_table)) {
+    text(.5, .015, paste0(round(100 * interval_level), "% seed-block bootstrap intervals"), cex = .85)
   }
 }
 
@@ -385,29 +507,30 @@ save_figure <- function(metric, scenarios, name, only_K = NULL) {
   }
 }
 
-for (metric in c("coverage", "purity", "power")) {
+for (metric in c("coverage", "purity", "power", "cs_size")) {
   save_figure(metric, pure_rows, paste0(metric, "_pure"))
   save_figure(metric, mixed_rows, paste0(metric, "_mixed"))
 }
 
-save_roc_figures <- function() {
+save_roc_figures <- function(metric = "roc") {
   for (group in c("pure", "mixed")) {
     scenarios <- if (group == "pure") pure_rows else mixed_rows
     ks <- if (group == "pure") 1:5 else 2:5
     for (k in ks) {
-      save_figure("roc", scenarios, paste0("roc_", group, "_L", k), only_K = k)
+      save_figure(metric, scenarios, paste0(metric, "_", group, "_L", k), only_K = k)
     }
     if (write_roc_all_L) {
-      save_figure("roc", scenarios, paste0("roc_", group, "_all_L"))
+      save_figure(metric, scenarios, paste0(metric, "_", group, "_all_L"))
     }
     if (write_roc_pages) {
-      pdf(file.path(output_dir, paste0("roc_", group, "_by_L.pdf")),
+      pdf(file.path(output_dir, paste0(metric, "_", group, "_by_L.pdf")),
           width = 13.5, height = 2.0 * length(scenarios) + 1.4, useDingbats = FALSE)
-      tryCatch(for (k in ks) draw_figure("roc", scenarios, only_K = k), finally = dev.off())
+      tryCatch(for (k in ks) draw_figure(metric, scenarios, only_K = k), finally = dev.off())
     }
   }
 }
 save_roc_figures()
+save_roc_figures("power_fdr")
 
 cat("\nFigures and summary tables saved in:", output_dir, "\n")
 cat("Included", sum(audit$included), "unique simulations; skipped",
