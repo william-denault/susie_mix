@@ -5,6 +5,7 @@
 # expression by each model's lead SNP (bottom row). The title reports whether
 # the lead SNP changes and the likelihood-ratio statistic used in descriptive
 # results: 2 * (log_lik_mix - log_lik_add), with log_lik = final ELBO + sum(KL).
+# After the individual plots, summarize lead distances with the top 20 shifts.
 
 library(data.table)
 
@@ -18,6 +19,8 @@ source(
     "fit_mix_expression_plot_utils.R"
   )
 )
+
+source(file.path(project_dir, "script", "analysis", "one_cs_lead_distance_plot_utils.R"))
 
 load(file.path(project_dir, "res_summary.RData"))
 
@@ -82,7 +85,7 @@ cat(
 
 print(recessive_cases)
 
-run_one_cs_fit_mix_plots(
+plot_summary <- run_one_cs_fit_mix_plots(
   cases = recessive_cases,
   expected_coding = "recessive",
   plot_dir = file.path(
@@ -93,4 +96,12 @@ run_one_cs_fit_mix_plots(
   summary_filename = "fit_mix_one_cs_recessive_plot_summary.csv",
   project_dir = project_dir,
   genotype_axis_ticks = FALSE
+)
+
+plot_one_cs_lead_distance_overview(
+  plot_summary = plot_summary,
+  expected_coding = "recessive",
+  output_file = file.path(project_dir, "plot", "one_cs_recessive",
+                          "lead_snp_distance_overview.png"),
+  top_n = 20L
 )
