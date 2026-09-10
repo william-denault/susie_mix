@@ -272,6 +272,19 @@ draw_figure <- function(metric, scenarios, only_K = NULL) {
   par(oma = c(4.5, 3.5, 3, 0.3), mar = c(2.0, 2.0, 1.7, 0.4),
       mgp = c(1.3, 0.4, 0), tcl = -0.2, family = "sans", cex = 0.9)
   is_roc <- metric == "roc"
+  # Use the same coverage scale for pure and mixed figures. Start just below
+  # the lowest plotted value, rounded down to 0.05; retain the 0.95 reference.
+  if (metric == "coverage") {
+    values <- summary_table$coverage[
+      summary_table$scenario %in% c(pure_rows, mixed_rows) &
+        summary_table$pve %in% pve_values
+    ]
+    values <- values[is.finite(values)]
+    coverage_lower <- max(0, floor((min(c(values, target_coverage)) - .01) / .05) * .05)
+    coverage_step <- if (1 - coverage_lower <= .30) .05 else .10
+    coverage_ticks <- sort(unique(round(c(coverage_lower,
+                                         seq(coverage_lower, 1, by = coverage_step), 1), 2)))
+  }
 
   for (i in seq_along(scenarios)) {
     min_K <- if (scenarios[i] %in% pure_rows) 1 else if (scenarios[i] == mixed_rows[4]) 3 else 2
@@ -284,8 +297,10 @@ draw_figure <- function(metric, scenarios, only_K = NULL) {
         xlim <- c(min_K - 0.35, 5.35)
         xticks <- min_K:5
       }
-      ylim <- if (metric == "purity") c(0.5, 1.015) else c(0, 1.015)
-      yticks <- if (metric == "purity") seq(.5, 1, .1) else seq(0, 1, .2)
+      ylim <- if (metric == "coverage") c(coverage_lower, 1) else
+        if (metric == "purity") c(0.5, 1.015) else c(0, 1.015)
+      yticks <- if (metric == "coverage") coverage_ticks else
+        if (metric == "purity") seq(.5, 1, .1) else seq(0, 1, .2)
       plot(NA, xlim = xlim, ylim = ylim, xaxs = "i", yaxs = "i",
            axes = FALSE, xlab = "", ylab = "")
       abline(v = xticks, h = yticks, col = "#DEDEDE", lwd = 0.8)
@@ -316,7 +331,8 @@ draw_figure <- function(metric, scenarios, only_K = NULL) {
           }
         } else {
           points(dm$K + c(-.07, .07)[m], dm[[metric]],
-                 pch = 16, cex = 0.95, col = method_colors[m])
+                 pch = 16, cex = 0.95, col = method_colors[m],
+                 xpd = metric == "coverage")
         }
       }
     }

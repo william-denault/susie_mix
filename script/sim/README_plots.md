@@ -12,6 +12,8 @@ The script reads `simulation results/chunks` and writes to `simulation results/f
 
 Each main figure is saved as both PDF and PNG. Blue is SuSiE; pink is SuSiE-mix. Columns are PVE 10%, 20%, 30%, and 40%.
 
+Both coverage figures share a y-axis ending at 1. The lower limit is calculated from the lowest coverage across the pure and mixed scenarios, with a small margin, rounded down to a multiple of 0.05. For the current full results, this gives 0.75 to 1.00. The 0.95 reference remains visible.
+
 | Output | Rows | Within each panel |
 |---|---|---|
 | `coverage_pure`, `purity_pure`, `power_pure` | Additive only; dominant only; recessive only | Number of true causal SNPs from 1 to 5 |
@@ -52,4 +54,4 @@ The script checks the saved settings against filenames, uses n = 500 and fitted 
 
 For a quick local preview, change `max_reps_per_file <- Inf` to 5, and preferably give previews a different `output_dir`. Restore `Inf` for the final figures. `write_png <- FALSE` writes only PDFs; `roc_max_fpr <- 1` displays the full ROC range.
 
-Only a small smoke test was run during development: 3 records from each of 9 selected files, leaving 24 distinct simulations after duplicate removal. All seven scenario types were represented. The test also checked no-CS handling, tied PIPs, threshold endpoints and agreement with saved workhorse metrics. Test output is under `tmp/simulation_plot_smoke`, not the final figures directory. The full simulation analysis has not been run.
+Only a small smoke test was run during initial development: 3 records from each of 9 selected files, leaving 24 distinct simulations after duplicate removal. All seven scenario types were represented. The test also checked no-CS handling, tied PIPs, threshold endpoints and agreement with saved workhorse metrics. Test output is under `tmp/simulation_plot_smoke`, not the final figures directory. The development test did not run the full simulation collection.
