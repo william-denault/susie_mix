@@ -18,7 +18,7 @@ exclude_nonconverged <- FALSE # TRUE excludes a replicate if EITHER fit failed.
 file_pattern <- "\\.RData$"
 max_reps_per_file <- Inf      # For a quick preview, change this to e.g. 5.
 roc_max_fpr <- 0.25           # Display range, as in Supplementary Figure 6.
-write_roc_pages <- TRUE       # Also write one ROC page per causal SNP count.
+write_roc_pages <- FALSE      # Optional extra PDFs collecting the per-L figures.
 write_png <- TRUE            # PDF is always written; PNG is useful for previews.
 
 method_names <- c("SuSiE", "SuSiE-mix")
@@ -265,6 +265,9 @@ rm(curve_counts, curve_rows)
 # ------------------------------------------------------------
 
 draw_figure <- function(metric, scenarios, only_K = NULL) {
+  if (metric == "roc" && is.null(only_K)) {
+    stop("Choose one true causal count (only_K) for each ROC figure.")
+  }
   nr <- length(scenarios)
   nc <- length(pve_values)
   panels <- matrix(seq_len(nr * nc), nrow = nr, byrow = TRUE)
@@ -322,13 +325,10 @@ draw_figure <- function(metric, scenarios, only_K = NULL) {
       for (m in seq_along(method_names)) {
         dm <- d[d$method == method_names[m], , drop = FALSE]
         if (is_roc) {
-          for (k in sort(unique(dm$K))) {
-            dk <- dm[dm$K == k, ]
-            # Threshold order retains vertical segments and tied-score jumps.
-            dk <- dk[order(dk$threshold, decreasing = TRUE), ]
-            lines(dk$fpr, dk$tpr, col = method_colors[m],
-                  lty = if (is.null(only_K)) k else 1, lwd = 1.5)
-          }
+          # One L per figure: exactly one curve per method in each panel.
+          # Threshold order retains vertical segments and tied-score jumps.
+          dm <- dm[order(dm$threshold, decreasing = TRUE), ]
+          lines(dm$fpr, dm$tpr, col = method_colors[m], lty = 1, lwd = 1.5)
         } else {
           points(dm$K + c(-.07, .07)[m], dm[[metric]],
                  pch = 16, cex = 0.95, col = method_colors[m],
@@ -347,7 +347,8 @@ draw_figure <- function(metric, scenarios, only_K = NULL) {
   titles <- c(coverage = "Credible-set coverage", purity = "Credible-set purity",
               power = "Causal SNP recovery by credible sets", roc = "Detection of causal SNPs using PIPs")
   title_text <- paste0(titles[metric], "  |  n = ", n_value)
-  if (!is.null(only_K)) title_text <- paste0(title_text, "  |  ", only_K, " causal SNPs")
+  if (!is.null(only_K)) title_text <- paste0(title_text, "  |  L = ", only_K, " causal SNP",
+                                          if (only_K == 1) "" else "s")
   mtext(title_text, side = 3, outer = TRUE, line = 1.2, font = 2, cex = 1.1)
   mtext(if (is_roc) "False positive rate" else "Number of causal SNPs",
         side = 1, outer = TRUE, line = 0.5)
@@ -362,44 +363,45 @@ draw_figure <- function(metric, scenarios, only_K = NULL) {
   legend(.5, .045, legend = method_names, col = method_colors,
          pch = if (is_roc) NA else 16, lty = if (is_roc) 1 else NA,
          lwd = 1.5, horiz = TRUE, xjust = .5, yjust = .5, bty = "n", cex = .95)
-  if (is_roc && is.null(only_K)) {
-    ks <- if (all(scenarios %in% pure_rows)) 1:5 else 2:5
-    legend(.5, .015, legend = paste("L =", ks), lty = ks, horiz = TRUE,
-           xjust = .5, yjust = .5, bty = "n", cex = .85, seg.len = 2.8)
-  }
 }
 
-save_figure <- function(metric, scenarios, name) {
+save_figure <- function(metric, scenarios, name, only_K = NULL) {
   height <- 2.0 * length(scenarios) + 1.4
   pdf(file.path(output_dir, paste0(name, ".pdf")), width = 13.5, height = height,
       useDingbats = FALSE)
-  tryCatch(draw_figure(metric, scenarios), finally = dev.off())
+  tryCatch(draw_figure(metric, scenarios, only_K), finally = dev.off())
   if (write_png) {
     png(file.path(output_dir, paste0(name, ".png")), width = 13.5, height = height,
         units = "in", res = 180)
-    tryCatch(draw_figure(metric, scenarios), finally = dev.off())
+    tryCatch(draw_figure(metric, scenarios, only_K), finally = dev.off())
   }
 }
 
-for (metric in c("coverage", "purity", "power", "roc")) {
+for (metric in c("coverage", "purity", "power")) {
   save_figure(metric, pure_rows, paste0(metric, "_pure"))
   save_figure(metric, mixed_rows, paste0(metric, "_mixed"))
 }
 
-if (write_roc_pages) {
+save_roc_figures <- function() {
   for (group in c("pure", "mixed")) {
     scenarios <- if (group == "pure") pure_rows else mixed_rows
     ks <- if (group == "pure") 1:5 else 2:5
-    pdf(file.path(output_dir, paste0("roc_", group, "_by_L.pdf")),
-        width = 13.5, height = 2.0 * length(scenarios) + 1.4, useDingbats = FALSE)
-    tryCatch(for (k in ks) draw_figure("roc", scenarios, only_K = k), finally = dev.off())
+    for (k in ks) {
+      save_figure("roc", scenarios, paste0("roc_", group, "_L", k), only_K = k)
+    }
+    if (write_roc_pages) {
+      pdf(file.path(output_dir, paste0("roc_", group, "_by_L.pdf")),
+          width = 13.5, height = 2.0 * length(scenarios) + 1.4, useDingbats = FALSE)
+      tryCatch(for (k in ks) draw_figure("roc", scenarios, only_K = k), finally = dev.off())
+    }
   }
 }
+save_roc_figures()
 
 cat("\nFigures and summary tables saved in:", output_dir, "\n")
 cat("Included", sum(audit$included), "unique simulations; skipped",
     sum(audit$duplicates), "duplicate copies; recorded", sum(audit$errors), "error entries.\n")
 cat("Nonconverged replicate pairs:", sum(audit$nonconverged),
     "; excluded:", sum(audit$excluded_nonconverged), "\n")
-cat("L in the ROC legend is the TRUE causal count; fitted SuSiE L =", fit_L, ".\n")
+cat("L in each ROC title is the TRUE causal count; fitted SuSiE L =", fit_L, ".\n")
 cat("Check configuration_counts.csv for incomplete or unbalanced conditions.\n")

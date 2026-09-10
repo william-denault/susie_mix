@@ -18,10 +18,11 @@ Both coverage figures share a y-axis ending at 1. The lower limit is calculated 
 |---|---|---|
 | `coverage_pure`, `purity_pure`, `power_pure` | Additive only; dominant only; recessive only | Number of true causal SNPs from 1 to 5 |
 | `coverage_mixed`, `purity_mixed`, `power_mixed` | Additive + dominant; additive + recessive; recessive + dominant; all three | Number of true causal SNPs from 2 to 5, or 3 to 5 for all three |
-| `roc_pure`, `roc_mixed` | The same respective scenario rows | FPR versus TPR; colour denotes method, line style denotes causal SNP count |
-| `roc_pure_by_L.pdf`, `roc_mixed_by_L.pdf` | The same respective scenario rows | One page per causal SNP count, with only the two method curves per panel |
+| `roc_pure_L1` through `roc_pure_L5` | Additive only; dominant only; recessive only | One causal SNP count per figure, with two solid curves per panel |
+| `roc_mixed_L2` through `roc_mixed_L5` | The four mixed-scenario rows | One causal SNP count per figure, with two solid curves per panel |
+| `roc_pure_by_L.pdf`, `roc_mixed_by_L.pdf` (optional) | The same respective scenario rows | Collections with one page per causal SNP count; enable `write_roc_pages` |
 
-The true number of causal SNPs is `L_add + L_rec + L_dom`. It is different from the fitted upper bound `L = 10` in your jobs. The ROC legend's L denotes the true number, matching your requested grouping.
+The true number of causal SNPs is `L_add + L_rec + L_dom`. It is different from the fitted upper bound `L = 10` in your jobs. Each ROC title specifies the true count. Each panel contains only the blue SuSiE curve and pink SuSiE-mix curve, with identical axis ranges across L. The script no longer generates the old overlaid `roc_pure` and `roc_mixed` figures; existing copies of those older files are not replaced.
 
 For example, additive + recessive with three causal SNPs pools the `(L_add=1, L_rec=2)` and `(L_add=2, L_rec=1)` configurations. Every included simulation contributes; this is not an equal-weight average of configuration-level averages. If jobs have unequal completion or failure rates, their contributions differ. The saved configuration counts make that visible.
 
@@ -42,7 +43,7 @@ The directory currently has 221 checkpoint files, including an older file for on
 
 By default, successful fits with `converged=FALSE` remain in the comparison and their counts are reported. Set `exclude_nonconverged <- TRUE` to remove a replicate from both methods whenever either method did not converge. This preserves the paired comparison.
 
-The script checks the saved settings against filenames, uses n = 500 and fitted L = 10 by default, and refuses to silently combine unexpected QC settings, all-additive paired controls, or missing SNP-level mixed PIPs. Blank panels are labelled when no matching saved results are available. The all-three scenario at true L = 2 is labelled not applicable in the paginated ROC.
+The script checks the saved settings against filenames, uses n = 500 and fitted L = 10 by default, and refuses to silently combine unexpected QC settings, all-additive paired controls, or missing SNP-level mixed PIPs. Blank panels are labelled when no matching saved results are available. The all-three scenario at true L = 2 is labelled not applicable in its ROC figure.
 
 ## Tables for checking the figures
 
