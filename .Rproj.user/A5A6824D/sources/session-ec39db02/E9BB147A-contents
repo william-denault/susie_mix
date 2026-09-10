@@ -18,6 +18,7 @@ exclude_nonconverged <- FALSE # TRUE excludes a replicate if EITHER fit failed.
 file_pattern <- "\\.RData$"
 max_reps_per_file <- Inf      # For a quick preview, change this to e.g. 5.
 roc_max_fpr <- 0.25           # Display range, as in Supplementary Figure 6.
+write_roc_all_L <- TRUE       # Also overlay all causal counts in two overview figures.
 write_roc_pages <- FALSE      # Optional extra PDFs collecting the per-L figures.
 write_png <- TRUE            # PDF is always written; PNG is useful for previews.
 
@@ -265,9 +266,6 @@ rm(curve_counts, curve_rows)
 # ------------------------------------------------------------
 
 draw_figure <- function(metric, scenarios, only_K = NULL) {
-  if (metric == "roc" && is.null(only_K)) {
-    stop("Choose one true causal count (only_K) for each ROC figure.")
-  }
   nr <- length(scenarios)
   nc <- length(pve_values)
   panels <- matrix(seq_len(nr * nc), nrow = nr, byrow = TRUE)
@@ -325,10 +323,14 @@ draw_figure <- function(metric, scenarios, only_K = NULL) {
       for (m in seq_along(method_names)) {
         dm <- d[d$method == method_names[m], , drop = FALSE]
         if (is_roc) {
-          # One L per figure: exactly one curve per method in each panel.
+          # Keep each causal count separate, including in the all-L overview.
           # Threshold order retains vertical segments and tied-score jumps.
-          dm <- dm[order(dm$threshold, decreasing = TRUE), ]
-          lines(dm$fpr, dm$tpr, col = method_colors[m], lty = 1, lwd = 1.5)
+          for (k in sort(unique(dm$K))) {
+            dk <- dm[dm$K == k, , drop = FALSE]
+            dk <- dk[order(dk$threshold, decreasing = TRUE), ]
+            lines(dk$fpr, dk$tpr, col = method_colors[m],
+                  lty = if (is.null(only_K)) k else 1, lwd = 1.5)
+          }
         } else {
           points(dm$K + c(-.07, .07)[m], dm[[metric]],
                  pch = 16, cex = 0.95, col = method_colors[m],
@@ -349,6 +351,7 @@ draw_figure <- function(metric, scenarios, only_K = NULL) {
   title_text <- paste0(titles[metric], "  |  n = ", n_value)
   if (!is.null(only_K)) title_text <- paste0(title_text, "  |  L = ", only_K, " causal SNP",
                                           if (only_K == 1) "" else "s")
+  if (is_roc && is.null(only_K)) title_text <- paste0(title_text, "  |  All L")
   mtext(title_text, side = 3, outer = TRUE, line = 1.2, font = 2, cex = 1.1)
   mtext(if (is_roc) "False positive rate" else "Number of causal SNPs",
         side = 1, outer = TRUE, line = 0.5)
@@ -363,6 +366,11 @@ draw_figure <- function(metric, scenarios, only_K = NULL) {
   legend(.5, .045, legend = method_names, col = method_colors,
          pch = if (is_roc) NA else 16, lty = if (is_roc) 1 else NA,
          lwd = 1.5, horiz = TRUE, xjust = .5, yjust = .5, bty = "n", cex = .95)
+  if (is_roc && is.null(only_K)) {
+    ks <- if (all(scenarios %in% pure_rows)) 1:5 else 2:5
+    legend(.5, .015, legend = paste("L =", ks), lty = ks, horiz = TRUE,
+           xjust = .5, yjust = .5, bty = "n", cex = .85, seg.len = 2.8)
+  }
 }
 
 save_figure <- function(metric, scenarios, name, only_K = NULL) {
@@ -388,6 +396,9 @@ save_roc_figures <- function() {
     ks <- if (group == "pure") 1:5 else 2:5
     for (k in ks) {
       save_figure("roc", scenarios, paste0("roc_", group, "_L", k), only_K = k)
+    }
+    if (write_roc_all_L) {
+      save_figure("roc", scenarios, paste0("roc_", group, "_all_L"))
     }
     if (write_roc_pages) {
       pdf(file.path(output_dir, paste0("roc_", group, "_by_L.pdf")),
