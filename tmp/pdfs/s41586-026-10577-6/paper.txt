@@ -1,0 +1,1643 @@
+=== PDF PAGE 1 ===
+Nature | www.nature.com | 1
+Article
+Cell-type-specific eQTLs underlie the genetic 
+architecture of complex traits
+Minhui Chen (陈敏惠)1,2,3, Xinpei Wang (王鑫培)1, Lena Krockenberger4, Rika Tyebally5,6, 
+Jeremy J. Berg7, Sebastian Pott1, Jonathan Flint8, Joseph E. Powell5,6, Brunilda Balliu9, 
+Xuanyao Liu (刘轩尧)1 & Andy Dahl1 ✉
+Genetic effects on complex traits primarily act by regulating gene expression; 
+however, this process is not well understood1. Studies of genetic effects on gene 
+expression (expression quantitative trait loci (eQTLs)) can inform as to the gene 
+regulatory layer between genetic variants and complex traits2. However, previous 
+studies have not effectively captured cell-type-specific eQTLs, which are likely to be 
+important for complex traits. Here we unbiasedly characterized cell-type-specific 
+eQTLs by applying a variance component model to population-scale single-cell 
+RNA-sequencing (RNA-seq) data. Using peripheral blood mononuclear cells from the 
+OneK1K cohort, we demonstrated that cell-type-specific eQTLs enrich for complex 
+trait heritability, which we did not observe for cell-type-shared eQTLs. We also found 
+that eQTL specificity is associated with genes that have greater selective constraint, 
+enhancer complexity and gene network connectivity, three features enriched in 
+complex traits relative to known eQTLs3,4. Transcriptome-wide, trans eQTLs were 
+mostly cell-type-specific (60% specific) whereas cis eQTLs were mostly shared (30% 
+specific). We used a second single-cell RNA-seq dataset to replicate our findings and 
+demonstrate that cell-type-shared and cell-type-specific eQTLs are consistent across 
+ancestries. Our results establish eQTL cell-type specificity as a key feature of gene 
+regulation and partly explain why known eQTLs are depleted in gene regulatory 
+effects on complex traits.
+The challenge of connecting genetic effects on complex traits 
+with their underlying gene regulatory mechanisms has motivated 
+population-scale studies of gene expression using RNA-sequencing 
+(RNA-seq) in bulk tissues, such as GTEx2. Although these studies have 
+identified thousands of expression quantitative trait loci (eQTLs) that 
+contribute to variation in transcript abundance, at present, known 
+eQTLs only explain about 10–30% of genetic effects on complex traits5,6. 
+This suggests that gene regulatory effects on complex traits are likely 
+to depend on contexts that are not evident in bulk tissues, such as cell 
+types, environments or developmental stages. Here, we sought to 
+characterize the role of eQTL cell-type-specificity on complex traits.
+Previous studies have focused on eQTLs that reach statistical signifi-
+cance in bulk tissues, a strategy that, due to limited power, identifies 
+only a small fraction of suspected eQTLs. Furthermore, this strategy 
+biases towards atypically large eQTL effects that are shared across all 
+cell types within a tissue and are depleted in the genetic architecture 
+of complex traits and relevant gene features3. Recently, eQTL stud-
+ies using single-cell RNA-seq (scRNA-seq) have improved power to 
+identify cell-type-specific eQTLs that are likely to contribute to gene 
+regulatory effects on complex traits7– 11. However, these studies also 
+focus on statistically significant eQTLs, leaving the overall role of eQTL 
+cell-type specificity unclear.
+We propose an alternative approach based on partitioning variation 
+in scRNA-seq data. Rather than identifying individual eQTLs, our model 
+unbiasedly quantifies the overall contributions of cell-type-shared 
+and cell-type-specific eQTLs. Using this approach, we established the 
+importance of cell-type-specific eQTLs in the genetic architecture of 
+complex traits and partly explained why known eQTLs are depleted in 
+functionally relevant gene features.
+CIGMA quantifies cell-type-specific eQTLs
+We set out to characterize cell-type-specific eQTLs by combining recent 
+population-scale scRNA-seq datasets, which greatly improve cell-type 
+resolution over bulk tissues, with statistical genetic models that unbi-
+asedly quantify genetic effects, similar to the genomic-relatedness- 
+based restricted maximum-likelihood (GREML) model of complex 
+trait heritability12.
+Our approach, cell-type-informed genetic mixed-model analy -
+sis (CIGMA), is shown in Fig.  1 (Methods). For a given gene, CIGMA 
+https://doi.org/10.1038/s41586-026-10577-6
+Received: 3 April 2025
+Accepted: 21 April 2026
+Published online: xx xx xxxx
+Open access
+ Check for updates
+1Section of Genetic Medicine, University of Chicago, Chicago, IL, USA. 2Virginia Institute for Psychiatric and Behavioral Genetics, Virginia Commonwealth University, Richmond, VA, USA. 
+3Department of Psychiatry, Virginia Commonwealth University, Richmond, VA, USA. 4Bioinformatics Interdepartmental Graduate Program, University of Californaia, Los Angeles, Los Angeles, 
+CA, USA. 5Translational Genomics, Garvan Institute of Medical Research, Darlinghurst, New South Wales, Australia. 6UNSW Cellular Genomics Futures Institute, University of New South Wales, 
+Sydney, New South Wales, Australia. 7Department of Human Genetics, University of Chicago, Chicago, IL, USA. 8Department of Human Genetics, David Geffen School of Medicine, University of 
+California, Los Angeles, Los Angeles, CA, USA. 9Department of Pathology and Laboratory Medicine, Department of Computational Medicine, Department of Biostatistics, University of California, 
+Los Angeles, Los Angeles, CA, USA. ✉e-mail: andywdahl@uchicago.edu
+
+
+=== PDF PAGE 2 ===
+2 | Nature | www.nature.com
+Article
+quantifies the variance explained by cell-type-shared eQTLs, σ g
+2; the 
+variance explained by eQTLs specific to cell-type c, vc; and the overall 
+eQTL specificity, which we define as vσ v/( +)g
+2 , where v  averages vc 
+across cell types. When all vc = 0, eQTLs are identical across cell types; 
+otherwise, eQTLs are partly cell-type-specific, and we call the gene a 
+cell-type-specific eGene (cs-eGene)9.
+CIGMA has several key features for robust inference in scRNA-seq 
+data (Methods and Supplementary Note 1). First, CIGMA accounts for 
+cell-to-cell variation (δ ) within each individual and cell type, includ-
+ing experimental noise. Second, CIGMA can jointly fit multiple ran-
+dom effects, such as cis and trans genomic regions or experimental 
+batches. Third, our primary analyses assume that cell-type-specific 
+eQTLs are independent across cell types for parsimony, but CIGMA 
+can also fit a more realistic model allowing arbitrary eQTL correla -
+tions across cell types. Finally, CIGMA parameters are unbiasedly 
+estimated with the method of moments and nonparametrically tested 
+with jackknife.
+T o assess the ability of CIGMA to quantify the variance explained by 
+cell-type-specific eQTLs, we performed simulations based on periph-
+eral blood mononuclear cells (PBMCs) from OneK1K, which has the 
+most individuals of available scRNA-seq datasets10. After quality con-
+trol, we included 10,288 genes, 928 individuals, 7 cell types and 1,190 
+cells per individual on average (Methods and Supplementary Fig. 1). 
+We applied CIGMA to real cis SNPs (within 500 kilobases (kb) of the 
+gene body) for each gene.
+We established that CIGMA is well calibrated in the absence of eQTLs 
+by permuting genotypes across individuals (Fig. 2a). Next, we asked 
+whether CIGMA is biased by cell-type-shared eQTLs by permuting cells 
+across cell types. As expected, CIGMA detected the cell-type-shared 
+eQTLs yet also provided calibrated null estimates for cell-type-specific 
+eQTLs (Fig. 2a, Extended Data Fig. 1a and Supplementary Fig. 2). These 
+results held across genes passing our quality control regardless of their 
+total levels of expression or variance (Extended Data Fig. 1a). Interest-
+ingly, permuting subsets of cell types shows that eQTL specificity is 
+reduced less by mixing cell types within the same lineage (Extended Data 
+Fig. 1b). We found that the Wald test of CIGMA for significant cs-eGenes 
+was calibrated when permuting individuals but slightly inflated when 
+permuting cells, although this was negligible compared with real data 
+signals (Supplementary Fig. 2 and Supplementary Table 1).
+We next simulated data varying the number of individuals, N, and 
+found that estimates were unbiased for all N and grew more precise as  
+N grew (Fig. 2b and Methods). Power to detect cs-eGenes grew with  
+N, rising from about 40% with N = 1,000 to about 100% with N = 2,000 
+(Supplementary Fig. 3). Power and precision also grew with the num-
+ber of cells, the number of cell types and eQTL cell-type specificity 
+(Extended Data Fig. 2, Supplementary Fig. 3 and Supplementary 
+0.17 0.44 0.73 1.01 1.41
+LOEUF bin
+0.3
+0.4
+0.5
+0.6
+P = 3.40 × 10–4
+Cells
+Genes
+Cell types
+Genes
+Single cells Pseudobulk (Y)scRNA-seq
+Individuals Individuals
+Genotypes
+Shared (g
+2) and speci/f_ic (c) eQTL variance
+eQTL cell type-speci/f_icity (/(g
+2 + ))
+a
+0 2 0 0 0 1 0 1 2
+0 1 0 0 0 0 2 0 0
+2 0 0 2 0 0 0 0 0
+Individuals
+Variants
+b
+eQTL l Gene
+Cell type 1 l + l1
+l + l2
+l + l3
+Cell type 2
+Cell type 3
+l ~ N(0, g
+2)
+iid
+lc ~ N(0, c)
+ind
+c
+CIGMA
+Downstream analysesd
+More conserved
+cis trans
+Regulatory region
+0
+0.1
+0.2
+0.3Expression heritability
+Speci/f_ic
+Shared
+UC RA PBC MS
+Crohns Celiac SLE
+–2
+0
+2
+4
+6
+8
+Disease heritability enrichment
+CIGMA-speci/f_ic
+CIGMA-shared
+GCTA
+DEG
+¯ ¯
+Speci/f_icity /(g
+2 + )¯¯
+Fig. 1 | Study overview. a, We used population-scale scRNA-seq data and paired 
+genotypes as input. Typically, CIGMA is fit to common cis variants, but it can fit 
+multiple genotype matrices, for example, cis  and trans . b,c, CIGMA fits cell-  
+type-shared and cell-type-specific eQTLs ( α l and γ lc) (b), and then outputs the 
+variance explained by each group (σ g
+2 and vc) and eQTL specificity vσ v(/ (+ ))g
+2  (c). 
+d, We used CIGMA outputs to characterize how cell-type-specific eQTLs  
+relate to key genomic features, such as conserved genes and complex trait 
+heritability.
+
+=== PDF PAGE 3 ===
+Nature | www.nature.com | 3
+Table 2). We also found that CIGMA is robust to simulations that violate 
+its assumptions on how eQTL effects are distributed across variants 
+or cell types in theory and simulations (Extended Data Fig. 3, Supple-
+mentary Figs. 4 and 5 and Supplementary Notes 1.4 and 1.6) and to real 
+genotype data (Supplementary Fig. 6).
+We compared CIGMA with simpler methods to quantify eQTLs. First, 
+we tested a version of CIGMA that ignores cell-to-cell variation (Meth-
+ods), which resulted in about 90% deflated estimates of eQTL variance 
+explained with realistic data, although this bias vanished in the limit of 
+infinite cells (Fig. 2c). Second, we tested GREML12, a common approach 
+to quantify genetic effects on complex traits that neither distinguishes 
+shared and specific eQTLs nor models cell-to-cell variation. With infinite 
+cells, GREML unbiasedly estimated total eQTL variance when applied 
+separately to each cell type (cell-type pseudobulk, CTP). However, when 
+applied to a proxy for bulk RNA-seq that sums over cell types (overall 
+pseudobulk, OP), GREML was biased in different directions depending 
+on the number of cells; the mixture preserves cell-type-shared effects 
+but partly cancels cell-type-specific effects, changing the relative 
+strength of genetic and nongenetic variance13 (Methods). Third, we 
+applied GREML to cell-type-shared and cell-type-specific components 
+of expression by applying orthogonal tissue decomposition (OTD), 
+which was downward biased with realistic data and remained biased 
+with infinite cells14 (Methods). Fourth, we tested a multi-trait model, 
+treating the expression of each cell type as a trait (BOL T-REML15), which 
+is similar to CIGMA without cell-to-cell variation and gave similar results. 
+Finally, we applied a GxE model to OP expression treating cell-type 
+proportion as an ‘environment’ (GxEMM16), which also gave similar 
+estimates on average, although they were much noisier because GxEMM 
+uses less informative data (OP instead of CTP). GxEMM and BOL T-REML 
+yielded biased specificity estimates due to unmodelled cell-to-cell vari-
+ation (Supplementary Fig. 7). Overall, existing methods for complex 
+traits cannot quantify cell-type-specific eQTLs in realistic scRNA-seq 
+data because of cell-type-shared eQTLs and/or cell-to-cell variation.
+Cell-type-specific eQTLs in OneK1K
+We analysed 928 individuals and the seven most common cell types 
+from the OneK1K scRNA-seq dataset10. We applied CIGMA to common 
+Genotype permutation Cell permutation
+–0.2
+–0.1
+0
+0.1
+0.2
+0.3
+Heritability (h2)
+Heritability (h2)
+Heritability (h2)
+Shared
+Speci/f_ic
+500 1,000 1,500 2,000
+Sample size
+0
+0.2
+0.4
+0.6
+0.8
+Shared
+Speci/f_ic
+Shared Speci/f_ic Shared Speci/f_ic Shared Speci/f_ic Shared Speci/f_ic CTP OP CTP Ave CTP
+Method
+–0.1
+0
+0.1
+0.2
+0.3
+0.4
+0.5
+CIGMA CIGMA without  GxEMM BOLT GCTA OTD
+Cell number
+0.5×
+1×
+2×
+4×
+Inf
+Heritability type
+Total h2
+Speci/f_ic h2
+Shared h2
+a b
+c
+Fig. 2 | CIGMA yields unbiased and powerful estimates of cell-type-shared 
+and cell-type-specific eQTLs in simulations.  a, Permutations of real OneK1K 
+data across 10,288 genes. Genotype permutation breaks the connection 
+between genotypes and expression, eliminating all eQTLs. Cell permutation 
+across cell types within individuals renders cell types meaningless while 
+preserving cell-type-shared eQTLs. About 10% of points lie outside the range 
+(−0.2, 0.3) and are not shown. b , Pseudobulk simulations with 1,000 replicates 
+show that CIGMA is unbiased and grows more precise with more individuals.  
+c, CIGMA compared with simpler methods while varying the number of cells 
+relative to OneK1K (which has approximately 1,190 cells per individual) across 
+1,000 replicates. ‘CIGMA without δ ’ ignores cell-to-cell variation by assuming 
+δ = 0 in equation (1) (Methods). ‘GCTA’ is used to fit the standard GREML model, 
+which we apply either to pseudobulk per cell type (CTP) or to overall pseudobulk 
+which combines cells across all cell types (OP). ‘GxEMM’ extends the GREML 
+model to model GxE heritability, which we apply to OP using cell-type 
+proportion as an ‘environment’. ‘BOLT-REML’ extends GREML to multiple traits, 
+which we apply to each cell type as a ‘trait’. The OTD framework applies GREML 
+after partitioning expression into cell-type-shared and cell-type-specific 
+components. The white dots in a represent the medians. The boxes in b represent 
+the first, second (median) and third quartiles, whereas the whiskers extend to 
+values within 1.5 times the interquartile range from the first and third quartiles. 
+Data points beyond the whiskers are outliers. The error bars in c represent the 
+first, second (median) and third quartiles of estimates.
+
+=== PDF PAGE 4 ===
+4 | Nature | www.nature.com
+Article
+cis SNPs for each of 10,288 genes, defined as SNPs within 500 kb of the 
+gene body with minor allele frequency (MAF) greater than 5% (ref. 14). 
+We detected cell-type-specific eQTLs for 193 genes (P < 0.05/10,288; 
+Fig. 3b and Supplementary Fig. 8 and Supplementary Table 3), which 
+we call statistically significant cs-eGenes. Ninety-seven of these genes 
+do not have significant cell-type-specific residual interindividual vari-
+ance, highlighting the ability of CIGMA to distinguish genetic variation. 
+Of these 193 significant cs-eGenes from jointly testing all cell types, 64 
+were individually significant in two or more cell types (P < 0.05/10,288; 
+Supplementary Fig. 9). These numbers represent conservative lower 
+bounds as cs-eGene detection depends on power. We summarize the 
+transcriptome-wide distribution of CIGMA estimates in Supplemen-
+tary Fig. 10.
+For example, one cs-eGene, CTLA4, encodes an inhibitory receptor 
+downregulating T cell response (Fig. 3c). Cell-type-specific eQTLs in 
+CTLA4 have previously been linked to multiple immune diseases10,17. 
+Another cs-eGene is SMDT1, which regulates calcium uptake in mito-
+chondria. This gene has a known eQTL that is specific to monocytes at 
+particular time points after pathogenic stimulation18. Our significant 
+cs-eGenes almost perfectly overlap those detected by a fixed-effect 
+test for cell-type-specific eQTLs in the same data, although the lat -
+ter detected more genes11 (Supplementary Fig. 11). We conclude that 
+cs-eGenes can recover genes with known cell-type-specific eQTLs that 
+are relevant to complex diseases.
+We compared eQTL cell-type specificity with differential expression 
+across cell types, a standard measure of cell-type specificity that does 
+cis trans
+0
+0.05
+0.10
+0.15
+0.20
+0.25
+0.30
+Heritability (h2)
+a
+Speci/f_ic
+Shared
+B IN B MemCD4 ETCD4 NCCD8 ETCD8 NCNK
+B IN
+B Mem
+CD4 ET
+CD4 NC
+CD8 ET
+CD8 NC
+NK
+f
+0
+0.2
+0.4
+0.6
+0.8
+1.0
+Residual interindividual correlation
+0
+0.05
+0.10
+0.15
+0.20
+Heritability (h2)
+0 0.2 0.4 0.6 0.8 1.0
+cis Genetic correlation
+5 100 300 500 700 1,000 2,000
+CIGMA window size (kb)
+0
+0.1
+0.2
+0.3
+0.4
+cis variance/speci/f_icity
+e
+Shared
+Speci/f_ic
+Speci/f_icity
+1 3 5 7 9 11 13 15 17 19 21
+Chromosome
+100
+75
+50
+25
+0
+25
+50
+75
+100
+–log10(P)
+b
+CTLA4
+SMDT1
+Cell-type-speci/f_ic genetic effects (v)
+Cell-type-speci/f_ic residual interindividual effects (w)
+Shared (g
+2) Shared (g
+2) B IN B Mem CD4 ET CD4 NC CD8 ET CD8 NC NK
+0
+1
+cis variance
+P(v) = 7.00 × 10–11
+P(w) = 6.08 × 10–4
+c
+B IN B Mem CD4 ET CD4 NC CD8 ET CD8 NC NK
+–1
+0
+1
+cis variance
+P(v) = 1.40 × 10–37
+P(w) = 3.07 × 10–18
+d
+Fig. 3 | Quantifying cell-type-shared and cell-type-specific eQTLs in 
+OneK1K.  a, Transcriptome-wide median cell-type-shared and cell-type-  
+specific heritabilities in cis and trans. A subset of 9,065 genes with positive 
+combined genetic and environmental variances were included (Methods and 
+Extended Data Fig. 4). Error bars represent 95% confidence intervals based on 
+bootstrapping genes. b , Tests of cell-type-specific genetic ( v = 0, two-sided 
+Wald test) and residual interindividual ( w = 0, two-sided Wald test) effects 
+across 10,288 genes. Dashed lines show Bonferroni-corrected significance 
+(P = 4.9 × 10−6 ). Stars indicate significant cs-eGenes that do not have significant 
+cell-type-specific residual interindividual variance. c ,d, Estimated cell-type- 
+shared and cell-type-specific genetic variances for CTLA4  and SMDT1. Error bars 
+represent estimated variances ±1 s.e. Total genetic variance in each cell type c 
+is σ v+ cg
+2 , which is positive for these genes. P- values are from b . e, Cell-type 
+specificity increases with distance from the transcription start site (TSS). 
+CIGMA was fit using window sizes ranging from 5 kb to 2 Mb. The plot includes 
+mean variances and median specificity across 4,625 genes with positive 
+combined shared and specific genetic variances ( σ v+g
+2 ) in all windows.  
+Error bars represent 95% confidence intervals based on bootstrapping genes.  
+f, Transcriptome-wide heritabilities per cell type (diagonal) and genetic and 
+residual interindividual correlations across cell types (lower and upper triangles, 
+respectively; Methods) for 10,288 genes.
+
+=== PDF PAGE 5 ===
+Nature | www.nature.com | 5
+not consider variation across individuals. We expected these measures 
+to partly overlap because cell-type-specific eQTLs can cause differen-
+tial expression10. We found that cs-eGenes and differentially expressed 
+genes (DEGs) have a weak but significant overlap (14 of the top 200 
+cs-eGenes and DEGs overlap, Spearman ρ  = 0.19 between v  and vari-
+ance across cell types; Supplementary Fig. 12). This confirmed that 
+cell-type-specific eQTLs contribute to differential expression across 
+cell types.
+We next explored CIGMA’s generalized model of eQTL covariance 
+across cell types. Although noisy at this sample size, eQTL sharing 
+across cell types recovered known relationships (Fig. 3f). For example, 
+the two B cell subtypes, BIN and BMem, had high eQTL correlation. We 
+found a similar pattern for residual interindividual covariances across 
+cell types (correlation with eQTL covariance is r = 0.95; Supplementary 
+Fig. 13), showing that cell types generally have similar responses to cis 
+genetic and other interindividual effects. Importantly, our primary 
+results from the simpler model of CIGMA are not biased by this more 
+complex form of eQTL covariance (Extended Data Fig. 3 and Supple-
+mentary Note 1.4).
+We jointly quantified cis and trans eQTLs, in which trans is defined 
+to include variants on other chromosomes. Bulk RNA-seq studies have 
+shown that cis eQTLs are more shared across tissues than trans2,13. We 
+found a similar pattern across cell types: cis eQTLs are mostly shared 
+(31.1% specific, standard error (s.e.) 1.3%), whereas trans are mostly 
+specific (59.4% specific, s.e. 4.6%; Pdiff = 0.001, 1,000 permutations, 
+one-sided test). The median gene expression heritability from trans 
+eQTLs is 25% (s.e. 2.1%), much higher than the 3% from cis eQTLs (s.e. 
+0.1%; Fig. 3a and Supplementary Table 4). These results are robust to 
+using means rather than medians (Extended Data Fig. 4) or to changing 
+quality control thresholds (Extended Data Fig. 4 and Supplementary 
+Fig. 14), covariate modelling assumptions (Supplementary Figs. 15–17), 
+number of genetic PCs (Supplementary Fig. 18), pseudocount used 
+to construct pseudobulk (Supplementary Fig. 19) or MAF filter (Sup-
+plementary Fig. 20).
+Known eQTLs that are more distal from the TSS are more specific 
+across developmental time points19 and environmental exposures20. 
+T o test how eQTL specificity varies with distance to TSS, we fit CIGMA 
+with varying cis window sizes. As expected, we found that eQTL cell-type 
+specificity increased with window size, dropping to 30% when we 
+reduced to 5 kb and rising to 41% when we increased to 1 Mb (Fig. 3e).
+We analysed a proxy for bulk tissue RNA-seq we call OP, which sums 
+over all cells per individual regardless of cell type. We found that cis 
+eQTLs are 5% cell-type-specific in OP (Supplementary Fig. 21), far 
+below the 30% specificity we observed within each cell type (Fig. 3a). 
+This deflation of specificity is expected because bulk tissues mix cell 
+types13 (Methods, Fig. 2c, Extended Data Fig. 1b, Supplementary Note 1 
+and Supplementary Table 5). Consequently, because trans eQTLs are 
+more specific than cis, the trans:cis ratio is deflated in OP (83% trans) 
+relative to each cell type (88% trans; Pdiff = 0.005, 1,000 permutations, 
+one-sided test). Overall, our results quantified how bulk tissues bias 
+eQTLs towards cis effects that are shared across cell types.
+eQTL specificity and gene features
+We compared eQTL specificity with gene features that are enriched in 
+complex traits but depleted in known eQTLs. Based on previous work, 
+we hypothesized that genes with more specific eQTLs would have more 
+evolutionary constraint, enhancers and gene network connections3 
+(Methods). Our results supported this hypothesis.
+First, we tested evolutionary constraint using loss-of-function 
+observed/expected upper bound fraction (LOEUF)21. We found that  
+more-constrained genes had lower cell-type-shared and cell-type-  
+specific cis genetic variances, consistent with bulk eQTLs3– 5,13,14,22,23.  
+By contrast, we found that more-constrained genes had higher 
+eQTL specificity (Fig. 4a), consistent with the hypothesis that more 
+pleiotropic variants experience stronger selection24. Second, we found 
+that genes with higher eQTL specificity had more enhancers (Fig. 4a), 
+consistent with observations that more complex regulatory landscapes 
+facilitate more specific expression across tissues25. Third, we examined 
+gene network connectedness and found that shared eQTLs were less 
+connected; as in ref. 3, this was driven by a marked enrichment in the 
+least-connected gene decile (P = 1.9 × 10−5 ; Fig. 4a and Supplementary 
+Table 6). Finally, we found that eQTL specificity decreased with aver-
+age expression level and increased with gene length and differential 
+expression across cell types (Supplementary Fig. 22). Nonetheless, 
+adjusting for these features did not affect our conclusions (Extended 
+Data Fig. 5), nor did changing quality control filters on CIGMA estimates 
+(Supplementary Fig. 23), total expression (Supplementary Figs. 24 
+and 25), MAF (Supplementary Fig. 26), or the number of included cell 
+types (Supplementary Fig. 27). Because bulk eQTLs are biased towards 
+cell-type-shared effects, these results partly explain why known eQTLs 
+are depleted in these gene features3.
+We next tested these enrichments in residual interindividual variance 
+components. We found that shared and specific residual interindi -
+vidual variance shrink with constraint and grow with gene network 
+connectivity, with no clear relationship to specificity, whereas the 
+cell-type-specific component sharply grew with the number of enhanc-
+ers (Supplementary Fig. 28). This may be explained by nongenetic  
+and/or unmodelled trans variants (Supplementary Fig. 29), but we 
+were underpowered to address this.
+We asked what other properties distinguish genes with higher cis 
+eQTL cell-type specificity. First, we assessed Gene Ontology (GO) terms 
+and found that low-specificity eGenes were enriched in one term,  
+‘cytoplasmic translation’ , whereas high-specificity eGenes were sig-
+nificantly enriched in 19 terms that all directly relate to immune cells26 
+(Fig. 4c and Supplementary Table 7). These enrichments add confi-
+dence that eQTL specificity indexes cell-type-specific biology. Second, 
+we considered drug target genes defined by OpenTargets27, which were 
+depleted in shared and specific eQTL variance without clear relation-
+ship to specificity. Third, we found the same results for genes with 
+burden scores associated with disease risk 28 (Extended Data Fig. 6). 
+Fourth, we used candidate cis-regulatory elements (cCREs) 29 from 
+five immune cell types to define cCREs open in one cell type (unique) 
+or in all five (common). As expected, the top DEGs were enriched in 
+unique cCRE (1.2-fold, P = 0.001) and depleted in common cCRE 
+(0.7-fold, P < 0.001; Extended Data Fig. 7 and Supplementary Table 8); 
+cs-eGenes showed a similar but weaker pattern (respectively, 1.1-fold 
+(P = 0.47) and 0.8-fold (P = 0.0052)), whereas cell-type-shared eGenes  
+did not.
+Specific eQTLs underlie complex traits
+Having established that eQTL specificity enriches for gene features 
+that are relevant to complex traits, we directly tested their enrichments 
+in genetic effects on complex traits. We applied linkage disequilibrium 
+score regression (LDSC) to test enrichment of the top 200 cs-eGenes 
+in 10 complex traits 9,30 (Methods). We found that cs-eGenes were 
+enriched for 4/7 blood-related traits and 0/3 less-blood-related traits 
+(P ≤ 0.05; Fig. 4b and Supplementary Table 9). These enrichments were 
+comparable to the enrichments for the top 200 DEGs, a standard 
+approach to measure cell-type-specific heritability based on gene 
+expression30. We found no enrichments for complex trait heritability 
+in the top 200 cell-type-shared eGenes, as defined by the σ g
+2 parameter 
+of CIGMA, or the top 200 bulk eGenes, as defined by applying GCTA to 
+OP expression. We confirmed these results were robust to gene set size 
+(100 or 300 genes), window size (300 kb and 700 kb, Supplementary 
+Fig. 30 and Supplementary Table 10), and MAF filter (Supplementary 
+Fig. 26 and Supplementary Table 10). Our primary LDSC test compares 
+with matched random genes for robustness (Methods, Supplementary 
+Fig. 31 and Supplementary Table 10), but we find consistent results 
+
+=== PDF PAGE 6 ===
+6 | Nature | www.nature.com
+Article
+using the standard LDSC with or without adjusting for DEGs (Supple-
+mentary Fig. 32 and Supplementary Table 10).
+We next asked if CIGMA could implicate disease-causal cell types by 
+testing disease heritability enrichment in significant cs-eGenes per each 
+cell type (Supplementary Fig. 9). Using the same LDSC approach, we 
+found six cell-type-trait enrichments (q < 0.1, Supplementary Table 11 and 
+Supplementary Fig. 33). For example, we found that CD4ET cells enrich 
+for Crohn’s disease and ulcerative colitis (UC) heritability31 and that 
+CD8ET cells and NK cells enrich for systemic lupus erythematosus (SLE) 
+heritability. Although CD4 cells are sharply depleted in SLE, CD8 effector 
+T cells may play a greater part in SLE progression32– 34 and genetic risk9,35.
+We then used the abstract mediation model6 to quantify the complex 
+trait heritability mediated by these gene sets. We found that the top 200 
+cs-eGenes mediate 9.0% heritability of blood-related traits, a five-fold 
+enrichment compared with other genes (P = 0.003), whereas the top 
+200 DEGs, cell-type-shared eGenes and GCTA eGenes mediated only 
+4.9% (P = 0.004), 3.1% (P = 0.035) and 3.1% (P = 0.010), respectively 
+(Extended Data Fig. 8 and Supplementary Table 12).
+We concluded that cs-eGenes enrich for heritability in relevant com-
+plex traits, comparable to and distinct from DEGs, unlike shared eGenes.
+eQTL specificity in CLUES and ImmVar
+We performed replication analyses in a second population-scale scRNA- 
+seq dataset from California Lupus Epidemiology Study (CLUES) and 
+Immune Variation Project (ImmVar). CLUES contains 1.2 million PBMCs 
+from a combination of patients with SLE and healthy controls 9.  To 
+mitigate potential confounding, we meta-analysed three subgroups:  
+75 patients of Asian ancestry with SLE, 70 patients of European ances-
+try with SLE and 70 controls of European ancestry without controls. 
+Owing to the lower sample size, we had power only to study cis eQTLs 
+in this dataset.
+0.02
+0.04
+0.06
+0.08cis variance
+P = 4.24 × 10–6
+P = 0.011
+More constrained
+Shared
+Speci/f_ic
+P = 0.377
+P = 2.55 × 10–4
+More enhancers
+P = 0.060
+P = 0.117
+More connected
+0.17 0.44 0.73 1.01 1.41
+LOEUF bin
+0.3
+0.4
+0.5
+0.6
+P = 3.40 × 10–4
+2 4 7 9 12 15 18 24 32 48
+Enhancer number bin
+P = 1.55 × 10–4
+192 958 1,723 2,488 3,254
+Connected rank bin
+P = 0.495
+Height CAD SCZ UC RA PBC MS Crohns Celiac SLE
+Complex trait
+–2
+0
+2
+4
+6
+8
+Enrichment ( × 10–8)
+Cell-type-speci/f_ic genetic effects (CIGMA)
+Cell-type-shared genetic effects (CIGMA)
+Overall pseudobulk genetic effects (GCTA)
+Cell-type-speci/f_ic mean expression (DEG)
+Q1 Q2 Q3 Q4
+Speci/f_icity quartiles
+(least /uni2192 most speci/f_ic)
+0
+2
+4
+6
+–log10(P)
+Cytoplasmic translation
+Leukocyte activation
+Cell activation
+Lymphocyte-mediated immunity
+Leukocyte-mediated immunity
+Adaptive immune response
+a
+b c
+Speci/f_icity /(g
+2 + )¯¯
+Fig. 4 | Genomic properties of cis eQTLs and cell-type specificity in OneK1K. 
+a, Shared and specific eQTL strengths binned by deciles of the transcriptome 
+based on LOEUF , enhancer counts and gene network connectivity. In total, 
+7,042 genes were included, of which 6,996, 7,028 and 3,828 had measured 
+LOEUF , enhancer counts and connectivity, respectively (Methods). Points show 
+means (top) or medians (bottom); error bars show 95% bootstrap confidence 
+intervals; and x-axis ticks show median gene feature values. P -values come  
+from meta-regression (two-sided t-test; Supplementary Table 6). For ‘connected 
+rank’, the meta-regression P -value is insignificant, but the mega-regression 
+gives P = 1.9 × 10−5  (two-sided t-test; Supplementary Table 6), and the  
+asterisk indicates shared eQTLs are enriched in the least-connected decile 
+(P = 6.7 × 10−11 , two-sided t-test). b, Complex trait heritability enrichment for the 
+top 200 cs-eGenes, shared eGenes, bulk eGenes, and DEGs. Asterisks indicate 
+P ≤ 0.05 (one-sided z-test), and P-values are provided in Supplementary Table 9; 
+vertical line splits less-blood-related and blood-related traits. CAD, coronary 
+artery disease; SCZ, schizophrenia; UC, ulcerative colitis; RA, rheumatoid 
+arthritis; PBC, primary biliary cirrhosis; MS, multiple sclerosis; SLE, systemic 
+lupus erythematosus. c , GO terms that significantly differ across quartiles of 
+eQTL specificity in 4,250 genes with positive cis  genetic variance components 
+(σ g
+2 and v, one-sided hypergeometric test); see Supplementary Table 7 for all  
+19 significant GO terms after adjustment for multiple comparisons.
+
+=== PDF PAGE 7 ===
+Nature | www.nature.com | 7
+The median heritability of gene expression due to cis eQTLs was 4%  
+in CLUES (s.e. 0.3%; Fig. 5a and Supplementary Table 13), similar to the  
+3% estimate in OneK1K (Pdiff = 0.001, 1,000 permutations, two-sided test), 
+but CLUES exhibited greater specificity than OneK1K (63% compared 
+with 34%; Pdiff = 0.001, 1,000 permutations, two-sided test). These results 
+were consistent across all three CLUES subgroups (Extended Data Fig. 9). 
+Next, as in OneK1K, we found that genes with more cell-type-specific 
+eQTLs had greater evolutionary constraint, more enhancers and higher 
+gene network connectivity (Fig. 5d and Supplementary Fig. 34). These 
+results were consistent in the joint analysis across individuals in all 
+three subgroups (Supplementary Fig. 35 and Supplementary Table 14).
+We then compared eQTL estimates per gene between CLUES and 
+OneK1K. Although CLUES had power only to identify four cs-eGenes, 
+three of them overlap OneK1K cs-eGenes (Fig. 5b,c, Supplementary 
+Fig. 36 and Supplementary Tables 3 and 13). More broadly, we found 
+that OneK1K cs-eGenes were highly enriched for small cs-eGene 
+P-values in CLUES (36/183 have P < 0.05, binomial P = 4 × 10−13 ), unlike 
+the remaining genes (57/9,705 have P < 0.05, binomial P = 1). Finally, 
+we compared eQTL estimates per gene across OneK1K, CLUES and 
+CLUES subgroups. We found that σ g
+2 and v were significantly correla-
+ted across all comparisons (all P < 1 × 10−16 ; Supplementary Table 15  
+and Supplementary Figs. 37–39), with an average correlation of 0.27. 
+These correlations were not significantly below 1 after accounting for 
+estimation error (all P  > 0.05/6; Methods). We conclude that eQTL 
+specificity in PBMCs is a robust gene feature that is broadly consistent 
+across ancestries, health states and datasets.
+Discussion
+A leading theory to explain the limited overlap between known eQTLs 
+and genetic effects on complex traits is that known eQTLs are primarily 
+large effects that are shared across cell types, but complex traits are 
+primarily driven by weak eQTLs that are cell-type specific3,36. Our unbi-
+ased quantification of eQTLs using single-cell RNA-seq supports this 
+hypothesis: cell-type-specific eQTLs are enriched in key gene features 
+and complex trait heritability, unlike cell-type-shared eQTLs. This sug-
+gests that the missing gene regulation underlying complex traits, like 
+the missing heritability of complex traits12,37, will be primarily explained 
+by eQTLs that are not individually detectable without massive sample 
+sizes38. We also established that eQTL cell-type specificity is a robust 
+gene feature that is about two-fold enriched in trans compared with cis 
+regulation and is associated with distal cis regulation, higher selective 
+constraint, more enhancers and greater gene network connectivity.
+Unlike standard eQTL studies that seek individual SNP effects, CIGMA 
+quantifies variance explained by eQTLs in a set of SNPs. CIGMA has 
+disadvantages: its estimates are noisier, it cannot colocalize GWAS 
+hits39– 41, and it does not account for non-Gaussianity42– 44 or complex 
+cell type relationships45. But CIGMA eliminates biases from uneven 
+eQTL detection power, which deplete known eQTLs in tissue-specificity 
+and cell-type-specificity, enhancers, distance to TSS and fitness rel-
+evance3,46,47. These biases from detection power are also reduced in 
+known eQTLs that are context-specific11,22,23, non-primary effects in a 
+locus48– 50 or identified in individual cell types9,10,51.
+cis
+0
+0.01
+0.02
+0.03
+0.04
+Heritability (h2)
+Speci/f_ic
+Shared
+1 3 5 7 9 11 13 15 17 19 21
+Chromosome
+20
+15
+10
+5
+0
+5
+10
+15
+20
+–log10(P)
+Cell-type-speci/f_ic genetic effects (v)
+Cell-type-speci/f_ic residual interindividual effects (w)
+0 20 40 60
+–log10(P(v)) in OneK1K
+0
+2
+4
+6
+8
+–log10(P(v)) in CLUES
+0
+0.1
+0.2
+0.3
+0.4
+0.5
+cis variance
+P = 1.50 × 10–4
+P = 0.110
+More constrained
+Shared
+Speci/f_ic
+P = 0.033
+P = 4.03 × 10–3
+More enhancers
+P = 0.060
+P = 0.472
+More connected
+0.18 0.46 0.76 1.06 1.45
+LOEUF bin
+0.5
+0.6
+0.7
+0.8
+0.9
+P = 5.26 × 10–3
+1 5 8 10 13 16 20 25 33 50
+Enhancer number bin
+P = 5.47 × 10–4
+66 326 586 846 1,106
+Connected rank bin
+P = 0.900
+a b c
+d
+Speci/f_icity /(g
+2 + )¯¯
+Fig. 5 | Replicating properties of cis  eQTL specificity in CLUES and ImmVar. 
+a, Median cell-type-shared and cell-type-specific cis  heritabilities across 10,553 
+genes (Methods). Error bars represent 95% confidence intervals based on 
+bootstrapping genes. b, −log 10(P)-values for cell-type-specific genetic and 
+residual interindividual effects across 10,553 genes (two-sided Wald test). 
+Dashed lines show Bonferroni significance ( P = 4.7 × 10−6 ). The −log 10(P)-values 
+are capped at 20 for visibility. c, Comparison of cs-eGene P -values between 
+OneK1K (Fig.  3b) and CLUES across 9,888 genes. d , Shared and specific eQTL 
+strengths binned by deciles of the transcriptome based on LOEUF , enhancer 
+counts and gene network connectivity. In total, 2,325 genes were included, of 
+which 2,310, 2,324 and 1,300 genes had measured LOEUF , enhancer counts and 
+connectivity, respectively. Points show means (top) or medians (bottom); error 
+bars show 95% bootstrap confidence intervals; and x -axis ticks show median 
+gene feature values. P -values come from meta-regression (two-sided t-test), 
+and the asterisk in the ‘connected rank’ panel indicates shared eQTLs are 
+enriched in the least-connected decile ( P = 4 × 10−5 , two-sided t-test).
+
+=== PDF PAGE 8 ===
+8 | Nature | www.nature.com
+Article
+Our approach has limitations. First, our use of pseudobulk data 
+ignores eQTL variation within cell types, decreasing estimates of genetic 
+variance and specificity (Extended Data Fig. 1b). We expect that finer 
+cell-type partitions or continuous cell states will further enrich eQTL 
+specificity in complex trait heritability based on population genetic 
+theory24 and previous eQTL studies8,41,52– 54. Second, cell-type-specific 
+eQTLs can depend on measurement scale55, but this is unlikely to affect 
+our conclusions: we confirmed our results on two scales; we controlled 
+for differential expression across cell types; and confounding by shared 
+eQTLs would only conservatively bias eQTL specificity. Finally, we did 
+not study case–control differences in eQTL specificity in CLUES, which 
+could help identify key disease genes and cell types56.
+Online content
+Any methods, additional references, Nature Portfolio reporting summa-
+ries, source data, extended data, supplementary information, acknowl-
+edgements, peer review information; details of author contributions 
+and competing interests; and statements of data and code availability 
+are available at https://doi.org/10.1038/s41586-026-10577-6.
+1. Maurano, M. T. et al. Systematic localization of common disease-associated variation in 
+regulatory DNA. Science 337, 1190–1195 (2012).
+2. GTEx Consortium. The GTEx consortium atlas of genetic regulatory effects across human 
+tissues. Science 369, 1318–1330 (2020).
+3. Mostafavi, H., Spence, J. P., Naqvi, S. & Pritchard, J. K. Systematic differences in discovery 
+of genetic effects on gene expression and complex traits. Nat. Genet. 55, 1866–1875 
+(2023).
+4. Connally, N. J. et al. The missing link between genetic association and regulatory 
+function. eLife 11, e74970 (2022).
+5. Yao, D. W., O’Connor, L. J., Price, A. L. & Gusev, A. Quantifying genetic effects on disease 
+mediated by assayed gene expression levels. Nat. Genet. 52, 626–633 (2020).
+6. Weiner, D. J., Gazal, S., Robinson, E. B. & O’Connor, L. J. Partitioning gene-mediated 
+disease heritability without eQTLs. Am. J. Hum. Genet. 109, 405–416 (2022).
+7. Emani, P. S. et al. Single-cell genomics and regulatory networks for 388 human brains. 
+Science 384, eadi5199 (2024).
+8. Nathan, A. et al. Single-cell eQTL models reveal dynamic T cell state dependence of 
+disease loci. Nature 606, 120–128 (2022).
+9. Perez, R. K. et al. Single-cell RNA-seq reveals cell type–specific molecular and genetic 
+associations to lupus. Science 376, eabf1970 (2022).
+10. Yazar, S. et al. Single-cell eQTL mapping identifies cell type–specific genetic control of 
+autoimmune disease. Science 376, eabf3041 (2022).
+11. Krockenberger, L. et al. FastGxC: fast and powerful context-specific eQTL mapping in 
+bulk and single-cell data. Cell Genomics https://doi.org/10.1016/j.xgen.2026.101250 
+(2025).
+12. Yang, J. et al. Common SNPs explain a large proportion of heritability for human height. 
+Nat. Genet. 42, 565–569 (2010).
+13. Price, A. L. et al. Single-tissue and cross-tissue heritability of gene expression via 
+identity-by-descent in related or unrelated individuals. PLoS Genet. 7, e1001317 (2011).
+14. Wheeler, H. E. et al. Survey of the heritability and sparse architecture of gene expression 
+traits across human tissues. PLoS Genet. 12, e1006423 (2016).
+15. Loh, P.-R. et al. Contrasting genetic architectures of schizophrenia and other complex 
+diseases using fast variance-components analysis. Nat. Genet. 47, 1385–1392 (2015).
+16. Dahl, A. et al. A robust method uncovers significant context-specific heritability in diverse 
+complex traits. Am. J. Hum. Genet. 106, 71–91 (2020).
+17. Onengut-Gumuscu, S. et al. Fine mapping of type 1 diabetes susceptibility loci and 
+evidence for colocalization of causal variants with lymphoid gene enhancers. Nat. Genet. 
+47, 381–386 (2015).
+18. Oelen, R. et al. Single-cell RNA-sequencing of peripheral blood mononuclear cells 
+reveals widespread, context-specific gene expression regulation upon pathogenic 
+exposure. Nat. Commun. 13, 3267 (2022).
+19. Strober, B. J. et al. Dynamic genetic regulation of gene expression during cellular 
+differentiation. Science 364, 1287–1290 (2019).
+20. Lin, W. et al. Disease-associated loci share properties with response eQTLs under common 
+environmental exposures. Preprint at bioRxiv https://doi.org/10.1101/2025.04.30.651602 
+(2025).
+21. Karczewski, K. J. et al. The mutational constraint spectrum quantified from variation in 
+141,456 humans. Nature 581, 434–443 (2020).
+22. GTEx Consortium. Genetic effects on gene expression across human tissues. Nature 550, 
+204–213 (2017).
+23. Grundberg, E. et al. Mapping cis- and trans-regulatory effects across multiple tissues in 
+twins. Nat. Genet. 44, 1084–1089 (2012).
+24. Spence, J. P. et al. Specificity, length and luck drive gene rankings in association studies. 
+Nature 649, 918–925 (2026).
+25. Wang, X. & Goldstein, D. B. Enhancer domains predict gene pathogenicity and inform 
+gene discovery in complex disease. Am. J. Hum. Genet. 106, 215–233 (2020).
+26. Xu, S. et al. Using clusterProfiler to characterize multiomics data. Nat. Protoc. 19,  
+3292–3320 (2024).
+27. Ochoa, D. et al. The next-generation Open Targets Platform: reimagined, redesigned, 
+rebuilt. Nucleic Acids Res. 51, D1353–D1359 (2023).
+28. Karczewski, K. J. et al. Systematic single-variant and gene-based association testing of 
+thousands of phenotypes in 394,841 UK Biobank exomes. Cell Genom. 2, 100168 (2022).
+29. Zhang, K. et al. A single-cell atlas of chromatin accessibility in the human genome. Cell 
+184, 5985–6001 (2021).
+30. Finucane, H. K. et al. Heritability enrichment of specifically expressed genes identifies 
+disease-relevant tissues and cell types. Nat. Genet. 50, 621–629 (2018).
+31. Yang, Y. et al. Investigating the shared genetic architecture between multiple sclerosis 
+and inflammatory bowel diseases. Nat. Commun. 12, 5641 (2021).
+32. Blanco, P. et al. Increase in activated CD8+ T lymphocytes expressing perforin and 
+granzyme B correlates with disease activity in patients with systemic lupus erythematosus. 
+Arthritis Rheum. 52, 201–211 (2005).
+33. Buang, N. et al. Type I interferons affect the metabolic fitness of CD8+ T cells from patients 
+with systemic lupus erythematosus. Nat. Commun. 12, 1980 (2021).
+34. McKinney, E. F., Lee, J. C., Jayne, D. R. W., Lyons, P. A. & Smith, K. G. C. T-cell exhaustion, 
+co-stimulation and clinical outcome in autoimmunity and infection. Nature 523, 612–616 
+(2015).
+35. Khunsriraksakul, C. et al. Multi-ancestry and multi-trait genome-wide association meta- 
+analyses inform clinical risk prediction for systemic lupus erythematosus. Nat. Commun. 
+14, 668 (2023).
+36. Farh, K. K.-H. et al. Genetic and epigenetic fine mapping of causal autoimmune disease 
+variants. Nature 518, 337–343 (2015).
+37. Manolio, T. A. et al. Finding the missing heritability of complex diseases. Nature 461,  
+747–753 (2009).
+38. Yengo, L. et al. A saturated map of common genetic variants associated with human height. 
+Nature 610, 704–712 (2022).
+39. Giambartolomei, C. et al. Bayesian test for colocalisation between pairs of genetic 
+association studies using summary statistics. PLoS Genet. 10, e1004383 (2014).
+40. Hormozdiari, F. et al. Colocalization of GWAS and eQTL signals detects target genes.  
+Am. J. Hum. Genet. 99, 1245–1260 (2016).
+41. Mitchel, J. et al. A single-cell genetic colocalization test improves power and resolves 
+disease-mediating cell types. Preprint at bioRxiv https://doi.org/10.1101/2025.10.10.681685 
+(2025).
+42. Zhang, Z. E., Kim, A., Suboc, N., Mancuso, N. & Gazal, S. Efficient count-based models 
+improve power and robustness for large-scale single-cell eQTL mapping. Preprint at 
+medRxiv https://doi.org/10.1101/2025.01.18.25320755 (2025).
+43. Zhou, W. et al. Efficient and accurate mixed model association tool for single-cell eQTL 
+analysis. Preprint at medRxiv https://doi.org/10.1101/2024.05.15.24307317 (2024).
+44. Engelmann, J. P., Palma, A., Tomczak, J. M., Theis, F. J. & Casale, F. P. Mixed models with 
+multiple instance learning. Preprint at arxiv.org/abs/2311.02455 (2024).
+45. Urbut, S. M., Wang, G., Carbonetto, P. & Stephens, M. Flexible statistical methods for 
+estimating and testing effects in genomic studies with multiple conditions. Nat. Genet. 
+51, 187–195 (2019).
+46. Gamazon, E. R. et al. Using an atlas of gene regulation across 44 human tissues to inform 
+complex disease- and trait-associated variation. Nat. Genet. 50, 956–967 (2018).
+47. Hormozdiari, F. et al. Leveraging molecular quantitative trait loci to understand the 
+genetic architecture of diseases and complex traits. Nat. Genet. 50, 1041–1047 (2018).
+48. Dobbyn, A. et al. Landscape of conditional eQTL in dorsolateral prefrontal cortex and 
+co-localization with schizophrenia GWAS. Am. J. Hum. Genet. 102, 1169–1184 (2018).
+49. Zeng, B. et al. Multi-ancestry eQTL meta-analysis of human brain identifies candidate 
+causal variants for brain-related traits. Nat. Genet. 54, 161–169 (2022).
+50. Brotman, S. M. et al. Adipose tissue eQTL meta-analysis highlights the contribution  
+of allelic heterogeneity to gene expression regulation and cardiometabolic traits.  
+Nat. Genet. 57, 180–192 (2025).
+51. Natri, H. M. et al. Cell-type-specific and disease-associated expression quantitative trait 
+loci in the human lung. Nat. Genet. 56, 595–604 (2024).
+52. Soskic, B. et al. Immune disease risk variants regulate gene expression dynamics during 
+CD4+ T cell activation. Nat. Genet. 54, 817–826 (2022).
+53. Popp, J. M. et al. Cell type and dynamic state govern genetic regulation of gene expression 
+in heterogeneous differentiating cultures. Cell Genom. 4, 100701 (2024).
+54. Qi, G. et al. Transcriptome-wide association studies at cell-state level using single-cell 
+eQTL data. Cell Genom. 6, 101060 (2026).
+55. Ahlmann-Eltze, C. & Huber, W. Comparison of transformations for single-cell RNA-seq data. 
+Nat. Methods 20, 665–672 (2023).
+56. Liu, X., Li, Y. I. & Pritchard, J. K. Trans effects on gene expression can drive omnigenic 
+inheritance. Cell 177, 1022–1034 (2019).
+Publisher’s note Springer Nature remains neutral with regard to jurisdictional claims in 
+published maps and institutional affiliations.
+Open Access This article is licensed under a Creative Commons Attribution- 
+NonCommercial-NoDerivatives 4.0 International License, which permits any 
+non-commercial use, sharing, distribution and reproduction in any medium or 
+format, as long as you give appropriate credit to the original author(s) and the source, provide 
+a link to the Creative Commons licence, and indicate if you modified the licensed material.  
+You do not have permission under this licence to share adapted material derived from this 
+article or parts of it. The images or other third party material in this article are included in the 
+article’s Creative Commons licence, unless indicated otherwise in a credit line to the material. 
+If material is not included in the article’s Creative Commons licence and your intended use is 
+not permitted by statutory regulation or exceeds the permitted use, you will need to obtain 
+permission directly from the copyright holder. To view a copy of this licence, visit http://
+creativecommons.org/licenses/by-nc-nd/4.0/.
+© The Author(s) 2026
+
+=== PDF PAGE 9 ===
+Methods
+CIGMA
+We developed CIGMA to unbiasedly quantify cell-type-shared and 
+cell-type-specific eQTLs in scRNA-seq data. CIGMA avoids bias 
+from eQTL detection power by using a linear mixed model, similar 
+to the GREML model of complex trait heritability 12. CIGMA models 
+cell-type-specific pseudobulk data, which is computed by averaging 
+across all cells in predefined cell types, one gene at a time. Mathemati-
+cally, CIGMA models eQTL l in cell type c as the sum of a cell-type-shared 
+effect (α l) and a cell-type-specific effect (γlc):
+∑Yμ Gα γe ϵ=+ (+ )+ + (1)ic c
+l
+L
+il l lc ic ic
+=1
+Yic is the pseudobulk gene expression for individual i and cell type c.  
+μ c captures the average expression in cell type c across individuals.  
+Gil is the genotype for individual i at eQTL l, with cell-type-shared and 
+cell-type-specific random effects: αN σL(0,/ )l g
+2iid/uni223C and γN vL(0,/ )lc c
+ind . 
+The residual interindividual term, e , models nongenetic variation 
+across individuals as well as unmodelled genetic variation and is also 
+partitioned into shared and specific random effects ( σ e
+2 and w c)57. 
+Finally, ϵ ic models variation across cells from individual i  and cell 
+type c, which may reflect experimental noise or cell subtypes and 
+states. We use the cell-level data to precompute and subtract the 
+cell-to-cell variation per individual and cell type, defined as the 
+empirical variance across cells: /uni2254δ yY ϵ∑( −) ≈v ar()ic nn s
+n
+ics ic ic
+1
+(− 1) =1
+2
+ic ic
+ic , 
+where nic is the number of cells for individual i  in cell type c  and y ics 
+is expression in cell s (Supplementary Note 1). In practice, we required 
+each cell type to have more than 10 cells per individual 57. CIGMA 
+simplifies to the additive model, GREML, if v c, wc and δ  are 0 (ref. 12) 
+and simplifies to our previous CTMM model if genetic effects are 0  
+(ref. 57).
+Algorithmically, CIGMA inputs genotype data and cell-type-specific 
+pseudobulk for one gene. CIGMA outputs cell-type-shared ( σ g
+2)  
+and cell-type-specific (v ) genetic variances, as well as shared ( σ e
+2)  
+and specific (w) residual interindividual variances. We then define 
+specificity
+v
+σv(+ )g
+2/uni2254, where v  is the average of vc over cell types. App-
+roximately, specificity ≈ 1 − rg, where rg is the genetic correlation across 
+cell types. We define heritability relative to total interindividual vari-
+ance, /uni2254σ σv σw++ +etot
+2
+g
+22 , with h
+σ
+σshared
+2 g
+2
+tot
+2/uni2254 and h
+v
+σspecific
+2
+tot
+2/uni2254.
+CIGMA can jointly fit multiple genotype matrices (Supplementary 
+Note 1), such as cis and trans regions. In this case, CIGMA outputs esti-
+mates of σ g
+2 and v for each input genotype matrix.
+CIGMA can also fit a ‘Full’ model of genetic covariance across cell 
+types by /uni223CγN V(0,)l,
+iid , with σ =0g
+2  for identification 57 (Supplementary 
+Note 1). The simpler ‘Free’ model in equation (1) corresponds to assum-
+ing that V σI cc v=+ {= ′}cc c′g
+2  for all c and c′, that is, that cell types are 
+independent conditional on the effect that is shared across all cell 
+types. We show transcriptome-wide average results from the Full 
+model in Fig. 3f, but all other main text results use the simpler Free 
+model given the complexity and noise of scRNA-seq data at current 
+sample sizes. Importantly, we demonstrate using theory (Supple-
+mentary Note 1.4) and simulations (Extended Data Fig. 3) that the  
+Free model is not biased under the more realistic Full model: σ g
+2 targets 
+the average off-diagonal entry in V , and σ v+g
+2  targets the average 
+diagonal entry.
+Fitting CIGMA
+We used Haseman–Elston (HE) regression to fit the parameters of 
+CIGMA (Supplementary Note 1). HE regression is a computationally 
+efficient and unbiased method-of-moments approach, making it suit-
+able for aggregating inference across large-scale genomic datasets. 
+Fixed effects were estimated using ordinary least squares.
+We test the parameters of CIGMA with a Wald test using jackknife- 
+based precision matrix estimates, as in CTMM57. T o test for cell-type- 
+specific genetic effects, we evaluated the null hypothesis that v = 0, 
+that is, that there are no cell-type-specific eQTLs. We used a Wald F-test 
+with C numerator degrees of freedom and N − R denominator degrees 
+of freedom, where C and N are the number of cell types and individuals, 
+and R is the number of parameters in the model (including covariates). 
+We use the same framework to test the null hypothesis of no 
+cell-type-specific residual interindividual effects (w = 0) and to test for 
+shared eQTLs (σ =0g
+2 ).
+For completeness, we also implemented restricted maximum like-
+lihood (REML) in R using optim and in Python using scipy, as it is more 
+statistically efficient than HE regression (Supplementary Note 1). We 
+incorporated Cholesky decompositions to speed up calculations, which 
+reduced REML runtime from about 6 h to 20 min per gene with 1,000 
+individuals and four cell types in R. In practice, we use HE regression 
+because it is much faster (about 30 s compared with 2 h per gene in our 
+cis OneK1K analyses; Supplementary Table 16) and REML is biased by 
+noisy estimates of δ (ref. 57) (Extended Data Fig. 2h).
+CIGMA partitions bulk heritability and specificity
+Bulk tissues dampen cell-type-specific eQTLs by mixing cell types. The 
+average cell-type-specific genetic variance per cell type is v, but in bulk 
+it is /uni2254vπ σv∑( +)cc ccbulk
+22 , where π c and σ c
+2 are the mean and variance of 
+cell-type proportion c over individuals13 (Supplementary Note 1). In 
+practice, vbulk is much lower than v, and provably so when all vc are equal 
+(Supplementary Note 1). As a consequence, the bulk genetic variance 
+and specificity are deflated:
+σv
+vσ v
+Bulk geneticv ariance= +;
+Bulk specificity= /( +)
+g
+2
+bulk
+bulk g
+2
+bulk
+The same deflation applies to the specific residual interindividual 
+variance, so the net effect on heritability depends on the relative spe-
+cificities of genetic and residual interindividual variance.
+When an additive model is fit to bulk expression, the variance 
+explained by cell-type-specific eQTLs is further reduced (approximately 
+πv∑ cc c
+2 ) because the additive model cannot capture variation in cell- 
+type proportion across individuals (Supplementary Note 1).
+Simulations
+Simulation using OneK1K data. T o evaluate the performance of  
+CIGMA, we conducted simulations on 10,228 genes from the OneK1K 
+scRNA-seq dataset8. We simulated two distinct schemes: (1) permuta-
+tion of genotypes across individuals, which disrupted the association 
+between genotype and gene expression, effectively removing all eQTLs 
+while preserving environmental effects and differences between cell 
+types; and (2) permutation of cells across different cell types for each 
+individual, which eliminated cell-type-specific effects—both genetic 
+and environmental—while maintaining shared effects. We excluded 
+genes with negative sums of genetic and residual interindividual vari-
+ances (that is, σ <0tot
+2 ), leaving 9,064 and 8,453 genes in genotype per-
+mutation and cell permutation, respectively.
+Pseudobulk-level simulations. We simulated cell-type-specific pseu-
+dobulk for each individual from equation (1). Model parameters were 
+chosen to match our estimates from the OneK1K dataset (Supplemen-
+tary Note 1). We evaluated a range of scRNA-seq data parameters, includ-
+ing the number of individuals, cell type proportions, number of cell 
+types, number of cells, estimation error of cell-to-cell noise, cell-type 
+specificity and the distribution of specificity across cell types. We var-
+ied one parameter at a time, with the full list of simulated parameters 
+provided in Supplementary Table 17. For each parameter setting, we ran 
+1,000 replicate simulations.
+
+=== PDF PAGE 10 ===
+Article
+Comparison with other GREML-based methods. We fit GREML using 
+the expectation-maximization algorithm of GCTA12 (Supplementary 
+Fig. 40). We applied GCTA to pseudobulk scRNA-seq data in two ways: 
+(1) to the pseudobulk of each cell type separately (that is, columns  
+of Y in equation (1)) and then averaging results; or (2) to OP, which  
+averages together all cells, correcting for cell type proportion. In  
+the OneK1K real data analysis, we corrected for the same covariates 
+as in CIGMA, except for experimental batches, as GCTA cannot model 
+such random effects. In Fig. 2c, GREML standard errors for heritability 
+increase with the number of cells because the total variance decreases, 
+making the ratio noisier.
+We applied GxEMM16 to OP gene expression using its Free model 
+and method of moments, treating cell type proportions as the ‘envi-
+ronment’ . Like CIGMA, GxEMM partitions the genetic and nongenetic 
+variance of gene expression into cell-type-shared and cell-type-specific 
+components. However, GxEMM does not account for cell-to-cell varia-
+tion, deflating estimates of eQTL variance, inflating estimates of non-
+genetic variation, and causing a complex mix of upward and downward 
+biases in eQTL and nongenetic cell-type specificity57 (Supplementary 
+Fig. 7). The simple Wald test in GxEMM uses a parametric approximation 
+to the precision matrix, which is not robust in current scRNA-seq data.
+We applied the multi-trait mixed model BOL T-REML15 to the matrix of 
+cell-type-specific pseudobulk (CTP), treating each cell type as a ‘trait’ . 
+Like Full model of CIGMA, BOL T-REML estimates general genetic and 
+nongenetic covariance matrices across cell types, which we convert 
+to estimates of cell-type-shared and cell-type-specific eQTL variance 
+post hoc (Supplementary Note 1.4). BOL T-REML uses REML rather than 
+method of moments and restricts to nonnegative variance component 
+estimates, which adds power in complex traits but causes bias in small 
+sample sizes58.
+We applied the orthogonal tissue decomposition framework14 to the 
+CTP matrix to construct cell-type-shared and cell-type-specific vectors 
+of expression. We defined shared expression as the average across cell 
+types and then fit GREML (with GCTA) including cell-type proportions 
+as fixed effects. We defined specific expression as the residual CTP 
+matrix after subtracting shared expression, then applied GREML to 
+each residualized cell type, then averaged heritability estimates over 
+cell types.
+Importantly, our results do not undermine the use of GxEMM, BOL T- 
+REML and orthogonal tissue decomposition for their intended uses.  
+Rather, the primary conclusion from our simulations is that standard 
+heritability methods cannot be directly applied to current population- 
+scale scRNA-seq datasets.
+Analysis of scRNA-seq data from OneK1K
+We applied CIGMA to the scRNA-seq data from PBMCs in the OneK1K 
+cohort10. After following the quality control in ref. 10, the data span 
+1.27 million PBMCs from 981 individuals. Cells were classified into 14 
+cell types: CD4+ naive and central memory T cell (CD4NC), CD4+ effector 
+memory T cell (CD4ET), CD4 + SOX4 T cell (CD4SOX4), CD8+ naive and 
+central memory T cell (CD8NC), CD8+ effector memory T cell (CD8ET), 
+CD8 + S100B T cell (CD8S100B), natural killer cell (NK), natural killer cell 
+recruiting (NKR), immature and naive B cell (BIN), memory B cell (BMem), 
+plasma cell (Plasma), classical monocyte (MonoC) and non-classical 
+monocyte (MonoNC), and dendritic cell. We used SNPs with MAF > 5%, 
+except in robustness analyses, relaxing this threshold to 1% or 0% (Sup-
+plementary Figs. 20 and 26).
+For CIGMA, we conducted additional quality controls. For the one 
+individual with technical replicates, we retained only the replicate 
+with the largest number of cells. T o approximately satisfy the Gauss-
+ian assumption in CIGMA, we required each cell type to have at least 
+10 cells in at least 90% of individuals, which is satisfied by seven cell 
+types: CD4NC, CD4ET, CD8ET, CD8NC, NK, BIN and BMem. We retained 10,288 
+autosomal genes with nonzero expression in more than 10% of indi-
+viduals within each of these seven cell types. Finally, we included only 
+the 928 individuals who each had more than 10 cells in each of these 
+seven cell types.
+T o generate pseudobulk inputs to CIGMA, we normalized the total 
+unique molecular identifier counts of each cell across all genes to 10,000 
+counts and then log-transformed, that is, we used log10(CP10K + 1). For 
+each gene, we computed Yic and δ ic. T o simplify interpretation, we scale 
+expression such that OP has variance 1 (Supplementary Note 1); this also 
+accounts for potential confounding due to the relationship between 
+expression variance and evolutionary constraint59. We adjusted for 
+fixed effects, including sex, age, the first principal component (PC) of 
+OP expression, and the first six genotype PCs (Supplementary Fig. 41). 
+Cells were randomly pooled into pools in scRNA-seq. The investigators 
+were blinded to group allocation during data collection and analy -
+sis. Experimental batches were adjusted as random effects. We fit 
+age as a categorical covariate after binning into 5-year intervals, with 
+additional bins for individuals younger than 25 years and older than 
+90 years. Genotype principal component analysis (PCA) was conducted 
+using SNPs pruned with PLINK60 to remove those in high linkage dis-
+equilibrium (r2 > 0.2) in a sliding window of 50 SNPs and a step size of  
+five SNPs.
+We fit three different models using CIGMA. First, most of our analy-
+ses use only cis SNPs, defined as SNPs within 500 kb of the gene body. 
+These analyses identified cs-eGenes and quantified cis heritability and 
+specificity. Second, we extended these analyses to jointly fit cis and 
+trans SNPs, where trans SNPs are defined as SNPs on chromosomes 
+other than the focal gene. Third, we fit the general model of genetic 
+covariance of CIGMA across cell types. The latter two models are noisy 
+at current sample sizes, so we analyse only their transcriptome-wide 
+averages. The first model is simpler and provides more robust estimates 
+for individual genes, so we studied its results in extensive downstream 
+analyses.
+T o aggregate heritability across genes, we calculated the median 
+heritability for 9,065 genes with positive interindividual variance 
+(σ >0tot
+2 ; Fig. 3a), as negative σ tot
+2  renders heritability meaningless61. We 
+confirmed these results using (1) the mean heritability rather than the 
+median, after slightly strengthening the filter on σ tot
+2 ; (2) the ratio of 
+mean genetic variance to mean total interindividual variance; and  
+(3) varying quality control thresholds on the standard error of herit-
+ability or total interindividual variances (Extended Data Fig. 4). T o test 
+differences in specificity between cis and trans, we performed 9,999 
+permutations, shuffling the heritability estimates between cis and 
+trans for each gene.
+We tested robustness of cis and trans estimates to several analytical 
+choices. First, we varied our baseline covariate model, which treats 
+batch as a cell-type-shared random effect and other covariates as 
+cell-type-shared fixed effects. We found that cis, trans and environ-
+mental estimates were similar when we made either or both of these 
+effects cell-type specific (all r > 0.99, 0.94 and 0.94, respectively; Sup-
+plementary Figs. 15–17). Second, our main analysis uses six genetic 
+PCs to control for population stratification. We found that estimates 
+were similar when we instead used four or eight PCs (all r > 0.99; Sup-
+plementary Fig. 18). Third, as interaction effects can depend on phe-
+notype scale, we tested a different transformation of the underlying 
+scRNA-seq by changing the pseudocount and found that estimates 
+were consistent (all r > 0.95; Supplementary Fig. 19).
+Analysis of scRNA-seq data from CLUES and ImmVar
+We applied CIGMA to the scRNA-seq dataset from the CLUES and the 
+ImmVar9. After quality control in the original study, this dataset spans 
+1.2 million PBMCs from 162 patients with SLE and 99 healthy controls. 
+Cells were clustered into 11 cell types: CD14+ classical monocytes (cM), 
+CD16+ non-classical monocytes (ncM), conventional dendritic cells 
+(cDC), plasmacytoid dendritic cells (pDC), CD4+ T cells (CD4), CD8+ 
+T cells (CD8), NKs, B cells (B), plasmablasts (PB), proliferating T and NKs 
+(Prolif), and progenitor cells (Progen). For our analysis, we excluded 
+
+=== PDF PAGE 11 ===
+individuals without genotype data and focused on the three largest 
+subgroups analysed in ref. 9: 70 controls of European ancestry, 70 
+patients of European ancestry and 75 patients of Asian ancestry.
+For CIGMA, we performed two types of analyses: (1) separate CIGMA 
+analyses for each subgroup followed by meta-analysis; and (2) a mega- 
+analysis jointly analysing all three subgroups in a single CIGMA analysis. 
+In the first approach, we conducted quality controls independently for 
+each subgroup using the same procedure as in OneK1K. After quality 
+control, we retained 11,424, 10,842 and 10,786 genes in 70 European 
+controls, 65 European patients and 74 Asian patients, respectively, 
+involving the seven largest cell types: B, NK, CD4, CD8, cDC, cM and 
+ncM. In CIGMA, we corrected for sex, age, cell processing batch and 
+10 PCs of OP expression as fixed effects and sequencing batch as a 
+random effect. For age, similar to OneK1K, we categorized the cohort 
+into 5-year intervals from 20 years to 70 years, with an additional 
+group for individuals older than 70 years. Moreover, we corrected for 
+three, four and four genotype PCs as fixed effects in European con-
+trols, European patients and Asian patients, respectively, based on 
+elbows in the eigenvalue scree plots (Supplementary Fig. 41). Then, 
+we conducted a meta-analysis on 10,553 genes common across all 
+three subgroups. Cell-type-shared and cell-type-specific estimates 
+from CIGMA were combined using inverse-variance weighting, with 
+precision matrices estimated by jackknife resampling. For heritabil-
+ity and specificity, which have noisier precision estimates, we used 
+sample-size weighting. Meta-analysed cell-type-specific genetic and 
+residual interindividual effects were tested using Wald tests as in 
+individual runs of CIGMA, using meta-analysed precision estimates 
+across subgroups. In the mega-analysis, we analysed the same set of 
+10,553 genes across all 209 individuals. Apart from covariates used 
+in the subgroup-based analyses, the mega-analysis adjusted for five 
+genotype PCs, health state (case–control), cohort (CLUES–ImmVar)  
+and ancestry.
+We use Pearson correlation across genes to measure replication 
+across cohorts. Owing to estimation error, these correlations will be 
+below 1 even when the true underlying parameters are identical across 
+cohorts. T o model this null, we draw CIGMA pseudo-estimates from 
+Gaussian distributions, in which the mean for each gene is its weighted 
+average across cohorts and the standard deviation for the estimate of 
+each cohort is given by its real data standard error. We simulate 200 
+datasets per gene to calculate empirical P-values.
+Gene feature analysis
+T o investigate attributes related to cs-eGenes, we evaluated three 
+gene-level features: LOEUF , enhancer count and connectedness in 
+gene co-expression networks. LOEUF scores quantify the tolerance 
+of a gene to loss-of-function mutations, serving as an approximate 
+measure of selection strength acting on the gene. Genes with higher 
+LOEUF scores are more tolerant to loss-of-function mutations and less 
+conserved. We obtained LOEUF scores from the Genome Aggregation 
+Database (gnomAD) v.2.1 (ref. 21). Enhancer counts reflect the regula-
+tory complexity of a gene. We used counts from ref. 25, which were 
+derived from enhancer–gene links identified through chromatin states 
+and the association between histone modifications and gene expression 
+levels62. Gene connectedness, as defined in refs. 3,63, was assessed by 
+ranking genes based on their number of neighbours in co-expression 
+networks constructed in ref. 64. Genes with higher connectedness are 
+likelier to have regulatory effects on more genes.
+In OneK1K, we analysed 7,042 genes with positive total genetic vari-
+ances (Fig. 4a). We confirmed these results using a complete set of 
+10,035 genes, which included genes with negative total genetic vari-
+ances, and a refined subset of 6,578 genes, which excluded 464 genes 
+with specificity s.e. exceeding 100 (Supplementary Fig. 23). In CLUES 
+and ImmVar, we analysed 2,325 genes (Fig. 5d) after excluding genes 
+with specificity s.e. exceeding 100 in any subgroup or total genetic 
+variances below zero in meta-analysis. We also evaluated 3,075 genes 
+defined solely by the latter criterion, which gave qualitatively similar 
+results (Supplementary Fig. 34).
+LD score regression
+We used LD score regression (LDSC) 65 to investigate the impact of  
+cs-eGenes on complex diseases by adapting its approach for cell-type- 
+specific heritability enrichment30. We included the top 200 genes with 
+the most significant cell-type-specific genetic effects as defined by 
+P-value. We defined the genomic annotation per gene as in the cis win-
+dows for CIGMA analyses (within 500 kb of the gene body). T o validate 
+our findings, we repeated the analysis using the top 100 and 300 genes 
+and alternative window sizes of 300 kb and 700 kb.
+We tested three additional gene sets for comparison: (1) shared eGenes 
+identified by CIGMA, with the most significant cell-type-shared genetic 
+variance; (2) additively heritable genes identified by GCTA, with the most 
+significant OP heritability; and (3) DEGs identified by CIGMA, with the 
+largest variance in mean expression levels (μ). The DEG set was chosen 
+based on variance instead of significance levels because most of the 
+genes exhibited highly significant differential gene expression across cell 
+types57. We chose to threshold eGenes into discrete sets, but larger data-
+sets will enable modelling eQTL specificity as a continuous annotation.
+Our analysis included seven autoimmune diseases: ulcerative coli-
+tis, rheumatoid arthritis, primary biliary cirrhosis, multiple sclerosis, 
+SLE, Crohn’s disease and celiac disease. As negative controls, which 
+are less relevant to immune cells, we included height, coronary artery 
+disease and schizophrenia. GWAS summary statistics for these diseases 
+and traits were obtained from https://alkesgroup.broadinstitute.org/
+sumstats_formatted.
+In each analysis, LDSCs were computed using genotype data from the 
+1,000 Genomes Phase 3 European populations66, restricting the analy-
+sis to SNPs in HapMap 3 and using a window size of 1 centimorgan. We 
+removed the major histocompatibility complex (MHC) region because 
+of its unusual LD and genetic architecture. Apart from the baseline LDSC 
+model v.1.2 (refs. 65,66), we conditioned on an annotation defined by 
+all genes analysed in CIGMA so that our results are not merely biases 
+from genes included in our study.
+T o control for potential confounding due to gene length and expres-
+sion level, we compared LDSC P-values from each of the four tested 
+gene sets against matched control genes to achieve empirical P-values. 
+Control genes were selected by ranking all genes by gene length and 
+mean expression level (average OP across individuals) and identifying, 
+for each target gene, a matched gene that was (1) within ±500 gene ranks 
+for both metrics and (2) located >500 kb away from all target genes. 
+LDSC heritability enrichment analyses were then conducted on these 
+random matched genes, replicated 999 times.
+Abstract mediation model
+We applied the abstract mediation model (AMM) 6 to estimate the 
+heritability mediated by the same gene sets (cs-eGenes, sh-eGenes, 
+GCTA eGenes and DEGs) and complex traits as in LDSC analyses. We 
+estimated SNP × gene rank matrix for all genes passing quality con-
+trol in our OneK1K analysis, excluding the MHC region. For each SNP, 
+we considered the closest 50 genes and binned them as suggested in 
+ref. 6 (closest, 2nd closest, 3rd–5th, 6th–10th, 11th–20th, 21st–30th, 
+31st–40th and 41st–50th). We then estimated the fraction of herit -
+ability mediated by each bin and used these fractions to test enrich-
+ment in gene sets. Apart from individual diseases or traits, we also 
+meta-analysed blood-related diseases (ulcerative colitis, rheumatoid 
+arthritis, primary biliary cirrhosis, multiple sclerosis, Crohn’s disease, 
+celiac disease and SLE) and less-blood-related diseases (height, coro-
+nary artery disease and schizophrenia).
+Reporting summary
+Further information on research design is available in the Nature Port-
+folio Reporting Summary linked to this article.
+
+=== PDF PAGE 12 ===
+Article
+Data availability
+OneK1K single-cell gene expression and genotype data are publicly 
+available on the Gene Expression Omnibus (GEO) under accession 
+number GSE196830. For CLUES and ImmVar, single-cell gene expres-
+sion data are available via GEO at GSE174188 and genotype data are 
+available at dbGap under accession number phs002812.v1.p1. Sum-
+mary statistics for the main CIGMA analyses in OneK1K and CLUES 
+are provided in Supplementary Tables 3, 4 and 13. Additional publicly 
+available data used in this study include LOEUF scores from the Genome 
+Aggregation Database (gnomAD; https://storage.googleapis.com/
+gcp-public-data--gnomad/release/2.1.1/constraint/gnomad.v2.1.1.lof_
+metrics.by_gene.txt.bgz); enhancer counts (https://ars.els-cdn.com/
+content/image/1-s2.0-S0002929720300124-mmc2.xlsx); gene con-
+nectedness (https://zenodo.org/records/6618073)63; GWAS summary 
+statistics (https://alkesgroup.broadinstitute.org/sumstats_format-
+ted); LDSC baseline annotations and 1000 Genomes Phase 3 European 
+genotype data (https://zenodo.org/records/10515792)66; and candidate 
+cis-regulatory elements (cCREs; https://decoder-genetics.wustl.edu/
+catlasv1/humanenhancer/data/cCREs). Source data are provided with 
+this paper.
+Code availability
+The CIGMA Python package and all code used for analyses are avail-
+able on GitHub https://github.com/Minhui-Chen/CIGMA and Zenodo 
+(https://doi.org/10.5281/zenodo.19424343)67.
+ 
+57. Chen, M. & Dahl, A. A robust model for cell type-specific interindividual variation in 
+single-cell RNA sequencing data. Nat. Commun. 15, 5229 (2024).
+58. Steinsaltz, D., Dahl, A. & Wachter, K. W. Statistical properties of simple random-effects 
+models for genetic heritability. Electron. J. Stat. 12, 321–358 (2018).
+59. Chen, J. et al. A quantitative framework for characterizing the evolutionary history of 
+mammalian gene expression. Genome Res. 29, 53–63 (2019).
+60. Chang, C. C. et al. Second-generation PLINK: rising to the challenge of larger and richer 
+datasets. Gigascience 4, 7 (2015).
+61. Steinsaltz, D., Dahl, A. & Wachter, K. W. On negative heritability and negative estimates of 
+heritability. Genetics 215, 343–357 (2020).
+62. Liu, Y., Sarkar, A., Kheradpour, P., Ernst, J. & Kellis, M. Evidence of reduced recombination 
+rate in human regulatory domains. Genome Biol. 18, 193 (2017).
+63. Mostafavi, H. Supplementary Data for ‘Systematic differences in discovery of genetic 
+effects on gene expression and complex traits’. Zenodo. https://doi.org/10.5281/zenodo. 
+6618073 (2023).
+64. Saha, A. et al. Co-expression networks reveal the tissue-specific regulation of transcription 
+and splicing. Genome Res. 27, 1843–1858 (2017).
+65. Finucane, H. K. et al. Partitioning heritability by functional annotation using genome-wide 
+association summary statistics. Nat. Genet. 47, 1228–1235 (2015).
+66. Gazal, S. S-LDSC reference files. Zenodo. https://doi.org/10.5281/zenodo.10515792 (2024).
+67. Chen, M. et al. Cell type-specific eQTLs underlie the genetic architecture of complex 
+traits. Zenodo. https://doi.org/10.5281/zenodo.19424343 (2026).
+68. Wright, F. A. et al. Heritability and genomics of gene expression in peripheral blood.  
+Nat. Genet. 46, 430–437 (2014).
+69. Gusev, A. et al. Integrative approaches for large-scale transcriptome-wide association 
+studies. Nat. Genet. 48, 245–252 (2016).
+70. Lloyd-Jones, L. R. et al. The genetic architecture of gene expression in peripheral blood. 
+Am. J. Hum. Genet. 100, 228–237 (2017).
+71. Liu, X. et al. Functional architectures of local and distal regulation of gene expression in 
+multiple human tissues. Am. J. Hum. Genet. 100, 605–616 (2017).
+72. Kachuri, L. et al. Gene expression in African Americans, Puerto Ricans and Mexican 
+Americans reveals ancestry-specific patterns of genetic architecture. Nat. Genet. 55, 
+952–963 (2023).
+73. Saitou, M., Dahl, A., Wang, Q. & Liu, X. Allele frequency impacts the cross-ancestry 
+portability of gene expression prediction in lymphoblastoid cell lines. Am. J. Hum. Genet. 
+111, 2814–2825 (2024).
+Acknowledgements We thank the Center for Research Informatics for providing the computing 
+resources. The Center for Research Informatics is funded by the Biological Sciences Division  
+at the University of Chicago with additional funding provided by the Institute for Translational 
+Medicine, CTSA grant no. 2U54TR002389-06 from the National Institutes of Health. This work 
+was funded by the National Institute of General Medical Sciences of the National Institutes of 
+Health (R35GM150822 to A.D.).
+Author contributions M.C. and A.D. developed statistical methodology, conducted analyses 
+and wrote the paper. X.W. developed statistical methodology and conducted analyses. L.K. 
+and R.T. assisted in data analyses. J.J.B., S.P., J.F., J.E.P., B.B. and X.L. provided suggestions and 
+feedback to the manuscript.
+Competing interests The authors declare no competing interests.
+Additional information
+Supplementary information The online version contains supplementary material available at 
+https://doi.org/10.1038/s41586-026-10577-6.
+Correspondence and requests for materials should be addressed to Andy Dahl.
+Peer review information Nature thanks Shamil Sunyaev and the other, anonymous, reviewer(s) 
+for their contribution to the peer review of this work. Peer reviewer reports are available.
+Reprints and permissions information is available at http://www.nature.com/reprints.
+
+=== PDF PAGE 13 ===
+Extended Data Fig. 1 | Permuting OneK1K data validates CIGMA robustness 
+to expression levels, covarying cell types, and the count nature of scRNA-  
+seq data.  (a) The results in Fig. 2a are stratified across genes based on their 
+expression level (left) or their variance in expression (right). (b) The cell 
+permutations (as in Fig.  2a) are restricted to subsets of cell types; The x-axis 
+indicates the number of permuted cell types: 0 represents the real data analysis 
+in Fig. 3a (unpermuted), and ‘All’ represents permuting cells across all cell 
+types as in Fig. 2a. Solid lines indicate permutation across cell types within  
+the T-cell lineage (2 means CD4 ET and CD4 NC; 4 means CD4 ET, CD4 NC,  
+CD8 ET, and CD8 NC). Dashed lines indicate permutation across T- and B-cell 
+lineages (2 means CD4 NC and B IN; 4 means CD4 ET, CD4 NC, B Mem, and  
+B IN). Error bars indicate 95% confidence intervals. In (a) and (b), points show 
+transcriptome-wide medians for genes with nonnegative combined genetic 
+and residual interindividual variances. (c) (Left) The number of cells per 
+individual and cell type was limited to a specified maximum; otherwise,  
+a random subset of cells was selected. ‘All’ indicates the real OneK1K analysis,  
+in which all cells were retained, giving an average of 170 cells per individual  
+and cell type. The plot shows the median heritability for the 3,994 genes that 
+have positive combined genetic and residual interindividual variances in all 
+scenarios. (Right) A specified proportion of reads was randomly sampled  
+for each cell. The plot shows the median heritability for the 4,616 genes that 
+have positive combined genetic and residual interindividual variances in all 
+scenarios. Error bars indicate 95% confidence intervals for the medians.
+
+=== PDF PAGE 14 ===
+Article
+Extended Data Fig. 2 | CIGMA estimates of cell-type-shared and cell-type- 
+specific heritabilities in simulations.  The simulations vary seven parameters: 
+(a) the number of individuals, (b) the number of cell types, (c) cell type 
+proportions, (d) cell numbers per individual (Supplementary Note 1), (e) the 
+estimation error of cell-to-cell variation, simulated by drawn from Beta(noise 
+level, 1) distribution (Supplementary Note 1), (f) the cell-type specificity, and 
+(g) the ratio of specific genetic variance in the first cell type relative to other 
+cell types, with all other cell types having equal specific genetic variance.  
+(h) REML-based CIGMA estimates are deflated by estimation error in cell-to-cell 
+variation (using the same simulations as in e). Gray regions represent the 
+parameter values used in the baseline simulations. Red points are the true 
+heritabilities. Box plots show the distribution of estimated heritabilities from 
+1,000 replicate simulations. Each box plot shows the median, first quartile, and 
+third quartile, with whiskers extending up to 1.5 times the interquartile range. 
+Data points beyond the whiskers are outliers.
+
+=== PDF PAGE 15 ===
+Extended Data Fig. 3 | CIGMA is robust to varying genetic relationships 
+across cell types in simulations. Simulations follow the Free model, where all 
+cell types have equal eQTL covariance, except for a single pair of cell types 
+whose eQTL correlation varies from −1 to 1 (x-axis). Panels show that CIGMA’s 
+Free model nonetheless gives unbiased estimates (y-axis) for shared and 
+specific genetic variances (a), heritabilities (b, c), and specificity (d). Red points 
+are the true values. Each box plot shows the median, first quartile, and third 
+quartile across 1,000 replicate simulations, with whiskers extending up to  
+1.5 times the interquartile range.
+
+=== PDF PAGE 16 ===
+Article
+Extended Data Fig. 4 | Transcriptome-wide heritability estimates varying 
+quality control parameters.  Error bars represent 95% confidence intervals. 
+Median, Mean, and Ratio refer to three approaches to aggregate estimates 
+across genes, where Ratio refers to the ratio of transcriptome-wide means. Top 
+panel: When filtering genes based on the standard errors of shared and specific 
+heritability ( h2) at 0.1, 0.5, 1, and 10, the number of remaining genes is 4,930, 
+8,427, 9,039, and 9,814, respectively. Bottom panel: When filtering genes based 
+on the total genetic and residual interindividual variance at 0.01, 0,1, 0.2,  
+and 0.3, the number of remaining genes is 8,992, 8,090, 6,296, and 4,298, 
+respectively. Figure  3a in the Main text uses genes with positive total genetic 
+and residual interindividual variances. Supplementary Table 5 provides 
+published heritability estimates for comparison 13,14,68– 73.
+
+=== PDF PAGE 17 ===
+Extended Data Fig. 5 | Robust enrichment of gene features in eQTL specificity 
+after correcting for gene length, expression level, and mean expression 
+differentiation across cell types in OneK1K. Expression level and mean 
+expression differentiation across cell types were measured as described in 
+Fig. S22. The same set of 7,042 genes was used as in Fig.  4a, except 106 genes 
+with extreme specificity (>10 or <−10). Shared and specific eQTL strengths 
+binned by deciles of the transcriptome based on LOEUF , enhancer counts,  
+and gene network connectivity. Points show means (top) or medians (bottom); 
+error bars show 95% bootstrap confidence intervals; and x-axis ticks show 
+median gene feature values. P -values come from meta-regression (two-sided 
+t-test).
+
+=== PDF PAGE 18 ===
+Article
+Extended Data Fig. 6 | See next page for caption.
+
+=== PDF PAGE 19 ===
+Extended Data Fig. 6 | Cell-type-shared and cell-type-specific eQTL 
+variance depletion in drug target genes and burden genes.  Each panel 
+compares the mean estimates of cell-type-shared (left) and cell-type-specific 
+(right) variance explained by eQTLs in different gene sets to remaining genes, 
+shown as dashed grey lines. Top row: Gene sets are defined as drug targets for 
+each of the indicated complex traits as given by OpenTargets. Rows 2-4: Gene 
+sets are defined by having burden p < 1e-3 in UK Biobank, where p values are 
+obtained from genebass for gene burden scores based on pLoF variants (row 2), 
+missense variants (row 3), or synonymous variants (row 4). Phenotypes are 
+chosen to match those in Fig.  4b, with black and red respectively indicating 
+less-blood-related and blood-related traits. The meta-analyses are performed 
+by applying inverse-variance-weighting to each group separately. Error bars 
+represent 2 standard errors.
+
+=== PDF PAGE 20 ===
+Article
+Extended Data Fig. 7 | cCRE specificity in the top 200 shared eGenes 
+(CIGMA), cs-eGenes (CIGMA), and DEG. (Left) Fraction of cCREs active  
+in n cell types. Error bars represent standard errors estimated from 9,999 
+bootstrap resamples. (Right) The fraction of cCREs in each gene sets after 
+adjusting for control gene sets matched by gene length and mean expression 
+level (i.e. mean OP across individuals as in Fig. S22). Error bars represent 
+standard errors estimated from 999 sets of control genes.
+
+=== PDF PAGE 21 ===
+Extended Data Fig. 8 | Complex trait heritability mediated by the top 200 
+cs-eGenes, shared eGenes, bulk eGenes, and DEGs in OneK1K. Estimates 
+come from the Abstract Mediation Model (AMM). P values are obtained from 
+one-sided z-tests and provided in Table S12. Asterisks indicate p < 0.05; vertical 
+line splits less-blood-related vs blood-related traits; horizontal red line 
+indicates the null expectation for 200 random genes (out of a total of 10,178 
+genes, after excluding the MHC). (a) Shows each phenotype, and (b) performs 
+inverse-variance-weighted meta-analysis across each phenotype group.  
+CAD, coronary artery disease; SCZ, schizophrenia; UC, ulcerative colitis;  
+RA, rheumatoid arthritis; PBC, primary biliary cirrhosis; MS, multiple sclerosis; 
+SLE, systemic lupus erythematosus.
+
+=== PDF PAGE 22 ===
+Article
+Extended Data Fig. 9 | Transcriptome-wide medians of cell-type-shared 
+and cell-type-specific heritability in populations from the CLUES and the 
+ImmVar Consortium.  The plot includes the same 10,553 genes as in Fig.  5. 
+Error bars represent 95% confidence intervals based on bootstrapping genes.
+
+=== PDF PAGE 23 ===
+
+
+=== PDF PAGE 24 ===
+
+
+=== PDF PAGE 25 ===
