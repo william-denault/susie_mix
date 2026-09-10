@@ -1,2 +1,7 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Slurm requires Unix line endings, including after a Windows checkout.
+job/em_susie_mix text eol=lf
+job/em_susie_mix_array text eol=lf
+script/scan_tissue_attempt/tests/test_em_launcher.sh text eol=lf

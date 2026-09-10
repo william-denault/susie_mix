@@ -1,0 +1,17 @@
+#!/bin/bash
+# Submitted by em_susie_mix after the tissue priors have been saved.
+#SBATCH --job-name=em_susie_mix
+#SBATCH --time=23:00:00
+#SBATCH --partition=broadwl
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=40G
+
+set -euo pipefail
+module load R/4.2.0
+project_dir="$1"
+iteration_dir="$2"
+export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+Rscript --vanilla "${project_dir}/script/scan_tissue_attempt/run_em_chunk.R" \
+    "$project_dir" "$iteration_dir" "${SLURM_ARRAY_TASK_ID}"
