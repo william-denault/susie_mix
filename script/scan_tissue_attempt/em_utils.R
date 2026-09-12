@@ -87,10 +87,108 @@ em_pending_chunks <- function(iteration_dir, manifest) {
                                sprintf("chunk_%03d.done", chunks)))]
 }
 
-em_sum_pips <- function(files, fit_name, previous_priors = NULL) {
+# The categorical latent variables in SuSiE are component assignments, not
+# marginal predictor-inclusion indicators. All alpha rows belong in this
+# objective, including rows with V=0 and rows without a reported credible set.
+em_coding_availability <- function() {
+  out <- sapply(0:2, function(j) bitwAnd(1:7, bitwShiftL(1L, j)) != 0L)
+  colnames(out) <- c("additive", "recessive", "dominant")
+  out
+}
+
+em_coding_q <- function(prior, counts) {
+  available <- em_coding_availability()
+  value <- 0
+  for (i in which(rowSums(counts) > 0)) {
+    probability <- prior[available[i, ]] / sum(prior[available[i, ]])
+    mass <- counts[i, available[i, ]]
+    if (any(!is.finite(probability)) || any(probability[mass > 0] <= 0)) return(-Inf)
+    value <- value + sum(mass[mass > 0] * log(probability[mass > 0]))
+  }
+  value
+}
+
+em_coding_mstep <- function(counts, previous = rep(1/3, 3)) {
+  available <- em_coding_availability()
+  stopifnot(is.matrix(counts), identical(dim(counts), c(7L, 3L)),
+            all(is.finite(counts)), all(counts >= 0), all(counts[!available] == 0),
+            length(previous) == 3L, all(is.finite(previous)), all(previous >= 0),
+            abs(sum(previous) - 1) < 1e-8)
+  total <- sum(counts)
+  if (total == 0) return(list(prior = previous, gain = 0, status = "carried_forward_no_components"))
+  before <- em_coding_q(previous, counts)
+  if (!is.finite(before)) stop("Component posterior has support outside the starting coding prior.")
+  if (all(rowSums(counts)[1:6] == 0)) {
+    # With all three classes present in every fit, the exact M-step is the
+    # normalized sum of alpha, independent of unequal numbers of predictors.
+    prior <- colSums(counts) / total
+  } else {
+    # Missing coding classes introduce -L_g log(sum_{c in A_g} pi_c) terms.
+    # Optimize the concave objective in log weights, preserving old total
+    # mass between disconnected sets of classes (which the data cannot identify).
+    connected <- diag(TRUE, 3)
+    for (i in which(rowSums(counts) > 0)) {
+      j <- which(available[i, ])
+      connected[j, j] <- TRUE
+    }
+    for (j in 1:3) connected <- connected | outer(connected[, j], connected[j, ], "&")
+    prior <- previous
+    remaining <- 1:3
+    while (length(remaining)) {
+      group <- which(connected[remaining[1], ])
+      remaining <- setdiff(remaining, group)
+      if (length(group) == 1L || sum(previous[group]) == 0) next
+      rows <- which(rowSums(counts[, group, drop = FALSE]) > 0)
+      a <- available[rows, group, drop = FALSE]
+      z <- counts[rows, group, drop = FALSE]
+      totals <- rowSums(z)
+      unpack <- function(theta) c(theta, 0)
+      objective <- function(theta, gradient = FALSE) {
+        eta <- unpack(theta)
+        q <- 0
+        score <- colSums(z)
+        for (r in seq_along(rows)) {
+          eta_r <- eta[a[r, ]]
+          log_denominator <- max(eta_r) + log(sum(exp(eta_r - max(eta_r))))
+          q <- q + sum(z[r, a[r, ]] * (eta_r - log_denominator))
+          score[a[r, ]] <- score[a[r, ]] - totals[r] * exp(eta_r - log_denominator)
+        }
+        if (gradient) -head(score, -1) / sum(totals) else -q / sum(totals)
+      }
+      start <- log(pmax(previous[group], 1e-12))
+      opt <- optim(head(start - tail(start, 1), -1), objective,
+                   gr = function(theta) objective(theta, TRUE), method = "BFGS",
+                   control = list(reltol = 1e-13, maxit = 2000))
+      if (opt$convergence != 0 || max(abs(objective(opt$par, TRUE))) > 1e-6) {
+        stop("Coding-prior M-step did not converge for incomplete coding availability.")
+      }
+      eta <- unpack(opt$par)
+      probability <- exp(eta - max(eta))
+      prior[group] <- sum(previous[group]) * probability / sum(probability)
+    }
+  }
+  gain <- em_coding_q(prior, counts) - before
+  if (!is.finite(gain) || gain < -1e-8 * max(1, abs(before))) {
+    stop("Coding-prior update decreased the expected complete log likelihood.")
+  }
+  list(prior = prior, gain = gain, status = "estimated")
+}
+
+em_bind_history <- function(history, priors) {
+  if (is.null(history)) return(priors)
+  # Preserve the meaning of old rows when extending a legacy PIP-share run.
+  if (!"update_method" %in% names(history)) history$update_method <- "legacy_pip_share"
+  columns <- union(names(history), names(priors))
+  for (column in setdiff(columns, names(history))) history[[column]] <- NA
+  for (column in setdiff(columns, names(priors))) priors[[column]] <- NA
+  rbind(history[columns], priors[columns])
+}
+
+em_estimate_coding_priors <- function(files, fit_name, previous_priors = NULL) {
   classes <- c("additive", "recessive", "dominant")
-  sums <- list()
-  n_fits <- n_nonconverged <- integer(0)
+  sums <- counts <- list()
+  n_fits <- n_components <- n_zero_variance <- integer(0)
+  elbo_sums <- n_elbo <- numeric(0)
   audit <- data.frame(gene = character(), tissue = character(),
                       issue = character(), message = character())
   add_issue <- function(gene, tissue, issue, message) {
@@ -118,6 +216,7 @@ em_sum_pips <- function(files, fit_name, previous_priors = NULL) {
       x <- out[[tissue]]
       fit <- x[[fit_name]]
       pip <- fit[["pip"]]
+      alpha <- fit[["alpha"]]
       map <- x[["mix_predictor_map"]]
       coding <- x[["mix_coding"]]
       if (!is.null(map)) {
@@ -135,46 +234,116 @@ em_sum_pips <- function(files, fit_name, previous_priors = NULL) {
         }
       }
       if (!is.numeric(pip) || !length(pip) || any(!is.finite(pip)) ||
-          any(pip < 0 | pip > 1) || length(coding) != length(pip) ||
+          any(pip < -1e-10 | pip > 1 + 1e-10) || length(coding) != length(pip) ||
           anyNA(coding) || any(!coding %in% classes)) {
         stop("Missing/invalid ", fit_name, " PIPs or coding labels in ", file, " / ", tissue)
       }
+      if (!is.matrix(alpha) || !is.numeric(alpha) || nrow(alpha) < 1L ||
+          ncol(alpha) != length(pip) || any(!is.finite(alpha)) ||
+          any(alpha < -1e-10 | alpha > 1 + 1e-10) ||
+          any(abs(rowSums(alpha) - 1) > 1e-8) ||
+          (!is.null(fit$null_index) && fit$null_index != 0)) {
+        stop("Missing/invalid component alpha in ", file, " / ", tissue,
+             ". Full SuSiE fits without an explicit null column are required; PIPs alone cannot supply this EM update.")
+      }
+      expected_names <- if (!is.null(map)) as.character(map$predictor_name) else names(pip)
+      if (!is.null(colnames(alpha)) && !is.null(expected_names) &&
+          !identical(colnames(alpha), expected_names)) {
+        stop("Alpha/map name mismatch in ", file, " / ", tissue)
+      }
+      if (!identical(fit$converged, TRUE)) {
+        stop("Source fit is not confirmed converged in ", file, " / ", tissue,
+             "; finish the E-step before updating coding priors.")
+      }
+      if (!is.numeric(fit$V) || !length(fit$V) %in% c(1L, nrow(alpha)) ||
+          any(!is.finite(fit$V)) || any(fit$V < 0)) {
+        stop("Missing/invalid component prior variances in ", file, " / ", tissue)
+      }
+      alpha[] <- pmin(1, pmax(0, alpha))
+      alpha <- alpha / rowSums(alpha)
+      pip <- pmin(1, pmax(0, pip))
       if (is.null(sums[[tissue]])) {
         sums[[tissue]] <- setNames(numeric(3), classes)
-        n_fits[tissue] <- n_nonconverged[tissue] <- 0L
+        counts[[tissue]] <- matrix(0, 7, 3, dimnames = list(NULL, classes))
+        n_fits[tissue] <- n_components[tissue] <- n_zero_variance[tissue] <- 0L
+        elbo_sums[tissue] <- n_elbo[tissue] <- 0
       }
-      # Include every predictor PIP, including those outside credible sets.
+      # PIP sums remain descriptive diagnostics only. The M-step uses alpha.
       sums[[tissue]] <- sums[[tissue]] + vapply(classes, function(c) sum(pip[coding == c]), numeric(1))
+      availability <- sum(2^(0:2) * (classes %in% coding))
+      counts[[tissue]][availability, ] <- counts[[tissue]][availability, ] +
+        vapply(classes, function(c) sum(alpha[, coding == c, drop = FALSE]), numeric(1))
       n_fits[tissue] <- n_fits[tissue] + 1L
-      if (identical(fit[["converged"]], FALSE)) {
-        n_nonconverged[tissue] <- n_nonconverged[tissue] + 1L
-        add_issue(gene, tissue, "nonconverged", "PIPs included; SuSiE reported converged=FALSE")
+      n_components[tissue] <- n_components[tissue] + nrow(alpha)
+      n_zero_variance[tissue] <- n_zero_variance[tissue] + sum(rep_len(fit$V, nrow(alpha)) == 0)
+      final_elbo <- tail(fit$elbo, 1)
+      if (is.numeric(final_elbo) && length(final_elbo) == 1L && is.finite(final_elbo)) {
+        elbo_sums[tissue] <- elbo_sums[tissue] + final_elbo
+        n_elbo[tissue] <- n_elbo[tissue] + 1L
       }
     }
   }
-  if (!length(sums)) stop("No usable tissue PIPs found in source results.")
+  if (!length(sums)) stop("No usable tissue component posteriors found in source results.")
   tissues <- sort(unique(c(names(sums), previous_priors$tissue)))
   priors <- do.call(rbind, lapply(tissues, function(tissue) {
     mass <- sums[[tissue]]
     if (is.null(mass)) mass <- setNames(numeric(3), classes)
     total <- sum(mass)
-    status <- "estimated"
-    if (total > 0) {
-      p <- mass / total
-    } else {
-      if (is.null(previous_priors) || !tissue %in% previous_priors$tissue) {
-        stop("Zero total PIP for ", tissue, "; initial proportions are undefined.")
-      }
-      p <- em_prior_for_tissue(previous_priors, tissue)
-      status <- "carried_forward_zero_pip"
-    }
+    z <- counts[[tissue]]
+    if (is.null(z)) z <- matrix(0, 7, 3)
+    previous <- if (!is.null(previous_priors) && tissue %in% previous_priors$tissue)
+      em_prior_for_tissue(previous_priors, tissue) else rep(1/3, 3)
+    update <- em_coding_mstep(z, previous)
+    p <- update$prior
+    alpha_mass <- colSums(z)
     data.frame(tissue = tissue, pi_add = unname(p[1]), pi_rec = unname(p[2]),
                pi_dom = unname(p[3]), pip_add = unname(mass[1]),
                pip_rec = unname(mass[2]), pip_dom = unname(mass[3]), pip_total = total,
                n_fits = if (tissue %in% names(n_fits)) n_fits[[tissue]] else 0L,
-               n_nonconverged = if (tissue %in% names(n_nonconverged)) n_nonconverged[[tissue]] else 0L,
-               prior_status = status, stringsAsFactors = FALSE)
+               n_nonconverged = 0L,
+               prior_status = update$status,
+               update_method = "susie_component_alpha_v1",
+               alpha_add = alpha_mass[1], alpha_rec = alpha_mass[2], alpha_dom = alpha_mass[3],
+               alpha_total = sum(alpha_mass),
+               n_components = if (tissue %in% names(n_components)) n_components[[tissue]] else 0L,
+               n_zero_variance_components = if (tissue %in% names(n_zero_variance)) n_zero_variance[[tissue]] else 0L,
+               mstep_q_gain = update$gain,
+               source_elbo_sum = if (tissue %in% names(n_elbo) && n_elbo[tissue] == n_fits[tissue])
+                 unname(elbo_sums[tissue]) else NA_real_,
+               n_source_elbo = if (tissue %in% names(n_elbo)) unname(n_elbo[tissue]) else 0L,
+               max_abs_prior_change = max(abs(p - previous)), stringsAsFactors = FALSE,
+               row.names = NULL)
   }))
   em_validate_priors(priors)
-  list(priors = priors, audit = audit)
+  list(priors = priors, audit = audit, component_counts = counts)
+}
+
+# Do not copy the old fit's pi into s_init: some SuSiE versions let it override
+# the newly supplied prior_weights. Also keep V outside s_init so that older
+# versions do not prune/reinitialize the zero-variance components on warm start.
+em_stop_fit <- function(message) {
+  stop(structure(list(message = message, call = NULL), class = c("em_fit_error", "error", "condition")))
+}
+
+em_susie_initialization <- function(fit, predictor_names, L, variance_y) {
+  if (is.null(fit)) return(NULL)
+  fields <- c("alpha", "mu", "mu2")
+  expected <- c(min(as.integer(L), length(predictor_names)), length(predictor_names))
+  if (!all(vapply(fields, function(field) {
+    is.matrix(fit[[field]]) && is.numeric(fit[[field]]) &&
+      identical(dim(fit[[field]]), as.integer(expected)) && all(is.finite(fit[[field]])) &&
+      identical(colnames(fit[[field]]), predictor_names)
+  }, logical(1))) || any(fit$alpha < 0 | fit$alpha > 1) ||
+      any(abs(rowSums(fit$alpha) - 1) > 1e-8) ||
+      !is.numeric(fit$V) || !length(fit$V) %in% c(1L, expected[1]) ||
+      any(!is.finite(fit$V)) || any(fit$V < 0) ||
+      !is.numeric(fit$sigma2) || length(fit$sigma2) != 1L ||
+      !is.finite(fit$sigma2) || fit$sigma2 <= 0 ||
+      !is.finite(variance_y) || variance_y <= 0) {
+    em_stop_fit("Previous fit cannot initialize this model: predictor order, L, or posterior parameters differ.")
+  }
+  s_init <- fit[fields]
+  class(s_init) <- "susie"
+  list(s_init = s_init, scaled_prior_variance = rep_len(fit$V, expected[1]) / variance_y,
+       residual_variance = fit$sigma2)
 }

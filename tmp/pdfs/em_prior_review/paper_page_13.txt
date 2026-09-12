@@ -1,0 +1,157 @@
+Nature Genetics
+Technical Report https://doi.org/10.1038/s41588-023-01648-9
+Methods
+Model of individual-level data
+Let y be the quantitative phenotype, assumed to be standardized, of 
+an individual. We assume that y depends on imputed gene expressions 
+and variant genotypes of the individual. We denote Xj the expression 
+of the gene j, ̃Xj, as its cis-genetic component, and Gm the genotype of 
+the variant m. We assume that ̃Xj is given, imputed from a pretrained 
+expression prediction model, and the imputation errors/uncertainty 
+would be ignored. We have the following regression model:
+y = ∑
+j
+βj ̃Xj + ∑
+m
+θmGm + ϵ, (1)
+where β j and θ m are the effect sizes of gene expression j and the  
+variant m, respectively. ϵ is a normally distributed error term, that is, 
+ϵ  ∼ N(0, σ 2), and is assumed to be independent across individuals.  
+In practice, we standardize both ̃Xj and Gm to make the variance equal 
+to 1 for all the genes and variants.
+T o obtain the imputed expressions, we use existing expression 
+prediction models. Specifically, the imputed expression of a gene j 
+is defined as ∑ lwjlGl, where Gl is the genotype of variant l, and wjl is the 
+weight of the lth variant in gene j’s expression prediction model. We 
+assume that these weights are given at the standardized scale, that is, 
+the weights were derived using standardized variant genotypes. This 
+is the case for the FUSION expression models (http://gusevlab.org/
+projects/fusion/). When the provided weights are not on the standard-
+ized scale, for example, from PredictDB (https://predictdb.org/), these 
+weights must be scaled. This can be done by multiplying the weights 
+by genotype variances from the LD reference.
+We specify different prior distributions of gene effects β j’s, and 
+variant effects θm’s. T o describe these priors, we note that our model is 
+a special case of a more general regression model, where explanatory 
+variables come from multiple groups with different distributions of 
+effect sizes.
+We write the general model with K  groups of explanatory vari -
+ables as
+y =
+K
+∑
+k=1
+∑
+j∈Mk
+βjXj + ϵ, (2)
+where Xj is jth explanatory variable and j ∈ Mk denotes that it belongs 
+to group k. In our case, the model has two groups of variables, imputed 
+gene expressions and genetic variants. For simplicity of notation, we 
+will use this general model in our following discussions. We assign 
+a spike-and-slab prior distribution for the effect of variable j , with 
+group-specific prior parameters. Specifically, when j ∈ Mk, we denote 
+γ j an indicator of whether Xj has nonzero effect
+γj ∼ Bernoulli (πk)
+βj|γj = 1 ∼ N(0,σ2
+k )
+βj|γj = 0 ∼ δ0.
+(3)
+Here δ 0 is the Dirac’s delta function, πk = P(γ j = 1∣j ∈ Mk) is the prior 
+probability of the j th variable from group k  being casual to the trait 
+(nonzero effect) and σ2
+k
+ is the prior variance of the effect size of causal 
+variables in the group k.
+Inference of the individual-level model
+The inference has two main steps. In the first step, we estimate the prior 
+parameters θ ={ πk, σ2
+k
+, k ∈{ 1, 2}}  for the two groups, gene effects and 
+variants effects. In the second step, we use the estimated θ, and com-
+pute the PIP of each variable, defined as the posterior probability of 
+γ j = 1 given all the data and parameters.
+The parameter estimation is done by maximum likelihood. Let 
+yn×1 be the data of the response variable, where n  is the sample size. 
+Let Xn×p = [X1X2…X p] be the data of all the p explanatory variables. The 
+likelihood of our model is given by
+L(θ; X, y, σ)= P(y|X,θ, σ)= ∑
+Γ
+P(y|X,Γ, θ, σ)P(Γ|θ), (4)
+where Γ  = [γ1, γ2, …, γ p] represents the ‘configuration’ of the causal 
+(nonzero effect) status of all variables. We note that σ is the standard 
+deviation of the phenotypic variance, and is assumed to be given  
+(see below). T o maximize the likelihood, we use the expectation-  
+maximization (EM) algorithm. In the E-step, we obtain the expectation 
+of log-likelihood over Γ, 𝔼𝔼Γ log P(X,y, Γ|θ(t), σ), where θ (t) is the parameter 
+value in the t-th iteration. In the M-step, we update θ (t) using the  
+following rules to maximize the expectation from the E-step (Supple-
+mentary Note):
+π(t+1)
+k = 1
+|Mk| ∑
+j∈Mk
+α(t)
+j (5)
+σ2,(t+1)
+k =
+∑j∈Mk
+α(t)
+j ⋅ τ2,(t)
+j
+∑j∈Mk
+α(t)
+j
+, (6)
+where ∣Mk∣ is the number of variables in group k, α(t)
+j
+= P(γj = 1|X, y, θ(t), σ) 
+is the PIP of variable j given data and current parameter values θ(t) and 
+τ2,(t)
+j = 𝔼𝔼(β
+2
+j |γj = 1, X, y, θ(t), σ)  is the second moment of the posterior 
+effect size of variable j, given that it is a causal variable. The updated 
+rules have simple interpretations. The new parameter π(t+1)
+k  is simply 
+the average PIP of all variables in the group k and the new σ2,(t+1)
+k  is the 
+weighted average of the second moment of the posterior effect sizes.
+Computing α j and τ2
+j  at the t-th iteration (we removed superscript 
+t from now on for simplicity) using all variables in the genome is com-
+putationally challenging. T o reduce the computational burden, we 
+divide the genome into LD blocks using LDetect51 with variants approxi-
+mately independent between blocks. We assign a gene to an LD block 
+if all SNPs in its expression prediction model fall into that block. If the 
+variants of the prediction model of any gene span multiple LD blocks, 
+we merge all such blocks into a new block. We will then compute αj and 
+τ2
+j  of the variables in each block independently, while still using all vari-
+ables in the genome to update the parameters using Eqs. (5) and (6).
+Even within a single block, there may still be hundreds to thou -
+sands of variables. This makes it difficult to compute α j and τ2
+j , as it 
+requires marginalization of Γ. T o address this challenge, we first notice 
+that our problem is now reduced to standard fine-mapping or Bayesian 
+variable selection problem, with different prior distributions of the 
+effects of different variables. Therefore, we borrow from fine-mapping 
+literature to compute α j and τ2
+j  (refs. 19,20; see Supplementary Note 
+for details).
+After we estimate the prior parameters, we apply SuSiE 19, a 
+fine-mapping method, on all variables, including both genes and 
+variants, in each block. Note that all blocks, including the large blocks 
+pruned in the parameter estimation step, will be analyzed. In applying 
+SuSiE, we set the prior probability and prior effect variance of each 
+variable, using the estimated parameters of the group (genes or vari-
+ants) that this variable belongs to. We allow multiple causal variables 
+by setting L = 5 in SuSiE and assigning null weight as 1 − ∑
+jpj. SuSiE will 
+then return PIPs of all genes and variants in each LD block.
+Model of summary statistics
+The summary data would include the effect size estimates of variants, 
+̂βj , and their standard errors s j, as well as the LD between all pairs of 
+variants, denoted as the matrix R. The effect sizes can be standardized, 
+denoted as ̂zj = ̂βj/sj . Given that the summary data have only variant 
+information, our model would first need to expand the summary data 
+to include gene information. Specifically, we compute the marginal 

@@ -34,20 +34,32 @@ update calculated from that final fit.
 
 ## What each iteration uses
 
-- No `results_em/prior_history.csv`: pool `susie_mix$pip` from **every gene
+- No `results_em/prior_history.csv`: pool `susie_mix$alpha` from **every gene
   result in `results`**, separately by tissue and coding, to prepare iteration 1.
 - Existing history: read its latest iteration, verify all its chunks have
-  finished and all gene files exist, then pool `weighted_fit_mix$pip` from that
+  finished and all gene files exist, then pool `weighted_fit_mix$alpha` from that
   iteration to prepare the next one.
-- Each coding prior is its pooled PIP sum divided by the sum across all three
-  codings. Every predictor PIP contributes, including those outside credible
-  sets; there is no PIP or credible-set filter and no gene-level averaging.
+- The empirical Bayes update uses the expected coding assignments of SuSiE's
+  single-effect components. With all three codings present in every fit, each
+  prior equals its summed `alpha` divided by the sum over all codings. All
+  component rows and predictors contribute, including zero-variance components
+  and those outside credible sets. Marginal PIP sums are saved as descriptive
+  diagnostics; they do not determine the new priors.
 - `workhorse_em.R` runs only the weighted mixed-coding fit. It retains the
-  original data processing, QC, and SuSiE settings, but omits additive-only,
-  unweighted, and permutation fits and marginal association tests.
+  original data processing and QC, but omits additive-only, unweighted, and
+  permutation fits and marginal association tests. Each fit starts from its
+  predecessor's posterior and variance estimates, with the NEW prior weights.
+  The inner fitting budget is `max_iter=1000`, `tol=1e-5`.
 - Priors are matched to the existing `SMTS` tissue names. A class's mass is
   divided equally among its retained predictors; if a class is absent after
-  filtering, weights are renormalized across the remaining classes.
+  filtering, weights are renormalized across the remaining classes. In that
+  case the M-step optimizes the corresponding conditional-coding objective,
+  rather than incorrectly using a global normalized count.
+
+This is variational EM for the coding-mixture SuSiE model, targeting a lower
+bound on the sum of per-gene log marginal likelihoods. It is not the cTWAS
+Bernoulli-prior model. The model, derivation, and comparison with the paper
+are explained in [EM_PRIOR_REVIEW.md](EM_PRIOR_REVIEW.md).
 
 ```text
 results_em/
@@ -58,6 +70,7 @@ results_em/
     priors.csv                 # Frozen priors used to fit this iteration
     manifest.csv               # Frozen chunk/gene assignments
     source_audit.csv            # Errors and nonconvergence in source results
+    component_counts.rds       # Alpha sums by tissue and available coding classes
     array_job_ids.txt
     continuation_job_ids.txt   # Next preparation IDs, when a sequence continues
     results/<gene>.rds
@@ -70,11 +83,32 @@ results_em/
 ```
 
 History rows contain `iteration`, `source_iteration`, `tissue`, `pi_add`,
-`pi_rec`, `pi_dom`, the underlying PIP sums, fit/error counts, and a timestamp.
+`pi_rec`, `pi_dom`, component `alpha` sums, descriptive PIP sums, fit/error
+counts, and a timestamp. `mstep_q_gain` checks that the M-step increases its
+objective; `max_abs_prior_change` tracks movement of the three coding weights.
+`source_elbo_sum` records the summed source-fit ELBO only when all included
+fits supply a finite value (`n_source_elbo` gives the count). Compare these
+values only across iterations with the same gene/tissue fits and model settings.
 Thus iteration 1's row is estimated from the original scan and is the prior
 **used for** iteration 1. Iteration 2's row is estimated from iteration 1.
 Each gene RDS contains a list of successful tissues, with `weighted_fit_mix`,
 the predictor map, coding priors/weights, and the existing fit metadata.
+
+## Continuing a run prepared before the EM correction
+
+The next new iteration uses the corrected update automatically, with the
+completed fits as initialization. Full fits containing `alpha` and `V` must
+be present on the cluster; completion logs or PIPs alone are insufficient.
+The old history values and frozen iteration files are preserved. When the
+next row is appended, old rows are tagged `update_method=legacy_pip_share`
+and new rows `update_method=susie_component_alpha_v1`. Newly added diagnostic
+columns are empty for old rows. The old weights were heuristic PIP shares;
+they must not be described as marginal-likelihood EM estimates.
+
+Sync `em_utils.R`, `prepare_em_iteration.R`, `run_em_chunk.R`, and
+`workhorse_em.R` together before launching the next iteration. If an automatic
+continuation is already queued, cancel that pending preparation and allow the
+current array to finish before replacing worker scripts and submitting again.
 
 ## Interrupted jobs and exceptional fits
 
@@ -115,19 +149,25 @@ launching the remaining iterations after it finishes.
 
 As in the original scan, gene/tissue errors are saved as explicit records;
 they do not stop other genes. Completion means all genes were attempted,
-not that all fits succeeded. Error records contribute no PIPs and appear in
+not that all fits succeeded. Error records contribute no posterior counts and appear in
 the next iteration's `source_audit.csv` and history error counts. These saved
 gene/tissue errors do not stop an automatic sequence, just as they do not
 block a manual next iteration. Review the CSVs, logs, and source audits when
-assessing a sequence. Nonconverged fits contribute their
-PIPs and are flagged in the audit. An entirely failed source scan is rejected.
+assessing a sequence. Unconverged fits are different: a worker saves their
+results and per-gene counts, then exits unsuccessfully without a completion
+marker. Resume retries those genes. Preparation also rejects source fits that
+are not confirmed converged. An entirely failed source scan is rejected.
 
-Missing/unreadable gene files, mismatched predictor maps, or invalid PIPs stop
+Missing/unreadable gene files, mismatched predictor maps, invalid component
+posteriors, or failed warm-start/weight checks stop
 preparation. The initial results must match the full chunk gene list, so a
 partially finished original scan cannot initialize the priors. A tissue with
-zero total PIP has an undefined initial prior and stops preparation. In later
-iterations its previous prior is retained and explicitly marked
-`carried_forward_zero_pip`. There is no pseudocount or probability floor.
+no component posteriors in a later iteration retains its previous prior and
+is marked `carried_forward_no_components`. Zero-variance components still
+have latent coding assignments, normally equal to their prior; they are
+included without a PIP, variance, or credible-set threshold. No pseudocount
+is added to the M-step. Disconnected coding groups retain their previous
+relative total mass because the data cannot identify it.
 
 ## Timing
 
@@ -136,7 +176,9 @@ New `completed/chunk_00N.done` RDS markers include `started_at`, `finished_at`
 latest finish measures the fine-mapping phase, including staggered chunk
 starts. It excludes prior aggregation and the initial queue wait. Existing
 markers without these additional fields remain valid for resuming/advancing.
-Slurm accounting can report job queue, start, end, and elapsed times:
+For resumed chunks the marker times cover the final attempt; use Slurm
+accounting to inspect earlier attempts as well. Slurm accounting can report
+job queue, start, end, and elapsed times:
 
 ```bash
 sacct -j "$(cat ../results_em/last_array_job_id.txt)" \
@@ -157,5 +199,7 @@ is run by the local checks. Test the orchestration and prior calculations with:
 
 ```bash
 Rscript --vanilla script/scan_tissue_attempt/tests/test_em_iteration.R
+Rscript --vanilla script/scan_tissue_attempt/tests/test_em_marginal_likelihood.R
+Rscript --vanilla script/scan_tissue_attempt/tests/test_em_susie_smoke.R
 bash script/scan_tissue_attempt/tests/test_em_launcher.sh
 ```

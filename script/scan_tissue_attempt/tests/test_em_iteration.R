@@ -16,8 +16,14 @@ equal <- function(x, y) stopifnot(isTRUE(all.equal(x, y, check.attributes = FALS
 make_tissue <- function(pip, coding = c("additive", "recessive", "dominant"),
                         weighted = pip, converged = TRUE) {
   predictor <- paste0("chr1_", seq_along(pip), "_A_C_b38_A__", coding)
-  list(susie_mix = list(pip = setNames(pip, predictor), converged = converged),
-       weighted_fit_mix = list(pip = setNames(weighted, predictor), converged = converged),
+  make_fit <- function(p) {
+    a <- matrix(if (sum(p) > 0) p / sum(p) else rep(1/length(p), length(p)), 1,
+                dimnames = list(NULL, predictor))
+    structure(list(pip = setNames(p, predictor), converged = converged, alpha = a,
+                   V = as.numeric(sum(p) > 0), mu = a * 0, mu2 = a * 0 + .1,
+                   sigma2 = 1, pi = rep(1/length(p), length(p))), class = "susie")
+  }
+  list(susie_mix = make_fit(pip), weighted_fit_mix = make_fit(weighted),
        mix_coding = coding,
        mix_predictor_map = data.frame(predictor_index = seq_along(pip),
                                       predictor_name = predictor, coding = coding))
@@ -41,7 +47,7 @@ run_tests <- function() {
              Liver = make_tissue(c(.1, .2, .7)))
   g2 <- list(Brain = make_tissue(c(.1, .1, .1, .1),
                                 c("additive", "additive", "recessive", "dominant")),
-             Liver = make_tissue(c(.2, .4, .4), converged = FALSE))
+             Liver = make_tissue(c(.2, .4, .4)))
   attr(g2, "tissue_errors") <- list(Heart = "Too few usable predictors")
   saveRDS(g1, file.path(project, "results/G1.rds"))
   saveRDS(g2, file.path(project, "results/G2.rds"))
@@ -54,12 +60,21 @@ run_tests <- function() {
   equal(first$chunks, 1:2)
   p1 <- read.csv(history_file)
   stopifnot(all(p1$iteration == 1), all(p1$source_fit == "susie_mix"))
-  # Pool raw PIP masses, not normalized gene proportions or the weighted fits.
-  equal(em_prior_for_tissue(p1, "Brain"), c(.8, .4, .2) / 1.4)
+  # Use component assignment probabilities, with unequal coding block sizes.
+  equal(em_prior_for_tissue(p1, "Brain"), c(1.1, .55, .35) / 2)
   equal(em_prior_for_tissue(p1, "Liver"), c(.3, .6, 1.1) / 2)
   equal(p1$n_source_gene_errors, c(1, 1))
   audit <- read.csv(file.path(first$iteration_dir, "source_audit.csv"))
-  stopifnot(all(c("gene_error", "tissue_error", "nonconverged") %in% audit$issue))
+  stopifnot(all(c("gene_error", "tissue_error") %in% audit$issue))
+  stopifnot(all(p1$update_method == "susie_component_alpha_v1"))
+  # Simulate the schema of a pre-correction iteration. New preparation must
+  # append tagged rows without rewriting its frozen snapshot or old values.
+  legacy_columns <- c("iteration", "source_iteration", "source_fit", "tissue", "pi_add", "pi_rec", "pi_dom",
+                      "pip_add", "pip_rec", "pip_dom", "pip_total", "n_fits", "n_nonconverged", "prior_status",
+                      "n_source_files", "n_source_gene_errors", "n_source_tissue_errors", "created_at")
+  p1 <- p1[legacy_columns]
+  write.csv(p1, history_file, row.names = FALSE)
+  write.csv(p1, file.path(first$iteration_dir, "priors.csv"), row.names = FALSE)
   history_before <- readLines(history_file)
   expect_error(em_prepare_iteration(project), "unfinished")
   stopifnot(identical(readLines(history_file), history_before))
@@ -78,11 +93,12 @@ run_tests <- function() {
 
   # Exercise the actual chunk runner with a deterministic stand-in for GTEx.
   calls <- character()
-  fake_run <- function(target_gene, tissue_priors, project_dir, temp_dir) {
+  fake_run <- function(target_gene, tissue_priors, project_dir, temp_dir, previous_result) {
     calls <<- c(calls, target_gene)
     equal(tissue_priors[c("tissue", "pi_add", "pi_rec", "pi_dom")],
           p1[c("tissue", "pi_add", "pi_rec", "pi_dom")])
     if (target_gene == "G3") stop("Still no SNPs after QC")
+    stopifnot(!is.null(previous_result$Brain$susie_mix$alpha))
     list(Brain = make_tissue(c(.99, .005, .005), weighted = c(.2, .3, .5)),
          Liver = make_tissue(c(.99, .005, .005), weighted = c(.4, .4, .2)))
   }
@@ -110,7 +126,9 @@ run_tests <- function() {
   stopifnot(nrow(history) == 4L, all(p2$source_fit == "weighted_fit_mix"))
   equal(em_prior_for_tissue(p2, "Brain"), c(.2, .3, .5))
   equal(em_prior_for_tissue(p2, "Liver"), c(.4, .4, .2))
-  equal(subset(history, iteration == 1), p1)
+  equal(subset(history, iteration == 1)[names(p1)], p1)
+  stopifnot(all(subset(history, iteration == 1)$update_method == "legacy_pip_share"),
+            all(p2$update_method == "susie_component_alpha_v1"))
   stopifnot(dir.exists(file.path(second$iteration_dir, "results")))
   # Original scan and immutable first-iteration snapshot were preserved.
   stopifnot(identical(readRDS(file.path(project, "results/G1.rds")), g1))
@@ -121,20 +139,61 @@ run_tests <- function() {
   bad <- g1
   bad$Brain$susie_mix$pip[1] <- NA_real_
   saveRDS(bad, fixture)
-  expect_error(em_sum_pips(fixture, "susie_mix"), "invalid")
+  expect_error(em_estimate_coding_priors(fixture, "susie_mix"), "invalid")
   bad <- g1
   bad$Brain$susie_mix$pip <- rev(bad$Brain$susie_mix$pip)
   saveRDS(bad, fixture)
-  expect_error(em_sum_pips(fixture, "susie_mix"), "name mismatch")
+  expect_error(em_estimate_coding_priors(fixture, "susie_mix"), "name mismatch")
   saveRDS(list(Brain = make_tissue(c(0, 0, 0))), fixture)
-  expect_error(em_sum_pips(fixture, "susie_mix"), "undefined")
-  zero <- em_sum_pips(fixture, "susie_mix", p1)$priors
-  equal(em_prior_for_tissue(zero, "Brain"), em_prior_for_tissue(p1, "Brain"))
-  stopifnot(all(zero$prior_status == "carried_forward_zero_pip"))
+  zero <- em_estimate_coding_priors(fixture, "susie_mix", p1)$priors
+  equal(em_prior_for_tissue(zero, "Brain"), rep(1/3, 3))
+  equal(em_prior_for_tissue(zero, "Liver"), em_prior_for_tissue(p1, "Liver"))
+  stopifnot(zero$n_zero_variance_components[zero$tissue == "Brain"] == 1L,
+            zero$prior_status[zero$tissue == "Liver"] == "carried_forward_no_components")
+  bad <- g1
+  bad$Brain$susie_mix$alpha <- NULL
+  saveRDS(bad, fixture)
+  expect_error(em_estimate_coding_priors(fixture, "susie_mix"), "PIPs alone")
+  bad <- g1
+  bad$Brain$susie_mix$converged <- FALSE
+  saveRDS(bad, fixture)
+  expect_error(em_estimate_coding_priors(fixture, "susie_mix"), "not confirmed converged")
+  bad <- g1
+  colnames(bad$Brain$susie_mix$alpha) <- rev(colnames(bad$Brain$susie_mix$alpha))
+  saveRDS(bad, fixture)
+  expect_error(em_estimate_coding_priors(fixture, "susie_mix"), "Alpha/map name mismatch")
+  with_elbo <- g1
+  with_elbo$Brain$susie_mix$elbo <- c(-12, -10)
+  saveRDS(with_elbo, fixture)
+  diagnostics <- em_estimate_coding_priors(fixture, "susie_mix")$priors
+  stopifnot(diagnostics$source_elbo_sum[diagnostics$tissue == "Brain"] == -10,
+            diagnostics$n_source_elbo[diagnostics$tissue == "Brain"] == 1L,
+            is.na(diagnostics$source_elbo_sum[diagnostics$tissue == "Liver"]))
   saveRDS(list(error = "failed"), fixture)
-  expect_error(em_sum_pips(fixture, "weighted_fit_mix", p1), "No usable")
+  expect_error(em_estimate_coding_priors(fixture, "weighted_fit_mix", p1), "No usable")
   writeLines("not an RDS", fixture)
-  expect_error(em_sum_pips(fixture, "susie_mix"), "unknown input format")
+  expect_error(em_estimate_coding_priors(fixture, "susie_mix"), "unknown input format")
+
+  # An unconverged E-step cannot create a done marker or feed an automatic
+  # next iteration. Resume retries the affected gene instead of reusing it.
+  fail_fit <- TRUE
+  nonconverged_run <- function(target_gene, ...) {
+    list(Brain = make_tissue(c(.2, .3, .5), converged = !fail_fit))
+  }
+  expect_error(em_run_chunk(project, second$iteration_dir, 1L, nonconverged_run), "unconverged")
+  stopifnot(!file.exists(file.path(second$iteration_dir, "completed/chunk_001.done")))
+  equal(em_prepare_iteration(project, "resume")$chunks, 1:2)
+  fail_fit <- FALSE
+  em_run_chunk(project, second$iteration_dir, 1L, nonconverged_run)
+  equal(em_prepare_iteration(project, "resume")$chunks, 2L)
+  invalid_model <- function(...) em_stop_fit("Invalid warm-start predictor order")
+  expect_error(em_run_chunk(project, second$iteration_dir, 2L, invalid_model), "Invalid warm-start")
+  stopifnot(!file.exists(file.path(second$iteration_dir, "completed/chunk_002.done")))
+  em_run_chunk(project, second$iteration_dir, 2L, nonconverged_run)
+  third <- em_prepare_iteration(project)
+  p3 <- read.csv(file.path(third$iteration_dir, "priors.csv"))
+  stopifnot(all(p3$source_iteration == 2L), all(p3$update_method == "susie_component_alpha_v1"))
+  equal(read.csv(file.path(first$iteration_dir, "priors.csv")), p1)
 
   # Confirm the EM workhorse parses and contains only one (weighted) SuSiE call.
   code <- parse("script/scan_tissue_attempt/workhorse_em.R")

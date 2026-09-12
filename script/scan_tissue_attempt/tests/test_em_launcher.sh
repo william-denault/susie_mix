@@ -79,6 +79,9 @@ done
 if "$BASH" "$repo_dir/job/em_susie_mix" 2 extra > "${test_dir}/out" 2>&1; then
     echo 'Expected excess arguments to fail' >&2; exit 1
 fi
+if env -u SLURM_JOB_ID "$BASH" "$repo_dir/job/em_susie_mix" 2 > "${test_dir}/out" 2>&1; then
+    echo 'Expected multiple iterations outside sbatch to fail' >&2; exit 1
+fi
 
 # An active array, failed prior preparation, or held lock must not submit.
 for failure in EM_TEST_ACTIVE EM_TEST_FAIL_R EM_TEST_LOCKED; do
@@ -160,8 +163,21 @@ grep -q 'After the array finishes, run: sbatch em_susie_mix 2' "${test_dir}/out"
 grep -Fxq '4246' "${SUSIE_MIX_PROJECT_DIR}/results_em/last_array_job_id.txt"
 export EM_TEST_FAIL_CONTINUATION=0
 
+# A failed prior update must stop a multi-iteration request before either job.
+export EM_TEST_FAIL_R=1
+rm -f -- "$EM_TEST_ARGS" "$EM_TEST_CONT_ARGS"
+if "$BASH" "$repo_dir/job/em_susie_mix" 2 > "${test_dir}/out" 2>&1; then
+    echo 'Expected prior preparation failure to stop the chain' >&2; exit 1
+fi
+[[ ! -e "$EM_TEST_ARGS" && ! -e "$EM_TEST_CONT_ARGS" ]]
+
 # The worker passes the project, exact iteration directory, and chunk ID.
 export SLURM_ARRAY_TASK_ID=185
+if "$BASH" "$repo_dir/job/em_susie_mix_array" "$SUSIE_MIX_PROJECT_DIR" \
+    "${SUSIE_MIX_PROJECT_DIR}/results_em/iteration_001"; then
+    echo 'Expected worker R failure to propagate to Slurm' >&2; exit 1
+fi
+export EM_TEST_FAIL_R=0
 "$BASH" "$repo_dir/job/em_susie_mix_array" "$SUSIE_MIX_PROJECT_DIR" \
     "${SUSIE_MIX_PROJECT_DIR}/results_em/iteration_001"
 grep -Fxq '185' "$EM_TEST_R_ARGS"

@@ -25,7 +25,16 @@ em_prepare_iteration <- function(project_dir, mode = "new") {
     previous_dir <- file.path(em_dir, sprintf("iteration_%03d", latest))
     manifest <- read.csv(file.path(previous_dir, "manifest.csv"), stringsAsFactors = FALSE)
     snapshot <- read.csv(file.path(previous_dir, "priors.csv"), stringsAsFactors = FALSE)
-    if (!isTRUE(all.equal(previous, snapshot, check.attributes = FALSE))) {
+    # Legacy snapshots predate the added diagnostics. Compare every original
+    # snapshot column; absent new fields in legacy history must stay empty.
+    extra <- setdiff(names(previous), names(snapshot))
+    legacy <- !"update_method" %in% names(snapshot)
+    extras_valid <- !length(extra) || (legacy && all(vapply(extra, function(column) {
+      values <- previous[[column]]
+      all(is.na(values) | (column == "update_method" & values == "legacy_pip_share"))
+    }, logical(1))))
+    if (!all(names(snapshot) %in% names(previous)) || !extras_valid ||
+        !isTRUE(all.equal(previous[names(snapshot)], snapshot, check.attributes = FALSE))) {
       stop("Latest prior history rows differ from the iteration's priors.csv.")
     }
     pending <- em_pending_chunks(previous_dir, manifest)
@@ -48,7 +57,7 @@ em_prepare_iteration <- function(project_dir, mode = "new") {
   # This checks every expected gene, including explicit failed-fit records.
   files <- em_check_result_files(source_dir, manifest)
   message("Reading all ", length(files), " gene results from ", source_dir)
-  pooled <- em_sum_pips(files, fit_name, previous)
+  pooled <- em_estimate_coding_priors(files, fit_name, previous)
   iteration <- latest + 1L
   priors <- data.frame(iteration = iteration, source_iteration = latest,
                        source_fit = fit_name, pooled$priors,
@@ -68,7 +77,8 @@ em_prepare_iteration <- function(project_dir, mode = "new") {
   em_atomic_write(manifest, file.path(iteration_dir, "manifest.csv"), csv = TRUE)
   em_atomic_write(priors, file.path(iteration_dir, "priors.csv"), csv = TRUE)
   em_atomic_write(pooled$audit, file.path(iteration_dir, "source_audit.csv"), csv = TRUE)
-  em_atomic_write(rbind(history, priors), history_file, csv = TRUE)
+  em_atomic_write(pooled$component_counts, file.path(iteration_dir, "component_counts.rds"))
+  em_atomic_write(em_bind_history(history, priors), history_file, csv = TRUE)
   message("Prepared iteration ", iteration, " for ", nrow(priors), " tissues; ",
           nrow(pooled$audit), " source audit entries. Priors saved before job submission.")
   list(iteration_dir = iteration_dir, chunks = sort(unique(manifest$chunk)))

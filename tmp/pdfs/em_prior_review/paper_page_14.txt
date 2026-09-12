@@ -1,0 +1,138 @@
+Nature Genetics
+Technical Report https://doi.org/10.1038/s41588-023-01648-9
+association of each imputed gene with the GWAS trait, and the correla-
+tion of any gene with all other genes and all the variants. These calcula-
+tions are described in the Supplementary Note. Once computed, we 
+will have marginal associations of all variables, including genes and 
+variants, ̂z, and their correlation matrix R . These data would be the 
+input of our analysis.
+Following the literature20,52, and particularly, the summary statis-
+tics version of SuSiE (SuSiE-RSS)20, we have the following model of ̂z:
+̂z|z, R ∼ Np(Rz,R), (7)
+where z = (z1, z2, …, z p) denotes the ‘standardized’ true effect sizes. We 
+use the same spike-and-slab prior for z j—when the variable j  belongs 
+to the group k
+γj ∼ Bernoulli (πk)
+zj|γj = 1 ∼ N (0, σ2
+k )
+zj|γj = 0 ∼ δ0.
+(8)
+Again, we denote θ ={ πk, σ2
+k
+} the prior parameters and Γ the causal 
+configuration. We estimate the prior parameters θ by MLE. This can be 
+done with the same algorithm used for the individual-level model. 
+Specifically, following SuSiE-RSS20, the likelihood function under the 
+individual-level data can be rewritten in terms of sufficient statistics 
+and s2
+j . Then, if we make the following substitutions, the likelihood of 
+the individual-level model would be identical to that of the summary 
+statistics model. Specifically, we change β = (β 1, β2, …, β p) to z, XTX to 
+R, XTy to ̂z, yTy to 1 and n to 1. Also, the prior model of z in the summary 
+statistics model is the same as the prior model of β in the individual-level 
+model. Therefore, we can use the same EM algorithm and the update 
+rules to estimate θ. The update rules follow Eqs. (5) and (6), where the 
+PIP of variable j is now defined as α(t)
+j = P(γj = 1| ̂z, R, θ(t)) and the second 
+moment of the posterior effect τ2,(t)
+j = 𝔼𝔼(z2
+j |γj = 1, ̂z, R, θ(t)).
+Once the parameters were estimated, we followed the same pro-
+cedure as in the individual-level model to obtain PIPs of all variables, 
+except that SuSiE-RSS is used in fine-mapping.
+Estimating proportions of phenotypic variance explained by 
+variants and genes
+We assume that all the explanatory variables and the response variable 
+in the regression model are standardized, with a variance equal to 1. 
+Then the proportion of variance explained (PVE) by a single variable, 
+j, is simply β2
+j ⋅ Var(Xj)/Var(y)= β2
+j
+. Assuming that we use the z scores in 
+the summary statistical model, the effect size is related to z  score by 
+βj = zj/√n, where n is the sample size. So, on average, the PVE of a vari-
+able in group k  (variant or gene) is 𝔼𝔼(z2
+j )= σ2
+k /n, where σ k is the prior 
+variance of effect size in the group, k, at the z-score scale. The expected 
+number of variables with nonzero effects in the group k  is π k ⋅ ∣Mk∣, 
+where π k is the prior inclusion probability and ∣ Mk∣ is the group size. 
+Putting this together, the PVE by the group k is given by
+PVEk = σ2
+k ⋅ πk ⋅| Mk|⋅ n−1. (9)
+This equation is used to compute PVE from estimated parameters using 
+both simulated and real data.
+Simulation procedure
+In our simulations, we used the following data: (1) genotype data. We 
+used genotype data from UK Biobank by randomly selecting 80,000 
+samples. We then filtered samples to only keep ‘White British’ , removed 
+samples with missing information, mismatches between self-reported 
+and genetic sex or ‘outliers’ as defined by UK Biobank. We also removed 
+any individuals who have close relatives in the cohort. This ended up 
+with a cohort of n = 45,087 samples. We used SNPs from chromosome 
+(chr) 1 to chr 22 and selected those with a minor allele frequency of 
+>0.05 and at least 95% genotyping rate. After filtering, 6,228,664 SNPs 
+remained and were used in our analysis. (2) Gene expression prediction 
+models. We used GTEx v7 Adipose tissue dataset. This dataset contains 
+8,021 genes with expression models. We used the LASSO weights from 
+the FUSION website (http://gusevlab.org/projects/fusion/).
+We first impute gene expression for all samples using the predic-
+tion models. SNP genotypes are harmonized between the expression 
+prediction model and UK Biobank genotypes so that the reference and 
+alternate alleles match. SNPs in the FUSION prediction models but not 
+in UK Biobank, about 13% of all, were not used in imputing gene expres-
+sion. We then sample the causal genes and SNPs under given prior 
+inclusion probabilities π k’s and then sample their effect sizes accord-
+ingly using the prior variance parameter σ2
+k . We then simulate y under 
+the model defined in Eq. (1). The prior parameters πk, σ2
+k  were chosen 
+to reflect the genetic architecture in real data. In particular, it was 
+estimated that gene expression mediates about 10–20% of trait herit-
+ability25. And the studies using rare variants for complex traits sug -
+gested that about 5% of protein-coding genes are likely causal53. Given 
+these considerations, we set the prior probability for SNPs to 10 −4  or 
+2.5 × 10−4 , and PVE of SNPs to 0.3 or 0.5. For the genes, we set the prior 
+probability to 0.015 or 0.05 and PVE of genes from 0.02 to 0.1.
+T o test if our method is robust to mis-specified priors for causal 
+gene effect, we have also simulated causal gene effect under the mixture 
+of normal distributions. For the mixture of normal distributions, we 
+used equal mixtures of four normal distributions, each with mean 0 
+and standard deviations with ratios of 1:2:4:8. That is for gene j, its prior 
+distribution of causal effect size follows: βj|γj = 1 ∼ ∑ω∈[1,2,4,8]π′
+(N(0,ωσ′2). The prior probability being a casual gene is, therefore, 4π′ 
+and causal effect size variance is 15σ′2. The prior probability of being a 
+casual gene and the PVE of genes were set to values as described above.
+T o run cTWAS, we performed the association of individual SNPs 
+with the trait y, to obtain summary statistics of SNPs ̂zSNP. We randomly 
+selected 2,000 samples from the cohort to calculate SNP genotype 
+correlation matrix or LD matrix ̂RSNP. We then ran cTWAS summary 
+statistics version under each simulation setting with ̂zSNP, ̂RSNP and 
+expression prediction models as input. The software will harmonize 
+SNP genotypes for ̂zSNP, ̂RSNP and expression prediction models, so that 
+the reference and alternate allele match. T o further reduce the com-
+putational burden in estimating parameters, we only used one in every 
+ten SNPs (SNP thinning) in the EM algorithm. When calculating PIP, we 
+first run SuSiE-RSS with L = 5 in each LD Block with thinned SNPs. For 
+each block with maximum gene PIP > 0.8, we rerun SuSiE-RSS with L = 5 
+with the original SNPs to get the final gene PIPs.
+GWAS summary statistics
+The LDL and SBP summary statistics were from the UK Biobank, 
+computed by the Rapid GWAS project31 using Hail54. These summary 
+statistics were downloaded from the IEU OpenGWAS project55 using 
+GWAS IDs ‘ukb-d-30780_irnt’ (LDL) and ‘ukb-a-360’ (SBP). Both LDL 
+and SBP summary statistics were based on the White British sub -
+population of the UK Biobank, with sample sizes of n = 343,621 and 
+n = 317,754, respectively. The IBD summary statistics were from the 
+International IBD Genetics Consortium56, computed by meta-analysis 
+using METAL57. These summary statistics were obtained from IEU 
+OpenGWAS using GWAS ID ‘ebi-a-GCST004131’ . IBD includes cases of 
+both Crohn’s disease and ulcerative colitis. The IBD summary statistics 
+were based on nonoverlapping samples of European ancestry with 
+a combined sample size of n  = 59,957. The SCZ summary statistics 
+were from the Psychiatric Genetics Consortium and the CardiffCOGS 
+study58, computed by meta-analysis using METAL57. These summary 
+statistics were obtained from the authors via the link provided in the 
+manuscript. The SCZ summary statistics were based on nonoverlap -
+ping samples of primarily European ancestry with a combined sample  
+size of n = 105,318.

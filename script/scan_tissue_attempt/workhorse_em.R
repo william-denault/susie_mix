@@ -49,9 +49,12 @@ run_susie_gene <- function(
     estimate_prior_method = "EM",
     min_abs_corr = 0.0,
     verbose = FALSE,
+    max_iter = 1000,
+    tol = 1e-5,
 
     # --- misc ---
-    temp_dir = file.path(project_dir, "temp_plink_em")
+    temp_dir = file.path(project_dir, "temp_plink_em"),
+    previous_result = NULL
 ) {
 
 
@@ -627,6 +630,14 @@ run_susie_gene <- function(
     cat("Running weighted SuSiE-mix for", target_tissue, "\n")
     set.seed(seed)
 
+    previous_tissue <- previous_result[[target_tissue]]
+    previous_fit <- previous_tissue[["weighted_fit_mix"]]
+    # Initializing from the original scan must use the unweighted fit, which
+    # supplied the initial posterior statistics, not its other weighted fit.
+    source_fit <- unique(tissue_priors$source_fit)
+    if (identical(source_fit, "susie_mix")) previous_fit <- previous_tissue[["susie_mix"]]
+    initialization <- em_susie_initialization(previous_fit, mix_predictor_names, L, var(pheno$y))
+
     weighted_fit_mix <- susie(
       geno_mix,
       pheno$y,
@@ -634,9 +645,18 @@ run_susie_gene <- function(
       L = L,
       standardize = standardize,
       estimate_prior_method = estimate_prior_method,
+      s_init = initialization$s_init,
+      scaled_prior_variance = if (is.null(initialization)) 0.2 else initialization$scaled_prior_variance,
+      residual_variance = initialization$residual_variance,
+      max_iter = max_iter,
+      tol = tol,
       min_abs_corr = min_abs_corr,
       verbose = verbose
     )
+    if (!isTRUE(all.equal(unname(weighted_fit_mix$pi), unname(weighted_mix_prior_weights),
+                         tolerance = 1e-12))) {
+      em_stop_fit("SuSiE did not retain the newly estimated coding prior weights.")
+    }
 
     weighted_fit_mix_lead_snp_tss_distance <- (
       get_cs_lead_tss_distance(
@@ -664,6 +684,7 @@ run_susie_gene <- function(
       mix_predictor_names = mix_predictor_names,
       mix_coding_prior = mix_coding_prior,
       weighted_mix_prior_weights = weighted_mix_prior_weights,
+      em_warm_started = !is.null(initialization),
 
       n_SNP = length(unique(mix_snp_names)),
       n_mix_predictor = ncol(geno_mix),
@@ -692,6 +713,8 @@ run_susie_gene <- function(
     )
 
     if (inherits(tissue_result, "error")) {
+
+      if (inherits(tissue_result, "em_fit_error")) stop(tissue_result)
 
       error_message <- conditionMessage(
         tissue_result

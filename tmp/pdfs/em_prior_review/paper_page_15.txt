@@ -1,0 +1,129 @@
+Nature Genetics
+Technical Report https://doi.org/10.1038/s41588-023-01648-9
+LD reference data
+We computed the LD reference panel of common biallelic variants 
+using the White British subpopulation of the UK Biobank. This panel 
+is an in-sample reference for GWAS summary statistics from the Rapid 
+GWAS project31. First, we used plate and well information from the 
+genotyping to unambiguously identify over 99% (357,654 of 361,194) 
+of the samples used in the Rapid GWAS project in our data. T o ease 
+computation, we randomly selected 10% of these samples to serve as 
+the LD reference panel59. We also limited our panel to common auto-
+somal variants with MAF > 0.01 in the Rapid GWAS analyses. Then, we 
+computed correlations between all pairs of variants within each of 
+1,700 approximately independent regions. These regions are assumed 
+to have low LD between them and are based on previously identified 
+regions51 that could be lifted over from hg37 to hg38 positions. The final 
+LD reference panel consists of 1,700 correlation matrices and contains 
+9,309,375 variants. This LD reference panel was used when analyzing 
+all traits, including those that were not measured in the White British 
+subpopulation of the UK Biobank.
+Harmonization of GWAS data and expression prediction  
+models to LD reference. We restricted our analyses to variants that 
+were non-missing in the GWAS summary statistics, expression predic-
+tion models, and LD reference panel. T o ensure consistency between 
+these three datasets, we performed two harmonization procedures. 
+The objective of harmonization was to ensure that the reference and 
+alternate alleles of each variant are defined consistently across all three 
+datasets20. In our case, we must harmonize both the GWAS z-scores and 
+the eQTL prediction models to our LD reference, and we use a different 
+harmonize procedure for each. These procedures are based in part 
+on previous work33. T o describe the two procedures, it is necessary to 
+define several cases of inconsistencies that can occur in either dataset. 
+The first case is a variant with its reference and alternate alleles ‘flipped’ 
+with respect to the LD reference. The GWAS z scores or eQTL weights 
+in the prediction model of the flipped variants should have their signs 
+reversed to be consistent with the LD reference. The second case is a 
+variant that has had its strand ‘switched’ with respect to the LD refer-
+ence (for example, variant is G/A in the LD reference but C/T in the other 
+dataset). In this case, the reference and alternate alleles are the same, 
+just named using different strands. The z scores or weights of switched 
+variants should not be changed, as they are already consistent with the 
+LD reference. The third case is a variant that is ‘ambiguous’ as to whether 
+it is flipped or switched. This occurs when the two alleles of a variant 
+are also complementary base pairs (A ↔ T substitutions or G ↔ C). For 
+example, let us consider a variant that is A/T in the LD reference and 
+T/A. It is unclear when this variant is flipped or switched with respect to 
+the LD reference (both result in T/A), and it is ambiguous as to whether 
+the signs of the z  scores or weights should be reversed. We say that 
+variants are ‘unambiguous’ when they do not involve substitutions of 
+complementary base pairs.
+T o harmonize the z scores from GWAS summary statistics, we first 
+identified all inconsistencies in reference and alternate alleles between 
+the z scores and the LD reference. Next, we resolved all unambiguous 
+cases of flipped and switched alleles, reversing the sign of z  scores 
+that were flipped and taking no action for switched alleles. Then, we 
+imputed the z scores for ambiguous variants using all unambiguous 
+variants in each of the LD regions60. If the sign of the imputed z score 
+did not match the sign of the observed z score, we used the sign of the 
+imputed z score, reversing the sign of the observed z score. Note that 
+we did not perform the procedure to resolve ambiguous variants when 
+analyzing LDL or SBP, as both the summary statistics and LD reference 
+panel are derived from UK Biobank data.
+T o harmonize the eQTL prediction models, we first identified all 
+inconsistencies in reference and alternate alleles between the predic-
+tion models and the LD reference. Next, we resolved all unambiguous 
+cases of flipped and switched alleles, reversing the sign of weights that 
+were flipped and taking no action for switched alleles. These steps to 
+resolve unambiguous variants are the same as in the z-score harmoni-
+zation procedure. T o resolve ambiguous variants, we leveraged cor-
+relations between ambiguous and unambiguous variants in both our 
+LD reference panel and the LD panel used to construct the PredictDB 
+models. PredictDB reports the covariance between pairs of variants 
+within each gene prediction model. For gene prediction models that 
+include both ambiguous variants and unambiguous variants, we com-
+puted the sum of correlations between each ambiguous variant and 
+the unambiguous variants in the prediction model, using both our LD 
+reference panel and the LD used for the prediction models. If the sign 
+of the total correlation in the LD reference of the prediction models did 
+not match the sign of the total correlation in our LD reference panel, 
+we reversed the sign of the prediction model weights for the ambigu-
+ous variant. If the total correlation in the LD reference was equal to 
+zero, then we set the weight of the ambiguous variant to zero, as these 
+ambiguous variants did not have any unambiguous variants in the 
+same LD region. For gene prediction models that include only a single 
+ambiguous variant and no unambiguous variants, we left the sign of 
+the prediction model weight unchanged; the resulting gene z score may 
+have an incorrect sign, but the magnitude of the z score will be correct. 
+We excluded gene prediction models with multiple ambiguous variants 
+and no unambiguous variants, as their gene z scores could be incorrect 
+in both sign and magnitude. Such exclusions were infrequent, affecting 
+less than 1% of liver genes in the LDL analysis (94 of 11,502 genes with 
+prediction models).
+Performing cTWAS analysis in real data
+We used the following cTWAS settings when analyzing real data. For 
+parameter estimation, we used the default procedure for selecting the 
+starting values of the EM algorithm. We then performed 30 iterations of 
+the EM algorithm assuming L = 1 effect (at most a single causal effect) 
+in each region, using variants that were thinned by 10% to reduce com-
+putation. For computing PIPs of genes and variants, we used thinned 
+variants and assumed L = 5 (at most five causal effects) in each region. 
+For regions with maximum gene PIP > 0.8, we recomputed PIPs using all 
+variants, with L = 5. For this final step, we allowed a maximum of 20,000 
+variants in a region to reduce computation; if the maximum number 
+of variants was exceeded, we randomly selected 20,000 variants to 
+include. Unless specified otherwise, we used the threshold PIP > 0.8 
+for declaring significant genes.
+Evaluating methods in distinguishing silver standard and 
+bystander genes for LDL
+Following previous studies35, we assessed the performance of TWAS 
+and cTWAS on real data by comparing their ability to distinguish LDL 
+silver standard genes from other nearby genes. We defined a set of 
+‘bystander’ genes that were within 1 Mb of a silver standard gene. These 
+bystander genes would be considered the negative set. We limited our 
+analysis to 46 of 69 silver standard genes with imputed expression after 
+harmonization, and the 539 imputed bystander genes that are nearby 
+these genes. Next, we determined if these silver standard and bystander 
+genes were significant by TWAS (Bonferroni) or cTWAS (PIP > 0.8). 
+Then, we computed the precision of each method as follows: (number 
+of detected silver standard genes)/(number of detected silver standard 
+genes + number of detected bystander genes).
+Classifying TWAS false-positive genes for LDL by source of 
+confounding
+T o better understand how TWAS generated false-positive findings, we 
+classified whether TWAS false positives as primarily due to confound-
+ing by variants or confounding by genes. We defined TWAS false posi-
+tives as genes that were significant by TWAS (Bonferroni) but PIP < 0.5 
+by cTWAS. T o categorize these false-positive genes, we first assigned 
+them to credible sets. These credible sets were reported by cTWAS, 
+using the default SuSiE setting, which means that only credible sets with 
