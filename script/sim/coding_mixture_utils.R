@@ -1,4 +1,4 @@
-# Analysis helpers for plot_coding_mixture.R. Base R only; never refits models.
+# Shared simulation readers and coding analysis helpers. Base R; no refits.
 cm_classes <- c("additive", "recessive", "dominant")
 cm_short <- c("add", "rec", "dom")
 cm_calls <- c(cm_classes, "ambiguous", "undetected")
@@ -60,9 +60,7 @@ cm_coding_map <- function(x) {
   list(coding = coding, origin = origin)
 }
 
-cm_assess_replicate <- function(x, snp_cutoff = .9,
-                              thresholds = c(0, .1, .5, .8, .9, .95, .99, 1),
-                              n_bins = 10L, tie_tolerance = 1e-12) {
+cm_prepare_replicate <- function(x) {
   s <- x$settings
   truth <- x$true_pos_mix
   K <- length(x$true_pos)
@@ -84,6 +82,18 @@ cm_assess_replicate <- function(x, snp_cutoff = .9,
   pip <- pmin(1, pmax(0, pip))
   snp_pip <- pmin(1, pmax(0, snp_pip))
   labels <- cm_coding_map(x)
+  list(pip = pip, snp_pip = snp_pip, labels = labels, n_clamped = n_clamped)
+}
+
+cm_assess_replicate <- function(x, snp_cutoff = .9,
+                              thresholds = c(0, .1, .5, .8, .9, .95, .99, 1),
+                              n_bins = 10L, tie_tolerance = 1e-12) {
+  prepared <- cm_prepare_replicate(x)
+  pip <- prepared$pip
+  snp_pip <- prepared$snp_pip
+  labels <- prepared$labels
+  truth <- x$true_pos_mix
+  K <- length(x$true_pos)
   coding <- labels$coding
   code <- match(coding, cm_classes)
   positive <- seq_along(pip) %in% truth
@@ -136,10 +146,10 @@ cm_assess_replicate <- function(x, snp_cutoff = .9,
                setNames(as.numeric(t(confusion)),
                         unlist(lapply(cm_short, function(cl) paste0("conf_", cl, "_", cm_calls)))))
   list(metrics = metrics, calibration = calibration, discovery = discovery,
-       map_origin = labels$origin, n_clamped = n_clamped)
+       map_origin = labels$origin, n_clamped = prepared$n_clamped)
 }
 
-cm_read_simulations <- function(config) {
+cm_read_simulations <- function(config, assess_replicate = cm_assess_replicate) {
   files <- list.files(config$chunk_dir, config$file_pattern, full.names = TRUE)
   if (!length(files)) stop("No matching simulation checkpoints in ", config$chunk_dir)
   pattern <- paste0("^.*_add([0-9]+)_rec([0-9]+)_dom([0-9]+)_n([0-9]+)_L([0-9]+)",
@@ -188,7 +198,7 @@ cm_read_simulations <- function(config) {
           if (isTRUE(s$all_additive)) expected <- c(sum(expected), 0, 0)
           if (!identical(as.integer(table(factor(x$causal_coding, levels = cm_classes))),
                          as.integer(expected))) stop("Causal coding counts disagree with settings.")
-          cm_assess_replicate(x, config$snp_cutoff, config$thresholds, config$n_bins)
+          assess_replicate(x, config$snp_cutoff, config$thresholds, config$n_bins)
         }, error = identity)
         if (inherits(assessed, "error")) {
           audit$invalid <- audit$invalid + 1L
@@ -218,14 +228,18 @@ cm_read_simulations <- function(config) {
             design = design, all_additive = isTRUE(x$settings$all_additive),
             converged = converged, row.names = NULL)
           values[[length(values) + 1L]] <- assessed$metrics
-          group <- paste(scenario, z$pve, sum(ntrue), sep = "|")
-          old <- if (exists(group, counts, inherits = FALSE)) get(group, counts) else NULL
-          if (is.null(old)) {
-            assign(group, list(calibration = assessed$calibration, discovery = assessed$discovery), counts)
-          } else {
-            old$calibration <- old$calibration + assessed$calibration
-            old$discovery <- old$discovery + assessed$discovery
-            assign(group, old, counts)
+          # Other plot scripts can reuse the checked, deduplicated stream
+          # without calculating the predictor-wide calibration summaries.
+          if (!is.null(assessed$calibration) && !is.null(assessed$discovery)) {
+            group <- paste(scenario, z$pve, sum(ntrue), sep = "|")
+            old <- if (exists(group, counts, inherits = FALSE)) get(group, counts) else NULL
+            if (is.null(old)) {
+              assign(group, list(calibration = assessed$calibration, discovery = assessed$discovery), counts)
+            } else {
+              old$calibration <- old$calibration + assessed$calibration
+              old$discovery <- old$discovery + assessed$discovery
+              assign(group, old, counts)
+            }
           }
           audit$included <- audit$included + 1L
           audit$reconstructed_maps <- audit$reconstructed_maps + (assessed$map_origin == "reconstructed_blocks")

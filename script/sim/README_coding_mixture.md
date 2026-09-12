@@ -57,6 +57,11 @@ Classification at the known causal SNP is easier than locating the SNP and
 its coding. Read the confusion/classification plots together with the
 discovery-accuracy plot and the original SNP-localization figures.
 
+For discovery using the **single highest-PIP predictor across the entire
+locus**, run `plot_lead_pip_coding.R`. It scores the global lead's exact SNP
+and coding, distinguishes localization from coding errors, and plots lead
+coding frequencies under additive truth. See [README_lead_pip_coding.md](README_lead_pip_coding.md).
+
 ## Mixture estimate and uncertainty
 
 For each exact simulation condition, the estimated coding share is:
