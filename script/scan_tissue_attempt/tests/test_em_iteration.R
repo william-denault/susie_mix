@@ -88,6 +88,9 @@ run_tests <- function() {
   }
   em_run_chunk(project, first$iteration_dir, 1L, fake_run)
   equal(calls, c("G1", "G2"))
+  timing <- readRDS(file.path(first$iteration_dir, "completed/chunk_001.done"))
+  stopifnot(grepl("UTC$", timing$started_at), grepl("UTC$", timing$finished_at),
+            is.finite(timing$elapsed_seconds), timing$elapsed_seconds >= 0)
   # Simulate a killed worker after saving its genes but before its marker.
   unlink(file.path(first$iteration_dir, "completed/chunk_001.done"))
   resume <- em_prepare_iteration(project, "resume")

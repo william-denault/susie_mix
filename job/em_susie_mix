@@ -1,5 +1,6 @@
 #!/bin/bash
 # Run from job/: sbatch em_susie_mix
+# Run N consecutive iterations: sbatch em_susie_mix N
 # Retry interrupted chunks after their jobs stop: sbatch em_susie_mix resume
 #SBATCH --job-name=em_susie_prepare
 #SBATCH --output=em_susie_prepare_%j.out
@@ -13,13 +14,24 @@
 
 set -euo pipefail
 project_dir="${SUSIE_MIX_PROJECT_DIR:-/project2/mstephens/wdenault/susie_mix}"
-mode="${1:-new}"
-if [[ "$mode" != new && "$mode" != resume ]] || (( $# > 1 )); then
-    echo "Usage: sbatch em_susie_mix [resume]" >&2
+mode=new
+if [[ "${1:-}" == new || "${1:-}" == resume ]]; then
+    mode="$1"
+    shift
+fi
+iterations="${1:-1}"
+if (( $# > 1 )) || [[ ! "$iterations" =~ ^[1-9][0-9]*$ || ${#iterations} -gt 9 ]]; then
+    echo "Usage: sbatch em_susie_mix [new|resume] [N]; N must be a positive integer." >&2
+    exit 1
+fi
+if (( iterations > 1 )) && [[ ! "${SLURM_JOB_ID:-}" =~ ^[0-9]+$ ]]; then
+    echo "Submit multiple iterations with sbatch so the continuation can depend on this preparation job." >&2
     exit 1
 fi
 module load R/4.2.0
 mkdir -p "${project_dir}/results_em"
+project_dir=$(cd "$project_dir" && pwd -P)
+export SUSIE_MIX_PROJECT_DIR="$project_dir"
 
 # Serialize prior-history updates and submissions. The lock is released on exit.
 exec 9>"${project_dir}/results_em/.prepare.lock"
@@ -28,19 +40,28 @@ if ! flock -n 9; then
     exit 1
 fi
 
-# Do not resume or advance while the last submitted array is still active.
+# A queued continuation also owns the next iteration. It can pass this check
+# itself, but another manual launch must not race it between two arrays.
 last_job_file="${project_dir}/results_em/last_array_job_id.txt"
-if [[ -f "$last_job_file" ]]; then
-    read -r last_job < "$last_job_file"
+continuation_file="${project_dir}/results_em/last_continuation_job_id.txt"
+if [[ -f "$last_job_file" || -f "$continuation_file" ]]; then
     active_jobs=$(squeue --noheader --user "${USER}" --format='%F')
-    while read -r active_job; do
-        if [[ "$active_job" == "$last_job" ]]; then
-            echo "EM array ${last_job} is still queued/running. Wait until it finishes." >&2
-            exit 1
+    for job_file in "$last_job_file" "$continuation_file"; do
+        [[ -f "$job_file" ]] || continue
+        read -r last_job < "$job_file"
+        if [[ "$job_file" == "$continuation_file" && "$last_job" == "${SLURM_JOB_ID:-}" ]]; then
+            continue
         fi
-    done <<< "$active_jobs"
+        while read -r active_job; do
+            if [[ "$active_job" == "$last_job" ]]; then
+                echo "EM job ${last_job} is still queued/running (recorded in ${job_file}). Wait or cancel the queued continuation before launching manually." >&2
+                exit 1
+            fi
+        done <<< "$active_jobs"
+    done
 fi
 
+echo "[$(date -u '+%Y-%m-%d %H:%M:%S UTC')] Preparing ${mode} iteration; ${iterations} iteration(s) requested including this one."
 launch_info=$(Rscript --vanilla \
     "${project_dir}/script/scan_tissue_attempt/prepare_em_iteration.R" "$project_dir" "$mode")
 mapfile -t launch <<< "$launch_info"
@@ -60,7 +81,36 @@ if ! submission=$(sbatch --parsable --array="$chunks" \
     exit 1
 fi
 array_job_id="${submission%%;*}"
+if [[ ! "$array_job_id" =~ ^[0-9]+$ ]]; then
+    echo "Invalid sbatch response: ${submission}. Check Slurm before retrying." >&2
+    exit 1
+fi
 printf '%s\n' "$array_job_id" > "$last_job_file"
 printf '%s\n' "$array_job_id" >> "${iteration_dir}/array_job_ids.txt"
 echo "Submitted EM array ${array_job_id}; results: ${iteration_dir}/results"
-echo "After it finishes, run sbatch em_susie_mix again for the next iteration."
+
+if (( iterations > 1 )); then
+    remaining=$((iterations - 1))
+    # Wait for every array task AND this preparation job to succeed. Including
+    # this job prevents the continuation from racing the still-held file lock.
+    if ! continuation=$(sbatch --parsable \
+        --dependency="afterok:${array_job_id}:${SLURM_JOB_ID}" --kill-on-invalid-dep=yes \
+        --export=ALL --chdir="${project_dir}/job" \
+        --output="${project_dir}/job/em_susie_prepare_%j.out" \
+        --error="${project_dir}/job/em_susie_prepare_%j.err" \
+        "${project_dir}/job/em_susie_mix" "$remaining"); then
+        echo "Array ${array_job_id} was submitted, but its continuation failed to submit. After the array finishes, run: sbatch em_susie_mix ${remaining}" >&2
+        exit 1
+    fi
+    continuation_id="${continuation%%;*}"
+    if [[ ! "$continuation_id" =~ ^[0-9]+$ ]]; then
+        echo "Invalid continuation sbatch response: ${continuation}. Check Slurm before retrying." >&2
+        exit 1
+    fi
+    printf '%s\n' "$continuation_id" > "$continuation_file"
+    printf '%s\n' "$continuation_id" >> "${iteration_dir}/continuation_job_ids.txt"
+    echo "Queued preparation ${continuation_id} for ${remaining} more iteration(s), after array ${array_job_id} completes successfully."
+    echo "To stop further iterations while letting this array finish: scancel ${continuation_id}"
+else
+    echo "This is the last requested iteration. After it finishes, submit again to continue."
+fi

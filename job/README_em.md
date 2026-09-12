@@ -1,4 +1,4 @@
-# One EM iteration per submission
+# Run one or several EM iterations
 
 On the cluster, from the project's `job` directory:
 
@@ -12,10 +12,25 @@ and submits one Slurm array using the resource settings in `test1`
 `data/temp_index/chunk_*_genes.txt` lists: currently 185 chunks / 18,468 genes.
 The original generated `run_chunk_*.R` scripts are not changed or executed.
 
-When the array finishes, run the same command again for the next iteration.
-Each submission performs exactly one iteration; it does not automatically
-continue until convergence. The preparation job finishing only means the
-array was submitted. Its output gives the array job ID.
+With no argument, this runs one iteration. To run five consecutive iterations:
+
+```bash
+sbatch em_susie_mix 5
+```
+
+The count is the number of iterations to run, not the final iteration number.
+For example, after iteration 2 completes, `5` runs iterations 3 through 7.
+Each iteration estimates fresh tissue priors from all results of the preceding
+iteration, appends `prior_history.csv`, and writes its own `iteration_00N/results`.
+The next preparation is queued with a Slurm `afterok` dependency on the entire
+current array and its preparation job. It starts only after both succeed;
+waiting does not occupy a compute node. See the [Slurm dependency documentation](https://slurm.schedmd.com/sbatch.html#OPT_dependency).
+
+The sequence stops after the requested count; it does not test convergence.
+The preparation job finishing only means the array was submitted. Its output
+gives the array and next preparation IDs. Check the weights after the sequence;
+the last history rows are the priors used for the final fit, not a further
+update calculated from that final fit.
 
 ## What each iteration uses
 
@@ -37,11 +52,14 @@ array was submitted. Its output gives the array job ID.
 ```text
 results_em/
   prior_history.csv
+  last_array_job_id.txt
+  last_continuation_job_id.txt  # Latest automatically queued preparation, if any
   iteration_001/
     priors.csv                 # Frozen priors used to fit this iteration
     manifest.csv               # Frozen chunk/gene assignments
     source_audit.csv            # Errors and nonconvergence in source results
     array_job_ids.txt
+    continuation_job_ids.txt   # Next preparation IDs, when a sequence continues
     results/<gene>.rds
     completed/chunk_001.csv     # Per-gene status for this chunk
     completed/chunk_001.done    # Every gene in this chunk was attempted/saved
@@ -70,12 +88,38 @@ This keeps the same iteration and priors, submits only unfinished chunks, and
 reuses successful gene outputs already saved in those chunks. A failed array
 submission can be retried this way too. Concurrent preparation is locked,
 and a queued/running array blocks another launch.
+An automatically queued preparation also blocks a competing manual launch.
+
+A failed, cancelled, or timed-out array task prevents the next preparation
+from running; `--kill-on-invalid-dep=yes` cancels that blocked preparation.
+Fix the cause, then resume the interrupted iteration. To finish it and run
+two more new iterations:
+
+```bash
+sbatch em_susie_mix resume 3
+```
+
+Here the count includes the resumed iteration. If the current iteration is
+already complete, use the command without `resume`.
+
+To stop automatic continuation while allowing the current array to finish:
+
+```bash
+scancel "$(cat ../results_em/last_continuation_job_id.txt)"
+```
+
+Use this from `job/` while that preparation is still pending. Its ID is also
+printed in the preparation log. If continuation submission itself fails,
+the already submitted array keeps running; the log gives the command for
+launching the remaining iterations after it finishes.
 
 As in the original scan, gene/tissue errors are saved as explicit records;
 they do not stop other genes. Completion means all genes were attempted,
 not that all fits succeeded. Error records contribute no PIPs and appear in
-the next iteration's `source_audit.csv` and history error counts. Review each
-chunk's CSV and logs before advancing. Nonconverged fits contribute their
+the next iteration's `source_audit.csv` and history error counts. These saved
+gene/tissue errors do not stop an automatic sequence, just as they do not
+block a manual next iteration. Review the CSVs, logs, and source audits when
+assessing a sequence. Nonconverged fits contribute their
 PIPs and are flagged in the audit. An entirely failed source scan is rejected.
 
 Missing/unreadable gene files, mismatched predictor maps, or invalid PIPs stop
@@ -84,6 +128,20 @@ partially finished original scan cannot initialize the priors. A tissue with
 zero total PIP has an undefined initial prior and stops preparation. In later
 iterations its previous prior is retained and explicitly marked
 `carried_forward_zero_pip`. There is no pseudocount or probability floor.
+
+## Timing
+
+New `completed/chunk_00N.done` RDS markers include `started_at`, `finished_at`
+(UTC), and `elapsed_seconds`. The time from the earliest chunk start to the
+latest finish measures the fine-mapping phase, including staggered chunk
+starts. It excludes prior aggregation and the initial queue wait. Existing
+markers without these additional fields remain valid for resuming/advancing.
+Slurm accounting can report job queue, start, end, and elapsed times:
+
+```bash
+sacct -j "$(cat ../results_em/last_array_job_id.txt)" \
+  --format=JobID,State,Submit,Start,End,Elapsed
+```
 
 The default cluster project path is `/project2/mstephens/wdenault/susie_mix`.
 For a different checkout:

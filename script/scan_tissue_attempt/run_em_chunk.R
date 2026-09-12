@@ -12,6 +12,7 @@ em_run_chunk <- function(project_dir, iteration_dir, chunk, run_gene = run_susie
     message("Chunk ", chunk, " already completed.")
     return(invisible(NULL))
   }
+  started_at <- Sys.time()
   summary <- data.frame(gene = genes, status = "", n_tissue_errors = 0L)
   for (i in seq_along(genes)) {
     gene <- genes[i]
@@ -37,7 +38,11 @@ em_run_chunk <- function(project_dir, iteration_dir, chunk, run_gene = run_susie
   # error records (the same convention as the original scan drivers).
   em_atomic_write(summary, file.path(iteration_dir, "completed",
                                     sprintf("chunk_%03d.csv", chunk)), csv = TRUE)
-  em_atomic_write(list(iteration = iteration, chunk = chunk, n_genes = length(genes)), marker)
+  finished_at <- Sys.time()
+  em_atomic_write(list(iteration = iteration, chunk = chunk, n_genes = length(genes),
+                       started_at = format(started_at, tz = "UTC", usetz = TRUE),
+                       finished_at = format(finished_at, tz = "UTC", usetz = TRUE),
+                       elapsed_seconds = as.numeric(difftime(finished_at, started_at, units = "secs"))), marker)
   message("Chunk ", chunk, " finished: ", sum(summary$status == "gene_error"),
           " gene errors; ", sum(summary$n_tissue_errors), " tissue errors.")
   invisible(summary)
