@@ -1,0 +1,132 @@
+--- a/susie_mix_manuscript.tex
++++ b/susie_mix_manuscript.tex
+@@ -639,10 +639,12 @@
+ update to SuSiE's categorical single-effect assignments. The three masses
+ sum to one and are distributed uniformly among retained predictors within
+ each coding class. The algorithm alternates SuSiE fitting with an update
+-based on the summed component assignment probabilities (\texttt{alpha}).
+-When all three classes are represented in every fit, the update normalizes
+-these sums by the total number of components; otherwise it accounts for
+-the classes available in each fit. This variational EM procedure targets
++based on the summed assignment probabilities (\texttt{alpha}) of components
++with positive fitted variance. Assignments of exactly zero-variance
++components are integrated out. When all three classes are represented in
++every fit, the update normalizes these sums by the number of active
++components; otherwise it accounts for the classes available in each fit.
++This collapsed variational EM procedure targets
+ a lower bound on the tissue-level working log marginal likelihood.
+ Supplementary Methods provide the model, derivation, initialization, and
+ convergence diagnostics.
+@@ -1216,21 +1218,24 @@
+ \subsubsection*{Component responsibilities and the M-step}
+ At outer iteration $r$, the SuSiE fit provides
+ $\alpha_{gt\ell j}^{(r)}=q_{gt}^{(r)}(J_{gt\ell}=j)$, with each row summing
+-to one. The expected number of component assignments to coding $c$ is
++to one. Holding the fitted variances fixed, define the active components
++as $\mathcal{H}_{gt}^{(r)}=\{\ell:V_{gt\ell}^{(r)}>0\}$ and let
++$K_{gt}^{(r)}=|\mathcal{H}_{gt}^{(r)}|$. The expected number of active
++component assignments to coding $c$ is
+ \begin{equation}
+  C_{gtc}^{(r)}
+- =\sum_{\ell=1}^{L_{gt}}\sum_{j:c(j)=c}\alpha_{gt\ell j}^{(r)},
+- \qquad \sum_{c\in\mathcal{A}_{gt}}C_{gtc}^{(r)}=L_{gt}.
++ =\sum_{\ell\in\mathcal{H}_{gt}^{(r)}}\sum_{j:c(j)=c}\alpha_{gt\ell j}^{(r)},
++ \qquad \sum_{c\in\mathcal{A}_{gt}}C_{gtc}^{(r)}=K_{gt}^{(r)}.
+  \label{eq:em-counts}
+ \end{equation}
+ Holding these responsibilities and the nuisance parameters fixed, the
+-part of the expected complete log likelihood that depends on $\pi_t$ is
++part of the collapsed expected complete log likelihood depending on $\pi_t$ is
+ \begin{equation}
+  \begin{array}{rl}
+  Q_t(\pi_t\mid q^{(r)})={}&
+  \displaystyle\sum_g\sum_{c\in\mathcal{A}_{gt}}
+  C_{gtc}^{(r)}\log\pi_{tc}\\[6pt]
+- &\displaystyle{}-\sum_g L_{gt}
++ &\displaystyle{}-\sum_g K_{gt}^{(r)}
+  \log\left(\sum_{d\in\mathcal{A}_{gt}}\pi_{td}\right)
+  +\mathrm{constant}.
+  \end{array}
+@@ -1242,11 +1247,14 @@
+ subject to $\sum_c\pi_{tc}=1$ gives
+ \begin{equation}
+  \pi_{tc}^{(r+1)}
+- =\frac{\sum_g C_{gtc}^{(r)}}{\sum_g L_{gt}}.
++ =\frac{\sum_g C_{gtc}^{(r)}}{\sum_g K_{gt}^{(r)}}.
+  \label{eq:em-closed-update}
+ \end{equation}
+-Thus, each component contributes one unit of posterior assignment mass;
+-the update pools across genes within a tissue. It does not first
++Thus, each active component contributes one unit of posterior assignment
++mass; the update pools across genes within a tissue. If no active component
++is available, the preceding prior is retained; a tissue without an existing
++prior receives a uniform initialization rather than a data-driven estimate.
++The update does not first
+ normalize each gene's marginal PIPs or select only genes with a reported
+ credible set.
+ 
+@@ -1279,18 +1287,27 @@
+ variance under the package's PIP convention. Consequently, summed PIPs
+ by coding, divided by total PIP, do not generally yield the M-step in
+ Eq.~(\ref{eq:em-closed-update}). For example, with one predictor per
+-coding and two component rows each equal to $(0.8,0.1,0.1)$ in $(A,R,D)$
++coding and two active component rows each equal to $(0.8,0.1,0.1)$ in $(A,R,D)$
+ order, the M-step gives $(0.8,0.1,0.1)$. The corresponding PIPs are
+ $(0.96,0.19,0.19)$, whose normalized shares are approximately
+ $(0.716,0.142,0.142)$.
+ 
+-The M-step includes every row of \texttt{alpha}, without filtering by
+-credible-set membership, lead PIP, or component variance. In this latent
+-representation, even a component with $V_{gt\ell}=0$ retains a categorical
+-assignment. Its posterior assignment equals its prior when the component
+-has no effect, providing no information favoring a particular coding.
+-Such components can slow the outer updates, but discarding them would
+-change the stated EM derivation.
++The collapsed M-step integrates out assignments of components whose
++fitted variance is exactly zero. For such a component, the effect is zero
++regardless of the selected predictor; summing over its assignment gives
++$\sum_j w_{gtj}=1$. This removes its coding-prior contribution without
++changing the observed-data likelihood at the fixed fitted variances.
++Equivalently, the full variational bound is recovered by setting inactive
++assignment distributions to their priors. The remaining responsibilities
++give Eqs.~(\ref{eq:em-counts})--(\ref{eq:em-closed-update}).
++
++Every positive-variance row contributes, including components without a
++reported credible set and those with variance below the package's numerical
++PIP-reporting tolerance. The exact-zero boundary is not replaced by a
++positive variance threshold. There is no additional screen on association
++$P$ values, lead PIP, CS membership, or purity. Positive fitted variance
++defines an active model component; it does not establish that the component
++represents a true biological signal.
+ 
+ \subsubsection*{Relation to cTWAS}
+ cTWAS also pools information across loci to learn grouped priors by
+@@ -1319,7 +1336,10 @@
+ fits and refitting with the new tissue-specific weights in
+ Eq.~(\ref{eq:em-predictor-prior}). Each refit starts from the preceding
+ component posterior moments and nuisance variances, while replacing the
+-old predictor weights with the newly estimated values.
++old predictor weights with the newly estimated values. All $L$ component
++rows remain in saved fits and initializations; only the coding-prior
++sufficient statistics exclude zero-variance rows. The active set is
++determined anew from the fitted variances at each outer update.
+ 
+ The EM worker fits only the weighted mixed-coding model, using $L=10$,
+ \texttt{standardize = FALSE}, \texttt{min\_abs\_corr = 0}, and internal
+@@ -1327,11 +1347,11 @@
+ with ELBO tolerance $10^{-5}$. Predictor identities and component
+ probabilities are validated before pooling, and unconverged fits block
+ advancement to the next outer iteration. For every tissue and iteration,
+-the pipeline saves the three priors, assignment counts, number of
+-contributing fits and components, M-step objective gain, largest absolute
+-change in a coding mass, and summed source-fit ELBO when available for
+-every contributing fit. Gene-level fits are retained separately for
+-each iteration. Outer iterations are requested in batches; a requested
++the pipeline saves the three priors, active assignment counts, total and
++active fit counts, total and active component counts, zero-variance counts,
++collapsed M-step objective gain, and largest absolute change in a coding
++mass. The summed source-fit ELBO includes all valid fits, including fits
++with no active components, and is recorded when available for every fit. Gene-level fits are retained separately for each iteration. Outer iterations are requested in batches; a requested
+ iteration count alone does not establish convergence. Assessment of
+ stabilization uses the coding-mass changes and ELBO trajectory, with
+ ELBO comparisons restricted to the same contributing fits and model

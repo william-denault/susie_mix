@@ -40,11 +40,14 @@ update calculated from that final fit.
   finished and all gene files exist, then pool `weighted_fit_mix$alpha` from that
   iteration to prepare the next one.
 - The empirical Bayes update uses the expected coding assignments of SuSiE's
-  single-effect components. With all three codings present in every fit, each
-  prior equals its summed `alpha` divided by the sum over all codings. All
-  component rows and predictors contribute, including zero-variance components
-  and those outside credible sets. Marginal PIP sums are saved as descriptive
-  diagnostics; they do not determine the new priors.
+  **active components (`V > 0`)**. Exactly zero-variance components are integrated
+  out of the coding-prior M-step. With all three codings present in every fit,
+  each prior equals its summed active `alpha` divided by the number of active
+  components. All predictors in those rows contribute, even outside credible
+  sets. A fit whose variances are all zero contributes no assignment counts.
+  Positive variances below `1e-9` still contribute: activity is defined by exact
+  zero, not SuSiE's numerical PIP/CS reporting tolerance. Marginal PIP sums are
+  saved as full-fit descriptive diagnostics; they do not determine the priors.
 - `workhorse_em.R` runs only the weighted mixed-coding fit. It retains the
   original data processing and QC, but omits additive-only, unweighted, and
   permutation fits and marginal association tests. Each fit starts from its
@@ -56,7 +59,7 @@ update calculated from that final fit.
   case the M-step optimizes the corresponding conditional-coding objective,
   rather than incorrectly using a global normalized count.
 
-This is variational EM for the coding-mixture SuSiE model, targeting a lower
+This is collapsed variational EM for the coding-mixture SuSiE model, targeting a lower
 bound on the sum of per-gene log marginal likelihoods. It is not the cTWAS
 Bernoulli-prior model. The model, derivation, and comparison with the paper
 are explained in [EM_PRIOR_REVIEW.md](EM_PRIOR_REVIEW.md).
@@ -70,7 +73,7 @@ results_em/
     priors.csv                 # Frozen priors used to fit this iteration
     manifest.csv               # Frozen chunk/gene assignments
     source_audit.csv            # Errors and nonconvergence in source results
-    component_counts.rds       # Alpha sums by tissue and available coding classes
+    component_counts.rds       # Active alpha sums by tissue and available coding classes
     array_job_ids.txt
     continuation_job_ids.txt   # Next preparation IDs, when a sequence continues
     results/<gene>.rds
@@ -83,10 +86,15 @@ results_em/
 ```
 
 History rows contain `iteration`, `source_iteration`, `tissue`, `pi_add`,
-`pi_rec`, `pi_dom`, component `alpha` sums, descriptive PIP sums, fit/error
-counts, and a timestamp. `mstep_q_gain` checks that the M-step increases its
+`pi_rec`, `pi_dom`, active component `alpha` sums, descriptive PIP sums, fit/error
+counts, and a timestamp. `n_components` is the total number of component rows;
+`n_active_components` counts the rows used, and `n_zero_variance_components`
+counts those excluded. `alpha_total` equals `n_active_components` up to rounding.
+`n_fits` counts all valid fits, while `n_active_fits` counts fits with at least
+one positive-variance component. `mstep_q_gain` checks that the M-step increases its
 objective; `max_abs_prior_change` tracks movement of the three coding weights.
-`source_elbo_sum` records the summed source-fit ELBO only when all included
+`source_elbo_sum` records the summed source-fit ELBO over **all valid fits,
+including all-null fits**, only when all included
 fits supply a finite value (`n_source_elbo` gives the count). Compare these
 values only across iterations with the same gene/tissue fits and model settings.
 Thus iteration 1's row is estimated from the original scan and is the prior
@@ -94,16 +102,21 @@ Thus iteration 1's row is estimated from the original scan and is the prior
 Each gene RDS contains a list of successful tissues, with `weighted_fit_mix`,
 the predictor map, coding priors/weights, and the existing fit metadata.
 
-## Continuing a run prepared before the EM correction
+## Continuing a run prepared with an earlier update
 
 The next new iteration uses the corrected update automatically, with the
 completed fits as initialization. Full fits containing `alpha` and `V` must
 be present on the cluster; completion logs or PIPs alone are insufficient.
-The old history values and frozen iteration files are preserved. When the
-next row is appended, old rows are tagged `update_method=legacy_pip_share`
-and new rows `update_method=susie_component_alpha_v1`. Newly added diagnostic
-columns are empty for old rows. The old weights were heuristic PIP shares;
-they must not be described as marginal-likelihood EM estimates.
+The old history values and frozen iteration files are preserved. New rows use
+`update_method=susie_active_component_alpha_v2`. Existing
+`susie_component_alpha_v1` rows retain their tag and values; they used all
+component assignments in an uncollapsed variational EM update. Older untagged
+rows receive `legacy_pip_share`, identifying the original heuristic PIP-share
+update. Newly added diagnostic columns are empty for old rows. Only the
+PIP-share method must not be described as marginal-likelihood EM. The v2 change
+integrates out exactly inactive assignments and avoids their damping effect.
+There is no need to delete completed fits or reset the history. A resumed
+iteration keeps its frozen priors; the next newly prepared iteration uses v2.
 
 Sync `em_utils.R`, `prepare_em_iteration.R`, `run_em_chunk.R`, and
 `workhorse_em.R` together before launching the next iteration. If an automatic
@@ -162,12 +175,29 @@ Missing/unreadable gene files, mismatched predictor maps, invalid component
 posteriors, or failed warm-start/weight checks stop
 preparation. The initial results must match the full chunk gene list, so a
 partially finished original scan cannot initialize the priors. A tissue with
-no component posteriors in a later iteration retains its previous prior and
-is marked `carried_forward_no_components`. Zero-variance components still
-have latent coding assignments, normally equal to their prior; they are
-included without a PIP, variance, or credible-set threshold. No pseudocount
-is added to the M-step. Disconnected coding groups retain their previous
+no active component posteriors in a later iteration retains its previous prior
+and is marked `carried_forward_no_active_components`. If no previous prior
+exists, it starts uniformly and is marked `initialized_uniform_no_active_components`;
+this is a fallback, not a learned estimate. Only exactly zero-variance rows are
+excluded from prior learning; full fits retain all L rows for subsequent fitting.
+No association-P, read-count, lead-PIP, or CS filter is added to the existing data QC;
+`min_abs_corr` remains zero. Positive V means active in the fitted model, not a
+guaranteed real signal. No pseudocount is added to the M-step. Disconnected coding groups retain their previous
 relative total mass because the data cannot identify it.
+
+## Launcher version errors
+
+If `sbatch em_susie_mix 4` immediately prints only
+`Usage: sbatch em_susie_mix [resume]`, the cluster has the older single-iteration
+launcher. It rejects the count before running R or preparing an iteration.
+Upload the current local `job/em_susie_mix` to the cluster's `job` directory;
+syncing only the R files cannot update the launcher. The current usage accepts
+`[new|resume] [N]`. Keep Unix line endings when transferring the shell files.
+
+After intentionally clearing the cluster's `results_em`, submit without
+`resume`: `sbatch em_susie_mix 4` initializes from the original `results`
+and prepares iterations 001 through 004 in sequence. Clearing `results_em`
+does not itself update any launcher or R script.
 
 ## Timing
 

@@ -1,0 +1,1650 @@
+% susie_mix_manuscript.tex
+% Working manuscript with code-verified GTEx and simulation methods.
+% Derived from science_template.tex; see METHODS_AUDIT.md for provenance.
+% See accompanying readme.txt for copyright statement, change log etc.
+
+% Any modification of this template, including writing a paper using it,
+% MUST rename the file i.e. use a different file name.
+
+%%%%%%%%%%%%%%%% START OF PREAMBLE %%%%%%%%%%%%%%%
+
+% Basic setup. Authors shouldn't need to adjust these commands.
+% It's annoying, but please do NOT strip these into a separate file.
+% They need to be included in this .tex for our production software to work.
+
+% Use the basic LaTeX article class, 12pt text
+\documentclass[12pt]{article}
+
+% Science uses Times font. If you don't have this installed (most LaTeX installations will be
+% fine) or prefer the old Computer Modern fonts, comment out the following line
+\usepackage{newtxtext,newtxmath}
+% Depending on your LaTeX fonts installation, you might get better results with one or both of these:
+%\usepackage{mathptmx}
+%\usepackage{txfonts}
+
+% Allow external graphics files
+\usepackage{graphicx}
+
+% Use US letter sized paper with 1 inch margins
+\usepackage[letterpaper,margin=1in]{geometry}
+
+% Double line spacing, including in captions
+\linespread{1.5} % For some reason double spacing is 1.5, not 2.0!
+
+% One space after each sentence
+\frenchspacing
+
+% Abstract formatting and spacing - no heading
+\renewenvironment{abstract}
+	{\quotation}
+	{\endquotation}
+
+% No date in the title section
+\date{}
+
+% Reference section heading
+\renewcommand\refname{References and Notes}
+
+% Figure and Table labels in bold
+\makeatletter
+\renewcommand{\fnum@figure}{\textbf{Figure \thefigure}}
+\renewcommand{\fnum@table}{\textbf{Table \thetable}}
+\makeatother
+
+% Call the accompanying scicite.sty package.
+% This formats citation numbers in Science style.
+\usepackage{scicite}
+
+% Provides the \url command, and fixes a crash if URLs or DOIs contain underscores
+\usepackage{url}
+
+%%%%%%%%%%%% CUSTOM COMMANDS AND PACKAGES %%%%%%%%%%%%
+
+% Authors can define simple custom commands e.g. as shortcuts to save on typing
+% Use \newcommand (not \def) to avoid overwriting existing commands.
+% Keep them as simple as possible and note the warning in the text below.
+
+% Example:
+\newcommand{\pcc}{\,cm$^{-3}$}	% per cm-cubed
+
+% If your BibTeX uses shortcuts for journal names, define them here e.g.
+% \newcommand{\apj}{Astrophys.~J.}
+
+% Please DO NOT import additional external packages or .sty files.
+% Those are unlikely to work with our conversion software and will cause problems later.
+% Don't add any more \usepackage{} commands.
+
+
+%%%%%%%%%%%%%%%% TITLE AND AUTHORS %%%%%%%%%%%%%%%%
+
+% Title of the paper.
+% Keep it short and understandable by any reader of Science.
+% Avoid acronyms or jargon. Use sentence case.
+\def\scititle{
+	Using additive, recessive and dominant coding is critical for fine mapping 
+}
+% Store the title in a variable for reuse in the supplement (otherwise \maketitle deletes it)
+\title{\bfseries \boldmath \scititle}
+
+% Author and institution list.
+% Institution numbers etc. should be hard-coded, do *not* use the \footnote command.
+\author{
+	% You can write out first names or use initials - either way is acceptable, but be consistent
+	William R.P.~Denault$^{1\ast }$, Peter~Carbonetto$^{1 }$, Gao~Wang$ ^{2 }$ \and 
+	 Matthew~Stephens$^{1,4}$ 
+	% Additional lines of authors should be inserted using the \and command (not \\)
+	% Institution list, in a slightly smaller font
+	\small$^{1}$Department of Human Genetics, University of Chicago, Chicago, IL, USA.\and\
+	\small$^{2}$Center for Statistical Genetics, The Gertrude H.~Sergievsky Center, Columbia University, New York, NY, USA.\and
+    \small$^{3}$ Departments of Neurology and Biostatistics, Columbia University, New York, NY, USA.\and
+        \small$^{4}$ Department of Statistics, University of Chicago, Chicago, IL, USA\and
+	% Do not include street addresses, postal codes etc.
+	%
+	% Identify at least one corresponding author, with contact email address
+	\small$^\ast$Corresponding author. Email: williade@uio.no 
+}
+
+%%%%%%%%%%%%%%%%% END OF PREAMBLE %%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%% START OF MAIN TEXT %%%%%%%%%%%%%%%
+\begin{document} 
+
+% Insert the title and author list
+\maketitle
+
+% Abstract, in bold
+% There are strict length limits, and not all formats have abstracts.
+% Consult the journal instructions to authors for details.
+% Do not cite any references in the abstract.
+\begin{abstract} \bfseries \boldmath
+% Start with one or two sentences of background
+ 
+
+ Statistical fine-mapping has transformed the analysis of genetic associations by jointly analyzing thousands of correlated variants and prioritizing a small set of likely causal variants. These approaches are now routinely applied in genome-wide association studies and quantitative trait locus studies. Most fine-mapping analyses use additive genotype encoding, thereby assuming that phenotypes are determined by combinations of allele-dosage effects. Here, we show that this assumption can produce severely misleading inference when multiple causal variants act through different genotype-phenotype relationships. Through simulations and fine-mapping of gene expression in GTEx and [SECOND DATASET], we show that considering additive, dominant, and recessive genotype encodings can substantially alter the inferred signals and improve empirical credible-set coverage under non-additive simulation architectures. These findings establish genotype encoding as an important source of model misspecification in statistical fine-mapping.
+
+\end{abstract}
+\section{Introduction}
+One of the central goals of modern human genetics is to understand how
+single-nucleotide polymorphisms (SNPs) influence molecular phenotypes,
+such as gene expression, and thereby contribute to complex traits and
+disease. Expression quantitative trait locus (eQTL) studies, conducted
+at large scale by the GTEx Consortium \cite{gtex_consortium_gtex_2020} and collected
+across numerous studies by the eQTL Catalogue \cite{kerimov_compendium_2021}, have
+identified thousands of genetic variants associated with transcript
+abundance across tissues and cell types. These resources have become
+central to translating GWAS associations into hypotheses about the
+molecular mechanisms underlying complex traits.
+
+
+Recent work emphasizes the importance of cellular context in this
+translation. Chen et al. developed cell-type-informed genetic
+mixed-model analysis (CIGMA) to partition gene-expression variation
+into contributions from cell-type-shared and cell-type-specific
+genetic effects while accounting for cell-to-cell variability
+\cite{chen_cell_type_specific_2026}. Using population-scale single-cell
+RNA sequencing, they found that genes with cell-type-specific genetic
+regulation were enriched for autoimmune-trait heritability and showed
+relationships with evolutionary constraint and enhancer complexity,
+with replication of broad patterns in a second cohort. Their findings
+support the view that bulk-tissue eQTL discovery can underrepresent
+regulation relevant to complex traits.
+
+
+
+Fine-mapping is the process of narrowing a genetic association signal
+to a smaller set of potentially causal variants
+\cite{schaid_genome-wide_2018}. This is challenging because nearby
+variants are often correlated through linkage disequilibrium and can
+therefore display similar association signals even when only one or a
+few variants directly influence the phenotype. By analyzing correlated
+variants jointly, fine-mapping methods aim to distinguish causal
+variants from those that merely tag the same association signal.  Fine mapping procedure are sparse regression method that  regress the SNPs within a loci on a phenotype of interest (here the expression of a given gene) and outputs credible sets (CS) \cite{maller_bayesian_2012}, which are subsets of the SNPs that have a high probability of containing at least one causal variant. In presence of association CSs tend to be rather small, often  containing between 1 to a few dozen of SNPs. One of the key insinght of fina mappin method is that the number of CSs return by fine-mappping method provide an estimate on the number of  causal variants within a loci which  not possible to asses by simply scrutinizing marginal assocation as illustrated by \cite{wang_simple_2020}.
+
+Therefore CS are now have become essential quantity for assessing genetic overlap between QTL study and molecular mechanisms underlying complex traits  So it is critical that CS are well calibrated to allow translational insight from QTL study to high level complex trait.
+
+Credible sets are widely used to prioritize variants for functional
+experiments and to assess whether molecular QTLs and complex-trait
+associations may share an underlying causal variant. Their calibration
+is therefore critical. Across repeated datasets, a well-calibrated
+95\% credible set should contain the corresponding causal variant
+approximately 95\% of the time. Poorly calibrated sets can create
+unwarranted confidence in noncausal variants and propagate incorrect
+conclusions into colocalization, causal-gene prioritization, and
+functional follow-up analyses.
+
+
+
+
+
+
+
+Genotype encoding is a complementary modeling choice. Cell-type
+specificity concerns how an effect changes across cellular contexts;
+genotype encoding concerns the relationship between allele dosage
+and phenotype within a context. A variant can therefore have different
+effect sizes across cell types while remaining additive within each.
+CIGMA models this context dependence through shared and cell-type-specific
+coefficients multiplying genotype dosage and estimates aggregate genetic
+variance, rather than assigning posterior probabilities to individual
+causal SNPs \cite{chen_cell_type_specific_2026}. It does not address
+whether restricting genotype encoding to additive effects distorts
+variant-level fine-mapping inference.
+
+Under additive encoding, the modeled effect scales linearly with
+allele count. Dominant encoding allows one copy to confer the same
+effect as two, whereas recessive encoding requires two copies.
+Dominant and recessive effects have been investigated in molecular
+and complex traits \cite{cui_dominance_2023,palmer_analysis_2023}.
+When such effects generate a phenotype, a fine-mapping model using
+only additive predictors may be misspecified, with consequences for
+both causal-SNP detection and credible-set calibration.
+
+This misspecification need not result only in reduced power. If a
+causal variant acts nonadditively, the additive encoding of a correlated
+noncausal variant may approximate the observed phenotype more closely
+than the additive encoding of the causal variant itself. The problem
+can become particularly acute when multiple causal variants within a
+locus act through different genotype encodings, a setting that we refer
+to as \textit{heterogeneous modes of action}. Their combined signal may
+then be better approximated by an additively encoded noncausal variant,
+causing posterior support to move away from the true causal variants
+and producing credible sets with substantially below-nominal coverage.
+
+While some previous work have s have incorporated nonadditive effects into genetic
+variable selection \cite{cheng_uncertainty_2022,peltola_bayesian_2012,sabourin_fine-mapping_2015}.
+These include Bayesian model
+averaging over additive, dominant, and recessive effects \cite{peltola_bayesian_2012}, group-penalized multi-SNP models of
+additive and dominance effects \cite{sabourin_fine-mapping_2015},nonlinear extensions of the sum of single effects framework
+\cite{cheng_uncertainty_2022}. 
+It remains standard to use only additive coding in practive, the rare exception we found is and dominance-specific fine-mapping
+using SuSiE \cite{palmer_analysis_2023}. 
+
+
+The practical consequences for credible-set calibration when multiple
+causal variants act through different genotype encodings remain an
+important question, as does the extent to which these modeling choices
+change fine-mapping conclusions in human eQTL data. Here, we compare
+additive SuSiE with a mixed-coding analysis that includes additive,
+dominant, and recessive predictors. We use simulations based on observed
+GTEx genotypes to evaluate causal-SNP recovery, credible-set coverage,
+and PIP-based discrimination, and examine how genotype encoding changes
+fine-mapping results in GTEx gene-expression data.
+
+This study complements the evidence from CIGMA that cellular context
+matters for interpreting genetic regulation. We focus on the form of
+the genotype--phenotype relationship and its consequences for localizing
+causal variants. The simulations show that allowing alternative
+encodings can improve recovery and coverage under non-additive
+architectures, while retaining power trade-offs and undercoverage in
+some conditions (Figs.~\ref{fig:sim-coverage-pure} and
+\ref{fig:sim-coverage-mixed}). Differences between the GTEx fits motivate
+further biological investigation; they do not alone establish which
+variant or regulatory mechanism is causal.
+
+\section{Results}
+
+\paragraph{Simulation benchmark using observed genotype structure}
+
+We compared additive SuSiE with unweighted SuSiE-mix using simulated
+quantitative phenotypes and observed GTEx genotypes. The benchmark used
+500 donors per dataset, one to five distinct causal SNPs, and target
+proportions of variance explained (PVE) of 10\%, 20\%, 30\%, and 40\%.
+We enumerated all 55 allocations of these causal SNPs to additive,
+dominant, and recessive effects, giving 220 allocation--PVE conditions
+with 400 scheduled replications each. The completed archive contained
+87,988 usable datasets and 175,976 converged fits; 12 scheduled datasets
+had zero genetic variance and were excluded without replacement.
+Both methods were fitted to the same phenotype with an upper bound of
+ten single-effect components.
+SNP-localization analyses combined the retained encodings of each SNP
+in the mixed-model output. We additionally evaluated exact identification
+of the generating SNP--coding pair using the global lead PIP (Methods).
+
+The seven architecture classes comprise the three single-coding models,
+the three possible pairs of codings, and all three codings together.
+Within each class, results at a given causal count pool every compatible
+allocation. Coverage figures retain the causal count on the horizontal
+axis; pooled PIP curves combine all causal counts within each
+architecture and PVE. The same 400 replication seeds were reused across
+conditions, so the condition-specific results are dependent.
+The figures report pooled point estimates; uncertainty intervals for
+the coding PIP-mass shares resample these shared replication blocks
+(Methods).
+
+\paragraph{Non-additive effects reduce coverage and causal-SNP recovery}
+
+Allowing alternative genotype encodings improved credible-set coverage
+under non-additive generating models, with the largest gains under
+recessive effects (Figs.~\ref{fig:sim-coverage-pure} and
+\ref{fig:sim-coverage-mixed}). For example, with three recessive causal
+SNPs and PVE of 20\%, additive SuSiE achieved 83.0\% empirical coverage,
+whereas SuSiE-mix achieved 96.5\%. The fraction of causal SNPs recovered
+in the union of reported credible sets increased from 21.2\% to 79.2\%
+(Fig.~\ref{fig:sim-power-pure}). At the same causal count and PVE under
+dominant effects, coverage increased from 92.2\% to 95.4\%, and
+credible-set recovery increased from 69.5\% to 78.8\%.
+
+Gains also occurred when different causal SNPs followed different
+encodings. With five causal SNPs spanning all three encodings and PVE
+of 40\%, coverage increased from 87.3\% to 93.7\%, and credible-set
+recovery increased from 61.1\% to 85.9\%
+(Figs.~\ref{fig:sim-coverage-mixed} and \ref{fig:sim-power-mixed}).
+These results show that the effect of additive misspecification extends
+beyond loss of sensitivity: reported credible sets can also omit every
+generating causal SNP more often than the nominal 5\% rate.
+
+\paragraph{PIP-based detection at comparable empirical false discovery proportions}
+
+PIP-based comparisons supported improved discrimination under
+non-additive effects (Figs.~\ref{fig:sim-fdr-pure} and
+\ref{fig:sim-fdr-mixed}). Pooling all causal counts at PVE of 40\%,
+recessive-model detection power near 10\% empirical FDR increased from
+6.1\% with additive SuSiE to 31.2\% with SuSiE-mix. Corresponding power
+increased from 22.0\% to 30.5\% under dominant effects and from 11.5\%
+to 24.8\% for architectures containing all three effect types.
+Under additive-only effects, the corresponding powers were similar,
+26.9\% and 26.6\%. These descriptive operating points use the last
+sampled PIP threshold before the first crossing of 10\% empirical FDR
+as the threshold decreases (Methods).
+
+The ROC curves likewise showed the clearest separation under recessive
+effects, while the additive-only curves were close
+(Figs.~\ref{fig:sim-roc-pure} and \ref{fig:sim-roc-mixed}).
+ROC curves stratified by causal count are provided in
+Figs.~\ref{fig:sim-roc-pure-L1}--\ref{fig:sim-roc-mixed-L5}.
+The absolute power at low empirical FDR remained limited, even where
+ROC power was high: the false positive rate divides false selections
+by all noncausal SNPs, whereas empirical FDR divides them by selected
+SNPs. The power--FDR comparison therefore addresses a different and
+more selective operating regime. Here empirical FDR is the pooled
+false discovery proportion across simulated datasets; these curves
+do not establish formal FDR control or PIP calibration.
+
+\paragraph{Additive-case costs and remaining undercoverage}
+
+The expanded model did not improve every performance measure. Under
+additive-only effects with three causal SNPs and PVE of 20\%,
+credible-set recovery decreased from 77.6\% to 74.7\%, despite similar
+coverage (93.1\% versus 93.5\%). Across all additive-only conditions,
+pooled credible-set recovery was 65.7\% for SuSiE and 63.3\% for
+SuSiE-mix. Furthermore, SuSiE-mix did not uniformly attain nominal
+coverage. With five causal SNPs spanning all three encodings and PVE
+of 10\%, coverage improved from 81.9\% to 87.6\% but remained below
+95\%, and credible-set recovery was only 7.5\% and 8.7\%, respectively.
+
+Purity was also architecture dependent. For the three-recessive-SNP,
+20\%-PVE example, mean minimum absolute within-set correlation increased
+from 0.820 to 0.911; under the corresponding additive-only scenario it
+decreased from 0.893 to 0.861 (Figs.~\ref{fig:sim-purity-pure} and
+\ref{fig:sim-purity-mixed}). Mixed-model purity is computed on fitted
+coding-specific predictors, so it is not a common additive-LD measure
+of resolution. These results support a benefit from modeling
+non-additivity while showing that broader predictor models retain
+power and calibration trade-offs.
+
+\paragraph{High-PIP leads identify generating SNP--coding pairs}
+
+To assess whether non-additive labels identify the generating
+coding, we selected the single largest coding-specific PIP across each
+simulated locus and evaluated the exact SNP--coding pair. Among
+unambiguous leads with PIP $\geq 0.9$, 6,521 of 6,805 dominant leads
+(95.8\%) and 11,361 of 11,570 recessive leads (98.2\%) matched a generating
+pair; the corresponding rate for additive leads was 5,458 of 6,063
+(90.0\%; Table~\ref{tab:sim-lead-accuracy}). Errors at a causal SNP with
+the wrong coding accounted for 92 dominant leads, six recessive leads,
+and 100 additive leads; the remaining errors selected noncausal SNPs.
+
+\begin{table}[t]
+\centering
+\small
+\caption{\textbf{Exact discovery among high-PIP global leads.} One positive, unambiguous global lead was selected per dataset;
+only leads with coding-specific PIP $\geq 0.9$ are included. An exact
+discovery matches both a generating causal SNP and its generating coding.
+Counts pool all causal allocations, PVE values, and causal counts with
+one observation per selected dataset. Mean PIP and exact-match frequency
+are percentages. These rates measure precision of the selected leads,
+not recovery of all causal effects.}
+\label{tab:sim-lead-accuracy}
+\begin{tabular}{lrrrr}
+\hline
+Called coding & Leads & Exact matches & Mean PIP (\%) & Exact (\%) \\
+\hline
+Additive & 6,063 & 5,458 & 97.7 & 90.0 \\
+Recessive & 11,570 & 11,361 & 98.9 & 98.2 \\
+Dominant & 6,805 & 6,521 & 97.8 & 95.8 \\
+\hline
+\end{tabular}
+\end{table}
+
+Exact-match frequency generally increased with lead PIP
+(Fig.~\ref{fig:sim-lead-accuracy}). However, numerical PIPs were not
+uniformly calibrated on this simulation grid. Mean PIPs among the
+high-PIP additive, dominant, and recessive leads were 97.7\%, 97.8\%,
+and 98.9\%, respectively, compared with exact-match frequencies of
+90.0\%, 95.8\%, and 98.2\%. Performance also depended on signal strength
+and causal count: at PVE of 10\% with five causal effects, only 12 of
+26 high-PIP dominant leads were exact matches; all 14 errors selected
+noncausal SNPs. Condition-specific counts are supplied with the
+simulation tables. Thus, the pooled accuracy does not imply uniformly
+reliable inference in weak, multicausal loci.
+
+\paragraph{Additive controls distinguish confident calls from diffuse coding support}
+
+The 7,996 additive-only datasets provided a control for false
+non-additive lead calls. Only 27 datasets (0.34\%) produced an unambiguous
+dominant global lead with PIP $\geq 0.9$, and three (0.038\%) produced
+a recessive global lead at this threshold. Without a PIP threshold,
+dominant coding accounted for 11.9--27.9\% of unambiguous leads across
+causal counts at PVE of 10\%, but 0.6--5.8\% at PVE of 40\%
+(Fig.~\ref{fig:sim-additive-lead}). These per-dataset control rates
+support the specificity of confident non-additive lead calls within
+the evaluated design, while showing that the highest-ranked coding
+alone is less informative when posterior support is weak.
+
+Confident lead calls and pooled posterior mass nevertheless
+gave different summaries. Even under wholly additive generating models,
+the sum of dominant PIPs divided by the sum of PIPs over all codings
+ranged from 18.0\% to 35.0\% across PVE and causal-count conditions;
+the corresponding recessive shares ranged from 6.6\% to 24.9\%
+(Fig.~\ref{fig:sim-additive-pip-mass}). These nonzero shares show that
+pooled coding PIP mass cannot directly be interpreted as the fraction
+of generating effects following each coding. The lead results provide
+support for investigating high-confidence non-additive candidates in
+the main analysis, while the mass-allocation controls limit conclusions
+about their genome-wide prevalence.
+
+
+\paragraph{Descriptive comparison of fine-mapping results.}
+After restricting the analysis to gene--tissue pairs with a marginal
+association $P$ value below $10^{-8}$ and a mean read count of at
+least 100, we retained [N] gene--tissue pairs representing [G] genes across
+[T] tissues. The additive and mixed-coding SuSiE models inferred the same
+number of credible sets in [X]\% of analyses. Among the [N$_1$] gene--tissue
+pairs for which both models inferred exactly one credible set, [Y]\% shared
+at least one biological SNP, whereas [Z]\% had no SNP-level overlap. The
+mixed-coding analysis identified [N$_A$] additive, [N$_R$] recessive, and
+[N$_D$] dominant credible-set signals. In contrast, only [P$_A$] and
+[P$_M$] credible sets were detected in the additive and mixed-coding
+analyses, respectively, after permutation of the expression phenotype.
+
+\paragraph{Colocalization changes}
+Evidence that the change matters downstream—for example, altered colocalization, functional annotation, or selection of experimentally supported causal variants.
+
+\section{Discussion}
+
+\paragraph{Implications and limits of the simulation evidence}
+
+These simulations show that an additive restriction can impair both
+causal-SNP recovery and credible-set coverage when causal effects are
+non-additive. The improvement is most pronounced for recessive effects,
+and remains apparent when comparison is based on SNP selection at
+similar empirical false discovery proportions. This supports genotype
+encoding as a consequential modeling choice, rather than treating a
+change in the number of credible sets as sufficient evidence of improved
+inference. At the same time, the expanded model incurs a modest
+credible-set recovery cost in additive settings and does not uniformly
+restore nominal coverage in weak, multicausal settings.
+
+The coding-specific evaluation adds evidence
+that high-PIP dominant and recessive leads can identify the generating
+SNP and coding. High-PIP non-additive lead calls were infrequent
+under additive truth, providing a relevant control for the non-additive
+candidates in the GTEx analysis. This evidence concerns the unique
+global lead of an unweighted simulated fit; the GTEx summaries label
+individual credible sets by their lead predictor, so these numerical
+accuracy rates cannot be transferred directly to every reported set.
+Moreover, appreciable dominant and recessive PIP mass under additive
+truth means that coding-mass proportions are not estimates of biological
+effect prevalence without further validation. The present benchmark
+does not assess the weighted or iteratively reweighted fits.
+
+The benchmark evaluates a defined family of alternatives: Gaussian
+phenotypes, a fixed sample size, at most five causal SNPs, and effects
+drawn from the same additive, dominant, and recessive encodings offered
+to SuSiE-mix. It therefore demonstrates the consequences of omitting
+these encodings and the benefit of including the correct family, rather
+than robustness to arbitrary nonlinear effects. Recessive effects were
+selected only when at least five minor-allele homozygotes were available;
+performance for rarer recessive effects is not established. Effect-size
+heterogeneity, interactions, untyped causal variants, and additional
+sample sizes also remain outside the present design.
+
+Several distinctions matter for interpretation. Increased credible-set
+recovery can reflect larger sets, so comparative set sizes are needed
+before attributing every gain to improved resolution. Purity computed
+under different codings does not resolve this issue.
+The point-estimate comparisons of coverage, recovery, and lead
+accuracy also require uncertainty assessment that preserves shared
+seeds across methods and conditions. ROC and power--FDR curves assess
+discrimination; the additional lead-PIP reliability analysis evaluates
+exact SNP--coding matches and reveals remaining overconfidence,
+particularly for additive leads and some weak-signal settings. These
+descriptive checks do not establish formal false discovery control.
+Finally, the simulated outcome was not
+subjected to the GTEx expression transformations or covariate adjustment,
+and its fitting controls differed from the GTEx scan. The simulations
+make the real-data disagreements worth investigating, but do not by
+themselves validate an additional eQTL signal, a changed colocalization,
+or a particular regulatory mechanism.
+
+\newpage
+
+\section{Methods}
+
+% Drafted from current scripts on 8 September 2026.
+% The author confirmed SMTS grouping, two inverse-normal transformations,
+% and sex-only expression adjustment. Result counts remain placeholders.
+% Simulation methods and results updated with exact coding discovery on 11 September 2026.
+% The GTEx numerical results remain placeholders.
+
+\subsection{GTEx data and analysis units}
+We analyzed individual-level whole-genome sequencing genotypes and gene-level
+RNA-sequencing read counts from GTEx v8 \cite{gtex_consortium_gtex_2020}.
+The genotype input was the PLINK dataset
+\texttt{GTEx\_Analysis\_2017-06-05\_v8\_WholeGenomeSeq\_866Indiv};
+expression was obtained from
+\texttt{GTEx\_Analysis\_2017-06-05\_v8\_RNASeQCv1.1.9\_gene\_reads.gct.gz}.
+Subject phenotypes and sample attributes were obtained from the corresponding
+GTEx v8 annotation files. Gene coordinates and protein-coding annotations
+were taken from the GRCh38 release-103 gene annotation file
+\texttt{Homo\_sapiens.GRCh38.103.chr.reformatted.collapse\_only.gene.gtf.gz}.
+The candidate gene list comprised the intersection of protein-coding gene
+symbols in this annotation and gene symbols in the expression matrix.
+Gene-level annotations were retained regardless of their annotation source.
+For a gene symbol with multiple expression entries or annotation records,
+the first matching entry in each input was used.
+
+RNA-sequencing samples were selected using the sample-attribute value
+\texttt{SMAFRZE = RNASEQ}. Sample attributes were joined to subject phenotypes
+using donor identifiers, and expression was matched using sample identifiers.
+Analyses were performed separately for each gene and broad tissue category
+defined by \texttt{SMTS}. Detailed tissue subtypes (\texttt{SMTSD}) were not
+used to define separate analyses. Within a broad tissue category, each donor
+contributed the first matching sample in the merged input order when multiple
+samples were available. Donors were then matched to genotypes by subject
+identifier. Samples with non-finite gene counts, non-finite or nonpositive
+total read counts, or missing sex were excluded. A gene--tissue analysis
+required at least 50 matched donors after these exclusions. The final numbers
+of analyzed genes, tissue categories, donors, and gene--tissue pairs will be
+reported as [TO INSERT].
+
+\subsection{Cis-genotype extraction and quality control}
+For each gene, the transcription start site (TSS) was defined as the annotated
+start coordinate on the positive strand and the annotated end coordinate on
+the negative strand. PLINK2 was used to extract SNPs within 500 kb on either
+side of the TSS, with the lower coordinate bounded at zero. Extraction used
+\texttt{--snps-only --max-alleles 2 --rm-dup exclude-all --maf 0 --recode A}.
+Thus, the extracted predictors were biallelic SNP hard calls encoded as
+0, 1, or 2; duplicate variant identifiers were excluded. Across all donors
+in the genotype input, SNPs with any missing call or zero genotype variance
+were removed.
+
+Allele orientation and the remaining variant-level quality control were
+determined before tissue-specific donor selection. If the frequency of the
+coded allele exceeded one half, genotypes were replaced by $2-G$, so that
+the coded allele was the less frequent allele in the full genotype sample.
+Only variants with minor-allele frequency strictly greater than 0.05 were
+retained. Hardy--Weinberg equilibrium was assessed using the Pearson
+chi-square statistic with one degree of freedom, comparing the observed
+genotype counts with $n(1-f)^2$, $2nf(1-f)$, and $nf^2$, where $f$ is the
+coded-allele frequency and $n$ is the number of genotype donors. Variants
+with $P<10^{-8}$ were excluded. The full-sample allele orientation was
+retained in every tissue, and no additional tissue-specific
+Hardy--Weinberg test, minor-allele-frequency threshold, or
+linkage-disequilibrium pruning was applied.
+
+\subsection{Expression preprocessing}
+For a retained donor $i$, let $c_i$ denote the raw count for the target gene
+and let $T_i$ denote the sum of counts over all genes in that donor's selected
+expression sample. Within each gene--tissue analysis, the library-size factor
+was $s_i=T_i/\overline{T}$, where $\overline{T}$ is the mean total count over
+the retained donors. We calculated $z_i=\log(1+c_i/s_i)$ and transformed
+these values to normal quantiles. For a vector $v$ of length $n$, the
+transformation was
+\begin{equation}
+ \mathcal{R}(v_i)=\Phi^{-1}\left\{\frac{\mathrm{rank}(v_i)-1/2}{n}\right\},
+\end{equation}
+where $\Phi$ is the standard normal cumulative distribution function and
+tied values receive their average rank. We fitted an ordinary least-squares
+regression of $\mathcal{R}(z_i)$ on an intercept and donor sex, coded as the
+GTEx \texttt{SEX} variable minus one. The residuals from this regression
+were subjected to the same normal-quantile transformation to obtain the
+phenotype $y_i$ used in both fine-mapping models.
+
+Sex was the only adjustment covariate in this implementation. Age, detailed
+tissue subtype, sequencing batch, genotype principal components, and latent
+expression factors were not included. Genotype predictors were not
+residualized on sex. Analyses with non-finite final phenotype variance or
+variance at most $10^{-12}$ were skipped. Mean and median read counts used
+in downstream summaries were calculated from the original gene counts
+among the retained donors, before expression transformation.
+
+\subsection{Additive and mixed-coding fine-mapping}
+For each retained biological SNP $j$, we constructed additive, dominant,
+and recessive predictors:
+\begin{equation}
+ X_{ij,A}=G_{ij},\qquad
+ X_{ij,D}=\mathbf{1}\{G_{ij}\geq 1\},\qquad
+ X_{ij,R}=\mathbf{1}\{G_{ij}=2\}.
+\end{equation}
+The additive analysis used only $X_A$. The mixed-coding analysis used the
+concatenated matrix $(X_A,X_R,X_D)$, with each column representing a
+SNP--coding pair. Within the matched tissue sample, columns were retained
+only if they had positive standard deviation and a column sum of at least
+five. For additive coding this is a requirement on the number of coded
+allele copies; for dominant coding it requires at least five carriers;
+for recessive coding it requires at least five coded-allele homozygotes.
+The positive-variance requirement also excludes binary predictors equal
+to one in every donor. These filters were applied separately to each
+encoding, allowing a SNP to retain some encodings while losing others.
+Analyses with no remaining additive or mixed predictors were skipped.
+
+Both models were fitted using the individual-level \texttt{susie} function
+in \texttt{susieR} \cite{wang_simple_2020}, with $L=10$ single-effect
+components, \texttt{standardize = FALSE},
+\texttt{estimate\_prior\_method = "EM"}, and
+\texttt{min\_abs\_corr = 0}. Under the package defaults, an intercept was
+included, residual variance was estimated, and credible sets targeted
+95\% posterior coverage. Predictor columns were centered internally for
+the intercept but were not scaled to unit variance. Setting the minimum
+absolute correlation to zero imposed no positive within-set purity
+threshold. Other fitting controls, including the iteration limit,
+convergence tolerance, and initialization, used the defaults of the GTEx
+run's \texttt{susieR} version [TO INSERT: version and default settings].
+The same donors and processed phenotype were used for both models.
+Uniform prior inclusion weights were used over the retained columns of
+each design matrix. Consequently, the unweighted mixed analysis assigns
+equal prior weight to SNP--coding pairs; total prior weight for a
+biological SNP depends on how many of its encodings survive filtering.
+
+We additionally fitted a weighted mixed-coding model to assess sensitivity
+to the coding prior. The specified total prior masses were 0.80 for
+additive, 0.15 for dominant, and 0.05 for recessive coding. If $m_c$ columns
+of coding class $c$ remained, each received weight proportional to
+$\pi_c/m_c$, with weights normalized over all retained predictors.
+Thus, each represented coding class retained its specified total mass;
+if a class was absent, its mass was redistributed proportionally among
+the represented classes. These weights were supplied through
+\texttt{prior\_weights}; all other fitting settings were unchanged.
+The mixed analyses fit ordinary SuSiE on the expanded matrix. They impose
+no additional constraint preventing different components from selecting
+different encodings of the same biological SNP.
+
+\subsection{Empirical Bayes estimation of coding priors}
+We implemented a tissue-specific empirical Bayes extension to estimate
+the additive, recessive, and dominant prior masses from all available
+gene-level mixed-coding fits. Following the principle of learning grouped
+priors across loci used in cTWAS \cite{zhao_adjusting_2024}, we adapted the
+update to SuSiE's categorical single-effect assignments. The three masses
+sum to one and are distributed uniformly among retained predictors within
+each coding class. The algorithm alternates SuSiE fitting with an update
+based on the summed assignment probabilities (\texttt{alpha}) of components
+with positive fitted variance. Assignments of exactly zero-variance
+components are integrated out. When all three classes are represented in
+every fit, the update normalizes these sums by the number of active
+components; otherwise it accounts for the classes available in each fit.
+This collapsed variational EM procedure targets
+a lower bound on the tissue-level working log marginal likelihood.
+Supplementary Methods provide the model, derivation, initialization, and
+convergence diagnostics.
+
+\subsection{Marginal association, permutation controls, and GTEx summaries}
+For every retained additive SNP, we fitted the marginal regression of
+$y$ on an intercept and that SNP's allele count, and recorded the
+two-sided coefficient $P$ value. The smallest such value was the
+gene--tissue marginal association statistic. The primary descriptive
+comparison retained gene--tissue pairs with minimum marginal $P<10^{-8}$,
+mean raw gene count at least 100, and available credible-set counts and
+SNP-overlap summaries for both models. This selection used additive
+marginal association, including when evaluating mixed-coding models.
+Weighted-model comparisons additionally required an available weighted
+fit. The descriptive scripts did not impose a separate convergence
+filter on the GTEx fits.
+
+For a negative control, the final processed phenotype was randomly
+permuted across the matched donors. The random seed was reset to 1
+within each gene--tissue analysis, and the same permutation was used
+for the additive and unweighted mixed models. Each model was refitted
+once using its original design matrix and fitting settings. The
+implementation did not fit a weighted mixed model to the permuted
+phenotype. We summarized the number of credible sets and the proportion
+of analyses returning at least one credible set after permutation.
+For the primary comparison, these quantities were evaluated in the
+analysis set selected using the unpermuted data. They describe behavior
+under this permutation control and do not estimate credible-set
+coverage in the real GTEx data.
+
+Credible-set members were mapped from predictor indices to biological
+SNP identifiers, collapsing repeated encodings of the same SNP within
+each set. We compared the number of reported credible sets, overlap
+between the unions of credible-set SNPs, and the sets of lead biological
+SNPs. For analyses with exactly one credible set from each model,
+identical SNP sets were classified as full overlap, intersecting but
+nonidentical SNP sets as partial overlap, and disjoint sets as no overlap.
+For analyses with multiple credible sets, any overlap between the two
+unions was distinguished from agreement of individual sets or lead
+variants.
+
+The lead predictor in a credible set was the member with the largest
+single-effect posterior assignment probability in the component
+generating that set. For older objects lacking a valid component index,
+the highest predictor-level posterior inclusion probability within the
+set was used instead; ties were resolved by the first maximizing member.
+Mixed-model credible sets were summarized by the encoding of their
+lead predictor, and gene--tissue pairs were classified by the combination
+of lead encodings across their sets. These labels summarize the fitted
+models and do not establish a biological mode of action. Lead-position
+summaries used genomic SNP position minus TSS, without reversing the
+sign for negative-strand genes. The plotted distributions were restricted
+to $\pm 200$ kb and used 10-kb bins; the fitted cis window remained
+$\pm 500$ kb.
+
+\subsection{Simulation design and genotype sampling}
+
+The completed benchmark was generated by \texttt{sim\_workhorse.R} and
+the R jobs written by \texttt{write\_jobs.R}. We fixed the sample size
+at $n=500$ and the fitted upper bound at $L_{\mathrm{fit}}=10$.
+For every true causal count $K=1,\ldots,5$, we enumerated all
+nonnegative integer triples $(K_A,K_R,K_D)$ summing to $K$, where zero
+excludes that generating coding. There are 55 such allocations. Each
+was crossed with PVE $h\in\{0.10,0.20,0.30,0.40\}$, yielding 220
+conditions with 400 scheduled replications per condition. Single-coding
+architectures permit $K=1,\ldots,5$, two-coding architectures
+$K=2,\ldots,5$, and the three-coding architecture $K=3,\ldots,5$.
+The true count $K$ is denoted by ``L'' in the PIP figure titles; it is
+distinct from the fixed fitted bound of ten components.
+
+For each replication, one pre-extracted GTEx PLINK genotype file was
+sampled uniformly from the available \texttt{.raw} files. Thus, the
+sampling frame was the available genotype-file collection rather than
+a new draw from a genome-wide gene list. SNPs with any missing
+genotype or no variation were removed. Across all donors in that file,
+genotypes were oriented to the minor allele, SNPs were required to
+have minor-allele frequency strictly greater than 0.05, and SNPs with
+a Pearson Hardy--Weinberg chi-square $P$ value below $10^{-8}$ were
+excluded. We then sampled 500 distinct donors without replacement,
+retaining the full-donor allele orientation and local genotype
+correlations. No additional MAF/HWE filtering or LD pruning was applied
+to this donor subset.
+
+For minor-allele dosage $G_{ij}\in\{0,1,2\}$, the candidate predictors
+were $G_{ij}$ (additive), $\mathbf{1}\{G_{ij}\geq1\}$ (dominant), and
+$\mathbf{1}\{G_{ij}=2\}$ (recessive). Each coding was filtered separately
+to require positive sample standard deviation and a column sum of at
+least five. This requires five allele copies for additive predictors,
+five carriers for dominant predictors, or five minor-allele homozygotes
+for recessive predictors; it does not require five donors in every
+genotype class. Consequently, the retained coding blocks can have
+different numbers of columns.
+
+The causal-SNP pool was the intersection of the retained additive SNPs
+and the retained SNPs of every non-additive coding requested by the
+allocation. We sampled $K$ distinct biological SNPs uniformly without
+replacement from this common pool and assigned the first $K_A$ additive,
+the next $K_R$ recessive, and the final $K_D$ dominant effects. Each
+causal SNP had exactly one generating coding, and there were no
+interactions. In conditions containing recessive effects, this common
+eligibility rule also restricts the additive and dominant causal SNPs
+to those retaining a recessive predictor. An ineligible draw or a
+zero-variance genetic signal produced a saved error without drawing a
+replacement locus. No tissue-specific expression phenotype, covariate
+adjustment, or inverse-normal transformation was used in the simulation.
+
+\subsection{Effect sizes, LD and phenotype generation}
+
+Let $W_{ik}$ be the generating encoding of causal SNP $k$ in donor $i$,
+and let $\overline{W}_k$ and $s_k$ be its sample mean and standard
+deviation. We standardized each causal predictor and independently
+sampled signs $a_k\in\{-1,1\}$ with equal probabilities:
+
+\begin{equation}
+z_{ik}=\frac{W_{ik}-\overline{W}_k}{s_k},\qquad
+ g_i^{(0)}=\sum_{k=1}^{K}a_k z_{ik}.
+\end{equation}
+
+For target PVE $h$, we applied one common rescaling to all effects:
+
+\begin{equation}
+b=\sqrt{\frac{h}{\widehat{\mathrm{Var}}(g^{(0)})}},\qquad
+ g_i=b g_i^{(0)},\qquad y_i=g_i+\epsilon_i,\qquad
+ \epsilon_i\stackrel{\mathrm{iid}}{\sim}N(0,1-h).
+\end{equation}
+
+Sample variance uses denominator $n-1$. This gives
+$\widehat{\mathrm{Var}}(g)=h$ while accounting for covariance among
+causal predictors. Each individual contribution $b a_k z_k$ has the
+same variance $b^2$; in LD this is not an allocation of $h/K$ to each
+SNP, because the variance of the sum also includes covariance terms.
+The target PVE is defined as sample genetic variance divided by sample
+genetic variance plus the generating noise variance. Realized
+$\widehat{\mathrm{Var}}(g)/\widehat{\mathrm{Var}}(y)$ can differ from
+$h$ because the noise is an independent Gaussian draw. Errors were
+neither orthogonalized against the genotypes nor rescaled after drawing.
+
+\subsection{Model fitting and SNP-level evaluation}
+
+We fitted \texttt{susieR::susie} to the retained additive matrix and to
+the concatenated additive, recessive, and dominant matrices. Both fits
+used the same outcome, $L_{\mathrm{fit}}=10$,
+\texttt{standardize = TRUE}, \texttt{estimate\_prior\_method = "optim"},
+\texttt{coverage = 0.95}, \texttt{min\_abs\_corr = 0.5}, and
+\texttt{max\_iter = 1000}. The true causal count, generating codings,
+and residual variance were not supplied. Other controls used the
+installed package defaults. The benchmark compares ordinary additive
+and unweighted mixed fits, not the weighted or EM-reweighted coding
+models. Uniform prior inclusion weights are over retained predictor
+columns; in the mixed fit, total prior weight per biological SNP
+therefore depends on the number of encodings surviving filtering.
+The standardization, prior-variance optimizer, and purity threshold
+differ from the GTEx analysis settings described above.
+
+For SuSiE-mix, coding-specific posterior assignment probabilities were
+summed within each single-effect component before calculating a PIP
+for biological SNP $j$:
+
+\begin{equation}
+\mathrm{PIP}_j=1-\prod_{\ell\in\mathcal{A}}
+ \left(1-\sum_{c\in C_j}\alpha_{\ell jc}\right).
+\end{equation}
+
+Here $C_j$ is the set of retained encodings of SNP $j$. The fitted
+prior variances were retained when calling \texttt{susie\_get\_pip},
+so its usual exclusion of inactive components was preserved. Final
+coding-specific PIPs were not summed. Mixed credible sets were mapped
+to unique biological SNP indices within each set, without reconstructing
+new credible sets from SNP-level PIPs. A reported set was considered
+covered if it contained at least one generating causal SNP, irrespective
+of the member's encoding. This evaluates SNP localization, not correct
+identification of a generating coding or a one-to-one correspondence
+between components and causal SNPs.
+
+Empirical coverage was the total number of covered reported sets divided
+by the total number of reported sets. Credible-set recovery was the
+number of generating causal SNPs appearing in the union of reported
+sets divided by the total number of generating causal SNPs; each SNP
+was counted once within a dataset. Runs with no reported set contributed
+zero recovery and no sets to the coverage or purity denominator. Purity
+was the mean of the saved minimum absolute within-set correlations,
+using the fitted predictor encodings for each method. Singleton purity
+was one. We did not recompute mixed-set purity on additive genotypes.
+Coverage and purity therefore weight reported sets, whereas recovery
+weights causal SNPs.
+
+\subsection{PIP curves, aggregation and computational record}
+
+At each common PIP threshold $t$, a SNP was selected when its PIP was
+at least $t$. We summed true positive (TP) and false positive (FP)
+counts across the included datasets and calculated power as TP divided
+by all causal SNPs, false positive rate as FP divided by all noncausal
+SNPs, and pooled empirical FDR as FP divided by TP plus FP. The last
+quantity is a pooled false discovery proportion, not the unweighted
+mean of per-dataset false discovery proportions. The no-discovery
+endpoint was defined as zero power and zero empirical FDR.
+
+Counts were evaluated on a common dense grid with steps of 0.001
+between 0.01 and 0.99, logarithmically spaced tails down to $10^{-12}$
+and up to $1-10^{-12}$, and endpoints at zero, one, and infinity.
+Tied PIPs entered together. Curves join threshold-specific points in
+decreasing threshold order; empirical-FDR curves were not sorted by
+FDR or replaced by an optimized envelope. The numerical comparisons
+near 10\% empirical FDR use the grid point immediately preceding the
+first exceedance of 0.10 in this order. Thresholds and achieved rates
+are supplied with the summary tables. These truth-based operating
+points are descriptive evaluations, not a proposed threshold-selection
+rule for data with unknown causal variants.
+
+For plots at fixed $K$, all compatible allocations within an architecture
+were pooled. For ``All L pooled'' plots, TP and FP counts were also
+summed across all available $K$ before rates were recalculated. This is
+equivalent to stacking the SNP observations; it does not average
+per-$K$ rates or give each $K$ equal weight. Larger loci contribute
+more noncausal SNPs, and higher causal counts contribute more causal
+SNPs. In mixed architectures, causal counts admitting more allocations
+also contribute more datasets. Available-case weights reflect the
+small number of failed draws.
+
+Replication $r$ used seed $1{,}000{,}000+r$, for $r=1,\ldots,400$,
+with the same seeds reused across allocations and PVE values. The
+archive comprised 221 checkpoints: 220 production-condition files and
+an older overlapping checkpoint. Nine duplicate condition--seed records
+were removed. Of 88,000 scheduled condition--replication records,
+12 had zero genetic variance and 87,988 were usable; no included fit
+was flagged as nonconverged. Errors were omitted from both methods
+rather than counted as no-discovery outcomes. Saved objects contain
+settings, seeds, the genotype-file path, causal SNPs and codings,
+standardized effects, convergence status, credible sets, and PIPs;
+they do not retain the simulated outcome, sampled donor indices, or
+full fitted models.
+
+Coverage, recovery, ROC, power--FDR, and lead-PIP figures display
+pooled point estimates without Monte Carlo uncertainty intervals.
+The coding PIP-mass figure additionally reports seed-block bootstrap
+intervals, as described below. Shared seeds define replication blocks
+across conditions and must be retained together in uncertainty analyses.
+The current figure set does not include a credible-set-size comparison.
+The analysis scripts, plotting code, checkpoint audit, configuration
+counts, and numerical summaries document the reported results. The
+cluster's R and package versions and the immutable genotype-file
+inventory were not recorded in these compact objects and remain to be
+added to the final reproducibility record.
+
+\subsection{Exact discovery and reliability of the global lead PIP}
+
+We used the saved coding-specific PIPs from the unweighted
+SuSiE-mix fit to select the largest PIP across all retained SNP--coding
+pairs in each dataset. Selection did not use generating truth, credible
+sets, or biological-SNP PIPs. A positive lead was unambiguous if no
+other predictor was within an absolute PIP difference of $10^{-12}$
+of the maximum. Multiple such predictors were recorded as tied leads,
+including ties across distinct SNPs or between true effects; they were
+not resolved using column order or truth. Datasets with all PIPs zero
+were recorded separately. There were 15,547 tied datasets and 71 with
+zero support among the 87,988 usable datasets; only 20 tied datasets
+had maximum PIP $\geq 0.9$.
+
+An exact discovery required the selected predictor to match
+both the SNP and coding of any generating effect. Errors were divided
+into a wrong coding at a causal SNP and selection of a noncausal SNP.
+For multiple causal effects, this evaluates the strongest reported hit;
+it does not measure recovery of every effect. For positive, unambiguous
+leads, we grouped maximum PIPs into ten bins, $[0,0.1),\ldots,[0.9,1]$,
+and compared mean PIP with the fraction of exact matches by called
+coding and PVE. Figure~\ref{fig:sim-lead-accuracy} pools all causal
+allocations and counts within PVE, with one observation per selected
+dataset; tables also retain PVE and causal count separately. Empty
+bins have no estimated accuracy. Table~\ref{tab:sim-lead-accuracy}
+restricts these leads to PIP $\geq 0.9$ and pools the full grid.
+
+In additive-only datasets, we calculated the frequency of
+each called coding among positive, unambiguous leads. The dominant
+and recessive high-PIP control rates instead used all 7,996 usable
+additive-only datasets as the denominator, counting whether a dataset
+produced an unambiguous non-additive global lead with PIP $\geq 0.9$.
+These are rates of false non-additive lead calls per simulated dataset,
+not false discovery proportions among non-additive calls in real data.
+The checked, deduplicated checkpoint collection was the same as for
+the SNP-localization analysis. Unequal retained coding blocks were
+reconstructed from saved predictor-to-SNP maps and checked against
+the generating indices. PIP excursions outside $[0,1]$ no larger than
+$10^{-10}$ were clipped for numerical roundoff; this affected 24
+datasets, including roundoff in biological-SNP PIPs. No dataset was
+excluded because of an invalid coding map or PIP.
+
+\subsection{Coding PIP-mass allocation under additive truth}
+
+For each additive-only PVE and causal-count condition, we
+pooled the raw coding-specific PIPs over all retained predictors and
+usable datasets. For coding $c$, the mass share was
+
+\begin{equation}
+\widehat{\pi}_c =
+\frac{\sum_{r}\sum_{j:(j,c)\in\mathcal{P}_r}\mathrm{PIP}_{rjc}}
+     {\sum_{r}\sum_{(j,c')\in\mathcal{P}_r}\mathrm{PIP}_{rjc'}},
+\end{equation}
+
+where $\mathcal{P}_r$ is the set of retained SNP--coding
+pairs in dataset $r$. No PIP threshold or credible-set filter was
+applied, and we pooled masses before taking the ratio instead of
+averaging dataset-specific ratios. The generating proportions were
+one for additive coding and zero for the other codings. Percentile
+95\% intervals used 500 bootstrap resamples of the 400 replication
+seeds, with shared resampling weights across conditions (bootstrap
+seed 20260911). The lead-PIP and coding-mass analyses summarize
+different quantities: a selected predictor's exact-match frequency
+and the distribution of total posterior mass, respectively. Neither
+analysis refitted SuSiE or tested the convergence or calibration of
+the weighted EM procedure.
+
+% Simulation figures use the saved full-data PDF outputs.
+\clearpage
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{simulation_figures/coverage_pure.pdf}
+\caption{\textbf{Credible-set coverage under single-coding architectures.}
+Rows show additive-only, dominant-only, and recessive-only generating
+effects; columns show PVE of 10\%, 20\%, 30\%, and 40\%. The horizontal
+axis gives the true number of distinct causal SNPs, $K=1,\ldots,5$.
+Blue denotes additive SuSiE and pink denotes SuSiE-mix. Each point is
+the number of reported credible sets containing at least one causal
+biological SNP divided by all reported sets, pooled over 399--400
+usable replications per condition, each with 500 donors. Mixed sets
+are mapped to biological SNPs irrespective of coding. Runs without a
+set contribute no sets to this denominator. The dashed line marks
+nominal 95\% coverage; the shared coverage axis starts at 0.75 and
+ends at 1. Points are horizontally offset for visibility. No
+uncertainty intervals are shown; both methods use ten fitted components.}
+\label{fig:sim-coverage-pure}
+\end{figure}
+\clearpage
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{simulation_figures/coverage_mixed.pdf}
+\caption{\textbf{Credible-set coverage under mixed-coding architectures.}
+Rows show additive plus dominant, additive plus recessive, recessive
+plus dominant, and all three generating encodings. Columns show PVE.
+Within each panel, the horizontal axis gives $K=2,\ldots,5$ for pairs
+of encodings or $K=3,\ldots,5$ for all three. Every named encoding is
+represented by at least one causal SNP. Points pool all compatible
+allocations at fixed $K$ (399--400 usable replications per allocation,
+500 donors per dataset). Blue denotes SuSiE and pink SuSiE-mix.
+Coverage is the fraction of reported sets containing any causal
+biological SNP, as in Fig.~\ref{fig:sim-coverage-pure}; the dashed
+line marks 95\%. The y-axis is restricted to 0.75--1. No uncertainty
+intervals are shown, and conditions sharing seeds are dependent.}
+\label{fig:sim-coverage-mixed}
+\end{figure}
+\clearpage
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{simulation_figures/power_fdr_pure_all_L.pdf}
+\caption{\textbf{PIP-based power versus empirical FDR under single-coding architectures.}
+Rows show additive-only, dominant-only, and recessive-only effects;
+columns show PVE. Blue denotes SuSiE and pink SuSiE-mix. Within each
+panel, all usable simulations with $K=1,\ldots,5$ are pooled, giving
+one curve per method. At each PIP threshold, TP and FP counts are
+summed before calculating power as TP divided by all causal SNPs and
+empirical FDR as FP/(TP+FP). Thus empirical FDR is a pooled false
+discovery proportion, not the mean of per-dataset FDPs. Curves follow
+decreasing PIP thresholds, with the no-discovery endpoint set to (0,0).
+The displayed empirical-FDR range is 0--0.25. Codings are combined
+within components to obtain one mixed PIP per biological SNP.
+Each dataset has 500 donors; curves have no uncertainty bands and
+do not establish formal FDR control.}
+\label{fig:sim-fdr-pure}
+\end{figure}
+\clearpage
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{simulation_figures/power_fdr_mixed_all_L.pdf}
+\caption{\textbf{PIP-based power versus empirical FDR under mixed-coding architectures.}
+Rows show additive plus dominant, additive plus recessive, recessive
+plus dominant, and all three encodings; columns show PVE. Blue denotes
+SuSiE and pink SuSiE-mix. Counts are pooled across every compatible
+allocation and all available causal counts ($K=2,\ldots,5$ for pairs;
+$K=3,\ldots,5$ for all three), producing one curve per method in each
+panel. Higher causal counts and counts admitting more allocations
+contribute more causal SNP observations. Axes, SNP-level PIPs,
+threshold ordering and empirical-FDR definition are as in
+Fig.~\ref{fig:sim-fdr-pure}. Each dataset has 500 donors, the displayed
+empirical-FDR range is 0--0.25, and no uncertainty bands are shown.}
+\label{fig:sim-fdr-mixed}
+\end{figure}
+\clearpage
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{simulation_figures/lead_pip_accuracy_pooled_K.pdf}
+\caption{\textbf{Exact SNP--coding discovery by global lead PIP.}
+Panels show PVE; colors indicate the called coding.
+Each dataset contributes its single highest-PIP predictor when positive
+and unambiguous. Points compare mean coding-specific PIP with exact-match
+frequency in ten PIP bins, pooling all causal allocations and counts
+within PVE. Point size increases with bin count; the dashed line is
+equality. Correctness requires both the causal SNP and its generating
+coding. Ties and all-zero datasets are excluded from these conditional
+rates and counted separately in Methods. Curves are descriptive point
+estimates; condition-specific counts and weak-signal failures are reported
+in the simulation tables and Results.}
+\label{fig:sim-lead-accuracy}
+\end{figure}
+\clearpage
+
+%%%%%%%%%%%%%%%% REFERENCES %%%%%%%%%%%%%%%
+
+\clearpage % Clear all remaining figures and tables then start a new page
+
+% The list of references goes after the main text and before the acknowledgements
+% When preparing an initial submission, we recommend you use BibTeX, like this:
+%
+\bibliography{library} % for a file named science_template.bib
+\bibliographystyle{sciencemag}
+
+% After the paper has completed peer review and been revised ready for acceptance,
+% you should comment out the lines above and copy-paste the contents of your .bbl
+% file here instead. This will help ensure that our conversion software works correctly.
+% Remember to re-run BibTeX first - check the timestamp!
+%
+% Example of the first three entries copy-pasted from science_template.bbl:
+%
+%\begin{thebibliography}{1}
+%
+%\bibitem{example}
+%A.~N. {Author}, An example reference. \emph{Journal of Improbable Research}
+%  \textbf{1}, 67 (2020).
+%
+%\bibitem{example2}
+%F.~M. {Surname}, S.~{Author}, A second example. \emph{Interesting Research
+%  Letters} \textbf{32}, 897 (2019).
+%
+%\bibitem{example_preprint}
+%P.~{One}, P.~{Two}, P.~{Three}, {An unpublished preprint}. \emph{preprint}
+%  (2021), arXiv:2101.12345.
+%
+%\end{thebibliography}
+
+
+%%%%%%%%%%%%%%%% ACKNOWLEDGEMENTS %%%%%%%%%%%%%%%
+
+\section*{Acknowledgments}
+Here you can thank helpful colleagues who did not meet the journal's authorship criteria, or
+provide other acknowledgements that don't fit the (compulsory) subheadings below.
+Formatting requirements for each of these sections differ between the \textit{Science}-family
+journals; consult the instructions to authors on the journal website for full details.
+\paragraph*{Funding:}
+List the grants, fellowships etc. that funded the research;
+use initials to specify which author(s) were supported by each source.
+Include grant numbers when appropriate or required by the funding agency.
+For example: F.~A. was funded by the Generous Science Agency grant~2372.
+\paragraph*{Author contributions:}
+List each author’s contributions to the paper.
+Use initials to abbreviate author names.
+\paragraph*{Competing interests:}
+Disclose any potential conflicts of interest for all authors, such as patent applications,
+additional affiliations, consultancies, financial relationships etc.
+See the journal editorial policies web page for types of competing interest that must be declared.
+If there are no competing interests, state:
+``There are no competing interests to declare.''
+\paragraph*{Data, code and materials availability:}
+Specify where the data, software, physical samples, simulation outputs or other materials
+underlying the paper are archived.
+These must be publicly accessible when the paper is published (without embargo) and enable
+readers to fully reproduce all the results in the paper.
+Contact the editor if you’re unsure what needs to be shared.
+
+Our preference is for digital material to be deposited in a suitable non-profit online data or
+software repository that assigns it a DOI.
+Alternatively, an institutional repository, subject-based archive, commercial repository etc.
+is acceptable, as are (short) supplementary tables or a machine-readable supplementary data file.
+`Available on request’ or personal web pages are not allowed.
+
+Cite the relevant DOI \cite{dataset}, URL \cite{example_url} or reference \cite{example2}
+in this statement.
+These \textit{do not} count towards the reference limit if they are only cited in the acknowledgements.
+Be specific and state a unique identifier -- such as an accession number, software version number
+or observation ID -- so readers can easily retrieve the exact material used.
+
+Declare any restrictions on sharing or re-use -- such as a materials transfer agreement (MTA) or
+legal restrictions -- which must be approved by your editor.
+Unreasonable restrictions will preclude publication.
+Consult the journal's editorial policies web page for more details.
+
+If there are no physical materials, state:
+``No physical materials were generated in this work.''
+
+
+%%%%%%%%%%%%%%%% SUPPLEMENT LIST %%%%%%%%%%%%%%%
+\subsection*{Supplementary materials}
+Supplementary Methods: empirical Bayes estimation of coding priors.\\
+Figures S1--S17: simulation recovery, purity, ROC curves, and additive-only coding controls.\\
+Simulation summary tables and checkpoint audit (\texttt{simulation\_tables/}).
+
+\clearpage
+\renewcommand{\thefigure}{S\arabic{figure}}
+\renewcommand{\thetable}{S\arabic{table}}
+\renewcommand{\theequation}{S\arabic{equation}}
+\renewcommand{\thepage}{S\arabic{page}}
+\setcounter{figure}{0}
+\setcounter{table}{0}
+\setcounter{equation}{0}
+\setcounter{page}{1}
+\begin{center}
+\section*{Supplementary Materials for\\ \scititle}
+William R.P.~Denault, Peter~Carbonetto, Gao~Wang, Matthew~Stephens\\
+Corresponding author: williade@uio.no
+\end{center}
+\subsection*{Supplementary Methods: empirical Bayes coding priors}
+\label{supp:em-coding-priors}
+
+\subsubsection*{Model and empirical Bayes target}
+For gene $g$ in tissue $t$, let $X_{gt}$ contain the retained SNP--coding
+predictors and let $y_{gt}$ be the processed expression phenotype. SuSiE
+represents the regression coefficient vector as the sum of $L_{gt}$
+single-effect vectors. Component $\ell$ selects a predictor
+$J_{gt\ell}$ and assigns it a zero-mean Gaussian effect with variance $V_{gt\ell}$;
+the remaining entries of that component are zero. The regression includes
+an intercept and residual variance $\sigma_{gt}^{2}$. Each component has
+the same predictor selection probabilities within a gene--tissue fit.
+Different components may select the same SNP or different encodings of
+that SNP.
+
+Let $c(j)\in\{A,R,D\}$ denote the coding of predictor $j$,
+$m_{gtc}$ the number of retained predictors in class $c$, and
+$\mathcal{A}_{gt}=\{c:m_{gtc}>0\}$ the available classes. The tissue-specific
+parameters satisfy $\pi_{tc}\geq 0$ and $\sum_{c\in\{A,R,D\}}\pi_{tc}=1$.
+The predictor selection probability supplied to SuSiE is
+\begin{equation}
+ w_{gtj}=\Pr(J_{gt\ell}=j\mid\pi_t)
+ =\frac{\pi_{t,c(j)}}
+ {m_{gt,c(j)}\sum_{d\in\mathcal{A}_{gt}}\pi_{td}}.
+ \label{eq:em-predictor-prior}
+\end{equation}
+Thus, when all classes are available, $\pi_{tc}$ is the total prior mass
+for coding $c$ within a single component. Division by $m_{gtc}$ accounts
+for unequal numbers of retained columns. If a class is absent, the
+denominator conditions selection on the available classes. These
+parameters describe categorical prior masses, rather than per-predictor
+Bernoulli inclusion probabilities or fractions of phenotypic variance.
+
+We use a working model that treats gene-level likelihoods within each
+tissue as independent. Writing $\theta_{gt}$ for the gene-specific
+nuisance parameters, the empirical Bayes target is
+\begin{equation}
+ \mathcal{L}_t(\pi_t,\theta_t)
+ =\sum_g\log p(y_{gt}\mid X_{gt},\pi_t,\theta_{gt}).
+ \label{eq:em-marginal-target}
+\end{equation}
+SuSiE supplies a variational approximation $q_{gt}$ to the posterior of
+the component assignments and effects, collectively denoted $z_{gt}$
+\cite{wang_simple_2020}. The corresponding evidence lower bound (ELBO) is
+\begin{equation}
+ \mathcal{F}_t(q,\pi_t,\theta_t)
+ =\sum_g E_{q_{gt}}\left[
+ \log\frac{p(y_{gt},z_{gt}\mid X_{gt},\pi_t,\theta_{gt})}
+ {q_{gt}(z_{gt})}\right]
+ \leq\mathcal{L}_t(\pi_t,\theta_t).
+ \label{eq:em-elbo}
+\end{equation}
+Alternating SuSiE's iterative Bayesian stepwise selection with the
+coding-prior update is therefore a variational EM procedure. It does not
+evaluate the exact multi-effect marginal likelihood or guarantee a
+global maximum. Correlated expression and overlapping cis-regions also
+mean that Eq.~(\ref{eq:em-marginal-target}) is a working objective, rather
+than the likelihood of a fitted joint model of all expression traits.
+
+\subsubsection*{Component responsibilities and the M-step}
+At outer iteration $r$, the SuSiE fit provides
+$\alpha_{gt\ell j}^{(r)}=q_{gt}^{(r)}(J_{gt\ell}=j)$, with each row summing
+to one. Holding the fitted variances fixed, define the active components
+as $\mathcal{H}_{gt}^{(r)}=\{\ell:V_{gt\ell}^{(r)}>0\}$ and let
+$K_{gt}^{(r)}=|\mathcal{H}_{gt}^{(r)}|$. The expected number of active
+component assignments to coding $c$ is
+\begin{equation}
+ C_{gtc}^{(r)}
+ =\sum_{\ell\in\mathcal{H}_{gt}^{(r)}}\sum_{j:c(j)=c}\alpha_{gt\ell j}^{(r)},
+ \qquad \sum_{c\in\mathcal{A}_{gt}}C_{gtc}^{(r)}=K_{gt}^{(r)}.
+ \label{eq:em-counts}
+\end{equation}
+Holding these responsibilities and the nuisance parameters fixed, the
+part of the collapsed expected complete log likelihood depending on $\pi_t$ is
+\begin{equation}
+ \begin{array}{rl}
+ Q_t(\pi_t\mid q^{(r)})={}&
+ \displaystyle\sum_g\sum_{c\in\mathcal{A}_{gt}}
+ C_{gtc}^{(r)}\log\pi_{tc}\\[6pt]
+ &\displaystyle{}-\sum_g K_{gt}^{(r)}
+ \log\left(\sum_{d\in\mathcal{A}_{gt}}\pi_{td}\right)
+ +\mathrm{constant}.
+ \end{array}
+ \label{eq:em-q}
+\end{equation}
+The terms involving $\log m_{gtc}$ are constant with respect to $\pi_t$.
+If every fit contains all three coding classes, the second term in
+Eq.~(\ref{eq:em-q}) vanishes on the simplex. Maximizing the first term
+subject to $\sum_c\pi_{tc}=1$ gives
+\begin{equation}
+ \pi_{tc}^{(r+1)}
+ =\frac{\sum_g C_{gtc}^{(r)}}{\sum_g K_{gt}^{(r)}}.
+ \label{eq:em-closed-update}
+\end{equation}
+Thus, each active component contributes one unit of posterior assignment
+mass; the update pools across genes within a tissue. If no active component
+is available, the preceding prior is retained; a tissue without an existing
+prior receives a uniform initialization rather than a data-driven estimate.
+The update does not first
+normalize each gene's marginal PIPs or select only genes with a reported
+credible set.
+
+If some classes are absent, the normalization term in
+Eq.~(\ref{eq:em-q}) must be retained. We aggregate the sufficient statistics
+over the seven nonempty subsets of $\{A,R,D\}$ and maximize this objective
+in log weights using BFGS with an analytic gradient. The objective is
+concave in log weights, up to an arbitrary common additive constant.
+The implementation uses relative optimization tolerance $10^{-13}$,
+at most 2,000 optimization steps, and a maximum absolute gradient
+tolerance of $10^{-6}$ for the normalized objective. If groups of classes
+are disconnected in their
+co-occurrence across fits, their relative total masses are not
+identified; those totals retain their previous values. Each M-step is
+checked for a nondecrease in $Q_t$ within numerical tolerance. No
+pseudocount is added to the posterior assignment counts.
+
+\subsubsection*{Why the update uses component probabilities}
+A marginal predictor PIP is a probability of selection by at least one
+component, rather than an expected count of component assignments. For
+the components included in the PIP calculation, SuSiE combines
+responsibilities as
+\begin{equation}
+ \mathrm{PIP}_{gtj}
+ =1-\prod_{\ell\in\mathcal{I}_{gt}}
+       (1-\alpha_{gt\ell j}),
+ \label{eq:em-pip}
+\end{equation}
+where $\mathcal{I}_{gt}$ excludes components with negligible prior
+variance under the package's PIP convention. Consequently, summed PIPs
+by coding, divided by total PIP, do not generally yield the M-step in
+Eq.~(\ref{eq:em-closed-update}). For example, with one predictor per
+coding and two active component rows each equal to $(0.8,0.1,0.1)$ in $(A,R,D)$
+order, the M-step gives $(0.8,0.1,0.1)$. The corresponding PIPs are
+$(0.96,0.19,0.19)$, whose normalized shares are approximately
+$(0.716,0.142,0.142)$.
+
+The collapsed M-step integrates out assignments of components whose
+fitted variance is exactly zero. For such a component, the effect is zero
+regardless of the selected predictor; summing over its assignment gives
+$\sum_j w_{gtj}=1$. This removes its coding-prior contribution without
+changing the observed-data likelihood at the fixed fitted variances.
+Equivalently, the full variational bound is recovered by setting inactive
+assignment distributions to their priors. The remaining responsibilities
+give Eqs.~(\ref{eq:em-counts})--(\ref{eq:em-closed-update}).
+
+Every positive-variance row contributes, including components without a
+reported credible set and those with variance below the package's numerical
+PIP-reporting tolerance. The exact-zero boundary is not replaced by a
+positive variance threshold. There is no additional screen on association
+$P$ values, lead PIP, CS membership, or purity. Positive fitted variance
+defines an active model component; it does not establish that the component
+represents a true biological signal.
+
+\subsubsection*{Relation to cTWAS}
+cTWAS also pools information across loci to learn grouped priors by
+empirical Bayes \cite{zhao_adjusting_2024}. Its independent Bernoulli
+inclusion model gives a group-specific update equal to the sum of
+predictor PIPs divided by the number of predictors in that group
+(Methods, Eq.~5 of Zhao et al.). Those per-predictor inclusion
+probabilities need not sum to one across groups. Our three coding masses
+instead parameterize the categorical selection within each SuSiE
+component, leading to Eqs.~(\ref{eq:em-q}) and
+(\ref{eq:em-closed-update}). cTWAS additionally estimates shared
+group-specific effect variances; this extension estimates coding
+selection masses while retaining gene--tissue-specific component and
+residual variances. In particular, SuSiE's
+\texttt{estimate\_prior\_method = "EM"} setting estimates component
+effect variances internally; the outer update described here is what
+estimates the coding masses.
+
+\subsubsection*{Initialization, computation, and interpretation}
+The original unweighted genome-wide mixed-coding scan supplies the
+initial component posteriors. Its uniform weights over retained columns
+need not correspond to a common tissue-level coding-mass vector, so this
+scan is treated as an initialization. Before the first weighted scan,
+the pooled responsibilities determine the first coding-prior update.
+Subsequent iterations alternate updates from the preceding weighted
+fits and refitting with the new tissue-specific weights in
+Eq.~(\ref{eq:em-predictor-prior}). Each refit starts from the preceding
+component posterior moments and nuisance variances, while replacing the
+old predictor weights with the newly estimated values. All $L$ component
+rows remain in saved fits and initializations; only the coding-prior
+sufficient statistics exclude zero-variance rows. The active set is
+determined anew from the fitted variances at each outer update.
+
+The EM worker fits only the weighted mixed-coding model, using $L=10$,
+\texttt{standardize = FALSE}, \texttt{min\_abs\_corr = 0}, and internal
+EM estimation of effect variances. It allows 1,000 inner SuSiE iterations
+with ELBO tolerance $10^{-5}$. Predictor identities and component
+probabilities are validated before pooling, and unconverged fits block
+advancement to the next outer iteration. For every tissue and iteration,
+the pipeline saves the three priors, active assignment counts, total and
+active fit counts, total and active component counts, zero-variance counts,
+collapsed M-step objective gain, and largest absolute change in a coding
+mass. The summed source-fit ELBO includes all valid fits, including fits
+with no active components, and is recorded when available for every fit. Gene-level fits are retained separately for each iteration. Outer iterations are requested in batches; a requested
+iteration count alone does not establish convergence. Assessment of
+stabilization uses the coding-mass changes and ELBO trajectory, with
+ELBO comparisons restricted to the same contributing fits and model
+settings.
+
+The estimated masses summarize support for coding classes under the
+chosen predictor construction, filtering, and effect-size priors. A SNP
+appearing in several gene-level fits contributes separately to each
+predictor--outcome occurrence; the weights are not estimates of the
+fraction of distinct causal SNPs following each mode of inheritance.
+The simulation results reported here evaluate the unweighted model and
+do not establish calibration of this empirical Bayes extension.
+
+\clearpage
+\subsection*{Simulation figures}
+The following figures accompany the simulation methods and results in
+the main text. ``L'' in ROC titles denotes the generating causal count
+$K$, not the fitted upper bound of ten. The figures use the completed
+checkpoint archive described in Methods. Most report point estimates; the coding PIP-mass figure additionally
+shows bootstrap intervals that preserve shared replication seeds.
+\clearpage
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{simulation_figures/power_pure.pdf}
+\caption{\textbf{Causal-SNP recovery by credible sets under single-coding architectures.}
+Rows show additive-only, dominant-only, and recessive-only effects; columns show PVE. The horizontal axis gives $K=1,\ldots,5$.
+Blue denotes SuSiE and pink SuSiE-mix. Recovery is the number of
+generating causal biological SNPs found in the union of reported
+credible sets divided by all generating causal SNPs. Each SNP counts
+once per dataset, regardless of how many sets or codings represent it.
+Runs with no credible set have zero recovery. Compatible allocations
+are pooled at fixed $K$, with 399--400 usable replications per allocation
+and 500 donors per dataset. Points are pooled estimates without
+uncertainty intervals. This set-based measure differs from selection
+using a PIP threshold and can increase with set size.}
+\label{fig:sim-power-pure}
+\end{figure}
+\clearpage
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{simulation_figures/power_mixed.pdf}
+\caption{\textbf{Causal-SNP recovery by credible sets under mixed-coding architectures.}
+Rows show additive plus dominant, additive plus recessive, recessive plus dominant, and all three encodings; columns show PVE. The horizontal axis gives $K=2,\ldots,5$ for pairs of encodings and $K=3,\ldots,5$ for all three.
+Blue denotes SuSiE and pink SuSiE-mix. Recovery is the number of
+generating causal biological SNPs found in the union of reported
+credible sets divided by all generating causal SNPs. Each SNP counts
+once per dataset, regardless of how many sets or codings represent it.
+Runs with no credible set have zero recovery. Compatible allocations
+are pooled at fixed $K$, with 399--400 usable replications per allocation
+and 500 donors per dataset. Points are pooled estimates without
+uncertainty intervals. This set-based measure differs from selection
+using a PIP threshold and can increase with set size.}
+\label{fig:sim-power-mixed}
+\end{figure}
+\clearpage
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{simulation_figures/purity_pure.pdf}
+\caption{\textbf{Credible-set purity under single-coding architectures.}
+Rows show additive-only, dominant-only, and recessive-only effects; columns show PVE and the horizontal axis gives the
+true causal count. Blue denotes SuSiE and pink SuSiE-mix. Points are
+means of the saved minimum absolute within-set correlations across
+reported credible sets, pooling compatible allocations at fixed count.
+Singleton purity is one; no-set runs contribute no sets. Mixed purity
+uses fitted coding-specific predictors, whereas additive SuSiE uses
+additive genotypes, so the measures do not give both methods a common
+additive-LD scale. Both fits use a reporting threshold of 0.5. Each
+dataset has 500 donors and no uncertainty intervals are shown.}
+\label{fig:sim-purity-pure}
+\end{figure}
+\clearpage
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{simulation_figures/purity_mixed.pdf}
+\caption{\textbf{Credible-set purity under mixed-coding architectures.}
+Rows show additive plus dominant, additive plus recessive, recessive plus dominant, and all three encodings; columns show PVE and the horizontal axis gives the
+true causal count. Blue denotes SuSiE and pink SuSiE-mix. Points are
+means of the saved minimum absolute within-set correlations across
+reported credible sets, pooling compatible allocations at fixed count.
+Singleton purity is one; no-set runs contribute no sets. Mixed purity
+uses fitted coding-specific predictors, whereas additive SuSiE uses
+additive genotypes, so the measures do not give both methods a common
+additive-LD scale. Both fits use a reporting threshold of 0.5. Each
+dataset has 500 donors and no uncertainty intervals are shown.}
+\label{fig:sim-purity-mixed}
+\end{figure}
+\clearpage
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{simulation_figures/roc_pure_all_L.pdf}
+\caption{\textbf{Pooled ROC curves under single-coding architectures.}
+Rows show additive-only, dominant-only, and recessive-only effects; columns show PVE. Blue denotes SuSiE and pink
+SuSiE-mix. Each panel pools all available causal counts and compatible
+allocations into one curve per method by summing TP and FP at each
+common PIP threshold. The vertical axis is TP divided by all causal
+SNPs; the horizontal axis is FP divided by all noncausal SNPs. The
+dashed diagonal indicates equal true and false positive rates.
+Only FPR from 0 to 0.25 is displayed. Each dataset has 500 donors;
+PIPs and truth are evaluated at the biological-SNP level. Larger loci
+contribute more noncausal SNPs. Curves follow threshold order and
+have no uncertainty bands. FPR is distinct from empirical FDR.}
+\label{fig:sim-roc-pure}
+\end{figure}
+\clearpage
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{simulation_figures/roc_mixed_all_L.pdf}
+\caption{\textbf{Pooled ROC curves under mixed-coding architectures.}
+Rows show additive plus dominant, additive plus recessive, recessive plus dominant, and all three encodings; columns show PVE. Blue denotes SuSiE and pink
+SuSiE-mix. Each panel pools all available causal counts and compatible
+allocations into one curve per method by summing TP and FP at each
+common PIP threshold. The vertical axis is TP divided by all causal
+SNPs; the horizontal axis is FP divided by all noncausal SNPs. The
+dashed diagonal indicates equal true and false positive rates.
+Only FPR from 0 to 0.25 is displayed. Each dataset has 500 donors;
+PIPs and truth are evaluated at the biological-SNP level. Larger loci
+contribute more noncausal SNPs. Curves follow threshold order and
+have no uncertainty bands. FPR is distinct from empirical FDR.}
+\label{fig:sim-roc-mixed}
+\end{figure}
+\clearpage
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{simulation_figures/roc_pure_L1.pdf}
+\caption{\textbf{ROC curves for 1 causal SNP under single-coding architectures.}
+The true causal count is fixed at $K=1$, while both fitted models
+allow ten components. Rows show additive-only, dominant-only, and recessive-only effects; columns show PVE. Blue
+denotes SuSiE and pink SuSiE-mix. Compatible allocations are pooled
+within each panel, using 399--400 usable replications per allocation
+and 500 donors per dataset. ROC rates, the diagonal reference, and
+the displayed FPR range of 0--0.25 are as in
+Fig.~\ref{fig:sim-roc-pure}. No uncertainty bands are shown.}
+\label{fig:sim-roc-pure-L1}
+\end{figure}
+\clearpage
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{simulation_figures/roc_pure_L2.pdf}
+\caption{\textbf{ROC curves for 2 causal SNPs under single-coding architectures.}
+The true causal count is fixed at $K=2$, while both fitted models
+allow ten components. Rows show additive-only, dominant-only, and recessive-only effects; columns show PVE. Blue
+denotes SuSiE and pink SuSiE-mix. Compatible allocations are pooled
+within each panel, using 399--400 usable replications per allocation
+and 500 donors per dataset. ROC rates, the diagonal reference, and
+the displayed FPR range of 0--0.25 are as in
+Fig.~\ref{fig:sim-roc-pure}. No uncertainty bands are shown.}
+\label{fig:sim-roc-pure-L2}
+\end{figure}
+\clearpage
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{simulation_figures/roc_pure_L3.pdf}
+\caption{\textbf{ROC curves for 3 causal SNPs under single-coding architectures.}
+The true causal count is fixed at $K=3$, while both fitted models
+allow ten components. Rows show additive-only, dominant-only, and recessive-only effects; columns show PVE. Blue
+denotes SuSiE and pink SuSiE-mix. Compatible allocations are pooled
+within each panel, using 399--400 usable replications per allocation
+and 500 donors per dataset. ROC rates, the diagonal reference, and
+the displayed FPR range of 0--0.25 are as in
+Fig.~\ref{fig:sim-roc-pure}. No uncertainty bands are shown.}
+\label{fig:sim-roc-pure-L3}
+\end{figure}
+\clearpage
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{simulation_figures/roc_pure_L4.pdf}
+\caption{\textbf{ROC curves for 4 causal SNPs under single-coding architectures.}
+The true causal count is fixed at $K=4$, while both fitted models
+allow ten components. Rows show additive-only, dominant-only, and recessive-only effects; columns show PVE. Blue
+denotes SuSiE and pink SuSiE-mix. Compatible allocations are pooled
+within each panel, using 399--400 usable replications per allocation
+and 500 donors per dataset. ROC rates, the diagonal reference, and
+the displayed FPR range of 0--0.25 are as in
+Fig.~\ref{fig:sim-roc-pure}. No uncertainty bands are shown.}
+\label{fig:sim-roc-pure-L4}
+\end{figure}
+\clearpage
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{simulation_figures/roc_pure_L5.pdf}
+\caption{\textbf{ROC curves for 5 causal SNPs under single-coding architectures.}
+The true causal count is fixed at $K=5$, while both fitted models
+allow ten components. Rows show additive-only, dominant-only, and recessive-only effects; columns show PVE. Blue
+denotes SuSiE and pink SuSiE-mix. Compatible allocations are pooled
+within each panel, using 399--400 usable replications per allocation
+and 500 donors per dataset. ROC rates, the diagonal reference, and
+the displayed FPR range of 0--0.25 are as in
+Fig.~\ref{fig:sim-roc-pure}. No uncertainty bands are shown.}
+\label{fig:sim-roc-pure-L5}
+\end{figure}
+\clearpage
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{simulation_figures/roc_mixed_L2.pdf}
+\caption{\textbf{ROC curves for 2 causal SNPs under mixed-coding architectures.}
+The true causal count is fixed at $K=2$, while both fitted models
+allow ten components. Rows show additive plus dominant, additive plus recessive, recessive plus dominant, and all three encodings; columns show PVE. Blue
+denotes SuSiE and pink SuSiE-mix. Compatible allocations are pooled
+within each panel, using 399--400 usable replications per allocation
+and 500 donors per dataset. ROC rates, the diagonal reference, and
+the displayed FPR range of 0--0.25 are as in
+Fig.~\ref{fig:sim-roc-mixed}. No uncertainty bands are shown. The all-three-encodings row is not applicable for two causal SNPs.}
+\label{fig:sim-roc-mixed-L2}
+\end{figure}
+\clearpage
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{simulation_figures/roc_mixed_L3.pdf}
+\caption{\textbf{ROC curves for 3 causal SNPs under mixed-coding architectures.}
+The true causal count is fixed at $K=3$, while both fitted models
+allow ten components. Rows show additive plus dominant, additive plus recessive, recessive plus dominant, and all three encodings; columns show PVE. Blue
+denotes SuSiE and pink SuSiE-mix. Compatible allocations are pooled
+within each panel, using 399--400 usable replications per allocation
+and 500 donors per dataset. ROC rates, the diagonal reference, and
+the displayed FPR range of 0--0.25 are as in
+Fig.~\ref{fig:sim-roc-mixed}. No uncertainty bands are shown.}
+\label{fig:sim-roc-mixed-L3}
+\end{figure}
+\clearpage
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{simulation_figures/roc_mixed_L4.pdf}
+\caption{\textbf{ROC curves for 4 causal SNPs under mixed-coding architectures.}
+The true causal count is fixed at $K=4$, while both fitted models
+allow ten components. Rows show additive plus dominant, additive plus recessive, recessive plus dominant, and all three encodings; columns show PVE. Blue
+denotes SuSiE and pink SuSiE-mix. Compatible allocations are pooled
+within each panel, using 399--400 usable replications per allocation
+and 500 donors per dataset. ROC rates, the diagonal reference, and
+the displayed FPR range of 0--0.25 are as in
+Fig.~\ref{fig:sim-roc-mixed}. No uncertainty bands are shown.}
+\label{fig:sim-roc-mixed-L4}
+\end{figure}
+\clearpage
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{simulation_figures/roc_mixed_L5.pdf}
+\caption{\textbf{ROC curves for 5 causal SNPs under mixed-coding architectures.}
+The true causal count is fixed at $K=5$, while both fitted models
+allow ten components. Rows show additive plus dominant, additive plus recessive, recessive plus dominant, and all three encodings; columns show PVE. Blue
+denotes SuSiE and pink SuSiE-mix. Compatible allocations are pooled
+within each panel, using 399--400 usable replications per allocation
+and 500 donors per dataset. ROC rates, the diagonal reference, and
+the displayed FPR range of 0--0.25 are as in
+Fig.~\ref{fig:sim-roc-mixed}. No uncertainty bands are shown.}
+\label{fig:sim-roc-mixed-L5}
+\end{figure}
+\clearpage
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{simulation_figures/additive_only_lead_coding_compact.pdf}
+\caption{\textbf{Lead coding under wholly additive generating effects.}
+Panels show PVE and the horizontal axis gives the number of
+causal SNPs. Each colored curve is the number of positive, unambiguous
+global leads using that coding divided by all such leads, without a
+PIP threshold. All SNPs compete for the lead. Among 7,996 usable
+additive-only datasets, 6,561 had unambiguous positive leads; tied
+datasets are excluded from these shares and reported in the tables.
+These ranking frequencies do not represent coding PIP-mass shares.
+No uncertainty intervals are shown.}
+\label{fig:sim-additive-lead}
+\end{figure}
+\clearpage
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{simulation_figures/additive_only_pip_allocation_compact.pdf}
+\caption{\textbf{Coding PIP-mass allocation under wholly additive generating effects.}
+Panels show PVE and the horizontal axis gives the number of
+causal SNPs. Each share pools all PIPs of one coding across usable
+datasets and divides by the total PIP mass over all three codings.
+Every retained predictor contributes, without a credible-set or PIP
+filter. The true generating proportions are one for additive coding
+and zero for recessive and dominant coding. Bars show 95\% percentile
+intervals from 500 bootstrap resamples of shared replication seeds.
+Nonzero non-additive mass under additive truth limits interpreting these
+shares as proportions of biological effects.}
+\label{fig:sim-additive-pip-mass}
+\end{figure}
+\clearpage
+
+\end{document}

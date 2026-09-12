@@ -182,4 +182,31 @@ export EM_TEST_FAIL_R=0
     "${SUSIE_MIX_PROJECT_DIR}/results_em/iteration_001"
 grep -Fxq '185' "$EM_TEST_R_ARGS"
 grep -Fxq "${SUSIE_MIX_PROJECT_DIR}/script/scan_tissue_attempt/run_em_chunk.R" "$EM_TEST_R_ARGS"
+# A fresh four-iteration request starts at 001 and submits four arrays, with
+# exactly three continuations. Use a new temporary project; no real results
+# or previous test project are deleted to emulate clearing results_em.
+export SUSIE_MIX_PROJECT_DIR="${test_dir}/fresh project"
+export EM_TEST_ITERATION=1 SLURM_JOB_ID=5000 EM_TEST_ACTIVE_CONTINUATION=0
+rm -f -- "$EM_TEST_CALLS" "$EM_TEST_CONT_ARGS"
+[[ ! -e "${SUSIE_MIX_PROJECT_DIR}/results_em" ]]
+for remaining in 4 3 2 1; do
+    rm -f -- "$EM_TEST_CONT_ARGS"
+    "$BASH" "$repo_dir/job/em_susie_mix" "$remaining" > "${test_dir}/out" 2>&1
+    grep -Fxq 'new' "$EM_TEST_R_ARGS"
+    printf -v expected_iteration '%s/results_em/iteration_%03d' "$SUSIE_MIX_PROJECT_DIR" "$EM_TEST_ITERATION"
+    grep -Fxq "$expected_iteration" "$EM_TEST_ARGS"
+    if (( remaining > 1 )); then
+        [[ "$(tail -n 1 "$EM_TEST_CONT_ARGS")" == "$((remaining - 1))" ]]
+        read -r array_id < "${SUSIE_MIX_PROJECT_DIR}/results_em/last_array_job_id.txt"
+        grep -Fxq -- "--dependency=afterok:${array_id}:${SLURM_JOB_ID}" "$EM_TEST_CONT_ARGS"
+        read -r SLURM_JOB_ID < "${SUSIE_MIX_PROJECT_DIR}/results_em/last_continuation_job_id.txt"
+        export SLURM_JOB_ID EM_TEST_ACTIVE_CONTINUATION="$SLURM_JOB_ID"
+    else
+        [[ ! -e "$EM_TEST_CONT_ARGS" ]]
+    fi
+    export EM_TEST_ITERATION=$((EM_TEST_ITERATION + 1))
+done
+[[ "$(grep -c '^array$' "$EM_TEST_CALLS")" == 4 ]]
+[[ "$(grep -c '^continuation$' "$EM_TEST_CALLS")" == 3 ]]
+
 echo 'All EM launcher tests passed (mock Slurm/R commands).'

@@ -88,8 +88,10 @@ em_pending_chunks <- function(iteration_dir, manifest) {
 }
 
 # The categorical latent variables in SuSiE are component assignments, not
-# marginal predictor-inclusion indicators. All alpha rows belong in this
-# objective, including rows with V=0 and rows without a reported credible set.
+# marginal predictor-inclusion indicators. For the coding M-step, integrate
+# out assignments of exactly zero-variance components: their effect is zero
+# for every predictor and their categorical prior sums to one. Only V>0 rows
+# enter the collapsed objective; credible-set membership is never used.
 em_coding_availability <- function() {
   out <- sapply(0:2, function(j) bitwAnd(1:7, bitwShiftL(1L, j)) != 0L)
   colnames(out) <- c("additive", "recessive", "dominant")
@@ -115,7 +117,7 @@ em_coding_mstep <- function(counts, previous = rep(1/3, 3)) {
             length(previous) == 3L, all(is.finite(previous)), all(previous >= 0),
             abs(sum(previous) - 1) < 1e-8)
   total <- sum(counts)
-  if (total == 0) return(list(prior = previous, gain = 0, status = "carried_forward_no_components"))
+  if (total == 0) return(list(prior = previous, gain = 0, status = "carried_forward_no_active_components"))
   before <- em_coding_q(previous, counts)
   if (!is.finite(before)) stop("Component posterior has support outside the starting coding prior.")
   if (all(rowSums(counts)[1:6] == 0)) {
@@ -123,7 +125,8 @@ em_coding_mstep <- function(counts, previous = rep(1/3, 3)) {
     # normalized sum of alpha, independent of unequal numbers of predictors.
     prior <- colSums(counts) / total
   } else {
-    # Missing coding classes introduce -L_g log(sum_{c in A_g} pi_c) terms.
+    # Missing classes introduce -K_g log(sum_{c in A_g} pi_c) terms, where
+    # K_g is the number of active components contributing to these counts.
     # Optimize the concave objective in log weights, preserving old total
     # mass between disconnected sets of classes (which the data cannot identify).
     connected <- diag(TRUE, 3)
@@ -187,7 +190,7 @@ em_bind_history <- function(history, priors) {
 em_estimate_coding_priors <- function(files, fit_name, previous_priors = NULL) {
   classes <- c("additive", "recessive", "dominant")
   sums <- counts <- list()
-  n_fits <- n_components <- n_zero_variance <- integer(0)
+  n_fits <- n_active_fits <- n_components <- n_active_components <- n_zero_variance <- integer(0)
   elbo_sums <- n_elbo <- numeric(0)
   audit <- data.frame(gene = character(), tissue = character(),
                       issue = character(), message = character())
@@ -262,20 +265,29 @@ em_estimate_coding_priors <- function(files, fit_name, previous_priors = NULL) {
       alpha[] <- pmin(1, pmax(0, alpha))
       alpha <- alpha / rowSums(alpha)
       pip <- pmin(1, pmax(0, pip))
+      # Collapse exactly inactive assignments while holding fitted variances
+      # fixed. Do not use a positive tolerance, CS membership, or PIP cutoff:
+      # even a small positive V remains part of the fitted effect model.
+      active <- rep_len(fit$V, nrow(alpha)) > 0
+      active_alpha <- alpha[active, , drop = FALSE]
       if (is.null(sums[[tissue]])) {
         sums[[tissue]] <- setNames(numeric(3), classes)
         counts[[tissue]] <- matrix(0, 7, 3, dimnames = list(NULL, classes))
-        n_fits[tissue] <- n_components[tissue] <- n_zero_variance[tissue] <- 0L
+        n_fits[tissue] <- n_active_fits[tissue] <- n_components[tissue] <-
+          n_active_components[tissue] <- n_zero_variance[tissue] <- 0L
         elbo_sums[tissue] <- n_elbo[tissue] <- 0
       }
-      # PIP sums remain descriptive diagnostics only. The M-step uses alpha.
+      # PIP sums remain full-fit descriptive diagnostics. The M-step uses
+      # only active alpha, but all valid fits remain in the ELBO diagnostics.
       sums[[tissue]] <- sums[[tissue]] + vapply(classes, function(c) sum(pip[coding == c]), numeric(1))
       availability <- sum(2^(0:2) * (classes %in% coding))
       counts[[tissue]][availability, ] <- counts[[tissue]][availability, ] +
-        vapply(classes, function(c) sum(alpha[, coding == c, drop = FALSE]), numeric(1))
+        vapply(classes, function(c) sum(active_alpha[, coding == c, drop = FALSE]), numeric(1))
       n_fits[tissue] <- n_fits[tissue] + 1L
+      n_active_fits[tissue] <- n_active_fits[tissue] + as.integer(any(active))
       n_components[tissue] <- n_components[tissue] + nrow(alpha)
-      n_zero_variance[tissue] <- n_zero_variance[tissue] + sum(rep_len(fit$V, nrow(alpha)) == 0)
+      n_active_components[tissue] <- n_active_components[tissue] + sum(active)
+      n_zero_variance[tissue] <- n_zero_variance[tissue] + sum(!active)
       final_elbo <- tail(fit$elbo, 1)
       if (is.numeric(final_elbo) && length(final_elbo) == 1L && is.finite(final_elbo)) {
         elbo_sums[tissue] <- elbo_sums[tissue] + final_elbo
@@ -291,21 +303,25 @@ em_estimate_coding_priors <- function(files, fit_name, previous_priors = NULL) {
     total <- sum(mass)
     z <- counts[[tissue]]
     if (is.null(z)) z <- matrix(0, 7, 3)
-    previous <- if (!is.null(previous_priors) && tissue %in% previous_priors$tissue)
+    has_previous <- !is.null(previous_priors) && tissue %in% previous_priors$tissue
+    previous <- if (has_previous)
       em_prior_for_tissue(previous_priors, tissue) else rep(1/3, 3)
     update <- em_coding_mstep(z, previous)
+    if (sum(z) == 0 && !has_previous) update$status <- "initialized_uniform_no_active_components"
     p <- update$prior
     alpha_mass <- colSums(z)
     data.frame(tissue = tissue, pi_add = unname(p[1]), pi_rec = unname(p[2]),
                pi_dom = unname(p[3]), pip_add = unname(mass[1]),
                pip_rec = unname(mass[2]), pip_dom = unname(mass[3]), pip_total = total,
                n_fits = if (tissue %in% names(n_fits)) n_fits[[tissue]] else 0L,
+               n_active_fits = if (tissue %in% names(n_active_fits)) n_active_fits[[tissue]] else 0L,
                n_nonconverged = 0L,
                prior_status = update$status,
-               update_method = "susie_component_alpha_v1",
+               update_method = "susie_active_component_alpha_v2",
                alpha_add = alpha_mass[1], alpha_rec = alpha_mass[2], alpha_dom = alpha_mass[3],
                alpha_total = sum(alpha_mass),
                n_components = if (tissue %in% names(n_components)) n_components[[tissue]] else 0L,
+               n_active_components = if (tissue %in% names(n_active_components)) n_active_components[[tissue]] else 0L,
                n_zero_variance_components = if (tissue %in% names(n_zero_variance)) n_zero_variance[[tissue]] else 0L,
                mstep_q_gain = update$gain,
                source_elbo_sum = if (tissue %in% names(n_elbo) && n_elbo[tissue] == n_fits[tissue])

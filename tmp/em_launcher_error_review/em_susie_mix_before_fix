@@ -1,0 +1,66 @@
+#!/bin/bash
+# Run from job/: sbatch em_susie_mix
+# Retry interrupted chunks after their jobs stop: sbatch em_susie_mix resume
+#SBATCH --job-name=em_susie_prepare
+#SBATCH --output=em_susie_prepare_%j.out
+#SBATCH --error=em_susie_prepare_%j.err
+#SBATCH --time=23:00:00
+#SBATCH --partition=broadwl
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=40G
+
+set -euo pipefail
+project_dir="${SUSIE_MIX_PROJECT_DIR:-/project2/mstephens/wdenault/susie_mix}"
+mode="${1:-new}"
+if [[ "$mode" != new && "$mode" != resume ]] || (( $# > 1 )); then
+    echo "Usage: sbatch em_susie_mix [resume]" >&2
+    exit 1
+fi
+module load R/4.2.0
+mkdir -p "${project_dir}/results_em"
+
+# Serialize prior-history updates and submissions. The lock is released on exit.
+exec 9>"${project_dir}/results_em/.prepare.lock"
+if ! flock -n 9; then
+    echo "Another EM preparation/submission is already running." >&2
+    exit 1
+fi
+
+# Do not resume or advance while the last submitted array is still active.
+last_job_file="${project_dir}/results_em/last_array_job_id.txt"
+if [[ -f "$last_job_file" ]]; then
+    read -r last_job < "$last_job_file"
+    active_jobs=$(squeue --noheader --user "${USER}" --format='%F')
+    while read -r active_job; do
+        if [[ "$active_job" == "$last_job" ]]; then
+            echo "EM array ${last_job} is still queued/running. Wait until it finishes." >&2
+            exit 1
+        fi
+    done <<< "$active_jobs"
+fi
+
+launch_info=$(Rscript --vanilla \
+    "${project_dir}/script/scan_tissue_attempt/prepare_em_iteration.R" "$project_dir" "$mode")
+mapfile -t launch <<< "$launch_info"
+if (( ${#launch[@]} != 2 )) || [[ ! -d "${launch[0]}" || -z "${launch[1]}" ]]; then
+    echo "Invalid launch information from prepare_em_iteration.R." >&2
+    exit 1
+fi
+iteration_dir="${launch[0]}"
+chunks="${launch[1]}"
+
+# Same resource settings as test1; array size comes from the saved gene chunks.
+if ! submission=$(sbatch --parsable --array="$chunks" \
+    --output="${iteration_dir}/logs/susie_mix_%A_%a.out" \
+    --error="${iteration_dir}/logs/susie_mix_%A_%a.err" \
+    "${project_dir}/job/em_susie_mix_array" "$project_dir" "$iteration_dir"); then
+    echo "Array submission failed; the prepared priors are saved. Retry: sbatch em_susie_mix resume" >&2
+    exit 1
+fi
+array_job_id="${submission%%;*}"
+printf '%s\n' "$array_job_id" > "$last_job_file"
+printf '%s\n' "$array_job_id" >> "${iteration_dir}/array_job_ids.txt"
+echo "Submitted EM array ${array_job_id}; results: ${iteration_dir}/results"
+echo "After it finishes, run sbatch em_susie_mix again for the next iteration."

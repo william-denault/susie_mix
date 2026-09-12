@@ -25,14 +25,15 @@ em_prepare_iteration <- function(project_dir, mode = "new") {
     previous_dir <- file.path(em_dir, sprintf("iteration_%03d", latest))
     manifest <- read.csv(file.path(previous_dir, "manifest.csv"), stringsAsFactors = FALSE)
     snapshot <- read.csv(file.path(previous_dir, "priors.csv"), stringsAsFactors = FALSE)
-    # Legacy snapshots predate the added diagnostics. Compare every original
-    # snapshot column; absent new fields in legacy history must stay empty.
+    # Older snapshots predate some diagnostics. Compare every original
+    # snapshot column; absent fields in history must stay empty, apart from
+    # the legacy PIP-method label added for snapshots without a method tag.
     extra <- setdiff(names(previous), names(snapshot))
     legacy <- !"update_method" %in% names(snapshot)
-    extras_valid <- !length(extra) || (legacy && all(vapply(extra, function(column) {
+    extras_valid <- !length(extra) || all(vapply(extra, function(column) {
       values <- previous[[column]]
-      all(is.na(values) | (column == "update_method" & values == "legacy_pip_share"))
-    }, logical(1))))
+      all(is.na(values) | (legacy & column == "update_method" & values == "legacy_pip_share"))
+    }, logical(1)))
     if (!all(names(snapshot) %in% names(previous)) || !extras_valid ||
         !isTRUE(all.equal(previous[names(snapshot)], snapshot, check.attributes = FALSE))) {
       stop("Latest prior history rows differ from the iteration's priors.csv.")

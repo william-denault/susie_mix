@@ -17,7 +17,7 @@ it must not be presented as a marginal-likelihood-maximizing EM algorithm.
 
 The corrected implementation retains the requested three tissue-specific
 coding mixture weights. It estimates them by variational empirical Bayes,
-using SuSiE component responsibilities in the M-step. It does not silently
+using active SuSiE component responsibilities in a collapsed M-step. It does not silently
 replace the model with cTWAS's independent Bernoulli inclusion model.
 
 ## What the paper estimates
@@ -59,24 +59,31 @@ within one SuSiE component. The pi parameters are coding-class masses, not
 per-predictor Bernoulli inclusion probabilities and not phenotype-variance
 fractions. Unequal coding block sizes are accounted for by n_gc.
 
+At each coding-prior M-step, hold the fitted component variances fixed and
+define H_g = {l: V_gl > 0}, with K_g = |H_g|. A component with V_gl=0 has
+effect zero for every assignment; summing over its assignment gives
+sum_j w_gj = 1. Its assignment can therefore be integrated out without
+changing the observed-data likelihood at those fixed variances. This is
+collapsing an irrelevant latent variable, not selecting on a P-value or CS.
+
 The E-step supplies
 
     alpha_glj = q(J_gl = j),
-    C_gc = sum_l sum_{j: c(j)=c} alpha_glj.
+    C_gc = sum_{l in H_g} sum_{j: c(j)=c} alpha_glj.
 
 Holding the approximate posterior and other parameters fixed, the part of
-the expected complete log likelihood involving the coding weights is
+the collapsed expected complete log likelihood involving the coding weights is
 
     Q_t(pi) = sum_g sum_{c in A_g} C_gc log(pi_t,c)
-              - sum_g L_g log(sum_{c in A_g} pi_t,c) + constant.
+              - sum_g K_g log(sum_{c in A_g} pi_t,c) + constant.
 
 The within-class log(n_gc) terms are constant with respect to pi. If every
 fit contains all three classes, the second term is zero on the simplex,
 and the M-step is
 
-    pi_t,c(new) = sum_g C_gc / sum_g L_g.
+    pi_t,c(new) = sum_g C_gc / sum_g K_g.
 
-Equivalently, normalize the three summed alpha masses. If some classes are
+Equivalently, normalize the three summed active alpha masses. If some classes are
 absent, simply normalizing global counts is generally wrong. The corrected
 code groups sufficient statistics by the seven nonempty availability sets
 and optimizes the conditional-choice objective in log weights. For example,
@@ -98,12 +105,22 @@ For two rows both equal to (0.8, 0.1, 0.1), the M-step is (0.8, 0.1, 0.1).
 The PIP vector is (0.96, 0.19, 0.19), whose normalized shares are approximately
 (0.716, 0.142, 0.142). Those shares do not maximize the categorical Q.
 
-All alpha rows are included, without credible-set, lead-PIP, or variance
-filtering. Under the chosen latent-variable representation, a component
-with V_l=0 still has a categorical assignment; its posterior is normally
-its prior, so it provides no information favoring a coding. Including many
-such components can make EM move slowly. Filtering them out would require
-a separately derived collapsed update, not an arbitrary threshold.
+Only rows with exactly V_l>0 enter the collapsed M-step. No CS, lead-PIP,
+association-P, or additional expression screen is applied. A positive variance
+below SuSiE's PIP/CS tolerance (typically 1e-9) is still included; the update
+does not replace the exact-zero boundary with an arbitrary positive threshold.
+An active component without a reported CS still contributes. Positive V means
+active in the fitted model, not a demonstrated biological signal.
+
+The preceding all-row version (`susie_component_alpha_v1`) retained inactive
+categorical assignments. Their posterior normally equals their prior, so the
+extra Q terms recycle the previous prior and can slow EM. That uncollapsed
+variational EM formulation is valid too. The new collapsed formulation
+(`susie_active_component_alpha_v2`) removes those terms while holding V fixed.
+All L rows and variances remain in the saved fits and warm starts; the active
+set is recomputed from each new fit. If a tissue has no active rows, retain its
+previous prior, or use a clearly labelled uniform initialization when no prior
+exists. Neither action is a new data-driven estimate for that tissue.
 
 ## Likelihood target and practical limits
 
@@ -121,8 +138,12 @@ this procedure nor ordinary EM guarantees a global maximum. Tight inner
 convergence and small changes across several outer iterations should be
 assessed; a fixed requested iteration count is not a convergence guarantee.
 
-The history includes `mstep_q_gain`, `max_abs_prior_change`, and
-`source_elbo_sum`. The latter is present only when every included fit supplies
+The history includes `mstep_q_gain` for the collapsed Q, `max_abs_prior_change`,
+`n_active_components`, `n_active_fits`, and `source_elbo_sum`. Total component
+and zero-variance counts are retained separately. Alpha sums now count active
+assignments only; previous rows keep their original meaning and method tag.
+The ELBO sum still includes all valid fits, including all-null fits. It is
+present only when every included fit supplies
 a finite final ELBO; `n_source_elbo` records the count. Compare summed ELBOs
 only when the same fits and model settings contribute. It is a variational
 objective diagnostic, not an exact marginal-likelihood calculation.
@@ -137,8 +158,8 @@ weights remain conditional on those effect-size prior and data-model choices.
 
 ## Implementation and existing results
 
-- `em_utils.R`: validate full component posteriors, accumulate alpha counts,
-  maximize the coding Q, retain PIP sums as diagnostics, and construct safe
+- `em_utils.R`: validate full component posteriors, accumulate V>0 alpha counts,
+  maximize the collapsed coding Q, retain full-fit PIP sums as diagnostics, and construct safe
   posterior initializations.
 - `prepare_em_iteration.R`: append corrected priors and diagnostics; save
   `component_counts.rds`; preserve all old frozen iteration files and values.
@@ -149,9 +170,10 @@ weights remain conditional on those effect-size prior and data-model choices.
 - `run_em_chunk.R`: read the source fit, refuse completion on unconverged
   fits, and propagate invalid initialization or weight errors as job failures.
 
-When a new iteration is prepared, old history rows receive the method label
-`legacy_pip_share`; new rows receive `susie_component_alpha_v1`. Old numeric
-values are preserved, and unavailable new diagnostics are left empty.
+When a new iteration is prepared, untagged old history rows receive the label
+`legacy_pip_share`; existing `susie_component_alpha_v1` rows retain their tag.
+New rows receive `susie_active_component_alpha_v2`. Old numeric values and
+frozen snapshots are preserved, and unavailable new diagnostics are left empty.
 Completed legacy fits are valid starting values conditional on their old
 priors. They need not be deleted or rerun just to initialize the corrected
 algorithm. If the original unweighted scan is the only source, its fit is
@@ -164,17 +186,25 @@ fits and calculate the corrected update before submitting fine-mapping.
 
 ## Validation
 
-- Synthetic integration checks cover pooling, missing/corrupt source files,
-  predictor alignment, legacy-history migration, immutable snapshots, and
-  resuming unconverged fits.
+- Synthetic integration checks cover mixed active/inactive rows, all-null
+  tissues, tiny positive variances, scalar V, CS independence, missing coding
+  classes, invalid variances, pooling, missing/corrupt source files, predictor
+  alignment, both earlier history schemas, immutable snapshots, and resuming
+  unconverged fits.
 - Analytic examples distinguish alpha counts from PIP shares and verify the
   optimizer for missing and disconnected coding classes.
 - An independent Gaussian model with two effects enumerates every assignment
   and integrates effect sizes analytically. Its exact log marginal likelihood
   increased from -29.216109 to -27.995768 across 50 EM updates, with no decreases.
-- Four small fits using the local SuSiE 0.14.21 numerical source exercised ten
-  outer updates. Total ELBO increased from -935.103109 to -933.276036, with
-  no decreases; each fit retained its new weights and all four component rows.
+- Extending that exact model with inactive slots leaves its likelihood and
+  active counts unchanged. Adding an all-null gene gives a constant likelihood
+  contribution and zero counts. Fifty collapsed EM updates increased the
+  combined log marginal likelihood from -40.586040 to -39.365699, with no decreases.
+- Five small fits, including an all-null gene, using the local SuSiE 0.14.21
+  numerical source exercised ten outer updates through the production pooling
+  helper. Total ELBO increased from -1140.383702 to -1138.556623, with no decreases;
+  each fit retained its new weights and all four component rows, while only
+  positive-variance rows contributed to the M-step.
   Only the `colSds` dependency used base R in this source-only smoke test;
   SuSiE's fitting and objective functions were not substituted.
 - Mock Slurm checks exercise the launcher without submitting cluster jobs.

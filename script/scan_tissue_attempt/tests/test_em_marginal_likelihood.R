@@ -36,8 +36,13 @@ counts <- matrix(0, 7, 3)
 counts[cbind(c(1, 2, 4), 1:3)] <- c(100, 1, 50)
 equal(em_coding_mstep(counts, c(.2, .3, .5))$prior, c(.2, .3, .5))
 
-# Null components are uninformative, not evidence for a coding. Including
-# rows equal to the prior leaves it unchanged. CS membership is never used.
+# With no active counts, retain the prior without adding pseudocounts.
+counts <- matrix(0, 7, 3)
+null_update <- em_coding_mstep(counts, c(.2, .3, .5))
+equal(null_update$prior, c(.2, .3, .5))
+stopifnot(null_update$gain == 0, null_update$status == "carried_forward_no_active_components")
+# For comparison, the earlier uncollapsed update also leaves a null-only
+# prior unchanged when its alpha rows equal the prior.
 counts <- matrix(0, 7, 3)
 counts[7, ] <- 100 * c(.2, .3, .5)
 equal(em_coding_mstep(counts, c(.2, .3, .5))$prior, c(.2, .3, .5))
@@ -49,32 +54,36 @@ equal(em_coding_mstep(counts, c(.2, .3, .5))$prior, c(.2, .3, .5))
 set.seed(91)
 genotypes <- list(c(0, 0, 0, 1, 1, 1, 2, 2), c(0, 0, 1, 1, 1, 2, 2, 2),
                   c(0, 0, 0, 0, 1, 1, 2, 2), c(0, 0, 1, 1, 2, 2, 2, 2))
-regions <- lapply(seq_along(genotypes), function(g) {
-  genotype <- genotypes[[g]]
-  X <- scale(cbind(genotype, genotype == 2, genotype >= 1), scale = FALSE)
-  y <- as.numeric(X[, if (g %% 2) 1 else 3]) + rnorm(nrow(X), sd = .4)
-  configurations <- as.matrix(expand.grid(first = 1:3, second = 1:3))
+make_region <- function(X, y, V) {
+  configurations <- as.matrix(expand.grid(rep(list(1:3), length(V))))
   log_density <- apply(configurations, 1, function(configuration) {
-    covariance <- diag(.4, nrow(X)) + .7 * tcrossprod(X[, configuration[1]]) +
-      .3 * tcrossprod(X[, configuration[2]])
+    covariance <- diag(.4, nrow(X))
+    for (l in seq_along(V)) covariance <- covariance + V[l] * tcrossprod(X[, configuration[l]])
     upper <- chol(covariance)
     -.5 * (nrow(X) * log(2*pi) + 2 * sum(log(diag(upper))) +
              sum(forwardsolve(t(upper), y)^2))
   })
-  list(configurations = configurations, log_density = log_density)
+  list(configurations = configurations, log_density = log_density, V = V, X = X, y = y)
+}
+regions <- lapply(seq_along(genotypes), function(g) {
+  genotype <- genotypes[[g]]
+  X <- scale(cbind(genotype, genotype == 2, genotype >= 1), scale = FALSE)
+  y <- as.numeric(X[, if (g %% 2) 1 else 3]) + rnorm(nrow(X), sd = .4)
+  make_region(X, y, c(.7, .3))
 })
-e_step <- function(prior) {
+e_step <- function(prior, fitted_regions = regions) {
   counts <- matrix(0, 7, 3)
   likelihood <- 0
-  for (region in regions) {
+  for (region in fitted_regions) {
     configuration <- region$configurations
-    log_weight <- region$log_density + log(prior[configuration[, 1]]) +
-      log(prior[configuration[, 2]])
+    # Include every latent assignment, even inactive ones, in the independent
+    # exact marginal-likelihood calculation. Only the M-step counts collapse.
+    log_weight <- region$log_density + rowSums(matrix(log(prior[configuration]), nrow(configuration)))
     normalizer <- max(log_weight) + log(sum(exp(log_weight - max(log_weight))))
     posterior <- exp(log_weight - normalizer)
     likelihood <- likelihood + normalizer
     for (coding in 1:3) counts[7, coding] <- counts[7, coding] +
-      sum(posterior * rowSums(configuration == coding))
+      sum(posterior * rowSums(configuration[, region$V > 0, drop = FALSE] == coding))
   }
   list(counts = counts, likelihood = likelihood)
 }
@@ -90,6 +99,32 @@ for (iteration in 1:50) {
 }
 stopifnot(state$likelihood > initial_likelihood + .1)
 cat(sprintf("Exact two-effect Gaussian EM: log marginal likelihood %.6f -> %.6f; 50 nondecreasing updates.\n",
+            initial_likelihood, state$likelihood))
+
+# Appending an exactly inactive slot preserves each marginal likelihood and
+# its active assignment counts, for arbitrary coding priors. An all-null
+# gene contributes a constant likelihood and zero M-step counts.
+with_null <- lapply(regions, function(region) make_region(region$X, region$y, c(region$V, 0)))
+null_gene <- make_region(regions[[1]]$X, regions[[1]]$y, c(0, 0, 0))
+for (p in list(c(.2, .5, .3), c(.7, .1, .2), c(.05, .9, .05))) {
+  equal(e_step(p, with_null), e_step(p))
+  equal(e_step(p, list(null_gene))$counts, matrix(0, 7, 3))
+  equal(e_step(p, list(null_gene))$likelihood,
+        e_step(rep(1/3, 3), list(null_gene))$likelihood)
+}
+mixed_regions <- c(with_null, list(null_gene))
+prior <- c(.2, .5, .3)
+state <- e_step(prior, mixed_regions)
+initial_likelihood <- state$likelihood
+for (iteration in 1:50) {
+  update <- em_coding_mstep(state$counts, prior)
+  next_state <- e_step(update$prior, mixed_regions)
+  stopifnot(next_state$likelihood >= state$likelihood - 1e-10)
+  prior <- update$prior
+  state <- next_state
+}
+stopifnot(state$likelihood > initial_likelihood + .1)
+cat(sprintf("Collapsed EM with zero-variance slots and a null gene: log marginal likelihood %.6f -> %.6f; 50 nondecreasing updates.\n",
             initial_likelihood, state$likelihood))
 
 # Warm starts preserve the posterior, residual variance, and all component
