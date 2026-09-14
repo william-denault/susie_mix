@@ -1,0 +1,110 @@
+{
+  "array_id": "49011158",
+  "continuation_id": "49011159",
+  "iterations": [
+    "1"
+  ],
+  "tissues": 27,
+  "methods": [
+    "susie_active_component_alpha_v2"
+  ],
+  "history_matches_priors": true,
+  "manifest_genes": 18468,
+  "manifest_chunks": 185,
+  "synced_error_logs": 185,
+  "synced_completion_markers": 185,
+  "local_layout": "iteration files at results_em root; no iteration_001 subdirectory",
+  "node_failures": [],
+  "other_error_lines": [],
+  "worker_gene_error_count": 851,
+  "worker_gene_error_classes": {
+    "chromosome X with exit status 7": 792,
+    "chromosome Y with exit status 7": 46,
+    "chromosome MT with exit status 7": 13
+  },
+  "source_audit_issues": {
+    "gene_error": 878,
+    "no_successful_tissues": 23
+  },
+  "source_gene_error_classes": {
+    "chromosome X with exit status 7": 791,
+    "chromosome Y with exit status 7": 46,
+    "No tissue fits in result": 23,
+    "chromosome 22 with exit status 127": 2,
+    "chromosome 19 with exit status 127": 2,
+    "chromosome 5 with exit status 127": 2,
+    "chromosome 8 with exit status 127": 2,
+    "chromosome 6 with exit status 127": 1,
+    "chromosome 13 with exit status 127": 2,
+    "chromosome 18 with exit status 127": 1,
+    "chromosome 1 with exit status 127": 7,
+    "chromosome 12 with exit status 127": 1,
+    "chromosome 10 with exit status 127": 1,
+    "chromosome 9 with exit status 127": 2,
+    "chromosome 3 with exit status 127": 1,
+    "chromosome 15 with exit status 127": 1,
+    "chromosome X with exit status 127": 1,
+    "chromosome 2 with exit status 127": 1,
+    "chromosome MT with exit status 7": 13,
+    "chromosome 7 with exit status 127": 1
+  },
+  "worker_errors_absent_from_source_audit": [],
+  "prior_checks": {
+    "all_finite_positive_normalized": true,
+    "all_alpha_totals_match_active_components": true,
+    "all_component_counts_reconcile": true,
+    "all_mstep_gains_nonnegative": true,
+    "all_source_fits_converged": true,
+    "all_source_elbos_complete": true
+  },
+  "total_fits": 472651,
+  "total_active_fits": 54340,
+  "total_components": 4726510,
+  "total_active_components": 57832,
+  "pooled_active_coding_shares": {
+    "add": 0.6133387304868417,
+    "rec": 0.08541331820712274,
+    "dom": 0.30124795130603527
+  },
+  "tissue_prior_ranges": {
+    "add": [
+      0.563339711691293,
+      0.662667018768515
+    ],
+    "rec": [
+      0.0652314353318948,
+      0.108364916557115
+    ],
+    "dom": [
+      0.263419397773611,
+      0.345522345198286
+    ]
+  },
+  "logged_gene_starts": 18277,
+  "logs_with_weighted_fits": 185,
+  "observed_remote_iteration_paths": [
+    "/project2/mstephens/wdenault/susie_mix/results_em/iteration_001"
+  ],
+  "gene_start_time_range_cluster_local": [
+    "2026-09-13 04:24:58",
+    "2026-09-13 09:59:07"
+  ],
+  "latest_log_file_mtime_utc": "2026-09-13T15:01:18+00:00",
+  "completion_summary": {
+    "genes": 18468,
+    "statuses": {
+      "finished": 17617,
+      "gene_error": 851
+    },
+    "tissue_errors": 0,
+    "unconverged_fits": 0,
+    "matches_manifest": true,
+    "all_185_chunks_completed": true
+  },
+  "timing_from_completion_markers": {
+    "first_start_utc": "2026-09-13 09:24:58 UTC",
+    "last_finish_utc": "2026-09-13 15:01:18 UTC",
+    "elapsed": "5h 36m 20s",
+    "includes": "fine-mapping phase, including staggered chunk starts; excludes preparation and initial queue wait"
+  }
+}

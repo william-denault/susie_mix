@@ -42,6 +42,9 @@ run_tests <- function() {
   }, add = TRUE)
   writeLines(c("G1", "G2"), file.path(project, "data/temp_index/chunk_001_genes.txt"))
   writeLines("G3", file.path(project, "data/temp_index/chunk_185_genes.txt"))
+  # Supply synthetic annotation; production reads the same GTF as the worker.
+  prepare <- function(mode = "new") em_prepare_iteration(project, mode,
+    gene_annotations = data.frame(gene_name = c("G1", "G2", "G3"), chromosome = c("chr1", "2", "22")))
   # The directory is enumerated, not assumed to contain 100 or 185 chunks.
   g1 <- list(Brain = make_tissue(c(.6, .3, .1), weighted = c(.01, .01, .98)),
              Liver = make_tissue(c(.1, .2, .7)))
@@ -52,11 +55,11 @@ run_tests <- function() {
   saveRDS(g1, file.path(project, "results/G1.rds"))
   saveRDS(g2, file.path(project, "results/G2.rds"))
   # Missing gene outputs must block initial preparation, leaving no history.
-  expect_error(em_prepare_iteration(project), "Missing: 1")
+  expect_error(prepare(), "Missing: 1")
   history_file <- file.path(project, "results_em/prior_history.csv")
   stopifnot(!file.exists(history_file))
   saveRDS(list(gene = "G3", error = "No SNPs after QC"), file.path(project, "results/G3.rds"))
-  first <- em_prepare_iteration(project)
+  first <- prepare()
   equal(first$chunks, 1:2)
   p1 <- read.csv(history_file)
   stopifnot(all(p1$iteration == 1), all(p1$source_fit == "susie_mix"))
@@ -78,7 +81,7 @@ run_tests <- function() {
   write.csv(p1, history_file, row.names = FALSE)
   write.csv(p1, file.path(first$iteration_dir, "priors.csv"), row.names = FALSE)
   history_before <- readLines(history_file)
-  expect_error(em_prepare_iteration(project), "unfinished")
+  expect_error(prepare(), "unfinished")
   stopifnot(identical(readLines(history_file), history_before))
 
   # Class prior mass survives unequal predictor counts, and absent classes
@@ -111,18 +114,18 @@ run_tests <- function() {
             is.finite(timing$elapsed_seconds), timing$elapsed_seconds >= 0)
   # Simulate a killed worker after saving its genes but before its marker.
   unlink(file.path(first$iteration_dir, "completed/chunk_001.done"))
-  resume <- em_prepare_iteration(project, "resume")
+  resume <- prepare("resume")
   equal(resume$chunks, 1:2)
   stopifnot(identical(readLines(history_file), history_before))
   em_run_chunk(project, first$iteration_dir, 1L, fake_run)
   equal(calls, c("G1", "G2")) # Existing successful results were reused.
-  equal(em_prepare_iteration(project, "resume")$chunks, 2L)
-  expect_error(em_prepare_iteration(project), "unfinished")
+  equal(prepare("resume")$chunks, 2L)
+  expect_error(prepare(), "unfinished")
   em_run_chunk(project, first$iteration_dir, 2L, fake_run)
   equal(calls, c("G1", "G2", "G3"))
-  expect_error(em_prepare_iteration(project, "resume"), "complete")
+  expect_error(prepare("resume"), "complete")
 
-  second <- em_prepare_iteration(project)
+  second <- prepare()
   history <- read.csv(history_file)
   p2 <- subset(history, iteration == 2)
   stopifnot(nrow(history) == 4L, all(p2$source_fit == "weighted_fit_mix"))
@@ -231,10 +234,10 @@ run_tests <- function() {
   }
   expect_error(em_run_chunk(project, second$iteration_dir, 1L, nonconverged_run), "unconverged")
   stopifnot(!file.exists(file.path(second$iteration_dir, "completed/chunk_001.done")))
-  equal(em_prepare_iteration(project, "resume")$chunks, 1:2)
+  equal(prepare("resume")$chunks, 1:2)
   fail_fit <- FALSE
   em_run_chunk(project, second$iteration_dir, 1L, nonconverged_run)
-  equal(em_prepare_iteration(project, "resume")$chunks, 2L)
+  equal(prepare("resume")$chunks, 2L)
   invalid_model <- function(...) em_stop_fit("Invalid warm-start predictor order")
   expect_error(em_run_chunk(project, second$iteration_dir, 2L, invalid_model), "Invalid warm-start")
   stopifnot(!file.exists(file.path(second$iteration_dir, "completed/chunk_002.done")))
@@ -249,9 +252,9 @@ run_tests <- function() {
   bad_history <- history_v1
   bad_history$n_active_components[bad_history$iteration == 2] <- 1
   write.csv(bad_history, history_file, row.names = FALSE)
-  expect_error(em_prepare_iteration(project), "differ from")
+  expect_error(prepare(), "differ from")
   write.csv(history_v1, history_file, row.names = FALSE)
-  third <- em_prepare_iteration(project)
+  third <- prepare()
   p3 <- read.csv(file.path(third$iteration_dir, "priors.csv"))
   stopifnot(all(p3$source_iteration == 2L), all(p3$update_method == "susie_active_component_alpha_v2"))
   equal(read.csv(file.path(second$iteration_dir, "priors.csv")), p2_v1)

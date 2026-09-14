@@ -1,6 +1,6 @@
 # Estimate priors before any fine mapping, or resume an unfinished iteration.
 # CLI: Rscript --vanilla prepare_em_iteration.R PROJECT_DIR [new|resume]
-em_prepare_iteration <- function(project_dir, mode = "new") {
+em_prepare_iteration <- function(project_dir, mode = "new", gene_annotations = NULL) {
   if (!mode %in% c("new", "resume")) stop("Mode must be new or resume.")
   project_dir <- normalizePath(project_dir, winslash = "/", mustWork = TRUE)
   em_dir <- file.path(project_dir, "results_em")
@@ -55,14 +55,27 @@ em_prepare_iteration <- function(project_dir, mode = "new") {
     fit_name <- "susie_mix"
   }
 
-  # This checks every expected gene, including explicit failed-fit records.
-  files <- em_check_result_files(source_dir, manifest)
-  message("Reading all ", length(files), " gene results from ", source_dir)
+  # Exclude non-autosomal genes before opening results, so even successful old
+  # X/Y/MT fits cannot enter the M-step. Keep chunks stable and audit exclusions.
+  manifest <- em_annotate_manifest(manifest, project_dir, gene_annotations)
+  included <- em_is_autosome(manifest$chromosome)
+  if (!any(included)) stop("No autosomal genes in the EM manifest.")
+  files <- em_check_result_files(source_dir, manifest[included, , drop = FALSE],
+                                allowed_extra_genes = manifest$gene[!included])
+  message("Reading all ", length(files), " autosomal gene results from ", source_dir,
+          "; excluding ", sum(!included), " non-autosomal genes.")
   pooled <- em_estimate_coding_priors(files, fit_name, previous)
+  excluded <- data.frame(gene = manifest$gene[!included], tissue = rep("", sum(!included)),
+                         issue = rep("excluded_chromosome", sum(!included)),
+                         message = sprintf("Chromosome %s; analysis restricted to autosomes 1-22",
+                                           manifest$chromosome[!included]))
+  if (nrow(excluded)) pooled$audit <- rbind(pooled$audit, excluded)
   iteration <- latest + 1L
   priors <- data.frame(iteration = iteration, source_iteration = latest,
                        source_fit = fit_name, pooled$priors,
+                       analysis_chromosomes = "autosomes_1_22",
                        n_source_files = length(files),
+                       n_source_chromosome_exclusions = sum(!included),
                        n_source_gene_errors = sum(pooled$audit$issue == "gene_error"),
                        n_source_tissue_errors = sum(pooled$audit$issue == "tissue_error"),
                        created_at = format(Sys.time(), tz = "UTC", usetz = TRUE),

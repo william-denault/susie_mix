@@ -13,10 +13,10 @@ run_susie_gene <- function(
     gene_annot_fun = file.path(
       project_dir, "script/scan_tissue_attempt/get_gene_annotations.R"
     ),
-    gtf_file = file.path(
+    gtf_file = Sys.getenv("SUSIE_MIX_GTF_FILE", file.path(
       datadir,
       "Homo_sapiens.GRCh38.103.chr.reformatted.collapse_only.gene.gtf.gz"
-    ),
+    )),
     geno_file = file.path(
       datadir,
       "GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv"
@@ -68,6 +68,18 @@ run_susie_gene <- function(
          local = TRUE)
   em_validate_priors(tissue_priors)
   source(gene_annot_fun, local = TRUE)
+
+  # Check chromosome before loading expression/covariates or invoking PLINK.
+  # The autosomal A/R/D coding and pooled diploid QC do not model X/Y/MT.
+  genes <- get_gene_annotations(gtf_file)
+  genes <- subset(genes, gene_name == target_gene)
+  if (nrow(genes) == 0L) stop("No gene annotation found for: ", target_gene)
+  chr <- em_normalize_chromosome(genes$chromosome[1])
+  if (is.na(chr) || !nzchar(chr)) stop("Could not determine the chromosome for: ", target_gene)
+  if (!em_is_autosome(chr)) {
+    message("SKIP [", target_gene, "]: chromosome ", chr, "; autosomal analysis only.")
+    return(em_chromosome_exclusion(target_gene, chr))
+  }
 
   set.seed(seed)
 
@@ -248,41 +260,6 @@ run_susie_gene <- function(
   # ------------------------------------------------------------
   # Identify the cis-region
   # ------------------------------------------------------------
-
-  genes <- get_gene_annotations(gtf_file)
-
-  genes <- subset(
-    genes,
-    gene_name == target_gene
-  )
-
-  if (nrow(genes) == 0L) {
-    stop(
-      "No gene annotation found for: ",
-      target_gene
-    )
-  }
-
-  chr <- sub(
-    "^chr",
-    "",
-    as.character(genes$chromosome[1])
-  )
-
-  if (chr == "M") {
-    chr <- "MT"
-  }
-
-  if (
-    length(chr) != 1L ||
-    is.na(chr) ||
-    !nzchar(chr)
-  ) {
-    stop(
-      "Could not determine the chromosome for: ",
-      target_gene
-    )
-  }
 
   tss <- with(
     genes[1, ],
