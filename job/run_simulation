@@ -7,12 +7,22 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=4
 #SBATCH --mem-per-cpu=5000
-#SBATCH --array=1-1125
+#SBATCH --array=0-399
 
 set -euo pipefail
+# Each submission uses local array indices; the offset selects manifest rows.
+# Submit the next batch only after the previous batch has finished.
+offset="${1:-0}"
+task_id="${SLURM_ARRAY_TASK_ID:?Run this script as a SLURM array.}"
+if [[ ! "$offset" =~ ^(0|[1-9][0-9]*)$ ]] ||
+   [[ ! "$task_id" =~ ^(0|[1-9][0-9]*)$ ]] || (( task_id >= 400 )); then
+  echo "Expected a nonnegative job offset and array indices between 0 and 399." >&2
+  exit 1
+fi
+job_id=$((offset + task_id + 1))
 export OMP_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export MKL_NUM_THREADS=1
 module load R/4.2.0
 project_dir="${SUSIE_MIX_PROJECT_DIR:-/project2/mstephens/wdenault/susie_mix}"
-Rscript "$project_dir/script/sim/run_job.R" "$SLURM_ARRAY_TASK_ID" "$project_dir"
+Rscript "$project_dir/script/sim/run_job.R" "$job_id" "$project_dir"

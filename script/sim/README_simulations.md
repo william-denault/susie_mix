@@ -53,19 +53,39 @@ The local slider source is the root package in the `susieR` repository on the
 point is `susieSlide::susie()`. The runner checks required packages before any
 replicates are started. Local installation does not install it on the cluster.
 
-From the project root:
+From the project root, generate the manifest and submit the first batch:
 
 ```sh
 Rscript script/sim/write_jobs.R
-sbatch job/run_simulation
+sbatch --array=0-399 job/run_simulation 0
 ```
 
-The first command only writes `script/sim/jobs_slide/conditions.csv` and
-`manifest.csv`; the checked-in manifest is already generated for the design
-above. The launcher selects a manifest row using `SLURM_ARRAY_TASK_ID` and
-calls `script/sim/run_job.R`. It uses array 1–1125 and separate log files per
-job. If the cluster limits array indices, submit ranges supported by its
-configuration. Set `SUSIE_MIX_PROJECT_DIR` if its project path differs from
+**Wait until that batch finishes**, then submit the second batch:
+
+```sh
+sbatch --array=0-399 job/run_simulation 400
+```
+
+**Wait until the second batch finishes**, then submit the last batch:
+
+```sh
+sbatch --array=0-324 job/run_simulation 800
+```
+
+These submissions cover manifest jobs **1–400**, **401–800**, and **801–1125**.
+Each array has at most 400 tasks and uses indices no higher than 399. The final
+argument is the manifest offset: `job_id = offset + SLURM_ARRAY_TASK_ID + 1`.
+Submit one batch at a time so these simulations do not queue more than 400
+tasks at once. If other jobs use your quota, use a smaller batch size below.
+Submitting `sbatch job/run_simulation` defaults to the first 400 tasks only.
+To resume an interrupted batch, repeat its command; completed checkpoints are
+detected and skipped by the R runner.
+
+The generator writes `script/sim/jobs_slide/conditions.csv`, `manifest.csv`,
+and `submission_batches.csv`, and prints the batch submission commands.
+The checked-in files are already generated for the design above. The launcher
+calls `script/sim/run_job.R` with the mapped manifest job and uses separate log
+files per array task. Set `SUSIE_MIX_PROJECT_DIR` if its project path differs from
 `/project2/mstephens/wdenault/susie_mix`. Genotypes default to `temp_plink/*.raw`.
 The old `script/sim/jobs/sim_job_*.R` files are legacy jobs and are no longer
 used by this launcher.
@@ -75,6 +95,8 @@ In R, the generator can also be used explicitly:
 ```r
 source("script/sim/write_jobs.R")
 write_simulation_jobs()  # Call after sourcing; sourcing alone does not generate jobs.
+# If needed, print and save a plan with smaller submission batches:
+# write_simulation_jobs(array_batch_size = 300L)
 ```
 
 For one job, without submitting the array:

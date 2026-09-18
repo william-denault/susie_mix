@@ -10,10 +10,14 @@ rm(.job_source, .job_sources)
 write_simulation_jobs <- function(project_dir = sim_project_dir,
                                   pve_values = c(.05, .10, .20, .30, .40),
                                   n = 500L, L = 10L, chunks_per_cell = 1L,
-                                  reps_per_chunk = 400L, seed_base = 1000000L) {
+                                  reps_per_chunk = 400L, seed_base = 1000000L,
+                                  array_batch_size = 400L) {
   stopifnot(length(pve_values) > 0L, !anyDuplicated(pve_values),
             all(pve_values > 0 & pve_values < 1), n >= 3, L >= 1,
             chunks_per_cell >= 1, reps_per_chunk >= 1,
+            length(array_batch_size) == 1L, is.finite(array_batch_size),
+            array_batch_size >= 1L, array_batch_size <= 400L,
+            array_batch_size == floor(array_batch_size),
             all(c(n, L, chunks_per_cell, reps_per_chunk, seed_base) ==
                   floor(c(n, L, chunks_per_cell, reps_per_chunk, seed_base))))
   conditions <- sim_conditions()
@@ -39,9 +43,20 @@ write_simulation_jobs <- function(project_dir = sim_project_dir,
   dir.create(job_dir, recursive = TRUE, showWarnings = FALSE)
   write.csv(conditions, file.path(job_dir, "conditions.csv"), row.names = FALSE)
   write.csv(manifest, file.path(job_dir, "manifest.csv"), row.names = FALSE)
+  offsets <- seq.int(0L, nrow(manifest) - 1L, by = array_batch_size)
+  sizes <- pmin(array_batch_size, nrow(manifest) - offsets)
+  batches <- data.frame(batch = seq_along(offsets), array_start = 0L,
+                        array_end = sizes - 1L, offset = offsets,
+                        first_job = offsets + 1L, last_job = offsets + sizes)
+  write.csv(batches, file.path(job_dir, "submission_batches.csv"), row.names = FALSE)
   cat("Generated", nrow(conditions), "configurations and", nrow(manifest),
       "jobs (", sum(manifest$reps_per_chunk), "replicates).\n")
-  cat("SLURM array range: 1-", nrow(manifest), "\n", sep = "")
+  cat("Submit ONE batch at a time; wait for it to finish before submitting the next:\n")
+  for (i in seq_len(nrow(batches))) {
+    cat("  sbatch --array=0-", batches$array_end[i], " job/run_simulation ",
+        batches$offset[i], "  # manifest jobs ", batches$first_job[i], "-",
+        batches$last_job[i], "\n", sep = "")
+  }
   invisible(manifest)
 }
 
