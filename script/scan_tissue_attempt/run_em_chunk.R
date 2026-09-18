@@ -12,8 +12,6 @@ em_run_chunk <- function(project_dir, iteration_dir, chunk, run_gene = run_susie
     message("Chunk ", chunk, " already completed.")
     return(invisible(NULL))
   }
-  manifest <- em_annotate_manifest(manifest, project_dir)
-  chromosomes <- manifest$chromosome[manifest$chunk == chunk]
   started_at <- Sys.time()
   source_iteration <- unique(priors$source_iteration)
   if (length(source_iteration) != 1L) stop("Expected exactly one source iteration.")
@@ -27,20 +25,9 @@ em_run_chunk <- function(project_dir, iteration_dir, chunk, run_gene = run_susie
   for (i in seq_along(genes)) {
     gene <- genes[i]
     file <- file.path(iteration_dir, "results", paste0(gene, ".rds"))
-    # This also handles old manifests on resume, before reading a source result
-    # or importing expression/genotypes. An exclusion is not a fitting error.
-    if (!em_is_autosome(chromosomes[i])) {
-      out <- em_chromosome_exclusion(gene, chromosomes[i])
-      attr(out, "em_iteration") <- iteration
-      em_atomic_write(out, file)
-      summary$status[i] <- "excluded_chromosome"
-      message("SKIP [", gene, "]: chromosome ", chromosomes[i], "; autosomal analysis only.")
-      next
-    }
     out <- if (file.exists(file)) tryCatch(readRDS(file), error = function(e) NULL) else NULL
     reusable <- is.list(out) && identical(attr(out, "em_iteration"), iteration) &&
-      is.null(out[["error"]]) && is.null(attr(out, "em_exclusion", exact = TRUE)) &&
-      !length(attr(out, "tissue_errors", exact = TRUE)) &&
+      is.null(out[["error"]]) && !length(attr(out, "tissue_errors", exact = TRUE)) &&
       count_nonconverged(out) == 0L
     if (!reusable) {
       cat(sprintf("[%s] iteration %d, chunk %03d: %s\n", Sys.time(), iteration, chunk, gene))
@@ -78,8 +65,7 @@ em_run_chunk <- function(project_dir, iteration_dir, chunk, run_gene = run_susie
                        finished_at = format(finished_at, tz = "UTC", usetz = TRUE),
                        elapsed_seconds = as.numeric(difftime(finished_at, started_at, units = "secs"))), marker)
   message("Chunk ", chunk, " finished: ", sum(summary$status == "gene_error"),
-          " gene errors; ", sum(summary$n_tissue_errors), " tissue errors; ",
-          sum(summary$status == "excluded_chromosome"), " chromosome exclusions.")
+          " gene errors; ", sum(summary$n_tissue_errors), " tissue errors.")
   invisible(summary)
 }
 

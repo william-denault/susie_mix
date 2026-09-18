@@ -36,7 +36,7 @@ min_n_rec <- 5
 for (l in 1:length(gene)) {
 
   target_gene <-gene[l]
-  tissue <- "Blood Vessel"
+  tissue <- "Blood"
 
   # --- paths ---
   datadir <- "/project2/mstephens/gtex"
@@ -650,24 +650,11 @@ for (l in 1:length(gene)) {
     number["2"]
   )
 
-  displayed_genotypes <- sort(
-    unique(SNP[is.finite(SNP)])
-  )
-
   print(
     boxplot(
       pheno$y ~ SNP,
-      main = my_main,
-      xaxt = "n"
+      main = my_main
     )
-  )
-
-  axis(
-    side = 1,
-    at = seq_along(displayed_genotypes),
-    labels = displayed_genotypes,
-    tick = FALSE,
-    las = 1
   )
 
   png(
@@ -687,16 +674,7 @@ for (l in 1:length(gene)) {
 
   boxplot(
     pheno$y ~ SNP,
-    main = my_main,
-    xaxt = "n"
-  )
-
-  axis(
-    side = 1,
-    at = seq_along(displayed_genotypes),
-    labels = displayed_genotypes,
-    tick = FALSE,
-    las = 1
+    main = my_main
   )
 
   dev.off()

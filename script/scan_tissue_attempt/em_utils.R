@@ -68,60 +68,17 @@ em_read_manifest <- function(index_dir) {
   manifest
 }
 
-em_normalize_chromosome <- function(chromosome) {
-  chromosome <- toupper(sub("^chr", "", trimws(as.character(chromosome)), ignore.case = TRUE))
-  aliases <- c("23" = "X", "24" = "Y", "25" = "XY", "26" = "MT", "M" = "MT")
-  matched <- match(chromosome, names(aliases))
-  chromosome[!is.na(matched)] <- unname(aliases[matched[!is.na(matched)]])
-  chromosome
-}
-
-em_is_autosome <- function(chromosome) {
-  em_normalize_chromosome(chromosome) %in% as.character(1:22)
-}
-
-# Freeze chromosomes alongside the original chunk assignments. Use the same
-# annotation and first matching gene row as the workhorse, including on upgrade
-# from old manifests which contain only chunk/gene columns.
-em_annotate_manifest <- function(manifest, project_dir, gene_annotations = NULL) {
-  if (!"chromosome" %in% names(manifest)) {
-    if (is.null(gene_annotations)) {
-      gtf_file <- Sys.getenv("SUSIE_MIX_GTF_FILE",
-        "/project2/mstephens/gtex/Homo_sapiens.GRCh38.103.chr.reformatted.collapse_only.gene.gtf.gz")
-      if (!file.exists(gtf_file)) stop("Gene annotation file not found: ", gtf_file)
-      if (!requireNamespace("data.table", quietly = TRUE)) stop("Required package is missing: data.table")
-      annotation_env <- new.env(parent = environment())
-      annotation_env$fread <- data.table::fread
-      sys.source(file.path(project_dir, "script/scan_tissue_attempt/get_gene_annotations.R"), annotation_env)
-      gene_annotations <- annotation_env$get_gene_annotations(gtf_file)
-    }
-    if (!all(c("gene_name", "chromosome") %in% names(gene_annotations))) {
-      stop("Gene annotations must contain gene_name and chromosome.")
-    }
-    manifest$chromosome <- gene_annotations$chromosome[match(manifest$gene, gene_annotations$gene_name)]
-  }
-  manifest$chromosome <- em_normalize_chromosome(manifest$chromosome)
-  invalid <- is.na(manifest$chromosome) | !nzchar(manifest$chromosome)
-  if (any(invalid)) stop("Missing chromosome annotation for: ", paste(manifest$gene[invalid], collapse = ", "))
-  manifest
-}
-
-em_chromosome_exclusion <- function(gene, chromosome) {
-  structure(list(), gene = gene, chromosome = em_normalize_chromosome(chromosome),
-            em_exclusion = "non_autosomal_chromosome")
-}
-
-em_check_result_files <- function(results_dir, manifest, allowed_extra_genes = character()) {
+em_check_result_files <- function(results_dir, manifest) {
   files <- sort(list.files(results_dir, "\\.rds$", full.names = TRUE))
   genes <- sub("\\.rds$", "", basename(files))
   missing <- setdiff(manifest$gene, genes)
-  extra <- setdiff(genes, c(manifest$gene, allowed_extra_genes))
+  extra <- setdiff(genes, manifest$gene)
   if (length(missing) || length(extra)) {
     stop("Result files do not match the gene chunks in ", results_dir,
          ". Missing: ", length(missing), "; extra: ", length(extra),
          ". Complete the source scan or reconcile the chunk lists first.")
   }
-  files[genes %in% manifest$gene]
+  files
 }
 
 em_pending_chunks <- function(iteration_dir, manifest) {
@@ -245,10 +202,6 @@ em_estimate_coding_priors <- function(files, fit_name, previous_priors = NULL) {
     # Unreadable files are not silently treated as failed fits.
     out <- readRDS(file)
     if (!is.list(out)) stop("Invalid gene result: ", file)
-    if (identical(attr(out, "em_exclusion", exact = TRUE), "non_autosomal_chromosome")) {
-      add_issue(gene, "", "excluded_chromosome", "Excluded from the autosomal EM analysis")
-      next
-    }
     if (!is.null(out[["error"]])) {
       add_issue(gene, "", "gene_error", out[["error"]])
       next
