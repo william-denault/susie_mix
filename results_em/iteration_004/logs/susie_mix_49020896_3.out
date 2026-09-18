@@ -1,0 +1,4387 @@
+[2026-09-15 04:42:14] iteration 4, chunk 003: ACTRT1
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene ACTRT1 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ACTRT1_52cc32214191.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr X
+  --export A
+  --from-bp 127552398
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ACTRT1_52cc32214191
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 128552398
+
+Start time: Tue Sep 15 04:43:28 2026
+63727 MiB RAM detected, ~25417 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+End time: Tue Sep 15 04:43:34 2026
+[2026-09-15 04:44:30] iteration 4, chunk 003: ADAMTS4
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene ADAMTS4 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTS4_52cc5720a38c.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 1
+  --export A
+  --from-bp 160699054
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTS4_52cc5720a38c
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 161699054
+
+Start time: Tue Sep 15 04:45:43 2026
+63727 MiB RAM detected, ~22257 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+62424502 excluded by --chr + --max-alleles + --snps-only, 4810031 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+19700 variants remaining after main filters.
+--export A pass 1/1: loading... 0%95% writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTS4_52cc5720a38c.raw
+written.
+End time: Tue Sep 15 04:45:50 2026
+70 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr1_160846996_A_C_b38_A" "chr1_161289503_G_A_b38_G"
+ [3] "chr1_161514774_T_A_b38_T" "chr1_161514813_C_T_b38_C"
+ [5] "chr1_161514846_C_T_b38_C" "chr1_161515894_C_T_b38_C"
+ [7] "chr1_161518749_G_C_b38_G" "chr1_161518767_C_A_b38_C"
+ [9] "chr1_161527631_C_A_b38_C" "chr1_161527656_T_G_b38_T"
+[11] "chr1_161527755_T_C_b38_T" "chr1_161527756_C_T_b38_C"
+[13] "chr1_161534126_T_C_b38_T" "chr1_161534306_T_C_b38_T"
+[15] "chr1_161536235_A_G_b38_A" "chr1_161543658_A_G_b38_A"
+[17] "chr1_161543847_A_T_b38_A" "chr1_161543913_C_T_b38_C"
+[19] "chr1_161543914_A_G_b38_A" "chr1_161544117_A_G_b38_A"
+[21] "chr1_161547516_C_T_b38_C" "chr1_161547841_T_C_b38_T"
+[23] "chr1_161547844_T_C_b38_T" "chr1_161547871_A_G_b38_A"
+[25] "chr1_161548020_G_C_b38_G" "chr1_161548052_C_G_b38_C"
+[27] "chr1_161548104_T_A_b38_T" "chr1_161548369_C_T_b38_C"
+[29] "chr1_161548382_C_T_b38_C" "chr1_161548424_T_C_b38_T"
+[31] "chr1_161548546_C_T_b38_C" "chr1_161548828_G_A_b38_G"
+[33] "chr1_161550184_G_C_b38_G" "chr1_161550221_G_C_b38_G"
+[35] "chr1_161550223_T_C_b38_T" "chr1_161550467_C_T_b38_C"
+[37] "chr1_161550724_G_T_b38_G" "chr1_161551068_C_T_b38_C"
+[39] "chr1_161551129_T_C_b38_T" "chr1_161551365_G_A_b38_G"
+[41] "chr1_161552912_C_T_b38_C" "chr1_161554029_A_T_b38_A"
+[43] "chr1_161554263_T_G_b38_T" "chr1_161554534_T_C_b38_T"
+[45] "chr1_161555240_C_T_b38_C" "chr1_161555539_A_C_b38_A"
+[47] "chr1_161558046_T_G_b38_T" "chr1_161559610_C_T_b38_C"
+[49] "chr1_161559681_C_A_b38_C" "chr1_161559730_G_A_b38_G"
+[51] "chr1_161560030_C_T_b38_C" "chr1_161561275_T_C_b38_T"
+[53] "chr1_161561294_T_C_b38_T" "chr1_161561515_G_A_b38_G"
+[55] "chr1_161561547_C_T_b38_C" "chr1_161568896_C_T_b38_C"
+[57] "chr1_161568930_C_T_b38_C" "chr1_161568958_T_C_b38_T"
+[59] "chr1_161569201_G_C_b38_G" "chr1_161578926_G_A_b38_G"
+[61] "chr1_161579181_T_C_b38_T" "chr1_161585671_C_A_b38_C"
+[63] "chr1_161614775_A_G_b38_A" "chr1_161614811_A_C_b38_A"
+[65] "chr1_161614815_A_G_b38_A" "chr1_161658875_T_A_b38_T"
+[67] "chr1_161658898_C_A_b38_C" "chr1_161663737_T_C_b38_T"
+[69] "chr1_161663802_T_C_b38_T" "chr1_161695327_G_A_b38_G"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+Running weighted SuSiE-mix for Adipose Tissue 
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+Running weighted SuSiE-mix for Adrenal Gland 
+
+=====================================
+Tissue: Blood 
+=====================================
+Running weighted SuSiE-mix for Blood 
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+Running weighted SuSiE-mix for Blood Vessel 
+
+=====================================
+Tissue: Brain 
+=====================================
+Running weighted SuSiE-mix for Brain 
+
+=====================================
+Tissue: Breast 
+=====================================
+Running weighted SuSiE-mix for Breast 
+
+=====================================
+Tissue: Colon 
+=====================================
+Running weighted SuSiE-mix for Colon 
+
+=====================================
+Tissue: Esophagus 
+=====================================
+Running weighted SuSiE-mix for Esophagus 
+
+=====================================
+Tissue: Heart 
+=====================================
+Running weighted SuSiE-mix for Heart 
+
+=====================================
+Tissue: Kidney 
+=====================================
+Running weighted SuSiE-mix for Kidney 
+
+=====================================
+Tissue: Liver 
+=====================================
+Running weighted SuSiE-mix for Liver 
+
+=====================================
+Tissue: Lung 
+=====================================
+Running weighted SuSiE-mix for Lung 
+
+=====================================
+Tissue: Muscle 
+=====================================
+Running weighted SuSiE-mix for Muscle 
+
+=====================================
+Tissue: Nerve 
+=====================================
+Running weighted SuSiE-mix for Nerve 
+
+=====================================
+Tissue: Ovary 
+=====================================
+Running weighted SuSiE-mix for Ovary 
+
+=====================================
+Tissue: Pancreas 
+=====================================
+Running weighted SuSiE-mix for Pancreas 
+
+=====================================
+Tissue: Pituitary 
+=====================================
+Running weighted SuSiE-mix for Pituitary 
+
+=====================================
+Tissue: Prostate 
+=====================================
+Running weighted SuSiE-mix for Prostate 
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+Running weighted SuSiE-mix for Salivary Gland 
+
+=====================================
+Tissue: Skin 
+=====================================
+Running weighted SuSiE-mix for Skin 
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+Running weighted SuSiE-mix for Small Intestine 
+
+=====================================
+Tissue: Spleen 
+=====================================
+Running weighted SuSiE-mix for Spleen 
+
+=====================================
+Tissue: Stomach 
+=====================================
+Running weighted SuSiE-mix for Stomach 
+
+=====================================
+Tissue: Testis 
+=====================================
+Running weighted SuSiE-mix for Testis 
+
+=====================================
+Tissue: Thyroid 
+=====================================
+Running weighted SuSiE-mix for Thyroid 
+
+=====================================
+Tissue: Uterus 
+=====================================
+Running weighted SuSiE-mix for Uterus 
+
+=====================================
+Tissue: Vagina 
+=====================================
+Running weighted SuSiE-mix for Vagina 
+[2026-09-15 04:46:05] iteration 4, chunk 003: ADAMTS5
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene ADAMTS5 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTS5_52cc583a1a4e.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 21
+  --export A
+  --from-bp 26467088
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTS5_52cc583a1a4e
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 27467088
+
+Start time: Tue Sep 15 04:47:22 2026
+63727 MiB RAM detected, ~19829 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+66383599 excluded by --chr + --max-alleles + --snps-only, 850934 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+18503 variants remaining after main filters.
+--export A pass 1/1: loading... 0%writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTS5_52cc583a1a4e.raw
+written.
+End time: Tue Sep 15 04:47:29 2026
+24 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr21_26568533_G_A_b38_G" "chr21_26568742_G_C_b38_G"
+ [3] "chr21_26590960_C_T_b38_C" "chr21_26591891_C_T_b38_C"
+ [5] "chr21_26593536_A_T_b38_A" "chr21_26593542_C_T_b38_C"
+ [7] "chr21_26594375_C_G_b38_C" "chr21_26595567_G_A_b38_G"
+ [9] "chr21_26597822_T_C_b38_T" "chr21_26600581_C_T_b38_C"
+[11] "chr21_26600594_T_G_b38_T" "chr21_26601516_A_G_b38_A"
+[13] "chr21_26603228_A_G_b38_A" "chr21_26604399_C_A_b38_C"
+[15] "chr21_26614890_C_T_b38_C" "chr21_26618616_A_G_b38_A"
+[17] "chr21_26787180_A_G_b38_A" "chr21_26789371_G_C_b38_G"
+[19] "chr21_26795214_C_T_b38_C" "chr21_27244663_C_T_b38_C"
+[21] "chr21_27350332_A_G_b38_A" "chr21_27438672_C_A_b38_C"
+[23] "chr21_27439995_C_A_b38_C" "chr21_27442965_C_T_b38_C"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+Running weighted SuSiE-mix for Adipose Tissue 
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+Running weighted SuSiE-mix for Adrenal Gland 
+
+=====================================
+Tissue: Blood 
+=====================================
+Running weighted SuSiE-mix for Blood 
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+Running weighted SuSiE-mix for Blood Vessel 
+
+=====================================
+Tissue: Brain 
+=====================================
+Running weighted SuSiE-mix for Brain 
+
+=====================================
+Tissue: Breast 
+=====================================
+Running weighted SuSiE-mix for Breast 
+
+=====================================
+Tissue: Colon 
+=====================================
+Running weighted SuSiE-mix for Colon 
+
+=====================================
+Tissue: Esophagus 
+=====================================
+Running weighted SuSiE-mix for Esophagus 
+
+=====================================
+Tissue: Heart 
+=====================================
+Running weighted SuSiE-mix for Heart 
+
+=====================================
+Tissue: Kidney 
+=====================================
+Running weighted SuSiE-mix for Kidney 
+
+=====================================
+Tissue: Liver 
+=====================================
+Running weighted SuSiE-mix for Liver 
+
+=====================================
+Tissue: Lung 
+=====================================
+Running weighted SuSiE-mix for Lung 
+
+=====================================
+Tissue: Muscle 
+=====================================
+Running weighted SuSiE-mix for Muscle 
+
+=====================================
+Tissue: Nerve 
+=====================================
+Running weighted SuSiE-mix for Nerve 
+
+=====================================
+Tissue: Ovary 
+=====================================
+Running weighted SuSiE-mix for Ovary 
+
+=====================================
+Tissue: Pancreas 
+=====================================
+Running weighted SuSiE-mix for Pancreas 
+
+=====================================
+Tissue: Pituitary 
+=====================================
+Running weighted SuSiE-mix for Pituitary 
+
+=====================================
+Tissue: Prostate 
+=====================================
+Running weighted SuSiE-mix for Prostate 
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+Running weighted SuSiE-mix for Salivary Gland 
+
+=====================================
+Tissue: Skin 
+=====================================
+Running weighted SuSiE-mix for Skin 
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+Running weighted SuSiE-mix for Small Intestine 
+
+=====================================
+Tissue: Spleen 
+=====================================
+Running weighted SuSiE-mix for Spleen 
+
+=====================================
+Tissue: Stomach 
+=====================================
+Running weighted SuSiE-mix for Stomach 
+
+=====================================
+Tissue: Testis 
+=====================================
+Running weighted SuSiE-mix for Testis 
+
+=====================================
+Tissue: Thyroid 
+=====================================
+Running weighted SuSiE-mix for Thyroid 
+
+=====================================
+Tissue: Uterus 
+=====================================
+Running weighted SuSiE-mix for Uterus 
+
+=====================================
+Tissue: Vagina 
+=====================================
+Running weighted SuSiE-mix for Vagina 
+[2026-09-15 04:47:53] iteration 4, chunk 003: ADAMTS6
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene ADAMTS6 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTS6_52cc1d05fa29.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 5
+  --export A
+  --from-bp 64981920
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTS6_52cc1d05fa29
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 65981920
+
+Start time: Tue Sep 15 04:49:08 2026
+63727 MiB RAM detected, ~18505 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+63805389 excluded by --chr + --max-alleles + --snps-only, 3429144 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+16709 variants remaining after main filters.
+--export A pass 1/1: loading... 0%30% writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTS6_52cc1d05fa29.raw
+written.
+End time: Tue Sep 15 04:49:14 2026
+15 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr5_65078129_G_T_b38_G" "chr5_65151833_G_A_b38_G"
+ [3] "chr5_65152843_C_T_b38_C" "chr5_65172228_G_C_b38_G"
+ [5] "chr5_65172230_T_C_b38_T" "chr5_65172236_G_A_b38_G"
+ [7] "chr5_65172237_T_A_b38_T" "chr5_65172241_T_C_b38_T"
+ [9] "chr5_65469489_G_C_b38_G" "chr5_65469519_T_C_b38_T"
+[11] "chr5_65479069_T_C_b38_T" "chr5_65783584_G_A_b38_G"
+[13] "chr5_65786278_C_T_b38_C" "chr5_65940313_A_G_b38_A"
+[15] "chr5_65958212_T_C_b38_T"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+Running weighted SuSiE-mix for Adipose Tissue 
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+Running weighted SuSiE-mix for Adrenal Gland 
+
+=====================================
+Tissue: Blood 
+=====================================
+Running weighted SuSiE-mix for Blood 
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+Running weighted SuSiE-mix for Blood Vessel 
+
+=====================================
+Tissue: Brain 
+=====================================
+Running weighted SuSiE-mix for Brain 
+
+=====================================
+Tissue: Breast 
+=====================================
+Running weighted SuSiE-mix for Breast 
+
+=====================================
+Tissue: Colon 
+=====================================
+Running weighted SuSiE-mix for Colon 
+
+=====================================
+Tissue: Esophagus 
+=====================================
+Running weighted SuSiE-mix for Esophagus 
+
+=====================================
+Tissue: Heart 
+=====================================
+Running weighted SuSiE-mix for Heart 
+
+=====================================
+Tissue: Kidney 
+=====================================
+Running weighted SuSiE-mix for Kidney 
+
+=====================================
+Tissue: Liver 
+=====================================
+Running weighted SuSiE-mix for Liver 
+
+=====================================
+Tissue: Lung 
+=====================================
+Running weighted SuSiE-mix for Lung 
+
+=====================================
+Tissue: Muscle 
+=====================================
+Running weighted SuSiE-mix for Muscle 
+
+=====================================
+Tissue: Nerve 
+=====================================
+Running weighted SuSiE-mix for Nerve 
+
+=====================================
+Tissue: Ovary 
+=====================================
+Running weighted SuSiE-mix for Ovary 
+
+=====================================
+Tissue: Pancreas 
+=====================================
+Running weighted SuSiE-mix for Pancreas 
+
+=====================================
+Tissue: Pituitary 
+=====================================
+Running weighted SuSiE-mix for Pituitary 
+
+=====================================
+Tissue: Prostate 
+=====================================
+Running weighted SuSiE-mix for Prostate 
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+Running weighted SuSiE-mix for Salivary Gland 
+
+=====================================
+Tissue: Skin 
+=====================================
+Running weighted SuSiE-mix for Skin 
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+Running weighted SuSiE-mix for Small Intestine 
+
+=====================================
+Tissue: Spleen 
+=====================================
+Running weighted SuSiE-mix for Spleen 
+
+=====================================
+Tissue: Stomach 
+=====================================
+Running weighted SuSiE-mix for Stomach 
+
+=====================================
+Tissue: Testis 
+=====================================
+Running weighted SuSiE-mix for Testis 
+
+=====================================
+Tissue: Thyroid 
+=====================================
+Running weighted SuSiE-mix for Thyroid 
+
+=====================================
+Tissue: Uterus 
+=====================================
+Running weighted SuSiE-mix for Uterus 
+
+=====================================
+Tissue: Vagina 
+=====================================
+Running weighted SuSiE-mix for Vagina 
+[2026-09-15 04:49:29] iteration 4, chunk 003: ADAMTS7
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene ADAMTS7 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTS7_52cc9597b23.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 15
+  --export A
+  --from-bp 78311464
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTS7_52cc9597b23
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 79311464
+
+Start time: Tue Sep 15 04:50:45 2026
+63727 MiB RAM detected, ~22250 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+65613623 excluded by --chr + --max-alleles + --snps-only, 1620910 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+19870 variants remaining after main filters.
+--export A pass 1/1: loading... 0%41% writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTS7_52cc9597b23.raw
+written.
+End time: Tue Sep 15 04:50:51 2026
+68 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr15_78418816_G_A_b38_G" "chr15_78427859_C_G_b38_C"
+ [3] "chr15_78430740_C_T_b38_C" "chr15_78635247_G_T_b38_G"
+ [5] "chr15_78645147_G_A_b38_G" "chr15_78656508_G_A_b38_G"
+ [7] "chr15_78662783_A_C_b38_A" "chr15_78662805_G_C_b38_G"
+ [9] "chr15_78662825_T_C_b38_T" "chr15_78662826_A_G_b38_A"
+[11] "chr15_78662827_T_C_b38_T" "chr15_78662834_G_C_b38_G"
+[13] "chr15_78662838_T_C_b38_T" "chr15_78662845_A_C_b38_A"
+[15] "chr15_78662851_C_G_b38_C" "chr15_78662870_T_C_b38_T"
+[17] "chr15_78662899_G_A_b38_G" "chr15_78662962_G_A_b38_G"
+[19] "chr15_78662963_T_C_b38_T" "chr15_78663305_A_C_b38_A"
+[21] "chr15_78663307_C_T_b38_C" "chr15_78663309_G_A_b38_G"
+[23] "chr15_78663321_A_G_b38_A" "chr15_78683672_G_C_b38_G"
+[25] "chr15_78684988_A_T_b38_A" "chr15_78685976_T_G_b38_T"
+[27] "chr15_78686354_C_T_b38_C" "chr15_78688389_A_G_b38_A"
+[29] "chr15_78689416_T_C_b38_T" "chr15_78690179_G_A_b38_G"
+[31] "chr15_78690184_T_C_b38_T" "chr15_78692927_G_A_b38_G"
+[33] "chr15_78692928_A_C_b38_A" "chr15_78692929_G_A_b38_G"
+[35] "chr15_78693000_C_A_b38_C" "chr15_78693759_T_A_b38_T"
+[37] "chr15_78694887_C_T_b38_C" "chr15_78705220_A_C_b38_A"
+[39] "chr15_78732424_A_T_b38_A" "chr15_78737600_C_T_b38_C"
+[41] "chr15_78737611_G_A_b38_G" "chr15_78740683_G_C_b38_G"
+[43] "chr15_78748015_G_T_b38_G" "chr15_78755290_T_A_b38_T"
+[45] "chr15_78755304_C_T_b38_C" "chr15_78755306_C_T_b38_C"
+[47] "chr15_78755351_T_C_b38_T" "chr15_78755442_G_A_b38_G"
+[49] "chr15_78773337_C_T_b38_C" "chr15_78773339_T_C_b38_T"
+[51] "chr15_78773374_T_C_b38_T" "chr15_78773380_A_G_b38_A"
+[53] "chr15_78773407_G_A_b38_G" "chr15_78774529_A_G_b38_A"
+[55] "chr15_78774590_A_G_b38_A" "chr15_78780742_C_T_b38_C"
+[57] "chr15_78782835_G_T_b38_G" "chr15_78782865_T_C_b38_T"
+[59] "chr15_78782893_G_A_b38_G" "chr15_78870680_C_T_b38_C"
+[61] "chr15_78947863_G_C_b38_G" "chr15_78947866_T_C_b38_T"
+[63] "chr15_78965705_G_A_b38_G" "chr15_78971755_G_A_b38_G"
+[65] "chr15_79192839_C_T_b38_C" "chr15_79211458_T_A_b38_T"
+[67] "chr15_79212405_G_C_b38_G" "chr15_79232477_T_G_b38_T"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+Running weighted SuSiE-mix for Adipose Tissue 
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+Running weighted SuSiE-mix for Adrenal Gland 
+
+=====================================
+Tissue: Blood 
+=====================================
+Running weighted SuSiE-mix for Blood 
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+Running weighted SuSiE-mix for Blood Vessel 
+
+=====================================
+Tissue: Brain 
+=====================================
+Running weighted SuSiE-mix for Brain 
+
+=====================================
+Tissue: Breast 
+=====================================
+Running weighted SuSiE-mix for Breast 
+
+=====================================
+Tissue: Colon 
+=====================================
+Running weighted SuSiE-mix for Colon 
+
+=====================================
+Tissue: Esophagus 
+=====================================
+Running weighted SuSiE-mix for Esophagus 
+
+=====================================
+Tissue: Heart 
+=====================================
+Running weighted SuSiE-mix for Heart 
+
+=====================================
+Tissue: Kidney 
+=====================================
+Running weighted SuSiE-mix for Kidney 
+
+=====================================
+Tissue: Liver 
+=====================================
+Running weighted SuSiE-mix for Liver 
+
+=====================================
+Tissue: Lung 
+=====================================
+Running weighted SuSiE-mix for Lung 
+
+=====================================
+Tissue: Muscle 
+=====================================
+Running weighted SuSiE-mix for Muscle 
+
+=====================================
+Tissue: Nerve 
+=====================================
+Running weighted SuSiE-mix for Nerve 
+
+=====================================
+Tissue: Ovary 
+=====================================
+Running weighted SuSiE-mix for Ovary 
+
+=====================================
+Tissue: Pancreas 
+=====================================
+Running weighted SuSiE-mix for Pancreas 
+
+=====================================
+Tissue: Pituitary 
+=====================================
+Running weighted SuSiE-mix for Pituitary 
+
+=====================================
+Tissue: Prostate 
+=====================================
+Running weighted SuSiE-mix for Prostate 
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+Running weighted SuSiE-mix for Salivary Gland 
+
+=====================================
+Tissue: Skin 
+=====================================
+Running weighted SuSiE-mix for Skin 
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+Running weighted SuSiE-mix for Small Intestine 
+
+=====================================
+Tissue: Spleen 
+=====================================
+Running weighted SuSiE-mix for Spleen 
+
+=====================================
+Tissue: Stomach 
+=====================================
+Running weighted SuSiE-mix for Stomach 
+
+=====================================
+Tissue: Testis 
+=====================================
+Running weighted SuSiE-mix for Testis 
+
+=====================================
+Tissue: Thyroid 
+=====================================
+Running weighted SuSiE-mix for Thyroid 
+
+=====================================
+Tissue: Uterus 
+=====================================
+Running weighted SuSiE-mix for Uterus 
+
+=====================================
+Tissue: Vagina 
+=====================================
+Running weighted SuSiE-mix for Vagina 
+[2026-09-15 04:51:09] iteration 4, chunk 003: ADAMTS8
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene ADAMTS8 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTS8_52cc35fae99f.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 11
+  --export A
+  --from-bp 129928609
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTS8_52cc35fae99f
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 130928609
+
+Start time: Tue Sep 15 04:52:27 2026
+63727 MiB RAM detected, ~18310 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+64515227 excluded by --chr + --max-alleles + --snps-only, 2719306 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+19905 variants remaining after main filters.
+--export A pass 1/1: loading... 0%writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTS8_52cc35fae99f.raw
+written.
+End time: Tue Sep 15 04:52:33 2026
+82 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr11_129946906_C_G_b38_C" "chr11_129961727_T_C_b38_T"
+ [3] "chr11_129962375_A_G_b38_A" "chr11_129963277_A_G_b38_A"
+ [5] "chr11_129965821_A_G_b38_A" "chr11_129967849_A_T_b38_A"
+ [7] "chr11_129968480_A_C_b38_A" "chr11_130038009_G_A_b38_G"
+ [9] "chr11_130038019_C_T_b38_C" "chr11_130042870_A_G_b38_A"
+[11] "chr11_130043017_A_G_b38_A" "chr11_130045336_A_T_b38_A"
+[13] "chr11_130090453_T_G_b38_T" "chr11_130090718_T_C_b38_T"
+[15] "chr11_130090773_G_A_b38_G" "chr11_130091365_G_A_b38_G"
+[17] "chr11_130091714_G_A_b38_G" "chr11_130091791_G_A_b38_G"
+[19] "chr11_130116672_A_G_b38_A" "chr11_130117205_G_A_b38_G"
+[21] "chr11_130120692_A_G_b38_A" "chr11_130123158_G_A_b38_G"
+[23] "chr11_130123541_A_G_b38_A" "chr11_130125811_G_A_b38_G"
+[25] "chr11_130138209_T_C_b38_T" "chr11_130139411_G_A_b38_G"
+[27] "chr11_130139686_T_C_b38_T" "chr11_130147308_T_G_b38_T"
+[29] "chr11_130153945_T_C_b38_T" "chr11_130155050_T_C_b38_T"
+[31] "chr11_130159766_T_C_b38_T" "chr11_130160468_C_G_b38_C"
+[33] "chr11_130161934_A_G_b38_A" "chr11_130164683_T_C_b38_T"
+[35] "chr11_130165290_T_A_b38_T" "chr11_130168081_G_C_b38_G"
+[37] "chr11_130173431_G_A_b38_G" "chr11_130175601_A_G_b38_A"
+[39] "chr11_130176083_G_C_b38_G" "chr11_130185713_T_C_b38_T"
+[41] "chr11_130233232_C_G_b38_C" "chr11_130233473_C_T_b38_C"
+[43] "chr11_130238737_C_T_b38_C" "chr11_130271614_G_T_b38_G"
+[45] "chr11_130281489_T_C_b38_T" "chr11_130296168_T_C_b38_T"
+[47] "chr11_130318855_G_C_b38_G" "chr11_130357521_T_C_b38_T"
+[49] "chr11_130359102_T_C_b38_T" "chr11_130360057_G_C_b38_G"
+[51] "chr11_130564683_G_C_b38_G" "chr11_130564780_C_T_b38_C"
+[53] "chr11_130565217_G_A_b38_G" "chr11_130565605_C_G_b38_C"
+[55] "chr11_130648057_G_A_b38_G" "chr11_130661556_C_T_b38_C"
+[57] "chr11_130665542_A_G_b38_A" "chr11_130666063_T_C_b38_T"
+[59] "chr11_130666892_T_C_b38_T" "chr11_130666944_T_G_b38_T"
+[61] "chr11_130670155_G_T_b38_G" "chr11_130679715_A_G_b38_A"
+[63] "chr11_130682369_T_C_b38_T" "chr11_130683659_A_G_b38_A"
+[65] "chr11_130683959_T_C_b38_T" "chr11_130686275_C_T_b38_C"
+[67] "chr11_130688342_G_A_b38_G" "chr11_130691114_T_A_b38_T"
+[69] "chr11_130691321_T_C_b38_T" "chr11_130692394_A_T_b38_A"
+[71] "chr11_130695144_G_A_b38_G" "chr11_130706265_C_T_b38_C"
+[73] "chr11_130740766_C_T_b38_C" "chr11_130740770_T_G_b38_T"
+[75] "chr11_130741650_A_C_b38_A" "chr11_130744899_G_A_b38_G"
+[77] "chr11_130746186_T_C_b38_T" "chr11_130748387_T_C_b38_T"
+[79] "chr11_130761713_A_C_b38_A" "chr11_130769783_A_G_b38_A"
+[81] "chr11_130771036_G_A_b38_G" "chr11_130894852_C_T_b38_C"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+Running weighted SuSiE-mix for Adipose Tissue 
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+Running weighted SuSiE-mix for Adrenal Gland 
+
+=====================================
+Tissue: Blood 
+=====================================
+Running weighted SuSiE-mix for Blood 
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+Running weighted SuSiE-mix for Blood Vessel 
+
+=====================================
+Tissue: Brain 
+=====================================
+Running weighted SuSiE-mix for Brain 
+
+=====================================
+Tissue: Breast 
+=====================================
+Running weighted SuSiE-mix for Breast 
+
+=====================================
+Tissue: Colon 
+=====================================
+Running weighted SuSiE-mix for Colon 
+
+=====================================
+Tissue: Esophagus 
+=====================================
+Running weighted SuSiE-mix for Esophagus 
+
+=====================================
+Tissue: Heart 
+=====================================
+Running weighted SuSiE-mix for Heart 
+
+=====================================
+Tissue: Kidney 
+=====================================
+Running weighted SuSiE-mix for Kidney 
+
+=====================================
+Tissue: Liver 
+=====================================
+Running weighted SuSiE-mix for Liver 
+
+=====================================
+Tissue: Lung 
+=====================================
+Running weighted SuSiE-mix for Lung 
+
+=====================================
+Tissue: Muscle 
+=====================================
+Running weighted SuSiE-mix for Muscle 
+
+=====================================
+Tissue: Nerve 
+=====================================
+Running weighted SuSiE-mix for Nerve 
+
+=====================================
+Tissue: Ovary 
+=====================================
+Running weighted SuSiE-mix for Ovary 
+
+=====================================
+Tissue: Pancreas 
+=====================================
+Running weighted SuSiE-mix for Pancreas 
+
+=====================================
+Tissue: Pituitary 
+=====================================
+Running weighted SuSiE-mix for Pituitary 
+
+=====================================
+Tissue: Prostate 
+=====================================
+Running weighted SuSiE-mix for Prostate 
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+Running weighted SuSiE-mix for Salivary Gland 
+
+=====================================
+Tissue: Skin 
+=====================================
+Running weighted SuSiE-mix for Skin 
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+Running weighted SuSiE-mix for Small Intestine 
+
+=====================================
+Tissue: Spleen 
+=====================================
+Running weighted SuSiE-mix for Spleen 
+
+=====================================
+Tissue: Stomach 
+=====================================
+Running weighted SuSiE-mix for Stomach 
+
+=====================================
+Tissue: Testis 
+=====================================
+Running weighted SuSiE-mix for Testis 
+
+=====================================
+Tissue: Thyroid 
+=====================================
+Running weighted SuSiE-mix for Thyroid 
+
+=====================================
+Tissue: Uterus 
+=====================================
+Running weighted SuSiE-mix for Uterus 
+
+=====================================
+Tissue: Vagina 
+=====================================
+Running weighted SuSiE-mix for Vagina 
+[2026-09-15 04:52:51] iteration 4, chunk 003: ADAMTS9
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene ADAMTS9 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTS9_52cc4228fa5b.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 3
+  --export A
+  --from-bp 64188000
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTS9_52cc4228fa5b
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 65188000
+
+Start time: Tue Sep 15 04:54:08 2026
+63727 MiB RAM detected, ~18497 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+63427992 excluded by --chr + --max-alleles + --snps-only, 3806541 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+20676 variants remaining after main filters.
+--export A pass 1/1: loading... 0%writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTS9_52cc4228fa5b.raw
+written.
+End time: Tue Sep 15 04:54:15 2026
+63 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr3_64196286_T_C_b38_T" "chr3_64334199_C_A_b38_C"
+ [3] "chr3_64346228_C_T_b38_C" "chr3_64346425_C_T_b38_C"
+ [5] "chr3_64350592_A_C_b38_A" "chr3_64438192_A_G_b38_A"
+ [7] "chr3_64510157_C_T_b38_C" "chr3_64512534_T_C_b38_T"
+ [9] "chr3_64512667_T_G_b38_T" "chr3_64513667_G_A_b38_G"
+[11] "chr3_64514311_C_T_b38_C" "chr3_64519700_T_C_b38_T"
+[13] "chr3_64519866_C_T_b38_C" "chr3_64524671_C_T_b38_C"
+[15] "chr3_64525278_T_A_b38_T" "chr3_64525421_T_C_b38_T"
+[17] "chr3_64526264_C_T_b38_C" "chr3_64526406_T_C_b38_T"
+[19] "chr3_64527012_G_C_b38_G" "chr3_64527500_A_T_b38_A"
+[21] "chr3_64527551_A_C_b38_A" "chr3_64529920_C_T_b38_C"
+[23] "chr3_64533480_C_T_b38_C" "chr3_64536045_A_G_b38_A"
+[25] "chr3_64537022_C_T_b38_C" "chr3_64539501_C_T_b38_C"
+[27] "chr3_64540934_G_A_b38_G" "chr3_64541041_G_C_b38_G"
+[29] "chr3_64541266_A_C_b38_A" "chr3_64541645_T_C_b38_T"
+[31] "chr3_64541660_C_T_b38_C" "chr3_64541702_G_A_b38_G"
+[33] "chr3_64541789_C_T_b38_C" "chr3_64542159_G_T_b38_G"
+[35] "chr3_64542495_A_G_b38_A" "chr3_64543465_A_C_b38_A"
+[37] "chr3_64543925_G_A_b38_G" "chr3_64546152_A_T_b38_A"
+[39] "chr3_64547669_C_T_b38_C" "chr3_64548604_A_G_b38_A"
+[41] "chr3_64548710_C_T_b38_C" "chr3_64548742_T_C_b38_T"
+[43] "chr3_64550195_C_T_b38_C" "chr3_64551824_A_G_b38_A"
+[45] "chr3_64553022_C_G_b38_C" "chr3_64553095_G_C_b38_G"
+[47] "chr3_64553196_C_G_b38_C" "chr3_64554777_T_A_b38_T"
+[49] "chr3_64554976_A_G_b38_A" "chr3_64570150_G_A_b38_G"
+[51] "chr3_64572286_T_C_b38_T" "chr3_64586339_C_A_b38_C"
+[53] "chr3_64715252_T_C_b38_T" "chr3_64981823_T_C_b38_T"
+[55] "chr3_65037513_T_A_b38_T" "chr3_65038291_C_T_b38_C"
+[57] "chr3_65048746_G_A_b38_G" "chr3_65050293_C_T_b38_C"
+[59] "chr3_65051134_C_T_b38_C" "chr3_65052864_C_A_b38_C"
+[61] "chr3_65053982_G_A_b38_G" "chr3_65054613_C_T_b38_C"
+[63] "chr3_65056439_C_T_b38_C"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+Running weighted SuSiE-mix for Adipose Tissue 
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+Running weighted SuSiE-mix for Adrenal Gland 
+
+=====================================
+Tissue: Blood 
+=====================================
+Running weighted SuSiE-mix for Blood 
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+Running weighted SuSiE-mix for Blood Vessel 
+
+=====================================
+Tissue: Brain 
+=====================================
+Running weighted SuSiE-mix for Brain 
+
+=====================================
+Tissue: Breast 
+=====================================
+Running weighted SuSiE-mix for Breast 
+
+=====================================
+Tissue: Colon 
+=====================================
+Running weighted SuSiE-mix for Colon 
+
+=====================================
+Tissue: Esophagus 
+=====================================
+Running weighted SuSiE-mix for Esophagus 
+
+=====================================
+Tissue: Heart 
+=====================================
+Running weighted SuSiE-mix for Heart 
+
+=====================================
+Tissue: Kidney 
+=====================================
+Running weighted SuSiE-mix for Kidney 
+
+=====================================
+Tissue: Liver 
+=====================================
+Running weighted SuSiE-mix for Liver 
+
+=====================================
+Tissue: Lung 
+=====================================
+Running weighted SuSiE-mix for Lung 
+
+=====================================
+Tissue: Muscle 
+=====================================
+Running weighted SuSiE-mix for Muscle 
+
+=====================================
+Tissue: Nerve 
+=====================================
+Running weighted SuSiE-mix for Nerve 
+
+=====================================
+Tissue: Ovary 
+=====================================
+Running weighted SuSiE-mix for Ovary 
+
+=====================================
+Tissue: Pancreas 
+=====================================
+Running weighted SuSiE-mix for Pancreas 
+
+=====================================
+Tissue: Pituitary 
+=====================================
+Running weighted SuSiE-mix for Pituitary 
+
+=====================================
+Tissue: Prostate 
+=====================================
+Running weighted SuSiE-mix for Prostate 
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+Running weighted SuSiE-mix for Salivary Gland 
+
+=====================================
+Tissue: Skin 
+=====================================
+Running weighted SuSiE-mix for Skin 
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+Running weighted SuSiE-mix for Small Intestine 
+
+=====================================
+Tissue: Spleen 
+=====================================
+Running weighted SuSiE-mix for Spleen 
+
+=====================================
+Tissue: Stomach 
+=====================================
+Running weighted SuSiE-mix for Stomach 
+
+=====================================
+Tissue: Testis 
+=====================================
+Running weighted SuSiE-mix for Testis 
+
+=====================================
+Tissue: Thyroid 
+=====================================
+Running weighted SuSiE-mix for Thyroid 
+
+=====================================
+Tissue: Uterus 
+=====================================
+Running weighted SuSiE-mix for Uterus 
+
+=====================================
+Tissue: Vagina 
+=====================================
+Running weighted SuSiE-mix for Vagina 
+[2026-09-15 04:54:35] iteration 4, chunk 003: ADAMTSL1
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene ADAMTSL1 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTSL1_52cc8697e77.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 9
+  --export A
+  --from-bp 17406563
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTSL1_52cc8697e77
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 18406563
+
+Start time: Tue Sep 15 04:55:52 2026
+63727 MiB RAM detected, ~18499 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+64708045 excluded by --chr + --max-alleles + --snps-only, 2526488 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+23005 variants remaining after main filters.
+--export A pass 1/1: loading... 0%14% writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTSL1_52cc8697e77.raw
+written.
+End time: Tue Sep 15 04:55:59 2026
+56 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr9_17407204_C_T_b38_C" "chr9_17417028_T_G_b38_T"
+ [3] "chr9_17422575_A_G_b38_A" "chr9_17471913_C_G_b38_C"
+ [5] "chr9_17475699_C_T_b38_C" "chr9_17477102_G_C_b38_G"
+ [7] "chr9_17478642_T_C_b38_T" "chr9_17480671_G_A_b38_G"
+ [9] "chr9_17481176_A_G_b38_A" "chr9_17482931_A_G_b38_A"
+[11] "chr9_17502034_A_G_b38_A" "chr9_17502207_T_G_b38_T"
+[13] "chr9_17503075_G_T_b38_G" "chr9_17503437_C_T_b38_C"
+[15] "chr9_17503577_C_G_b38_C" "chr9_17508613_A_G_b38_A"
+[17] "chr9_17514517_A_G_b38_A" "chr9_17536739_G_A_b38_G"
+[19] "chr9_17536804_G_C_b38_G" "chr9_17537758_A_G_b38_A"
+[21] "chr9_17539721_G_T_b38_G" "chr9_17539925_G_A_b38_G"
+[23] "chr9_17541131_A_C_b38_A" "chr9_17541458_G_A_b38_G"
+[25] "chr9_17541758_G_C_b38_G" "chr9_17542676_A_G_b38_A"
+[27] "chr9_17544769_G_A_b38_G" "chr9_17545879_C_A_b38_C"
+[29] "chr9_17546589_T_A_b38_T" "chr9_17547254_A_T_b38_A"
+[31] "chr9_17547682_G_A_b38_G" "chr9_17547854_T_C_b38_T"
+[33] "chr9_17552579_A_G_b38_A" "chr9_17555832_G_A_b38_G"
+[35] "chr9_17555895_G_A_b38_G" "chr9_17556643_C_A_b38_C"
+[37] "chr9_17562260_C_T_b38_C" "chr9_17602092_A_G_b38_A"
+[39] "chr9_17602703_A_G_b38_A" "chr9_17612244_G_A_b38_G"
+[41] "chr9_17613442_A_G_b38_A" "chr9_17647320_G_T_b38_G"
+[43] "chr9_17648863_T_C_b38_T" "chr9_17708021_C_T_b38_C"
+[45] "chr9_17708336_G_A_b38_G" "chr9_17893872_T_G_b38_T"
+[47] "chr9_17915217_G_C_b38_G" "chr9_18018374_A_G_b38_A"
+[49] "chr9_18025176_C_A_b38_C" "chr9_18091069_A_G_b38_A"
+[51] "chr9_18108951_C_T_b38_C" "chr9_18124298_G_T_b38_G"
+[53] "chr9_18125968_C_T_b38_C" "chr9_18198234_C_A_b38_C"
+[55] "chr9_18198441_G_C_b38_G" "chr9_18329141_A_G_b38_A"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+Running weighted SuSiE-mix for Adipose Tissue 
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+Running weighted SuSiE-mix for Adrenal Gland 
+
+=====================================
+Tissue: Blood 
+=====================================
+Running weighted SuSiE-mix for Blood 
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+Running weighted SuSiE-mix for Blood Vessel 
+
+=====================================
+Tissue: Brain 
+=====================================
+Running weighted SuSiE-mix for Brain 
+
+=====================================
+Tissue: Breast 
+=====================================
+Running weighted SuSiE-mix for Breast 
+
+=====================================
+Tissue: Colon 
+=====================================
+Running weighted SuSiE-mix for Colon 
+
+=====================================
+Tissue: Esophagus 
+=====================================
+Running weighted SuSiE-mix for Esophagus 
+
+=====================================
+Tissue: Heart 
+=====================================
+Running weighted SuSiE-mix for Heart 
+
+=====================================
+Tissue: Kidney 
+=====================================
+Running weighted SuSiE-mix for Kidney 
+
+=====================================
+Tissue: Liver 
+=====================================
+Running weighted SuSiE-mix for Liver 
+
+=====================================
+Tissue: Lung 
+=====================================
+Running weighted SuSiE-mix for Lung 
+
+=====================================
+Tissue: Muscle 
+=====================================
+Running weighted SuSiE-mix for Muscle 
+
+=====================================
+Tissue: Nerve 
+=====================================
+Running weighted SuSiE-mix for Nerve 
+
+=====================================
+Tissue: Ovary 
+=====================================
+Running weighted SuSiE-mix for Ovary 
+
+=====================================
+Tissue: Pancreas 
+=====================================
+Running weighted SuSiE-mix for Pancreas 
+
+=====================================
+Tissue: Pituitary 
+=====================================
+Running weighted SuSiE-mix for Pituitary 
+
+=====================================
+Tissue: Prostate 
+=====================================
+Running weighted SuSiE-mix for Prostate 
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+Running weighted SuSiE-mix for Salivary Gland 
+
+=====================================
+Tissue: Skin 
+=====================================
+Running weighted SuSiE-mix for Skin 
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+Running weighted SuSiE-mix for Small Intestine 
+
+=====================================
+Tissue: Spleen 
+=====================================
+Running weighted SuSiE-mix for Spleen 
+
+=====================================
+Tissue: Stomach 
+=====================================
+Running weighted SuSiE-mix for Stomach 
+
+=====================================
+Tissue: Testis 
+=====================================
+Running weighted SuSiE-mix for Testis 
+
+=====================================
+Tissue: Thyroid 
+=====================================
+Running weighted SuSiE-mix for Thyroid 
+
+=====================================
+Tissue: Uterus 
+=====================================
+Running weighted SuSiE-mix for Uterus 
+
+=====================================
+Tissue: Vagina 
+=====================================
+Running weighted SuSiE-mix for Vagina 
+[2026-09-15 04:56:19] iteration 4, chunk 003: ADAMTSL2
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene ADAMTSL2 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTSL2_52cc3b6addbc.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 9
+  --export A
+  --from-bp 133032164
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTSL2_52cc3b6addbc
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 134032164
+
+Start time: Tue Sep 15 04:57:34 2026
+63727 MiB RAM detected, ~18499 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+64708045 excluded by --chr + --max-alleles + --snps-only, 2526488 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+24071 variants remaining after main filters.
+--export A pass 1/1: loading... 0%writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTSL2_52cc3b6addbc.raw
+written.
+End time: Tue Sep 15 04:57:41 2026
+31 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr9_133061861_G_T_b38_G" "chr9_133063059_C_G_b38_C"
+ [3] "chr9_133068394_A_G_b38_A" "chr9_133068899_A_G_b38_A"
+ [5] "chr9_133070734_T_C_b38_T" "chr9_133082530_A_G_b38_A"
+ [7] "chr9_133208251_C_G_b38_C" "chr9_133208306_T_C_b38_T"
+ [9] "chr9_133208307_G_C_b38_G" "chr9_133208308_C_T_b38_C"
+[11] "chr9_133226228_T_C_b38_T" "chr9_133227402_T_A_b38_T"
+[13] "chr9_133234925_C_T_b38_C" "chr9_133681917_C_T_b38_C"
+[15] "chr9_133684710_G_T_b38_G" "chr9_133799900_G_A_b38_G"
+[17] "chr9_133802415_G_C_b38_G" "chr9_133802592_C_T_b38_C"
+[19] "chr9_133803033_A_G_b38_A" "chr9_133818282_C_T_b38_C"
+[21] "chr9_133851790_T_C_b38_T" "chr9_133852179_G_T_b38_G"
+[23] "chr9_133855363_T_C_b38_T" "chr9_133862624_C_T_b38_C"
+[25] "chr9_133904415_C_G_b38_C" "chr9_133904766_G_A_b38_G"
+[27] "chr9_133910838_G_A_b38_G" "chr9_133915379_G_A_b38_G"
+[29] "chr9_133920544_C_G_b38_C" "chr9_133929726_C_T_b38_C"
+[31] "chr9_134019933_C_T_b38_C"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+Running weighted SuSiE-mix for Adipose Tissue 
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+Running weighted SuSiE-mix for Adrenal Gland 
+
+=====================================
+Tissue: Blood 
+=====================================
+Running weighted SuSiE-mix for Blood 
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+Running weighted SuSiE-mix for Blood Vessel 
+
+=====================================
+Tissue: Brain 
+=====================================
+Running weighted SuSiE-mix for Brain 
+
+=====================================
+Tissue: Breast 
+=====================================
+Running weighted SuSiE-mix for Breast 
+
+=====================================
+Tissue: Colon 
+=====================================
+Running weighted SuSiE-mix for Colon 
+
+=====================================
+Tissue: Esophagus 
+=====================================
+Running weighted SuSiE-mix for Esophagus 
+
+=====================================
+Tissue: Heart 
+=====================================
+Running weighted SuSiE-mix for Heart 
+
+=====================================
+Tissue: Kidney 
+=====================================
+Running weighted SuSiE-mix for Kidney 
+
+=====================================
+Tissue: Liver 
+=====================================
+Running weighted SuSiE-mix for Liver 
+
+=====================================
+Tissue: Lung 
+=====================================
+Running weighted SuSiE-mix for Lung 
+
+=====================================
+Tissue: Muscle 
+=====================================
+Running weighted SuSiE-mix for Muscle 
+
+=====================================
+Tissue: Nerve 
+=====================================
+Running weighted SuSiE-mix for Nerve 
+
+=====================================
+Tissue: Ovary 
+=====================================
+Running weighted SuSiE-mix for Ovary 
+
+=====================================
+Tissue: Pancreas 
+=====================================
+Running weighted SuSiE-mix for Pancreas 
+
+=====================================
+Tissue: Pituitary 
+=====================================
+Running weighted SuSiE-mix for Pituitary 
+
+=====================================
+Tissue: Prostate 
+=====================================
+Running weighted SuSiE-mix for Prostate 
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+Running weighted SuSiE-mix for Salivary Gland 
+
+=====================================
+Tissue: Skin 
+=====================================
+Running weighted SuSiE-mix for Skin 
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+Running weighted SuSiE-mix for Small Intestine 
+
+=====================================
+Tissue: Spleen 
+=====================================
+Running weighted SuSiE-mix for Spleen 
+
+=====================================
+Tissue: Stomach 
+=====================================
+Running weighted SuSiE-mix for Stomach 
+
+=====================================
+Tissue: Testis 
+=====================================
+Running weighted SuSiE-mix for Testis 
+
+=====================================
+Tissue: Thyroid 
+=====================================
+Running weighted SuSiE-mix for Thyroid 
+
+=====================================
+Tissue: Uterus 
+=====================================
+Running weighted SuSiE-mix for Uterus 
+
+=====================================
+Tissue: Vagina 
+=====================================
+Running weighted SuSiE-mix for Vagina 
+[2026-09-15 04:58:05] iteration 4, chunk 003: ADAMTSL3
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene ADAMTSL3 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTSL3_52cc6248e3c.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 15
+  --export A
+  --from-bp 83154088
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTSL3_52cc6248e3c
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 84154088
+
+Start time: Tue Sep 15 04:59:22 2026
+63727 MiB RAM detected, ~18497 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+65613623 excluded by --chr + --max-alleles + --snps-only, 1620910 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+16273 variants remaining after main filters.
+--export A pass 1/1: loading... 0%writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTSL3_52cc6248e3c.raw
+written.
+End time: Tue Sep 15 04:59:28 2026
+1 SNP(s) removed because HWE P < 1e-08 :
+[1] "chr15_84036674_G_A_b38_G"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+Running weighted SuSiE-mix for Adipose Tissue 
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+Running weighted SuSiE-mix for Adrenal Gland 
+
+=====================================
+Tissue: Blood 
+=====================================
+Running weighted SuSiE-mix for Blood 
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+Running weighted SuSiE-mix for Blood Vessel 
+
+=====================================
+Tissue: Brain 
+=====================================
+Running weighted SuSiE-mix for Brain 
+
+=====================================
+Tissue: Breast 
+=====================================
+Running weighted SuSiE-mix for Breast 
+
+=====================================
+Tissue: Colon 
+=====================================
+Running weighted SuSiE-mix for Colon 
+
+=====================================
+Tissue: Esophagus 
+=====================================
+Running weighted SuSiE-mix for Esophagus 
+
+=====================================
+Tissue: Heart 
+=====================================
+Running weighted SuSiE-mix for Heart 
+
+=====================================
+Tissue: Kidney 
+=====================================
+Running weighted SuSiE-mix for Kidney 
+
+=====================================
+Tissue: Liver 
+=====================================
+Running weighted SuSiE-mix for Liver 
+
+=====================================
+Tissue: Lung 
+=====================================
+Running weighted SuSiE-mix for Lung 
+
+=====================================
+Tissue: Muscle 
+=====================================
+Running weighted SuSiE-mix for Muscle 
+
+=====================================
+Tissue: Nerve 
+=====================================
+Running weighted SuSiE-mix for Nerve 
+
+=====================================
+Tissue: Ovary 
+=====================================
+Running weighted SuSiE-mix for Ovary 
+
+=====================================
+Tissue: Pancreas 
+=====================================
+Running weighted SuSiE-mix for Pancreas 
+
+=====================================
+Tissue: Pituitary 
+=====================================
+Running weighted SuSiE-mix for Pituitary 
+
+=====================================
+Tissue: Prostate 
+=====================================
+Running weighted SuSiE-mix for Prostate 
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+Running weighted SuSiE-mix for Salivary Gland 
+
+=====================================
+Tissue: Skin 
+=====================================
+Running weighted SuSiE-mix for Skin 
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+Running weighted SuSiE-mix for Small Intestine 
+
+=====================================
+Tissue: Spleen 
+=====================================
+Running weighted SuSiE-mix for Spleen 
+
+=====================================
+Tissue: Stomach 
+=====================================
+Running weighted SuSiE-mix for Stomach 
+
+=====================================
+Tissue: Testis 
+=====================================
+Running weighted SuSiE-mix for Testis 
+
+=====================================
+Tissue: Thyroid 
+=====================================
+Running weighted SuSiE-mix for Thyroid 
+
+=====================================
+Tissue: Uterus 
+=====================================
+Running weighted SuSiE-mix for Uterus 
+
+=====================================
+Tissue: Vagina 
+=====================================
+Running weighted SuSiE-mix for Vagina 
+[2026-09-15 04:59:42] iteration 4, chunk 003: ADAMTSL4
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene ADAMTSL4 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTSL4_52cc4c0fd0c8.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 1
+  --export A
+  --from-bp 150049369
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTSL4_52cc4c0fd0c8
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 151049369
+
+Start time: Tue Sep 15 05:00:57 2026
+63727 MiB RAM detected, ~18498 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+62424502 excluded by --chr + --max-alleles + --snps-only, 4810031 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+16909 variants remaining after main filters.
+--export A pass 1/1: loading... 0%5%writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTSL4_52cc4c0fd0c8.raw
+written.
+End time: Tue Sep 15 05:01:05 2026
+12 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr1_150075853_C_T_b38_C" "chr1_150162461_T_C_b38_T"
+ [3] "chr1_150191129_T_C_b38_T" "chr1_150211028_G_T_b38_G"
+ [5] "chr1_150558884_G_A_b38_G" "chr1_150851381_G_A_b38_G"
+ [7] "chr1_150851399_C_T_b38_C" "chr1_150851409_G_A_b38_G"
+ [9] "chr1_150851530_T_C_b38_T" "chr1_150851548_A_G_b38_A"
+[11] "chr1_150985192_A_T_b38_A" "chr1_151002632_T_C_b38_T"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+Running weighted SuSiE-mix for Adipose Tissue 
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+Running weighted SuSiE-mix for Adrenal Gland 
+
+=====================================
+Tissue: Blood 
+=====================================
+Running weighted SuSiE-mix for Blood 
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+Running weighted SuSiE-mix for Blood Vessel 
+
+=====================================
+Tissue: Brain 
+=====================================
+Running weighted SuSiE-mix for Brain 
+
+=====================================
+Tissue: Breast 
+=====================================
+Running weighted SuSiE-mix for Breast 
+
+=====================================
+Tissue: Colon 
+=====================================
+Running weighted SuSiE-mix for Colon 
+
+=====================================
+Tissue: Esophagus 
+=====================================
+Running weighted SuSiE-mix for Esophagus 
+
+=====================================
+Tissue: Heart 
+=====================================
+Running weighted SuSiE-mix for Heart 
+
+=====================================
+Tissue: Kidney 
+=====================================
+Running weighted SuSiE-mix for Kidney 
+
+=====================================
+Tissue: Liver 
+=====================================
+Running weighted SuSiE-mix for Liver 
+
+=====================================
+Tissue: Lung 
+=====================================
+Running weighted SuSiE-mix for Lung 
+
+=====================================
+Tissue: Muscle 
+=====================================
+Running weighted SuSiE-mix for Muscle 
+
+=====================================
+Tissue: Nerve 
+=====================================
+Running weighted SuSiE-mix for Nerve 
+
+=====================================
+Tissue: Ovary 
+=====================================
+Running weighted SuSiE-mix for Ovary 
+
+=====================================
+Tissue: Pancreas 
+=====================================
+Running weighted SuSiE-mix for Pancreas 
+
+=====================================
+Tissue: Pituitary 
+=====================================
+Running weighted SuSiE-mix for Pituitary 
+
+=====================================
+Tissue: Prostate 
+=====================================
+Running weighted SuSiE-mix for Prostate 
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+Running weighted SuSiE-mix for Salivary Gland 
+
+=====================================
+Tissue: Skin 
+=====================================
+Running weighted SuSiE-mix for Skin 
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+Running weighted SuSiE-mix for Small Intestine 
+
+=====================================
+Tissue: Spleen 
+=====================================
+Running weighted SuSiE-mix for Spleen 
+
+=====================================
+Tissue: Stomach 
+=====================================
+Running weighted SuSiE-mix for Stomach 
+
+=====================================
+Tissue: Testis 
+=====================================
+Running weighted SuSiE-mix for Testis 
+
+=====================================
+Tissue: Thyroid 
+=====================================
+Running weighted SuSiE-mix for Thyroid 
+
+=====================================
+Tissue: Uterus 
+=====================================
+Running weighted SuSiE-mix for Uterus 
+
+=====================================
+Tissue: Vagina 
+=====================================
+Running weighted SuSiE-mix for Vagina 
+[2026-09-15 05:01:18] iteration 4, chunk 003: ADAMTSL5
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene ADAMTSL5 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTSL5_52cc3b8335b7.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 19
+  --export A
+  --from-bp 1013604
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTSL5_52cc3b8335b7
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 2013604
+
+Start time: Tue Sep 15 05:02:34 2026
+63727 MiB RAM detected, ~18292 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+65987829 excluded by --chr + --max-alleles + --snps-only, 1246704 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+26738 variants remaining after main filters.
+--export A pass 1/1: loading... 0%43% writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAMTSL5_52cc3b8335b7.raw
+written.
+End time: Tue Sep 15 05:02:40 2026
+82 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr19_1037716_T_C_b38_T" "chr19_1037717_G_A_b38_G"
+ [3] "chr19_1037719_G_T_b38_G" "chr19_1037732_C_T_b38_C"
+ [5] "chr19_1037750_G_A_b38_G" "chr19_1037757_G_A_b38_G"
+ [7] "chr19_1037767_G_A_b38_G" "chr19_1037782_C_A_b38_C"
+ [9] "chr19_1037792_C_T_b38_C" "chr19_1037802_A_C_b38_A"
+[11] "chr19_1037813_T_C_b38_T" "chr19_1061911_A_G_b38_A"
+[13] "chr19_1100569_C_T_b38_C" "chr19_1151725_C_T_b38_C"
+[15] "chr19_1152153_C_T_b38_C" "chr19_1160821_G_C_b38_G"
+[17] "chr19_1166171_A_G_b38_A" "chr19_1251409_G_T_b38_G"
+[19] "chr19_1253643_C_T_b38_C" "chr19_1255720_A_G_b38_A"
+[21] "chr19_1310137_T_G_b38_T" "chr19_1310538_G_A_b38_G"
+[23] "chr19_1310822_A_G_b38_A" "chr19_1311717_C_G_b38_C"
+[25] "chr19_1312403_G_C_b38_G" "chr19_1312790_G_A_b38_G"
+[27] "chr19_1313070_A_C_b38_A" "chr19_1313764_C_T_b38_C"
+[29] "chr19_1314075_C_T_b38_C" "chr19_1314104_A_G_b38_A"
+[31] "chr19_1319641_G_A_b38_G" "chr19_1327987_G_C_b38_G"
+[33] "chr19_1327991_C_T_b38_C" "chr19_1328003_C_T_b38_C"
+[35] "chr19_1346504_G_A_b38_G" "chr19_1390244_C_G_b38_C"
+[37] "chr19_1390494_T_C_b38_T" "chr19_1390840_G_A_b38_G"
+[39] "chr19_1394578_G_A_b38_G" "chr19_1394866_T_C_b38_T"
+[41] "chr19_1395302_A_G_b38_A" "chr19_1396953_T_C_b38_T"
+[43] "chr19_1403353_G_A_b38_G" "chr19_1403924_C_A_b38_C"
+[45] "chr19_1405765_G_A_b38_G" "chr19_1406156_C_T_b38_C"
+[47] "chr19_1408905_A_G_b38_A" "chr19_1411327_C_T_b38_C"
+[49] "chr19_1412986_C_T_b38_C" "chr19_1413079_A_G_b38_A"
+[51] "chr19_1414151_A_G_b38_A" "chr19_1419188_G_A_b38_G"
+[53] "chr19_1419198_T_C_b38_T" "chr19_1421763_G_A_b38_G"
+[55] "chr19_1423200_A_G_b38_A" "chr19_1431648_T_C_b38_T"
+[57] "chr19_1434136_T_C_b38_T" "chr19_1437186_A_G_b38_A"
+[59] "chr19_1461589_T_A_b38_T" "chr19_1461590_T_C_b38_T"
+[61] "chr19_1461864_C_A_b38_C" "chr19_1462794_C_T_b38_C"
+[63] "chr19_1463266_A_C_b38_A" "chr19_1463539_G_T_b38_G"
+[65] "chr19_1464771_T_C_b38_T" "chr19_1469031_A_G_b38_A"
+[67] "chr19_1472008_T_C_b38_T" "chr19_1472589_G_C_b38_G"
+[69] "chr19_1475392_A_C_b38_A" "chr19_1491976_G_A_b38_G"
+[71] "chr19_1492964_G_A_b38_G" "chr19_1497154_A_C_b38_A"
+[73] "chr19_1518202_A_G_b38_A" "chr19_1519101_A_G_b38_A"
+[75] "chr19_1519458_T_A_b38_T" "chr19_1531046_G_A_b38_G"
+[77] "chr19_1536382_A_G_b38_A" "chr19_1536970_T_G_b38_T"
+[79] "chr19_1538584_T_C_b38_T" "chr19_1540701_G_C_b38_G"
+[81] "chr19_1737022_T_C_b38_T" "chr19_1877728_G_T_b38_G"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+Running weighted SuSiE-mix for Adipose Tissue 
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+Running weighted SuSiE-mix for Adrenal Gland 
+
+=====================================
+Tissue: Blood 
+=====================================
+Running weighted SuSiE-mix for Blood 
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+Running weighted SuSiE-mix for Blood Vessel 
+
+=====================================
+Tissue: Brain 
+=====================================
+Running weighted SuSiE-mix for Brain 
+
+=====================================
+Tissue: Breast 
+=====================================
+Running weighted SuSiE-mix for Breast 
+
+=====================================
+Tissue: Colon 
+=====================================
+Running weighted SuSiE-mix for Colon 
+
+=====================================
+Tissue: Esophagus 
+=====================================
+Running weighted SuSiE-mix for Esophagus 
+
+=====================================
+Tissue: Heart 
+=====================================
+Running weighted SuSiE-mix for Heart 
+
+=====================================
+Tissue: Kidney 
+=====================================
+Running weighted SuSiE-mix for Kidney 
+
+=====================================
+Tissue: Liver 
+=====================================
+Running weighted SuSiE-mix for Liver 
+
+=====================================
+Tissue: Lung 
+=====================================
+Running weighted SuSiE-mix for Lung 
+
+=====================================
+Tissue: Muscle 
+=====================================
+Running weighted SuSiE-mix for Muscle 
+
+=====================================
+Tissue: Nerve 
+=====================================
+Running weighted SuSiE-mix for Nerve 
+
+=====================================
+Tissue: Ovary 
+=====================================
+Running weighted SuSiE-mix for Ovary 
+
+=====================================
+Tissue: Pancreas 
+=====================================
+Running weighted SuSiE-mix for Pancreas 
+
+=====================================
+Tissue: Pituitary 
+=====================================
+Running weighted SuSiE-mix for Pituitary 
+
+=====================================
+Tissue: Prostate 
+=====================================
+Running weighted SuSiE-mix for Prostate 
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+Running weighted SuSiE-mix for Salivary Gland 
+
+=====================================
+Tissue: Skin 
+=====================================
+Running weighted SuSiE-mix for Skin 
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+Running weighted SuSiE-mix for Small Intestine 
+
+=====================================
+Tissue: Spleen 
+=====================================
+Running weighted SuSiE-mix for Spleen 
+
+=====================================
+Tissue: Stomach 
+=====================================
+Running weighted SuSiE-mix for Stomach 
+
+=====================================
+Tissue: Testis 
+=====================================
+Running weighted SuSiE-mix for Testis 
+
+=====================================
+Tissue: Thyroid 
+=====================================
+Running weighted SuSiE-mix for Thyroid 
+
+=====================================
+Tissue: Uterus 
+=====================================
+Running weighted SuSiE-mix for Uterus 
+
+=====================================
+Tissue: Vagina 
+=====================================
+Running weighted SuSiE-mix for Vagina 
+[2026-09-15 05:02:58] iteration 4, chunk 003: ADAP1
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene ADAP1 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAP1_52cc446bd15e.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 7
+  --export A
+  --from-bp 455407
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAP1_52cc446bd15e
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 1455407
+
+Start time: Tue Sep 15 05:04:13 2026
+63727 MiB RAM detected, ~18490 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+64060212 excluded by --chr + --max-alleles + --snps-only, 3174321 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+29978 variants remaining after main filters.
+--export A pass 1/1: loading... 0%99% writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAP1_52cc446bd15e.raw
+written.
+End time: Tue Sep 15 05:04:20 2026
+40 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr7_467406_A_G_b38_A"  "chr7_498322_T_C_b38_T"  "chr7_540242_T_C_b38_T" 
+ [4] "chr7_555938_T_C_b38_T"  "chr7_957033_T_C_b38_T"  "chr7_1017743_C_T_b38_C"
+ [7] "chr7_1053289_C_G_b38_C" "chr7_1053353_A_G_b38_A" "chr7_1180594_C_G_b38_C"
+[10] "chr7_1204095_T_C_b38_T" "chr7_1206394_C_T_b38_C" "chr7_1207336_C_T_b38_C"
+[13] "chr7_1207884_C_T_b38_C" "chr7_1208073_A_T_b38_A" "chr7_1208119_C_T_b38_C"
+[16] "chr7_1208545_T_A_b38_T" "chr7_1208933_G_C_b38_G" "chr7_1209244_G_A_b38_G"
+[19] "chr7_1211181_A_C_b38_A" "chr7_1212555_C_T_b38_C" "chr7_1212564_G_A_b38_G"
+[22] "chr7_1213911_A_G_b38_A" "chr7_1214055_T_G_b38_T" "chr7_1214919_G_A_b38_G"
+[25] "chr7_1215257_C_G_b38_C" "chr7_1215430_C_T_b38_C" "chr7_1215467_A_C_b38_A"
+[28] "chr7_1215578_C_T_b38_C" "chr7_1244373_C_T_b38_C" "chr7_1264646_G_C_b38_G"
+[31] "chr7_1311056_A_G_b38_A" "chr7_1333535_C_G_b38_C" "chr7_1334244_T_C_b38_T"
+[34] "chr7_1337441_A_G_b38_A" "chr7_1339880_G_A_b38_G" "chr7_1340964_C_T_b38_C"
+[37] "chr7_1341424_G_A_b38_G" "chr7_1341654_G_C_b38_G" "chr7_1354879_A_G_b38_A"
+[40] "chr7_1428174_A_C_b38_A"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+Running weighted SuSiE-mix for Adipose Tissue 
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+Running weighted SuSiE-mix for Adrenal Gland 
+
+=====================================
+Tissue: Blood 
+=====================================
+Running weighted SuSiE-mix for Blood 
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+Running weighted SuSiE-mix for Blood Vessel 
+
+=====================================
+Tissue: Brain 
+=====================================
+Running weighted SuSiE-mix for Brain 
+
+=====================================
+Tissue: Breast 
+=====================================
+Running weighted SuSiE-mix for Breast 
+
+=====================================
+Tissue: Colon 
+=====================================
+Running weighted SuSiE-mix for Colon 
+
+=====================================
+Tissue: Esophagus 
+=====================================
+Running weighted SuSiE-mix for Esophagus 
+
+=====================================
+Tissue: Heart 
+=====================================
+Running weighted SuSiE-mix for Heart 
+
+=====================================
+Tissue: Kidney 
+=====================================
+Running weighted SuSiE-mix for Kidney 
+
+=====================================
+Tissue: Liver 
+=====================================
+Running weighted SuSiE-mix for Liver 
+
+=====================================
+Tissue: Lung 
+=====================================
+Running weighted SuSiE-mix for Lung 
+
+=====================================
+Tissue: Muscle 
+=====================================
+Running weighted SuSiE-mix for Muscle 
+
+=====================================
+Tissue: Nerve 
+=====================================
+Running weighted SuSiE-mix for Nerve 
+
+=====================================
+Tissue: Ovary 
+=====================================
+Running weighted SuSiE-mix for Ovary 
+
+=====================================
+Tissue: Pancreas 
+=====================================
+Running weighted SuSiE-mix for Pancreas 
+
+=====================================
+Tissue: Pituitary 
+=====================================
+Running weighted SuSiE-mix for Pituitary 
+
+=====================================
+Tissue: Prostate 
+=====================================
+Running weighted SuSiE-mix for Prostate 
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+Running weighted SuSiE-mix for Salivary Gland 
+
+=====================================
+Tissue: Skin 
+=====================================
+Running weighted SuSiE-mix for Skin 
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+Running weighted SuSiE-mix for Small Intestine 
+
+=====================================
+Tissue: Spleen 
+=====================================
+Running weighted SuSiE-mix for Spleen 
+
+=====================================
+Tissue: Stomach 
+=====================================
+Running weighted SuSiE-mix for Stomach 
+
+=====================================
+Tissue: Testis 
+=====================================
+Running weighted SuSiE-mix for Testis 
+
+=====================================
+Tissue: Thyroid 
+=====================================
+Running weighted SuSiE-mix for Thyroid 
+
+=====================================
+Tissue: Uterus 
+=====================================
+Running weighted SuSiE-mix for Uterus 
+
+=====================================
+Tissue: Vagina 
+=====================================
+Running weighted SuSiE-mix for Vagina 
+[2026-09-15 05:04:45] iteration 4, chunk 003: ADAP2
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene ADAP2 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAP2_52cc3c2bc1a8.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 17
+  --export A
+  --from-bp 30406344
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAP2_52cc3c2bc1a8
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 31406344
+
+Start time: Tue Sep 15 05:05:58 2026
+63727 MiB RAM detected, ~22231 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+65601655 excluded by --chr + --max-alleles + --snps-only, 1632878 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+18279 variants remaining after main filters.
+--export A pass 1/1: loading... 0%80% writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAP2_52cc3c2bc1a8.raw
+written.
+End time: Tue Sep 15 05:06:04 2026
+177 SNP(s) removed because HWE P < 1e-08 :
+  [1] "chr17_30580714_T_G_b38_T" "chr17_30586810_A_G_b38_A"
+  [3] "chr17_30588862_G_A_b38_G" "chr17_30589415_A_G_b38_A"
+  [5] "chr17_30596232_A_G_b38_A" "chr17_30603820_A_G_b38_A"
+  [7] "chr17_30605945_G_A_b38_G" "chr17_30614158_A_T_b38_A"
+  [9] "chr17_30616414_A_G_b38_A" "chr17_30667356_T_C_b38_T"
+ [11] "chr17_30667509_A_T_b38_A" "chr17_30768813_T_C_b38_T"
+ [13] "chr17_30794100_C_T_b38_C" "chr17_30831321_C_T_b38_C"
+ [15] "chr17_30837948_G_A_b38_G" "chr17_30839457_A_G_b38_A"
+ [17] "chr17_30841302_G_A_b38_G" "chr17_30842212_T_G_b38_T"
+ [19] "chr17_30844292_C_T_b38_C" "chr17_30871599_C_G_b38_C"
+ [21] "chr17_30883406_C_G_b38_C" "chr17_30890122_C_G_b38_C"
+ [23] "chr17_30892262_T_C_b38_T" "chr17_30900836_G_A_b38_G"
+ [25] "chr17_30928364_T_C_b38_T" "chr17_30928443_T_C_b38_T"
+ [27] "chr17_30929965_T_C_b38_T" "chr17_30931073_T_C_b38_T"
+ [29] "chr17_30931806_G_T_b38_G" "chr17_30935541_A_G_b38_A"
+ [31] "chr17_30935953_A_T_b38_A" "chr17_30936157_C_T_b38_C"
+ [33] "chr17_30936180_A_G_b38_A" "chr17_30939762_T_C_b38_T"
+ [35] "chr17_30940556_T_C_b38_T" "chr17_30940809_G_C_b38_G"
+ [37] "chr17_30941121_C_A_b38_C" "chr17_30941384_G_T_b38_G"
+ [39] "chr17_30941545_G_A_b38_G" "chr17_30943919_G_A_b38_G"
+ [41] "chr17_30944597_T_C_b38_T" "chr17_30944606_T_C_b38_T"
+ [43] "chr17_30945367_C_T_b38_C" "chr17_30946460_C_A_b38_C"
+ [45] "chr17_30946768_C_T_b38_C" "chr17_30948083_G_A_b38_G"
+ [47] "chr17_30949029_A_G_b38_A" "chr17_30949789_T_G_b38_T"
+ [49] "chr17_30950096_T_A_b38_T" "chr17_30950331_A_G_b38_A"
+ [51] "chr17_30950471_C_T_b38_C" "chr17_30950912_G_C_b38_G"
+ [53] "chr17_30951508_A_T_b38_A" "chr17_30951950_T_C_b38_T"
+ [55] "chr17_30952497_T_C_b38_T" "chr17_30953019_T_C_b38_T"
+ [57] "chr17_30957012_G_A_b38_G" "chr17_30957196_T_C_b38_T"
+ [59] "chr17_30958406_G_A_b38_G" "chr17_30958883_A_G_b38_A"
+ [61] "chr17_30959829_G_A_b38_G" "chr17_30959837_G_C_b38_G"
+ [63] "chr17_30961177_G_A_b38_G" "chr17_30962035_T_C_b38_T"
+ [65] "chr17_30962279_T_C_b38_T" "chr17_30962590_C_A_b38_C"
+ [67] "chr17_30963028_T_A_b38_T" "chr17_30963088_C_T_b38_C"
+ [69] "chr17_30963128_T_C_b38_T" "chr17_30963765_C_T_b38_C"
+ [71] "chr17_30964314_G_A_b38_G" "chr17_30964843_C_T_b38_C"
+ [73] "chr17_30966341_T_A_b38_T" "chr17_30966563_T_C_b38_T"
+ [75] "chr17_30966624_T_G_b38_T" "chr17_30967000_A_G_b38_A"
+ [77] "chr17_30970194_T_C_b38_T" "chr17_30970379_A_G_b38_A"
+ [79] "chr17_30970425_A_G_b38_A" "chr17_30970577_G_A_b38_G"
+ [81] "chr17_30970892_C_G_b38_C" "chr17_30971395_T_C_b38_T"
+ [83] "chr17_30971433_G_T_b38_G" "chr17_30971891_G_A_b38_G"
+ [85] "chr17_30974691_T_A_b38_T" "chr17_30974805_G_A_b38_G"
+ [87] "chr17_30974883_A_G_b38_A" "chr17_30975032_C_T_b38_C"
+ [89] "chr17_30977348_C_T_b38_C" "chr17_30978551_C_T_b38_C"
+ [91] "chr17_30979134_G_C_b38_G" "chr17_30981254_A_G_b38_A"
+ [93] "chr17_30981471_G_T_b38_G" "chr17_30982497_T_C_b38_T"
+ [95] "chr17_30983560_G_T_b38_G" "chr17_30985853_T_C_b38_T"
+ [97] "chr17_30986060_A_G_b38_A" "chr17_30987502_G_T_b38_G"
+ [99] "chr17_30988175_G_C_b38_G" "chr17_30990058_T_A_b38_T"
+[101] "chr17_30992505_T_G_b38_T" "chr17_30992769_T_A_b38_T"
+[103] "chr17_30992938_C_T_b38_C" "chr17_30993757_A_T_b38_A"
+[105] "chr17_30995531_T_C_b38_T" "chr17_30996493_G_C_b38_G"
+[107] "chr17_30999483_C_T_b38_C" "chr17_30999717_C_G_b38_C"
+[109] "chr17_31001190_T_A_b38_T" "chr17_31003526_C_T_b38_C"
+[111] "chr17_31007040_G_C_b38_G" "chr17_31007268_C_T_b38_C"
+[113] "chr17_31007893_C_T_b38_C" "chr17_31008404_G_C_b38_G"
+[115] "chr17_31009071_C_G_b38_C" "chr17_31009319_C_T_b38_C"
+[117] "chr17_31011102_T_A_b38_T" "chr17_31011171_A_G_b38_A"
+[119] "chr17_31011175_G_A_b38_G" "chr17_31011329_C_A_b38_C"
+[121] "chr17_31011527_G_C_b38_G" "chr17_31011735_T_G_b38_T"
+[123] "chr17_31011797_T_C_b38_T" "chr17_31012715_T_C_b38_T"
+[125] "chr17_31012886_G_A_b38_G" "chr17_31019693_G_A_b38_G"
+[127] "chr17_31022930_A_G_b38_A" "chr17_31023369_G_A_b38_G"
+[129] "chr17_31023509_G_A_b38_G" "chr17_31023751_T_G_b38_T"
+[131] "chr17_31032955_C_T_b38_C" "chr17_31032986_G_A_b38_G"
+[133] "chr17_31035128_C_A_b38_C" "chr17_31040554_T_C_b38_T"
+[135] "chr17_31040585_A_C_b38_A" "chr17_31042430_C_T_b38_C"
+[137] "chr17_31043223_G_A_b38_G" "chr17_31043255_C_T_b38_C"
+[139] "chr17_31048159_A_G_b38_A" "chr17_31048526_A_G_b38_A"
+[141] "chr17_31049170_G_A_b38_G" "chr17_31049473_G_A_b38_G"
+[143] "chr17_31049671_G_C_b38_G" "chr17_31053274_G_C_b38_G"
+[145] "chr17_31055590_T_C_b38_T" "chr17_31056306_T_C_b38_T"
+[147] "chr17_31056622_G_C_b38_G" "chr17_31058440_C_T_b38_C"
+[149] "chr17_31058835_C_G_b38_C" "chr17_31058911_C_G_b38_C"
+[151] "chr17_31058956_A_T_b38_A" "chr17_31058959_A_C_b38_A"
+[153] "chr17_31138510_C_T_b38_C" "chr17_31138658_A_G_b38_A"
+[155] "chr17_31178591_C_T_b38_C" "chr17_31191421_C_T_b38_C"
+[157] "chr17_31192796_G_T_b38_G" "chr17_31193364_T_C_b38_T"
+[159] "chr17_31234470_G_A_b38_G" "chr17_31265532_T_C_b38_T"
+[161] "chr17_31269363_C_T_b38_C" "chr17_31272314_G_C_b38_G"
+[163] "chr17_31280218_T_A_b38_T" "chr17_31289614_G_A_b38_G"
+[165] "chr17_31316891_G_A_b38_G" "chr17_31319420_C_G_b38_C"
+[167] "chr17_31320100_C_T_b38_C" "chr17_31320177_T_C_b38_T"
+[169] "chr17_31325438_G_A_b38_G" "chr17_31337627_T_A_b38_T"
+[171] "chr17_31346081_G_A_b38_G" "chr17_31346109_G_A_b38_G"
+[173] "chr17_31346354_A_G_b38_A" "chr17_31353416_G_A_b38_G"
+[175] "chr17_31362894_G_C_b38_G" "chr17_31380032_G_C_b38_G"
+[177] "chr17_31400855_C_T_b38_C"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+Running weighted SuSiE-mix for Adipose Tissue 
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+Running weighted SuSiE-mix for Adrenal Gland 
+
+=====================================
+Tissue: Blood 
+=====================================
+Running weighted SuSiE-mix for Blood 
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+Running weighted SuSiE-mix for Blood Vessel 
+
+=====================================
+Tissue: Brain 
+=====================================
+Running weighted SuSiE-mix for Brain 
+
+=====================================
+Tissue: Breast 
+=====================================
+Running weighted SuSiE-mix for Breast 
+
+=====================================
+Tissue: Colon 
+=====================================
+Running weighted SuSiE-mix for Colon 
+
+=====================================
+Tissue: Esophagus 
+=====================================
+Running weighted SuSiE-mix for Esophagus 
+
+=====================================
+Tissue: Heart 
+=====================================
+Running weighted SuSiE-mix for Heart 
+
+=====================================
+Tissue: Kidney 
+=====================================
+Running weighted SuSiE-mix for Kidney 
+
+=====================================
+Tissue: Liver 
+=====================================
+Running weighted SuSiE-mix for Liver 
+
+=====================================
+Tissue: Lung 
+=====================================
+Running weighted SuSiE-mix for Lung 
+
+=====================================
+Tissue: Muscle 
+=====================================
+Running weighted SuSiE-mix for Muscle 
+
+=====================================
+Tissue: Nerve 
+=====================================
+Running weighted SuSiE-mix for Nerve 
+
+=====================================
+Tissue: Ovary 
+=====================================
+Running weighted SuSiE-mix for Ovary 
+
+=====================================
+Tissue: Pancreas 
+=====================================
+Running weighted SuSiE-mix for Pancreas 
+
+=====================================
+Tissue: Pituitary 
+=====================================
+Running weighted SuSiE-mix for Pituitary 
+
+=====================================
+Tissue: Prostate 
+=====================================
+Running weighted SuSiE-mix for Prostate 
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+Running weighted SuSiE-mix for Salivary Gland 
+
+=====================================
+Tissue: Skin 
+=====================================
+Running weighted SuSiE-mix for Skin 
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+Running weighted SuSiE-mix for Small Intestine 
+
+=====================================
+Tissue: Spleen 
+=====================================
+Running weighted SuSiE-mix for Spleen 
+
+=====================================
+Tissue: Stomach 
+=====================================
+Running weighted SuSiE-mix for Stomach 
+
+=====================================
+Tissue: Testis 
+=====================================
+Running weighted SuSiE-mix for Testis 
+
+=====================================
+Tissue: Thyroid 
+=====================================
+Running weighted SuSiE-mix for Thyroid 
+
+=====================================
+Tissue: Uterus 
+=====================================
+Running weighted SuSiE-mix for Uterus 
+
+=====================================
+Tissue: Vagina 
+=====================================
+Running weighted SuSiE-mix for Vagina 
+[2026-09-15 05:06:14] iteration 4, chunk 003: ADAR
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene ADAR :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAR_52cc3f45bc65.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 1
+  --export A
+  --from-bp 154128013
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAR_52cc3f45bc65
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 155128013
+
+Start time: Tue Sep 15 05:07:31 2026
+63727 MiB RAM detected, ~18753 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+62424502 excluded by --chr + --max-alleles + --snps-only, 4810031 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+16794 variants remaining after main filters.
+--export A pass 1/1: loading... 0%writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAR_52cc3f45bc65.raw
+written.
+End time: Tue Sep 15 05:07:37 2026
+18 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr1_154549772_A_G_b38_A" "chr1_154551112_T_G_b38_T"
+ [3] "chr1_154555610_T_C_b38_T" "chr1_154556329_G_C_b38_G"
+ [5] "chr1_154559434_G_A_b38_G" "chr1_154559558_A_G_b38_A"
+ [7] "chr1_154561141_C_A_b38_C" "chr1_154562141_G_C_b38_G"
+ [9] "chr1_154562290_G_A_b38_G" "chr1_154563051_C_T_b38_C"
+[11] "chr1_154962777_G_C_b38_G" "chr1_154965759_G_C_b38_G"
+[13] "chr1_154971405_A_G_b38_A" "chr1_154971680_A_G_b38_A"
+[15] "chr1_154974041_A_G_b38_A" "chr1_154975020_A_T_b38_A"
+[17] "chr1_154983248_C_T_b38_C" "chr1_155031423_A_C_b38_A"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+Running weighted SuSiE-mix for Adipose Tissue 
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+Running weighted SuSiE-mix for Adrenal Gland 
+
+=====================================
+Tissue: Blood 
+=====================================
+Running weighted SuSiE-mix for Blood 
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+Running weighted SuSiE-mix for Blood Vessel 
+
+=====================================
+Tissue: Brain 
+=====================================
+Running weighted SuSiE-mix for Brain 
+
+=====================================
+Tissue: Breast 
+=====================================
+Running weighted SuSiE-mix for Breast 
+
+=====================================
+Tissue: Colon 
+=====================================
+Running weighted SuSiE-mix for Colon 
+
+=====================================
+Tissue: Esophagus 
+=====================================
+Running weighted SuSiE-mix for Esophagus 
+
+=====================================
+Tissue: Heart 
+=====================================
+Running weighted SuSiE-mix for Heart 
+
+=====================================
+Tissue: Kidney 
+=====================================
+Running weighted SuSiE-mix for Kidney 
+
+=====================================
+Tissue: Liver 
+=====================================
+Running weighted SuSiE-mix for Liver 
+
+=====================================
+Tissue: Lung 
+=====================================
+Running weighted SuSiE-mix for Lung 
+
+=====================================
+Tissue: Muscle 
+=====================================
+Running weighted SuSiE-mix for Muscle 
+
+=====================================
+Tissue: Nerve 
+=====================================
+Running weighted SuSiE-mix for Nerve 
+
+=====================================
+Tissue: Ovary 
+=====================================
+Running weighted SuSiE-mix for Ovary 
+
+=====================================
+Tissue: Pancreas 
+=====================================
+Running weighted SuSiE-mix for Pancreas 
+
+=====================================
+Tissue: Pituitary 
+=====================================
+Running weighted SuSiE-mix for Pituitary 
+
+=====================================
+Tissue: Prostate 
+=====================================
+Running weighted SuSiE-mix for Prostate 
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+Running weighted SuSiE-mix for Salivary Gland 
+
+=====================================
+Tissue: Skin 
+=====================================
+Running weighted SuSiE-mix for Skin 
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+Running weighted SuSiE-mix for Small Intestine 
+
+=====================================
+Tissue: Spleen 
+=====================================
+Running weighted SuSiE-mix for Spleen 
+
+=====================================
+Tissue: Stomach 
+=====================================
+Running weighted SuSiE-mix for Stomach 
+
+=====================================
+Tissue: Testis 
+=====================================
+Running weighted SuSiE-mix for Testis 
+
+=====================================
+Tissue: Thyroid 
+=====================================
+Running weighted SuSiE-mix for Thyroid 
+
+=====================================
+Tissue: Uterus 
+=====================================
+Running weighted SuSiE-mix for Uterus 
+
+=====================================
+Tissue: Vagina 
+=====================================
+Running weighted SuSiE-mix for Vagina 
+[2026-09-15 05:07:52] iteration 4, chunk 003: ADARB1
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene ADARB1 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADARB1_52cc2d6116f3.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 21
+  --export A
+  --from-bp 44573853
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADARB1_52cc2d6116f3
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 45573853
+
+Start time: Tue Sep 15 05:09:08 2026
+63727 MiB RAM detected, ~18480 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+66383599 excluded by --chr + --max-alleles + --snps-only, 850934 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+25523 variants remaining after main filters.
+--export A pass 1/1: loading... 0%23% writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADARB1_52cc2d6116f3.raw
+written.
+End time: Tue Sep 15 05:09:15 2026
+43 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr21_44573942_C_T_b38_C" "chr21_44573974_T_C_b38_T"
+ [3] "chr21_44574137_C_T_b38_C" "chr21_44574233_A_G_b38_A"
+ [5] "chr21_44576156_C_T_b38_C" "chr21_44583007_T_C_b38_T"
+ [7] "chr21_44583088_C_T_b38_C" "chr21_44590979_A_G_b38_A"
+ [9] "chr21_44591021_G_C_b38_G" "chr21_44591233_G_T_b38_G"
+[11] "chr21_44591268_T_C_b38_T" "chr21_44591289_T_C_b38_T"
+[13] "chr21_44591417_G_A_b38_G" "chr21_44591443_T_C_b38_T"
+[15] "chr21_44591516_A_G_b38_A" "chr21_44591519_G_A_b38_G"
+[17] "chr21_44592010_C_T_b38_C" "chr21_44592712_C_G_b38_C"
+[19] "chr21_44593868_A_G_b38_A" "chr21_44595409_C_T_b38_C"
+[21] "chr21_44596221_C_T_b38_C" "chr21_44596228_C_T_b38_C"
+[23] "chr21_44596986_A_G_b38_A" "chr21_44597074_C_T_b38_C"
+[25] "chr21_44598139_A_G_b38_A" "chr21_44599948_A_T_b38_A"
+[27] "chr21_44600096_T_C_b38_T" "chr21_44603471_C_T_b38_C"
+[29] "chr21_44603484_C_T_b38_C" "chr21_44605368_T_C_b38_T"
+[31] "chr21_44617309_C_T_b38_C" "chr21_44618269_C_G_b38_C"
+[33] "chr21_44621240_T_C_b38_T" "chr21_44622365_G_T_b38_G"
+[35] "chr21_44628348_C_T_b38_C" "chr21_44733559_C_T_b38_C"
+[37] "chr21_44956001_T_C_b38_T" "chr21_45007351_C_T_b38_C"
+[39] "chr21_45156162_T_C_b38_T" "chr21_45156427_T_C_b38_T"
+[41] "chr21_45227190_A_G_b38_A" "chr21_45231963_T_C_b38_T"
+[43] "chr21_45474780_G_C_b38_G"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+Running weighted SuSiE-mix for Adipose Tissue 
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+Running weighted SuSiE-mix for Adrenal Gland 
+
+=====================================
+Tissue: Blood 
+=====================================
+Running weighted SuSiE-mix for Blood 
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+Running weighted SuSiE-mix for Blood Vessel 
+
+=====================================
+Tissue: Brain 
+=====================================
+Running weighted SuSiE-mix for Brain 
+
+=====================================
+Tissue: Breast 
+=====================================
+Running weighted SuSiE-mix for Breast 
+
+=====================================
+Tissue: Colon 
+=====================================
+Running weighted SuSiE-mix for Colon 
+
+=====================================
+Tissue: Esophagus 
+=====================================
+Running weighted SuSiE-mix for Esophagus 
+
+=====================================
+Tissue: Heart 
+=====================================
+Running weighted SuSiE-mix for Heart 
+
+=====================================
+Tissue: Kidney 
+=====================================
+Running weighted SuSiE-mix for Kidney 
+
+=====================================
+Tissue: Liver 
+=====================================
+Running weighted SuSiE-mix for Liver 
+
+=====================================
+Tissue: Lung 
+=====================================
+Running weighted SuSiE-mix for Lung 
+
+=====================================
+Tissue: Muscle 
+=====================================
+Running weighted SuSiE-mix for Muscle 
+
+=====================================
+Tissue: Nerve 
+=====================================
+Running weighted SuSiE-mix for Nerve 
+
+=====================================
+Tissue: Ovary 
+=====================================
+Running weighted SuSiE-mix for Ovary 
+
+=====================================
+Tissue: Pancreas 
+=====================================
+Running weighted SuSiE-mix for Pancreas 
+
+=====================================
+Tissue: Pituitary 
+=====================================
+Running weighted SuSiE-mix for Pituitary 
+
+=====================================
+Tissue: Prostate 
+=====================================
+Running weighted SuSiE-mix for Prostate 
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+Running weighted SuSiE-mix for Salivary Gland 
+
+=====================================
+Tissue: Skin 
+=====================================
+Running weighted SuSiE-mix for Skin 
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+Running weighted SuSiE-mix for Small Intestine 
+
+=====================================
+Tissue: Spleen 
+=====================================
+Running weighted SuSiE-mix for Spleen 
+
+=====================================
+Tissue: Stomach 
+=====================================
+Running weighted SuSiE-mix for Stomach 
+
+=====================================
+Tissue: Testis 
+=====================================
+Running weighted SuSiE-mix for Testis 
+
+=====================================
+Tissue: Thyroid 
+=====================================
+Running weighted SuSiE-mix for Thyroid 
+
+=====================================
+Tissue: Uterus 
+=====================================
+Running weighted SuSiE-mix for Uterus 
+
+=====================================
+Tissue: Vagina 
+=====================================
+Running weighted SuSiE-mix for Vagina 
+[2026-09-15 05:09:41] iteration 4, chunk 003: ADARB2
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene ADARB2 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADARB2_52cc4eb0e7e7.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 10
+  --export A
+  --from-bp 1237525
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADARB2_52cc4eb0e7e7
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 2237525
+
+Start time: Tue Sep 15 05:10:57 2026
+63727 MiB RAM detected, ~18480 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+64498607 excluded by --chr + --max-alleles + --snps-only, 2735926 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+23999 variants remaining after main filters.
+--export A pass 1/1: loading... 0%writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADARB2_52cc4eb0e7e7.raw
+written.
+End time: Tue Sep 15 05:11:04 2026
+35 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr10_1366000_T_C_b38_T" "chr10_1368987_T_C_b38_T"
+ [3] "chr10_1369091_C_A_b38_C" "chr10_1369145_G_C_b38_G"
+ [5] "chr10_1369334_T_G_b38_T" "chr10_1369409_G_A_b38_G"
+ [7] "chr10_1369451_A_G_b38_A" "chr10_1369518_G_A_b38_G"
+ [9] "chr10_1369616_C_T_b38_C" "chr10_1369634_G_A_b38_G"
+[11] "chr10_1369659_A_T_b38_A" "chr10_1369660_T_C_b38_T"
+[13] "chr10_1369787_T_C_b38_T" "chr10_1369873_A_C_b38_A"
+[15] "chr10_1370019_G_A_b38_G" "chr10_1370043_T_C_b38_T"
+[17] "chr10_1370216_G_A_b38_G" "chr10_1376176_G_T_b38_G"
+[19] "chr10_1385717_A_G_b38_A" "chr10_1482393_T_C_b38_T"
+[21] "chr10_1482767_A_T_b38_A" "chr10_1613599_G_A_b38_G"
+[23] "chr10_1622317_T_A_b38_T" "chr10_1622852_G_A_b38_G"
+[25] "chr10_2082033_G_T_b38_G" "chr10_2097227_G_A_b38_G"
+[27] "chr10_2097231_A_G_b38_A" "chr10_2106136_G_A_b38_G"
+[29] "chr10_2106208_G_A_b38_G" "chr10_2109134_G_A_b38_G"
+[31] "chr10_2112979_C_T_b38_C" "chr10_2114965_T_G_b38_T"
+[33] "chr10_2117951_A_C_b38_A" "chr10_2129408_A_G_b38_A"
+[35] "chr10_2139788_A_G_b38_A"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+Running weighted SuSiE-mix for Adipose Tissue 
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+Running weighted SuSiE-mix for Adrenal Gland 
+
+=====================================
+Tissue: Blood 
+=====================================
+Running weighted SuSiE-mix for Blood 
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+Running weighted SuSiE-mix for Blood Vessel 
+
+=====================================
+Tissue: Brain 
+=====================================
+Running weighted SuSiE-mix for Brain 
+
+=====================================
+Tissue: Breast 
+=====================================
+Running weighted SuSiE-mix for Breast 
+
+=====================================
+Tissue: Colon 
+=====================================
+Running weighted SuSiE-mix for Colon 
+
+=====================================
+Tissue: Esophagus 
+=====================================
+Running weighted SuSiE-mix for Esophagus 
+
+=====================================
+Tissue: Heart 
+=====================================
+Running weighted SuSiE-mix for Heart 
+
+=====================================
+Tissue: Kidney 
+=====================================
+Running weighted SuSiE-mix for Kidney 
+
+=====================================
+Tissue: Liver 
+=====================================
+Running weighted SuSiE-mix for Liver 
+
+=====================================
+Tissue: Lung 
+=====================================
+Running weighted SuSiE-mix for Lung 
+
+=====================================
+Tissue: Muscle 
+=====================================
+Running weighted SuSiE-mix for Muscle 
+
+=====================================
+Tissue: Nerve 
+=====================================
+Running weighted SuSiE-mix for Nerve 
+
+=====================================
+Tissue: Ovary 
+=====================================
+Running weighted SuSiE-mix for Ovary 
+
+=====================================
+Tissue: Pancreas 
+=====================================
+Running weighted SuSiE-mix for Pancreas 
+
+=====================================
+Tissue: Pituitary 
+=====================================
+Running weighted SuSiE-mix for Pituitary 
+
+=====================================
+Tissue: Prostate 
+=====================================
+Running weighted SuSiE-mix for Prostate 
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+Running weighted SuSiE-mix for Salivary Gland 
+
+=====================================
+Tissue: Skin 
+=====================================
+Running weighted SuSiE-mix for Skin 
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+Running weighted SuSiE-mix for Small Intestine 
+
+=====================================
+Tissue: Spleen 
+=====================================
+Running weighted SuSiE-mix for Spleen 
+
+=====================================
+Tissue: Stomach 
+=====================================
+Running weighted SuSiE-mix for Stomach 
+
+=====================================
+Tissue: Testis 
+=====================================
+Running weighted SuSiE-mix for Testis 
+
+=====================================
+Tissue: Thyroid 
+=====================================
+Running weighted SuSiE-mix for Thyroid 
+
+=====================================
+Tissue: Uterus 
+=====================================
+Running weighted SuSiE-mix for Uterus 
+
+=====================================
+Tissue: Vagina 
+=====================================
+Running weighted SuSiE-mix for Vagina 
+[2026-09-15 05:11:32] iteration 4, chunk 003: ADAT1
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene ADAT1 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAT1_52cc16742c6.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 16
+  --export A
+  --from-bp 75123300
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAT1_52cc16742c6
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 76123300
+
+Start time: Tue Sep 15 05:12:49 2026
+63727 MiB RAM detected, ~18482 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+65423567 excluded by --chr + --max-alleles + --snps-only, 1810966 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+23072 variants remaining after main filters.
+--export A pass 1/1: loading... 0%42% writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAT1_52cc16742c6.raw
+written.
+End time: Tue Sep 15 05:12:56 2026
+20 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr16_75492272_A_C_b38_A" "chr16_75622145_C_G_b38_C"
+ [3] "chr16_75622502_T_C_b38_T" "chr16_75623323_C_A_b38_C"
+ [5] "chr16_75624414_C_T_b38_C" "chr16_75627905_G_C_b38_G"
+ [7] "chr16_75628322_C_T_b38_C" "chr16_75629027_T_G_b38_T"
+ [9] "chr16_75631107_G_A_b38_G" "chr16_75632035_G_C_b38_G"
+[11] "chr16_75634870_C_T_b38_C" "chr16_75637161_T_C_b38_T"
+[13] "chr16_75637477_T_G_b38_T" "chr16_75640790_G_A_b38_G"
+[15] "chr16_75647705_G_A_b38_G" "chr16_75838566_G_A_b38_G"
+[17] "chr16_75840415_A_G_b38_A" "chr16_75854592_T_C_b38_T"
+[19] "chr16_76022892_G_A_b38_G" "chr16_76022919_A_G_b38_A"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+Running weighted SuSiE-mix for Adipose Tissue 
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+Running weighted SuSiE-mix for Adrenal Gland 
+
+=====================================
+Tissue: Blood 
+=====================================
+Running weighted SuSiE-mix for Blood 
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+Running weighted SuSiE-mix for Blood Vessel 
+
+=====================================
+Tissue: Brain 
+=====================================
+Running weighted SuSiE-mix for Brain 
+
+=====================================
+Tissue: Breast 
+=====================================
+Running weighted SuSiE-mix for Breast 
+
+=====================================
+Tissue: Colon 
+=====================================
+Running weighted SuSiE-mix for Colon 
+
+=====================================
+Tissue: Esophagus 
+=====================================
+Running weighted SuSiE-mix for Esophagus 
+
+=====================================
+Tissue: Heart 
+=====================================
+Running weighted SuSiE-mix for Heart 
+
+=====================================
+Tissue: Kidney 
+=====================================
+Running weighted SuSiE-mix for Kidney 
+
+=====================================
+Tissue: Liver 
+=====================================
+Running weighted SuSiE-mix for Liver 
+
+=====================================
+Tissue: Lung 
+=====================================
+Running weighted SuSiE-mix for Lung 
+
+=====================================
+Tissue: Muscle 
+=====================================
+Running weighted SuSiE-mix for Muscle 
+
+=====================================
+Tissue: Nerve 
+=====================================
+Running weighted SuSiE-mix for Nerve 
+
+=====================================
+Tissue: Ovary 
+=====================================
+Running weighted SuSiE-mix for Ovary 
+
+=====================================
+Tissue: Pancreas 
+=====================================
+Running weighted SuSiE-mix for Pancreas 
+
+=====================================
+Tissue: Pituitary 
+=====================================
+Running weighted SuSiE-mix for Pituitary 
+
+=====================================
+Tissue: Prostate 
+=====================================
+Running weighted SuSiE-mix for Prostate 
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+Running weighted SuSiE-mix for Salivary Gland 
+
+=====================================
+Tissue: Skin 
+=====================================
+Running weighted SuSiE-mix for Skin 
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+Running weighted SuSiE-mix for Small Intestine 
+
+=====================================
+Tissue: Spleen 
+=====================================
+Running weighted SuSiE-mix for Spleen 
+
+=====================================
+Tissue: Stomach 
+=====================================
+Running weighted SuSiE-mix for Stomach 
+
+=====================================
+Tissue: Testis 
+=====================================
+Running weighted SuSiE-mix for Testis 
+
+=====================================
+Tissue: Thyroid 
+=====================================
+Running weighted SuSiE-mix for Thyroid 
+
+=====================================
+Tissue: Uterus 
+=====================================
+Running weighted SuSiE-mix for Uterus 
+
+=====================================
+Tissue: Vagina 
+=====================================
+Running weighted SuSiE-mix for Vagina 
+[2026-09-15 05:13:14] iteration 4, chunk 003: ADAT2
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene ADAT2 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAT2_52cc2ced61ed.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 6
+  --export A
+  --from-bp 142950695
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAT2_52cc2ced61ed
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 143950695
+
+Start time: Tue Sep 15 05:14:29 2026
+63727 MiB RAM detected, ~22278 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+64003927 excluded by --chr + --max-alleles + --snps-only, 3230606 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+17248 variants remaining after main filters.
+--export A pass 1/1: loading... 0%28% writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAT2_52cc2ced61ed.raw
+written.
+End time: Tue Sep 15 05:14:35 2026
+77 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr6_143035644_C_T_b38_C" "chr6_143037783_G_A_b38_G"
+ [3] "chr6_143054989_T_C_b38_T" "chr6_143066202_T_C_b38_T"
+ [5] "chr6_143071671_A_G_b38_A" "chr6_143071689_G_T_b38_G"
+ [7] "chr6_143071949_T_C_b38_T" "chr6_143073047_C_T_b38_C"
+ [9] "chr6_143073458_C_G_b38_C" "chr6_143073864_A_G_b38_A"
+[11] "chr6_143073895_A_C_b38_A" "chr6_143076349_T_C_b38_T"
+[13] "chr6_143076553_T_C_b38_T" "chr6_143079531_A_G_b38_A"
+[15] "chr6_143079930_T_A_b38_T" "chr6_143080550_C_T_b38_C"
+[17] "chr6_143085392_C_T_b38_C" "chr6_143085826_G_A_b38_G"
+[19] "chr6_143085936_A_G_b38_A" "chr6_143087264_G_A_b38_G"
+[21] "chr6_143087609_A_G_b38_A" "chr6_143089040_A_G_b38_A"
+[23] "chr6_143089160_G_T_b38_G" "chr6_143089309_G_T_b38_G"
+[25] "chr6_143089416_C_T_b38_C" "chr6_143092261_T_G_b38_T"
+[27] "chr6_143094281_T_C_b38_T" "chr6_143098954_A_T_b38_A"
+[29] "chr6_143100661_G_A_b38_G" "chr6_143106302_G_A_b38_G"
+[31] "chr6_143106499_G_A_b38_G" "chr6_143107013_G_T_b38_G"
+[33] "chr6_143108339_A_G_b38_A" "chr6_143108690_A_G_b38_A"
+[35] "chr6_143109976_C_G_b38_C" "chr6_143110012_G_A_b38_G"
+[37] "chr6_143110691_A_G_b38_A" "chr6_143111577_C_T_b38_C"
+[39] "chr6_143113356_G_A_b38_G" "chr6_143113473_T_C_b38_T"
+[41] "chr6_143115632_C_T_b38_C" "chr6_143116147_G_A_b38_G"
+[43] "chr6_143117274_A_C_b38_A" "chr6_143117547_C_G_b38_C"
+[45] "chr6_143118369_G_A_b38_G" "chr6_143120619_T_C_b38_T"
+[47] "chr6_143121932_C_T_b38_C" "chr6_143122407_G_T_b38_G"
+[49] "chr6_143132423_G_A_b38_G" "chr6_143242708_G_A_b38_G"
+[51] "chr6_143247350_T_C_b38_T" "chr6_143248067_T_C_b38_T"
+[53] "chr6_143268666_T_G_b38_T" "chr6_143268677_G_C_b38_G"
+[55] "chr6_143303643_T_G_b38_T" "chr6_143338441_A_G_b38_A"
+[57] "chr6_143346042_G_A_b38_G" "chr6_143353643_G_A_b38_G"
+[59] "chr6_143359307_T_C_b38_T" "chr6_143363467_A_G_b38_A"
+[61] "chr6_143365837_G_A_b38_G" "chr6_143373433_G_T_b38_G"
+[63] "chr6_143373706_T_C_b38_T" "chr6_143375553_A_C_b38_A"
+[65] "chr6_143380876_A_G_b38_A" "chr6_143386683_G_A_b38_G"
+[67] "chr6_143388244_G_A_b38_G" "chr6_143388881_A_T_b38_A"
+[69] "chr6_143390249_T_A_b38_T" "chr6_143391115_G_A_b38_G"
+[71] "chr6_143391312_T_C_b38_T" "chr6_143394018_T_G_b38_T"
+[73] "chr6_143396887_T_G_b38_T" "chr6_143540556_C_T_b38_C"
+[75] "chr6_143717048_C_T_b38_C" "chr6_143719129_T_G_b38_T"
+[77] "chr6_143901884_G_T_b38_G"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+Running weighted SuSiE-mix for Adipose Tissue 
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+Running weighted SuSiE-mix for Adrenal Gland 
+
+=====================================
+Tissue: Blood 
+=====================================
+Running weighted SuSiE-mix for Blood 
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+Running weighted SuSiE-mix for Blood Vessel 
+
+=====================================
+Tissue: Brain 
+=====================================
+Running weighted SuSiE-mix for Brain 
+
+=====================================
+Tissue: Breast 
+=====================================
+Running weighted SuSiE-mix for Breast 
+
+=====================================
+Tissue: Colon 
+=====================================
+Running weighted SuSiE-mix for Colon 
+
+=====================================
+Tissue: Esophagus 
+=====================================
+Running weighted SuSiE-mix for Esophagus 
+
+=====================================
+Tissue: Heart 
+=====================================
+Running weighted SuSiE-mix for Heart 
+
+=====================================
+Tissue: Kidney 
+=====================================
+Running weighted SuSiE-mix for Kidney 
+
+=====================================
+Tissue: Liver 
+=====================================
+Running weighted SuSiE-mix for Liver 
+
+=====================================
+Tissue: Lung 
+=====================================
+Running weighted SuSiE-mix for Lung 
+
+=====================================
+Tissue: Muscle 
+=====================================
+Running weighted SuSiE-mix for Muscle 
+
+=====================================
+Tissue: Nerve 
+=====================================
+Running weighted SuSiE-mix for Nerve 
+
+=====================================
+Tissue: Ovary 
+=====================================
+Running weighted SuSiE-mix for Ovary 
+
+=====================================
+Tissue: Pancreas 
+=====================================
+Running weighted SuSiE-mix for Pancreas 
+
+=====================================
+Tissue: Pituitary 
+=====================================
+Running weighted SuSiE-mix for Pituitary 
+
+=====================================
+Tissue: Prostate 
+=====================================
+Running weighted SuSiE-mix for Prostate 
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+Running weighted SuSiE-mix for Salivary Gland 
+
+=====================================
+Tissue: Skin 
+=====================================
+Running weighted SuSiE-mix for Skin 
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+Running weighted SuSiE-mix for Small Intestine 
+
+=====================================
+Tissue: Spleen 
+=====================================
+Running weighted SuSiE-mix for Spleen 
+
+=====================================
+Tissue: Stomach 
+=====================================
+Running weighted SuSiE-mix for Stomach 
+
+=====================================
+Tissue: Testis 
+=====================================
+Running weighted SuSiE-mix for Testis 
+
+=====================================
+Tissue: Thyroid 
+=====================================
+Running weighted SuSiE-mix for Thyroid 
+
+=====================================
+Tissue: Uterus 
+=====================================
+Running weighted SuSiE-mix for Uterus 
+
+=====================================
+Tissue: Vagina 
+=====================================
+Running weighted SuSiE-mix for Vagina 
+[2026-09-15 05:14:50] iteration 4, chunk 003: ADAT3
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene ADAT3 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAT3_52cc7be47bd6.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 19
+  --export A
+  --from-bp 1405399
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAT3_52cc7be47bd6
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 2405399
+
+Start time: Tue Sep 15 05:16:05 2026
+63727 MiB RAM detected, ~22108 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+65987829 excluded by --chr + --max-alleles + --snps-only, 1246704 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+26565 variants remaining after main filters.
+--export A pass 1/1: loading... 0%4%writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADAT3_52cc7be47bd6.raw
+written.
+End time: Tue Sep 15 05:16:12 2026
+42 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr19_1405765_G_A_b38_G" "chr19_1406156_C_T_b38_C"
+ [3] "chr19_1408905_A_G_b38_A" "chr19_1411327_C_T_b38_C"
+ [5] "chr19_1412986_C_T_b38_C" "chr19_1413079_A_G_b38_A"
+ [7] "chr19_1414151_A_G_b38_A" "chr19_1419188_G_A_b38_G"
+ [9] "chr19_1419198_T_C_b38_T" "chr19_1421763_G_A_b38_G"
+[11] "chr19_1423200_A_G_b38_A" "chr19_1431648_T_C_b38_T"
+[13] "chr19_1434136_T_C_b38_T" "chr19_1437186_A_G_b38_A"
+[15] "chr19_1461589_T_A_b38_T" "chr19_1461590_T_C_b38_T"
+[17] "chr19_1461864_C_A_b38_C" "chr19_1462794_C_T_b38_C"
+[19] "chr19_1463266_A_C_b38_A" "chr19_1463539_G_T_b38_G"
+[21] "chr19_1464771_T_C_b38_T" "chr19_1469031_A_G_b38_A"
+[23] "chr19_1472008_T_C_b38_T" "chr19_1472589_G_C_b38_G"
+[25] "chr19_1475392_A_C_b38_A" "chr19_1491976_G_A_b38_G"
+[27] "chr19_1492964_G_A_b38_G" "chr19_1497154_A_C_b38_A"
+[29] "chr19_1518202_A_G_b38_A" "chr19_1519101_A_G_b38_A"
+[31] "chr19_1519458_T_A_b38_T" "chr19_1531046_G_A_b38_G"
+[33] "chr19_1536382_A_G_b38_A" "chr19_1536970_T_G_b38_T"
+[35] "chr19_1538584_T_C_b38_T" "chr19_1540701_G_C_b38_G"
+[37] "chr19_1737022_T_C_b38_T" "chr19_1877728_G_T_b38_G"
+[39] "chr19_2119220_T_C_b38_T" "chr19_2255312_C_G_b38_C"
+[41] "chr19_2259506_G_A_b38_G" "chr19_2320832_C_T_b38_C"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+Running weighted SuSiE-mix for Adipose Tissue 
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+Running weighted SuSiE-mix for Adrenal Gland 
+
+=====================================
+Tissue: Blood 
+=====================================
+Running weighted SuSiE-mix for Blood 
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+Running weighted SuSiE-mix for Blood Vessel 
+
+=====================================
+Tissue: Brain 
+=====================================
+Running weighted SuSiE-mix for Brain 
+
+=====================================
+Tissue: Breast 
+=====================================
+Running weighted SuSiE-mix for Breast 
+
+=====================================
+Tissue: Colon 
+=====================================
+Running weighted SuSiE-mix for Colon 
+
+=====================================
+Tissue: Esophagus 
+=====================================
+Running weighted SuSiE-mix for Esophagus 
+
+=====================================
+Tissue: Heart 
+=====================================
+Running weighted SuSiE-mix for Heart 
+
+=====================================
+Tissue: Kidney 
+=====================================
+Running weighted SuSiE-mix for Kidney 
+
+=====================================
+Tissue: Liver 
+=====================================
+Running weighted SuSiE-mix for Liver 
+
+=====================================
+Tissue: Lung 
+=====================================
+Running weighted SuSiE-mix for Lung 
+
+=====================================
+Tissue: Muscle 
+=====================================
+Running weighted SuSiE-mix for Muscle 
+
+=====================================
+Tissue: Nerve 
+=====================================
+Running weighted SuSiE-mix for Nerve 
+
+=====================================
+Tissue: Ovary 
+=====================================
+Running weighted SuSiE-mix for Ovary 
+
+=====================================
+Tissue: Pancreas 
+=====================================
+Running weighted SuSiE-mix for Pancreas 
+
+=====================================
+Tissue: Pituitary 
+=====================================
+Running weighted SuSiE-mix for Pituitary 
+
+=====================================
+Tissue: Prostate 
+=====================================
+Running weighted SuSiE-mix for Prostate 
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+Running weighted SuSiE-mix for Salivary Gland 
+
+=====================================
+Tissue: Skin 
+=====================================
+Running weighted SuSiE-mix for Skin 
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+Running weighted SuSiE-mix for Small Intestine 
+
+=====================================
+Tissue: Spleen 
+=====================================
+Running weighted SuSiE-mix for Spleen 
+
+=====================================
+Tissue: Stomach 
+=====================================
+Running weighted SuSiE-mix for Stomach 
+
+=====================================
+Tissue: Testis 
+=====================================
+Running weighted SuSiE-mix for Testis 
+
+=====================================
+Tissue: Thyroid 
+=====================================
+Running weighted SuSiE-mix for Thyroid 
+
+=====================================
+Tissue: Uterus 
+=====================================
+Running weighted SuSiE-mix for Uterus 
+
+=====================================
+Tissue: Vagina 
+=====================================
+Running weighted SuSiE-mix for Vagina 
+[2026-09-15 05:16:29] iteration 4, chunk 003: ADCK1
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene ADCK1 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADCK1_52cc157d775f.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 14
+  --export A
+  --from-bp 77300109
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADCK1_52cc157d775f
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 78300109
+
+Start time: Tue Sep 15 05:17:46 2026
+63727 MiB RAM detected, ~19935 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+65542670 excluded by --chr + --max-alleles + --snps-only, 1691863 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+18864 variants remaining after main filters.
+--export A pass 1/1: loading... 0%writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADCK1_52cc157d775f.raw
+written.
+End time: Tue Sep 15 05:17:53 2026
+3 SNP(s) removed because HWE P < 1e-08 :
+[1] "chr14_78056622_A_C_b38_A" "chr14_78242206_G_A_b38_G"
+[3] "chr14_78245771_A_T_b38_A"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+Running weighted SuSiE-mix for Adipose Tissue 
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+Running weighted SuSiE-mix for Adrenal Gland 
+
+=====================================
+Tissue: Blood 
+=====================================
+Running weighted SuSiE-mix for Blood 
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+Running weighted SuSiE-mix for Blood Vessel 
+
+=====================================
+Tissue: Brain 
+=====================================
+Running weighted SuSiE-mix for Brain 
+
+=====================================
+Tissue: Breast 
+=====================================
+Running weighted SuSiE-mix for Breast 
+
+=====================================
+Tissue: Colon 
+=====================================
+Running weighted SuSiE-mix for Colon 
+
+=====================================
+Tissue: Esophagus 
+=====================================
+Running weighted SuSiE-mix for Esophagus 
+
+=====================================
+Tissue: Heart 
+=====================================
+Running weighted SuSiE-mix for Heart 
+
+=====================================
+Tissue: Kidney 
+=====================================
+Running weighted SuSiE-mix for Kidney 
+
+=====================================
+Tissue: Liver 
+=====================================
+Running weighted SuSiE-mix for Liver 
+
+=====================================
+Tissue: Lung 
+=====================================
+Running weighted SuSiE-mix for Lung 
+
+=====================================
+Tissue: Muscle 
+=====================================
+Running weighted SuSiE-mix for Muscle 
+
+=====================================
+Tissue: Nerve 
+=====================================
+Running weighted SuSiE-mix for Nerve 
+
+=====================================
+Tissue: Ovary 
+=====================================
+Running weighted SuSiE-mix for Ovary 
+
+=====================================
+Tissue: Pancreas 
+=====================================
+Running weighted SuSiE-mix for Pancreas 
+
+=====================================
+Tissue: Pituitary 
+=====================================
+Running weighted SuSiE-mix for Pituitary 
+
+=====================================
+Tissue: Prostate 
+=====================================
+Running weighted SuSiE-mix for Prostate 
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+Running weighted SuSiE-mix for Salivary Gland 
+
+=====================================
+Tissue: Skin 
+=====================================
+Running weighted SuSiE-mix for Skin 
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+Running weighted SuSiE-mix for Small Intestine 
+
+=====================================
+Tissue: Spleen 
+=====================================
+Running weighted SuSiE-mix for Spleen 
+
+=====================================
+Tissue: Stomach 
+=====================================
+Running weighted SuSiE-mix for Stomach 
+
+=====================================
+Tissue: Testis 
+=====================================
+Running weighted SuSiE-mix for Testis 
+
+=====================================
+Tissue: Thyroid 
+=====================================
+Running weighted SuSiE-mix for Thyroid 
+
+=====================================
+Tissue: Uterus 
+=====================================
+Running weighted SuSiE-mix for Uterus 
+
+=====================================
+Tissue: Vagina 
+=====================================
+Running weighted SuSiE-mix for Vagina 
+[2026-09-15 05:18:14] iteration 4, chunk 003: ADCK2
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene ADCK2 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADCK2_52cc1f9c3222.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 7
+  --export A
+  --from-bp 140172945
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADCK2_52cc1f9c3222
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 141172945
+
+Start time: Tue Sep 15 05:19:28 2026
+63727 MiB RAM detected, ~18529 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+64060212 excluded by --chr + --max-alleles + --snps-only, 3174321 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+18037 variants remaining after main filters.
+--export A pass 1/1: loading... 0%14% writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_em/iteration_004/temp_plink/chunk_003/plink_ADCK2_52cc1f9c3222.raw
+written.
+End time: Tue Sep 15 05:19:34 2026
+101 SNP(s) removed because HWE P < 1e-08 :
+  [1] "chr7_140338521_G_A_b38_G" "chr7_140432251_T_G_b38_T"
+  [3] "chr7_140440803_C_T_b38_C" "chr7_140441090_T_C_b38_T"
+  [5] "chr7_140442130_A_G_b38_A" "chr7_140442692_T_C_b38_T"
+  [7] "chr7_140448695_C_T_b38_C" "chr7_140449156_T_C_b38_T"
+  [9] "chr7_140449427_C_A_b38_C" "chr7_140449968_T_C_b38_T"
+ [11] "chr7_140449993_C_T_b38_C" "chr7_140455496_T_C_b38_T"
+ [13] "chr7_140455978_G_C_b38_G" "chr7_140458030_C_T_b38_C"
+ [15] "chr7_140458796_T_C_b38_T" "chr7_140459921_T_C_b38_T"
+ [17] "chr7_140460142_G_C_b38_G" "chr7_140461114_T_C_b38_T"
+ [19] "chr7_140461126_T_A_b38_T" "chr7_140461984_G_A_b38_G"
+ [21] "chr7_140462289_A_G_b38_A" "chr7_140462672_T_C_b38_T"
+ [23] "chr7_140467197_T_C_b38_T" "chr7_140467479_T_A_b38_T"
+ [25] "chr7_140467711_A_G_b38_A" "chr7_140468358_T_C_b38_T"
+ [27] "chr7_140468839_T_C_b38_T" "chr7_140469187_G_A_b38_G"
+ [29] "chr7_140469408_G_A_b38_G" "chr7_140469599_T_C_b38_T"
+ [31] "chr7_140470336_G_A_b38_G" "chr7_140470595_A_C_b38_A"
+ [33] "chr7_140470631_G_C_b38_G" "chr7_140470992_A_T_b38_A"
+ [35] "chr7_140470997_T_A_b38_T" "chr7_140471522_C_T_b38_C"
+ [37] "chr7_140472307_A_G_b38_A" "chr7_140472803_T_A_b38_T"
+ [39] "chr7_140473052_T_C_b38_T" "chr7_140473730_T_G_b38_T"
+ [41] "chr7_140474291_C_A_b38_C" "chr7_140474912_T_C_b38_T"
+ [43] "chr7_140475011_G_A_b38_G" "chr7_140475672_C_A_b38_C"
+ [45] "chr7_140478178_T_C_b38_T" "chr7_140478527_G_C_b38_G"
+ [47] "chr7_140478980_G_A_b38_G" "chr7_140479700_G_T_b38_G"
+ [49] "chr7_140480018_C_T_b38_C" "chr7_140480471_T_C_b38_T"
+ [51] "chr7_140480581_C_A_b38_C" "chr7_140480955_G_A_b38_G"
+ [53] "chr7_140515889_A_T_b38_A" "chr7_140585863_T_C_b38_T"
+ [55] "chr7_140586523_A_C_b38_A" "chr7_140589706_C_T_b38_C"
+ [57] "chr7_140596934_T_C_b38_T" "chr7_140600116_C_G_b38_C"
+ [59] "chr7_140615560_C_T_b38_C" "chr7_140617320_T_C_b38_T"
+ [61] "chr7_140617344_G_A_b38_G" "chr7_140618900_G_A_b38_G"
+ [63] "chr7_140619432_T_C_b38_T" "chr7_140632686_A_G_b38_A"
+ [65] "chr7_140638853_T_C_b38_T" "chr7_140648491_T_A_b38_T"
+ [67] "chr7_140652417_C_A_b38_C" "chr7_140652906_A_G_b38_A"
+ [69] "chr7_140656752_A_G_b38_A" "chr7_140657420_G_A_b38_G"
+ [71] "chr7_140658161_A_G_b38_A" "chr7_140658661_T_C_b38_T"
+ [73] "chr7_140659754_G_A_b38_G" "chr7_140660227_C_T_b38_C"
+ [75] "chr7_140660844_C_T_b38_C" "chr7_140661123_G_A_b38_G"
+ [77] "chr7_140661418_T_G_b38_T" "chr7_140661943_T_C_b38_T"
+ [79] "chr7_140662476_C_T_b38_C" "chr7_140663157_C_T_b38_C"
+ [81] "chr7_140663823_T_C_b38_T" "chr7_140663885_A_G_b38_A"
+ [83] "chr7_140664044_G_A_b38_G" "chr7_140664386_T_C_b38_T"
+ [85] "chr7_140664895_T_C_b38_T" "chr7_140665254_T_C_b38_T"
+ [87] "chr7_140665811_A_C_b38_A" "chr7_140666101_C_A_b38_C"
+ [89] "chr7_140666164_C_T_b38_C" "chr7_140666665_T_C_b38_T"
+ [91] "chr7_140667353_C_T_b38_C" "chr7_140668108_C_T_b38_C"
+ [93] "chr7_140668905_T_C_b38_T" "chr7_140669314_C_T_b38_C"
+ [95] "chr7_140671745_G_A_b38_G" "chr7_140672779_T_C_b38_T"
+ [97] "chr7_140673526_A_G_b38_A" "chr7_140674249_T_C_b38_T"
+ [99] "chr7_140676771_A_C_b38_A" "chr7_140677229_G_A_b38_G"
+[101] "chr7_140685009_T_C_b38_T"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+Running weighted SuSiE-mix for Adipose Tissue 
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+Running weighted SuSiE-mix for Adrenal Gland 
+
+=====================================
+Tissue: Blood 
+=====================================
+Running weighted SuSiE-mix for Blood 
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+Running weighted SuSiE-mix for Blood Vessel 
+
+=====================================
+Tissue: Brain 
+=====================================
+Running weighted SuSiE-mix for Brain 
+
+=====================================
+Tissue: Breast 
+=====================================
+Running weighted SuSiE-mix for Breast 
+
+=====================================
+Tissue: Colon 
+=====================================
+Running weighted SuSiE-mix for Colon 
+
+=====================================
+Tissue: Esophagus 
+=====================================
+Running weighted SuSiE-mix for Esophagus 
+
+=====================================
+Tissue: Heart 
+=====================================
+Running weighted SuSiE-mix for Heart 
+
+=====================================
+Tissue: Kidney 
+=====================================
+Running weighted SuSiE-mix for Kidney 
+
+=====================================
+Tissue: Liver 
+=====================================
+Running weighted SuSiE-mix for Liver 
+
+=====================================
+Tissue: Lung 
+=====================================
+Running weighted SuSiE-mix for Lung 
+
+=====================================
+Tissue: Muscle 
+=====================================
+Running weighted SuSiE-mix for Muscle 
+
+=====================================
+Tissue: Nerve 
+=====================================
+Running weighted SuSiE-mix for Nerve 
+
+=====================================
+Tissue: Ovary 
+=====================================
+Running weighted SuSiE-mix for Ovary 
+
+=====================================
+Tissue: Pancreas 
+=====================================
+Running weighted SuSiE-mix for Pancreas 
+
+=====================================
+Tissue: Pituitary 
+=====================================
+Running weighted SuSiE-mix for Pituitary 
+
+=====================================
+Tissue: Prostate 
+=====================================
+Running weighted SuSiE-mix for Prostate 
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+Running weighted SuSiE-mix for Salivary Gland 
+
+=====================================
+Tissue: Skin 
+=====================================
+Running weighted SuSiE-mix for Skin 
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+Running weighted SuSiE-mix for Small Intestine 
+
+=====================================
+Tissue: Spleen 
+=====================================
+Running weighted SuSiE-mix for Spleen 
+
+=====================================
+Tissue: Stomach 
+=====================================
+Running weighted SuSiE-mix for Stomach 
+
+=====================================
+Tissue: Testis 
+=====================================
+Running weighted SuSiE-mix for Testis 
+
+=====================================
+Tissue: Thyroid 
+=====================================
+Running weighted SuSiE-mix for Thyroid 
+
+=====================================
+Tissue: Uterus 
+=====================================
+Running weighted SuSiE-mix for Uterus 
+
+=====================================
+Tissue: Vagina 
+=====================================
+Running weighted SuSiE-mix for Vagina 

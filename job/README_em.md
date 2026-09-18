@@ -10,8 +10,6 @@ The preparation job loads `R/4.2.0`, estimates the tissue priors, saves them,
 and submits one Slurm array using the resource settings in `test1`
 (`broadwl`, 23 hours, 40 GB, one CPU per chunk). It discovers the existing
 `data/temp_index/chunk_*_genes.txt` lists: currently 185 chunks / 18,468 genes.
-Only genes on chromosomes 1-22 are fitted; other chromosomes remain in the
-chunk manifest as explicit exclusions, so the chunk numbering stays stable.
 The original generated `run_chunk_*.R` scripts are not changed or executed.
 
 With no argument, this runs one iteration. To run five consecutive iterations:
@@ -36,10 +34,10 @@ update calculated from that final fit.
 
 ## What each iteration uses
 
-- No `results_em/prior_history.csv`: pool `susie_mix$alpha` from **every autosomal
-  gene result in `results`**, separately by tissue and coding, to prepare iteration 1.
+- No `results_em/prior_history.csv`: pool `susie_mix$alpha` from **every gene
+  result in `results`**, separately by tissue and coding, to prepare iteration 1.
 - Existing history: read its latest iteration, verify all its chunks have
-  finished and all autosomal gene files exist, then pool `weighted_fit_mix$alpha` from that
+  finished and all gene files exist, then pool `weighted_fit_mix$alpha` from that
   iteration to prepare the next one.
 - The empirical Bayes update uses the expected coding assignments of SuSiE's
   **active components (`V > 0`)**. Exactly zero-variance components are integrated
@@ -51,7 +49,7 @@ update calculated from that final fit.
   zero, not SuSiE's numerical PIP/CS reporting tolerance. Marginal PIP sums are
   saved as full-fit descriptive diagnostics; they do not determine the priors.
 - `workhorse_em.R` runs only the weighted mixed-coding fit. It retains the
-  original autosomal data processing and QC, but omits additive-only, unweighted, and
+  original data processing and QC, but omits additive-only, unweighted, and
   permutation fits and marginal association tests. Each fit starts from its
   predecessor's posterior and variance estimates, with the NEW prior weights.
   The inner fitting budget is `max_iter=1000`, `tol=1e-5`.
@@ -73,8 +71,8 @@ results_em/
   last_continuation_job_id.txt  # Latest automatically queued preparation, if any
   iteration_001/
     priors.csv                 # Frozen priors used to fit this iteration
-    manifest.csv               # Frozen chunk/gene/chromosome assignments
-    source_audit.csv            # Source errors and chromosome exclusions
+    manifest.csv               # Frozen chunk/gene assignments
+    source_audit.csv            # Errors and nonconvergence in source results
     component_counts.rds       # Active alpha sums by tissue and available coding classes
     array_job_ids.txt
     continuation_job_ids.txt   # Next preparation IDs, when a sequence continues
@@ -103,38 +101,6 @@ Thus iteration 1's row is estimated from the original scan and is the prior
 **used for** iteration 1. Iteration 2's row is estimated from iteration 1.
 Each gene RDS contains a list of successful tissues, with `weighted_fit_mix`,
 the predictor map, coding priors/weights, and the existing fit metadata.
-Excluded genes instead have an empty list with `gene`, `chromosome`,
-`em_exclusion="non_autosomal_chromosome"`, and `em_iteration` attributes.
-
-## Chromosome scope
-
-The primary EM analysis uses **autosomes 1-22 only**. X, Y, MT and other
-non-autosomal annotations are excluded both before fitting and before pooling
-source results. This also prevents successful non-autosomal fits from an older
-run from contributing to new priors. Chromosome names such as `chrX`, `M`, and
-PLINK's numeric codes 23/24/26 are normalized before the check.
-
-Preparation reads the same GTF as the workhorse and saves `chromosome` in each
-new manifest. The default is the existing GRCh38 annotation under
-`/project2/mstephens/gtex`; `SUSIE_MIX_GTF_FILE` can override it for both stages.
-Missing gene annotations stop preparation. Existing chunk lists and old
-iteration snapshots are preserved. Chromosome exclusions appear in
-`source_audit.csv` and each chunk's status CSV as `excluded_chromosome`, rather
-than as PLINK errors. New history rows record
-`analysis_chromosomes=autosomes_1_22` and `n_source_chromosome_exclusions`.
-
-There is no need to discard completed autosomal results. The next new iteration
-estimates its priors from the autosomal source fits and uses those fits as warm
-starts. Resuming an unfinished old iteration retains its frozen priors and skips
-non-autosomal genes in the remaining chunks; already completed chunks are left
-untouched. The next new iteration excludes non-autosomal sources throughout.
-Do not compare raw ELBO sums across a change in the contributing gene/tissue set.
-
-The current A/R/D recoding and pooled diploid QC assume two allele copies per
-sample. X needs separate ploidy/sex handling, including pseudoautosomal regions;
-sex adjustment of expression alone does not supply that handling. This exclusion
-defines the model's scope, not an expected direction of change in additivity.
-Genes that previously failed extraction already supplied no posterior counts.
 
 ## Continuing a run prepared with an earlier update
 
@@ -205,12 +171,10 @@ results and per-gene counts, then exits unsuccessfully without a completion
 marker. Resume retries those genes. Preparation also rejects source fits that
 are not confirmed converged. An entirely failed source scan is rejected.
 
-Missing/unreadable autosomal gene files, mismatched predictor maps, invalid component
+Missing/unreadable gene files, mismatched predictor maps, invalid component
 posteriors, or failed warm-start/weight checks stop
-preparation. The initial results must cover the full autosomal chunk gene list,
-so a partially finished autosomal scan cannot initialize the priors. Missing or
-unreadable files for excluded chromosomes do not block preparation. Unexpected
-files outside the chunk gene list still stop preparation. A tissue with
+preparation. The initial results must match the full chunk gene list, so a
+partially finished original scan cannot initialize the priors. A tissue with
 no active component posteriors in a later iteration retains its previous prior
 and is marked `carried_forward_no_active_components`. If no previous prior
 exists, it starts uniformly and is marked `initialized_uniform_no_active_components`;
@@ -220,20 +184,6 @@ No association-P, read-count, lead-PIP, or CS filter is added to the existing da
 `min_abs_corr` remains zero. Positive V means active in the fitted model, not a
 guaranteed real signal. No pseudocount is added to the M-step. Disconnected coding groups retain their previous
 relative total mass because the data cannot identify it.
-
-## Launcher version errors
-
-If `sbatch em_susie_mix 4` immediately prints only
-`Usage: sbatch em_susie_mix [resume]`, the cluster has the older single-iteration
-launcher. It rejects the count before running R or preparing an iteration.
-Upload the current local `job/em_susie_mix` to the cluster's `job` directory;
-syncing only the R files cannot update the launcher. The current usage accepts
-`[new|resume] [N]`. Keep Unix line endings when transferring the shell files.
-
-After intentionally clearing the cluster's `results_em`, submit without
-`resume`: `sbatch em_susie_mix 4` initializes from the original `results`
-and prepares iterations 001 through 004 in sequence. Clearing `results_em`
-does not itself update any launcher or R script.
 
 ## Timing
 
