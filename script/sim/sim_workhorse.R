@@ -1,4 +1,10 @@
-source("/project2/mstephens/wdenault/susie_mix/script/scan_tissue_attempt/workhorse_utils.R")
+# Resolve helper paths from this source file, on both the cluster and locally.
+.sim_sources <- vapply(sys.frames(), function(f) if (is.null(f$ofile)) "" else f$ofile, "")
+.sim_source <- normalizePath(tail(.sim_sources[nzchar(.sim_sources)], 1L),
+                             winslash = "/", mustWork = TRUE)
+source(file.path(dirname(.sim_source), "simulation_design.R"), local = TRUE)
+source(file.path(dirname(.sim_source), "../scan_tissue_attempt/workhorse_utils.R"), local = TRUE)
+rm(.sim_source, .sim_sources)
 
 sim_mix <- function(
     pve = 0.6,
@@ -12,19 +18,25 @@ sim_mix <- function(
     min_maf = 0.05,
     hwe_thresh = 1e-8,
     min_n_rec = 5,
-    temp_dir = "/project2/mstephens/wdenault/susie_mix/temp_plink/"
+    temp_dir = "/project2/mstephens/wdenault/susie_mix/temp_plink/",
+    L_prec = 0,
+    L_pdom = 0,
+    slide_min_obs = 5
 ) {
 
-  library(data.table)
-  library(matrixStats)
-  library(susieR)
+  for (package in c("data.table", "matrixStats", "susieR", "susieSlide")) {
+    if (!requireNamespace(package, quietly = TRUE)) stop("Required package is missing: ", package)
+  }
 
   set.seed(seed)
-  K <- L_add + L_rec + L_dom
+  counts <- c(L_add, L_rec, L_dom, L_prec, L_pdom)
+  sim_scenario_name(counts) # Validate counts, K <= 5 and at most three effect types.
+  K <- sum(counts)
   stopifnot(pve > 0, pve < 1, K > 0,
             all(c(L_add, L_rec, L_dom) >= 0),
             all(c(L_add, L_rec, L_dom) == as.integer(c(L_add, L_rec, L_dom))),
-            n >= 3, n == as.integer(n))
+            n >= 3, n == as.integer(n),
+            slide_min_obs >= 0, slide_min_obs == as.integer(slide_min_obs))
 
   # ------------------------------------------------------------
   # Read one randomly selected genotype file.
@@ -34,7 +46,7 @@ sim_mix <- function(
   if (!length(lf)) stop("No .raw files found in temp_dir.")
   raw_file <- lf[sample.int(length(lf), size = 1)]
 
-  geno_all <- fread(raw_file, data.table = FALSE)
+  geno_all <- data.table::fread(raw_file, data.table = FALSE)
   rownames(geno_all) <- geno_all$IID
   geno_all <- as.matrix(geno_all[, -(1:6), drop = FALSE])
   storage.mode(geno_all) <- "double"
@@ -42,7 +54,7 @@ sim_mix <- function(
   # Remove SNPs with missing genotypes or no variation.
   keep <- colSums(is.na(geno_all)) == 0
   geno_all <- geno_all[, keep, drop = FALSE]
-  keep <- colSds(geno_all) > 0
+  keep <- matrixStats::colSds(geno_all) > 0
   geno_all <- geno_all[, keep, drop = FALSE]
 
   # Orient to the minor allele and filter MAF/HWE using all donors.
@@ -65,7 +77,7 @@ sim_mix <- function(
 
   for (coding in names(geno_mix_parts)) {
     X <- geno_mix_parts[[coding]]
-    keep <- colSums(X) >= min_n_rec & colSds(X) > 0
+    keep <- colSums(X) >= min_n_rec & matrixStats::colSds(X) > 0
     geno_mix_parts[[coding]] <- X[, keep, drop = FALSE]
   }
 
@@ -79,6 +91,12 @@ sim_mix <- function(
   }
   if (L_dom > 0) {
     eligible <- intersect(eligible, colnames(geno_mix_parts$dominant))
+  }
+  # Partial effects require all three genotype classes to identify their shape.
+  # Keep the original eligibility rule unchanged for the existing scenarios.
+  if (L_prec + L_pdom > 0) {
+    supported <- Reduce(`&`, lapply(0:2, function(g) colSums(geno_all == g) >= min_n_rec))
+    eligible <- intersect(eligible, colnames(geno_all)[supported])
   }
   if (length(eligible) < K) stop("Not enough eligible causal SNPs in this locus.")
 
@@ -114,7 +132,9 @@ sim_mix <- function(
   causal_coding <- c(
     rep("additive", L_add),
     rep("recessive", L_rec),
-    rep("dominant", L_dom)
+    rep("dominant", L_dom),
+    rep("partial_recessive", L_prec),
+    rep("partial_dominant", L_pdom)
   )
 
   # Change only the generating coding for the paired additive control.
@@ -125,13 +145,23 @@ sim_mix <- function(
     paste0(causal_snps, "__", causal_coding),
     colnames(geno_mix_all)
   )
-  stopifnot(!anyNA(true_pos), !anyNA(true_pos_mix))
+  stopifnot(!anyNA(true_pos))
+  causal_delta <- unname(sim_effect_delta[causal_coding])
 
   # ------------------------------------------------------------
   # Simulate phenotype with equal individual contribution variances.
   # ------------------------------------------------------------
 
-  X_causal <- geno_mix_all[, true_pos_mix, drop = FALSE]
+  # Preserve the exact old endpoint predictors. Partial codings are generating
+  # predictors only: SuSiE-mix still fits its original three coding blocks.
+  X_causal <- geno_all[, true_pos, drop = FALSE]
+  for (k in seq_len(K)) {
+    if (!is.na(true_pos_mix[k])) {
+      X_causal[, k] <- geno_mix_all[, true_pos_mix[k]]
+    } else {
+      X_causal[, k] <- X_causal[, k] + causal_delta[k] * (X_causal[, k] == 1)
+    }
+  }
   Z <- scale(X_causal)
 
   beta <- sample(c(-1, 1), size = K, replace = TRUE)
@@ -145,17 +175,23 @@ sim_mix <- function(
   y <- g + noise
 
   # ------------------------------------------------------------
-  # Fit both methods to the same phenotype.
+  # Fit all three methods to the same phenotype; namespace calls avoid masking.
   # ------------------------------------------------------------
 
-  susie_res <- susie(
+  susie_res <- susieR::susie(
     X = geno_all, y = y, L = L,
     standardize = TRUE, estimate_prior_method = "optim",
     coverage = 0.95, min_abs_corr = 0.5, max_iter = 1000
   )
 
-  susie_res_mix <- susie(
+  susie_res_mix <- susieR::susie(
     X = geno_mix_all, y = y, L = L,
+    standardize = TRUE, estimate_prior_method = "optim",
+    coverage = 0.95, min_abs_corr = 0.5, max_iter = 1000
+  )
+
+  susie_res_slide <- susieSlide::susie(
+    X = geno_all, y = y, L = L, min_obs = slide_min_obs,
     standardize = TRUE, estimate_prior_method = "optim",
     coverage = 0.95, min_abs_corr = 0.5, max_iter = 1000
   )
@@ -180,7 +216,7 @@ sim_mix <- function(
   # Keep the fitted prior variances so inactive effects are excluded as usual.
   fit_snp <- susie_res_mix
   fit_snp$alpha <- alpha_snp
-  pip_mix_snp <- susie_get_pip(fit_snp)
+  pip_mix_snp <- susieR::susie_get_pip(fit_snp)
 
   # ------------------------------------------------------------
   # Map mixed credible sets back to biological SNPs in geno_all.
@@ -192,31 +228,27 @@ sim_mix <- function(
   })
 
   # A false CS contains none of the generating causal SNPs.
-  hit_add <- vapply(cs_add, function(cs) any(cs %in% true_pos), logical(1))
-  hit_mix <- vapply(cs_mix, function(cs) any(cs %in% true_pos), logical(1))
-
-  metrics <- data.frame(
-    method = c("SuSiE", "SuSiE-mix"),
-    converged = c(susie_res$converged, susie_res_mix$converged),
-    n_cs = c(length(cs_add), length(cs_mix)),
-    false_cs = c(sum(!hit_add), sum(!hit_mix)),
-    cs_coverage = c(
-      if (length(hit_add)) mean(hit_add) else NA_real_,
-      if (length(hit_mix)) mean(hit_mix) else NA_real_
-    ),
-    causal_recall = c(
-      mean(true_pos %in% unlist(cs_add)),
-      mean(true_pos %in% unlist(cs_mix))
-    )
-  )
+  methods <- c("SuSiE", "SuSiE-mix", "SuSiE-slide")
+  fits <- list(susie_res, susie_res_mix, susie_res_slide)
+  sets <- list(cs_add, cs_mix, susie_res_slide$sets$cs)
+  metrics <- do.call(rbind, lapply(seq_along(methods), function(m) {
+    hit <- vapply(sets[[m]], function(cs) any(cs %in% true_pos), logical(1))
+    data.frame(method = methods[m], converged = fits[[m]]$converged,
+               n_cs = length(hit), false_cs = sum(!hit),
+               cs_coverage = if (length(hit)) mean(hit) else NA_real_,
+               causal_recall = mean(true_pos %in% unlist(sets[[m]])))
+  }))
   metrics$cs_fdp <- metrics$false_cs / pmax(1, metrics$n_cs)
 
   # Keep every PIP for calibration, ROC and power-FDR plots.
   # Omit long PIP names, phenotype vectors and full fitted models from the save.
   return(list(
     settings = list(
+      schema_version = sim_schema_version,
       pve = pve, n = n, L = L,
       L_add = L_add, L_rec = L_rec, L_dom = L_dom,
+      L_prec = L_prec, L_pdom = L_pdom,
+      delta_prec = -0.5, delta_pdom = 0.5, slide_min_obs = slide_min_obs,
       all_additive = all_additive,
       min_maf = min_maf, hwe_thresh = hwe_thresh, min_n_rec = min_n_rec
     ),
@@ -225,15 +257,23 @@ sim_mix <- function(
     raw_file = raw_file,
     causal_snps = causal_snps,
     causal_coding = causal_coding,
+    causal_delta = causal_delta,
     true_pos = true_pos,
     true_pos_mix = true_pos_mix,
     mix_to_add = mix_to_add,
+    mix_coding = sub(".*__", "", colnames(geno_mix_all)),
     susie_cs = susie_res$sets,
     susie_pip = unname(susie_res$pip),
     susie_mix_cs = susie_res_mix$sets,
     susie_mix_pip = unname(susie_res_mix$pip),
     susie_mix_pip_snp = unname(pip_mix_snp),
     cs_mix_as_additive_indices = cs_mix,
+    susie_slide_cs = susie_res_slide$sets,
+    susie_slide_pip = unname(susie_res_slide$pip),
+    susie_slide_delta_cs = susie_res_slide$delta_cs,
+    susie_slide_delta_causal = susie_res_slide$delta[, true_pos, drop = FALSE],
+    susie_slide_delta_forced = unname(susie_res_slide$delta_forced),
+    genetic_variance = var(g),
     beta_standardized = beta
   ))
 }

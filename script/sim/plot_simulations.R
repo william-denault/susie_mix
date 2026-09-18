@@ -5,15 +5,17 @@
 # Settings to change if needed
 # ------------------------------------------------------------
 
-project_dir <- "C:/Document/Serieux/Travail/Data_analysis_and_papers/susie_mix"
-chunk_dir <- file.path(project_dir, "simulation results/chunks")
-output_dir <- file.path(project_dir, "simulation results/figures")
+project_dir <- Sys.getenv("SUSIE_MIX_PROJECT_DIR",
+                         "C:/Document/Serieux/Travail/Data_analysis_and_papers/susie_mix")
+source(file.path(project_dir, "script/sim/simulation_design.R"), local = TRUE)
+chunk_dir <- file.path(project_dir, "simulation results/slide_v1/chunks")
+output_dir <- file.path(project_dir, "simulation results/slide_v1/figures")
 
-pve_values <- c(0.10, 0.20, 0.30, 0.40)
+pve_values <- c(0.05, 0.10, 0.20, 0.30, 0.40)
 n_value <- 500
 fit_L <- 10                   # SuSiE's fitted upper bound, NOT the true count.
 target_coverage <- 0.95
-exclude_nonconverged <- FALSE # TRUE excludes a replicate if EITHER fit failed.
+exclude_nonconverged <- FALSE # TRUE excludes a replicate if ANY fit did not converge.
 interval_level <- 0.95
 bootstrap_reps <- 1000        # Resample whole seeds, keeping methods/configurations paired.
 bootstrap_seed <- 20260910
@@ -26,11 +28,21 @@ write_roc_all_L <- TRUE       # Also pool all causal counts into one curve per m
 write_roc_pages <- FALSE      # Optional extra PDFs collecting the per-L figures.
 write_png <- TRUE            # PDF is always written; PNG is useful for previews.
 
-method_names <- c("SuSiE", "SuSiE-mix")
-method_colors <- c("#2489FF", "#D81B60")
-pure_rows <- c("Additive only", "Dominant only", "Recessive only")
-mixed_rows <- c("Additive + dominant", "Additive + recessive",
-                "Recessive + dominant", "Additive + recessive + dominant")
+method_names <- c("SuSiE", "SuSiE-mix", "SuSiE-slide")
+method_colors <- c("#2489FF", "#D81B60", "#009E73")
+scenario_rows <- lapply(1:3, function(k) {
+  vapply(combn(5L, k, simplify = FALSE), function(ids) {
+    counts <- integer(5L)
+    counts[ids] <- 1L
+    sim_scenario_name(counts, display = TRUE)
+  }, "")
+})
+pure_rows <- scenario_rows[[1L]]
+mixed_rows <- c(scenario_rows[[2L]], scenario_rows[[3L]])
+# Limit each figure to five scenario rows, including all ten pairs and triples.
+scenario_groups <- list(pure = pure_rows,
+  pairs_1 = scenario_rows[[2L]][1:5], pairs_2 = scenario_rows[[2L]][6:10],
+  triples_1 = scenario_rows[[3L]][1:5], triples_2 = scenario_rows[[3L]][6:10])
 
 # ROC counts are exact at these common PIP thresholds. Dense tails preserve
 # resolution near zero/one without keeping every SNP from every run in memory.
@@ -43,15 +55,8 @@ pip_thresholds <- sort(unique(c(
 # Small helpers: scenarios, PIP counts, and saved CS summaries
 # ------------------------------------------------------------
 
-scenario_name <- function(a, r, d) {
-  if (a > 0 && r == 0 && d == 0) return(pure_rows[1])
-  if (a == 0 && r == 0 && d > 0) return(pure_rows[2])
-  if (a == 0 && r > 0 && d == 0) return(pure_rows[3])
-  if (a > 0 && r == 0 && d > 0) return(mixed_rows[1])
-  if (a > 0 && r > 0 && d == 0) return(mixed_rows[2])
-  if (a == 0 && r > 0 && d > 0) return(mixed_rows[3])
-  if (a > 0 && r > 0 && d > 0) return(mixed_rows[4])
-  stop("A simulation must have at least one causal SNP.")
+scenario_name <- function(a, r, d, pr = 0, pd = 0) {
+  sim_scenario_name(c(a, r, d, pr, pd), display = TRUE)
 }
 
 pip_counts <- function(pip, truth, thresholds = pip_thresholds) {
@@ -89,7 +94,8 @@ cs_summary <- function(sets, cs_snps, truth) {
 # One seed is reused across methods, causal allocations and PVE values in jobs.
 # We therefore use ONE shared matrix of bootstrap weights for every comparison.
 summarize_metrics <- function(replicates, B = bootstrap_reps,
-                              level = interval_level, seed = bootstrap_seed) {
+                              level = interval_level, seed = bootstrap_seed,
+                              methods = method_names) {
   stopifnot(B >= 2, B == as.integer(B), level > 0, level < 1)
   group_vars <- c("scenario", "pve", "K", "method")
   cell_vars <- c("scenario", "pve", "K")
@@ -117,9 +123,14 @@ summarize_metrics <- function(replicates, B = bootstrap_reps,
   for (ids in groups) {
     cell <- replicates[ids, , drop = FALSE]
     draws <- estimates <- list()
-    for (method in method_names) {
+    reference_keys <- NULL
+    for (method in methods) {
       d <- cell[cell$method == method, , drop = FALSE]
-      if (!nrow(d)) stop("Both methods are required for paired intervals.")
+      if (!nrow(d)) stop("All selected methods are required for paired intervals.")
+      keys <- sort(paste(d$configuration, d$seed, sep = "|"))
+      if (anyDuplicated(keys)) stop("Duplicate configuration/seed within a method.")
+      if (is.null(reference_keys)) reference_keys <- keys
+      if (!identical(keys, reference_keys)) stop("Methods must use the same replicates for paired intervals.")
       totals_by_seed <- rowsum(as.matrix(d[count_vars]), group = d$seed)
       totals <- matrix(0, nrow = length(seeds), ncol = length(count_vars),
                        dimnames = list(NULL, count_vars))
@@ -149,12 +160,13 @@ summarize_metrics <- function(replicates, B = bootstrap_reps,
     }
     # Paired differences answer whether the methods differ; overlap of their
     # separate marginal intervals is not a test of their difference.
-    for (metric in names(numerators)) {
-      delta <- draws[[method_names[2]]][[metric]] - draws[[method_names[1]]][[metric]]
+    for (pair in combn(methods, 2L, simplify = FALSE)) for (metric in names(numerators)) {
+      delta <- draws[[pair[2]]][[metric]] - draws[[pair[1]]][[metric]]
       bounds <- interval(delta, length(unique(cell$seed)))
       difference_rows[[length(difference_rows) + 1L]] <- data.frame(
         cell[1, cell_vars, drop = FALSE], metric = metric,
-        difference = unname(estimates[[method_names[2]]][metric] - estimates[[method_names[1]]][metric]),
+        reference = pair[1], method = pair[2],
+        difference = unname(estimates[[pair[2]]][metric] - estimates[[pair[1]]][metric]),
         lower = bounds[1], upper = bounds[2], n_boot = sum(is.finite(delta)), row.names = NULL
       )
     }
@@ -198,17 +210,7 @@ files <- list.files(chunk_dir, pattern = file_pattern, full.names = TRUE)
 if (!length(files)) stop("No matching .RData files found in: ", chunk_dir)
 
 # These fields also identify the condition for error-only saved replicates.
-filename_pattern <- paste0(
-  "^.*_add([0-9]+)_rec([0-9]+)_dom([0-9]+)_n([0-9]+)_L([0-9]+)",
-  "_pve([^_]+)_seed([^_]+)_reps([0-9]+)_chunk([0-9]+)\\.RData$"
-)
-parts <- regmatches(basename(files), regexec(filename_pattern, basename(files)))
-if (any(lengths(parts) != 10)) stop("Unrecognized chunk filename: ",
-                                      basename(files[which(lengths(parts) != 10)[1]]))
-file_info <- as.data.frame(do.call(rbind, lapply(parts, function(z) as.numeric(z[-1]))))
-names(file_info) <- c("L_add", "L_rec", "L_dom", "n", "fit_L", "pve",
-                      "seed_base", "requested_reps", "chunk")
-file_info$file <- files
+file_info <- sim_parse_checkpoints(files)
 file_info <- file_info[file_info$n == n_value & file_info$fit_L == fit_L &
                        file_info$pve %in% pve_values, , drop = FALSE]
 if (!nrow(file_info)) stop("No chunks match n_value, fit_L and pve_values.")
@@ -230,10 +232,10 @@ for (f in seq_len(nrow(file_info))) {
   if (!exists("results", envir = saved, inherits = FALSE) || !is.list(saved$results)) {
     stop("No results list in ", info$file)
   }
-  scenario <- scenario_name(info$L_add, info$L_rec, info$L_dom)
-  K <- info$L_add + info$L_rec + info$L_dom
+  scenario <- scenario_name(info$L_add, info$L_rec, info$L_dom, info$L_prec, info$L_pdom)
+  K <- sum(as.numeric(info[sim_count_columns]))
   if (!K %in% 1:5) stop("Expected 1 to 5 true causal SNPs in ", info$file)
-  configuration <- paste0("add", info$L_add, "_rec", info$L_rec, "_dom", info$L_dom)
+  configuration <- sim_configuration(as.numeric(info[sim_count_columns]))
   audit <- data.frame(file = basename(info$file), scenario = scenario,
                       configuration = configuration, pve = info$pve, K = K,
                       saved = length(saved$results), examined = 0L, included = 0L,
@@ -262,9 +264,11 @@ for (f in seq_len(nrow(file_info))) {
       next
     }
     s <- x$settings
+    if (is.null(s$L_prec)) s$L_prec <- 0L
+    if (is.null(s$L_pdom)) s$L_pdom <- 0L
     if (is.null(s) || !isTRUE(all.equal(as.numeric(c(s$L_add, s$L_rec, s$L_dom,
-                                                   s$n, s$L, s$pve)),
-                                      as.numeric(info[c("L_add", "L_rec", "L_dom",
+                                                   s$L_prec, s$L_pdom, s$n, s$L, s$pve)),
+                                      as.numeric(info[c(sim_count_columns,
                                                         "n", "fit_L", "pve")])))) {
       stop("Saved settings disagree with filename in ", basename(info$file))
     }
@@ -277,10 +281,22 @@ for (f in seq_len(nrow(file_info))) {
       stop("Missing mixed SNP-level PIPs. Do not substitute coding-level PIPs.")
     }
     if (length(unique(x$true_pos)) != K) stop("Causal count disagrees with settings.")
+    if (!identical(as.integer(table(factor(x$causal_coding, levels = names(sim_effect_delta)))),
+                   as.integer(unlist(s[sim_count_columns]))))
+      stop("Causal coding labels disagree with settings.")
+    if ("SuSiE-slide" %in% method_names) {
+      if (!identical(s$schema_version, sim_schema_version) ||
+          !isTRUE(all.equal(c(s$delta_prec, s$delta_pdom, s$slide_min_obs), c(-.5, .5, 5))))
+        stop("Missing or unexpected slider design. Use new three-method checkpoints.")
+      if (length(x$susie_slide_pip) != length(x$susie_pip))
+        stop("Missing or incompatible slider SNP PIPs.")
+      if (!identical(x$causal_delta, unname(sim_effect_delta[x$causal_coding])))
+        stop("Saved causal delta values disagree with the design.")
+    }
     mt <- match(method_names, x$metrics$method)
     if (anyNA(mt)) stop("Missing method in the saved metrics.")
     converged <- x$metrics$converged[mt]
-    if (length(converged) != 2 || anyNA(converged)) stop("Missing convergence status.")
+    if (length(converged) != length(method_names) || anyNA(converged)) stop("Missing convergence status.")
     assign(key, TRUE, envir = seen)
     if (!all(converged)) {
       audit$nonconverged <- audit$nonconverged + 1L
@@ -290,9 +306,12 @@ for (f in seq_len(nrow(file_info))) {
       }
     }
 
-    cs <- list(x$susie_cs$cs, x$cs_mix_as_additive_indices)
-    sets <- list(x$susie_cs, x$susie_mix_cs)
-    pips <- list(x$susie_pip, x$susie_mix_pip_snp)
+    cs <- list(SuSiE = x$susie_cs$cs, `SuSiE-mix` = x$cs_mix_as_additive_indices,
+               `SuSiE-slide` = x$susie_slide_cs$cs)[method_names]
+    sets <- list(SuSiE = x$susie_cs, `SuSiE-mix` = x$susie_mix_cs,
+                 `SuSiE-slide` = x$susie_slide_cs)[method_names]
+    pips <- list(SuSiE = x$susie_pip, `SuSiE-mix` = x$susie_mix_pip_snp,
+                 `SuSiE-slide` = x$susie_slide_pip)[method_names]
     for (m in seq_along(method_names)) {
       summary <- cs_summary(sets[[m]], cs[[m]], x$true_pos)
       if (summary["n_cs"] > 0 &&
@@ -324,7 +343,7 @@ for (f in seq_len(nrow(file_info))) {
 
 audit <- do.call(rbind, audit_rows)
 write.csv(audit, file.path(output_dir, "file_audit.csv"), row.names = FALSE)
-if (!length(replicate_rows)) stop("No usable simulations; see file_audit.csv.")
+if (!sum(audit$included)) stop("No usable simulations; see file_audit.csv.")
 replicates <- do.call(rbind, replicate_rows)
 rm(replicate_rows, seen)
 
@@ -374,8 +393,8 @@ draw_figure <- function(metric, scenarios, only_K = NULL) {
   nr <- length(scenarios)
   nc <- length(pve_values)
   panels <- matrix(seq_len(nr * nc), nrow = nr, byrow = TRUE)
-  layout(cbind(panels, nr * nc + seq_len(nr)), widths = c(rep(1, nc), 0.65))
-  par(oma = c(4.5, 3.5, 3, 0.3), mar = c(2.0, 2.0, 1.7, 0.4),
+  layout(cbind(panels, nr * nc + seq_len(nr)), widths = c(rep(1, nc), 1.15))
+  par(oma = c(6, 3.5, 3, 0.3), mar = c(2.0, 2.0, 1.7, 0.4),
       mgp = c(1.3, 0.4, 0), tcl = -0.2, family = "sans", cex = 0.9)
   is_roc <- metric == "roc"
   is_fdr <- metric == "power_fdr"
@@ -399,7 +418,7 @@ draw_figure <- function(metric, scenarios, only_K = NULL) {
   }
 
   for (i in seq_along(scenarios)) {
-    min_K <- if (scenarios[i] %in% pure_rows) 1 else if (scenarios[i] == mixed_rows[4]) 3 else 2
+    min_K <- length(strsplit(scenarios[i], " + ", fixed = TRUE)[[1L]])
     for (j in seq_along(pve_values)) {
       if (is_curve) {
         xlim <- c(0, if (is_fdr) fdr_max else roc_max_fpr)
@@ -444,7 +463,7 @@ draw_figure <- function(metric, scenarios, only_K = NULL) {
           lines(if (is_fdr) dm$fdr else dm$fpr, dm$tpr, col = method_colors[m],
                 lty = 1, lwd = 1.5)
         } else {
-          xpos <- dm$K + c(-.07, .07)[m]
+          xpos <- dm$K + seq(-.12, .12, length.out = length(method_names))[m]
           lo <- dm[[paste0(metric, "_lo")]]
           hi <- dm[[paste0(metric, "_hi")]]
           if (!is.null(lo) && !is.null(hi)) {
@@ -497,25 +516,26 @@ draw_figure <- function(metric, scenarios, only_K = NULL) {
 
 save_figure <- function(metric, scenarios, name, only_K = NULL) {
   height <- 2.0 * length(scenarios) + 1.4
-  pdf(file.path(output_dir, paste0(name, ".pdf")), width = 13.5, height = height,
+  pdf(file.path(output_dir, paste0(name, ".pdf")), width = 16, height = height,
       useDingbats = FALSE)
   tryCatch(draw_figure(metric, scenarios, only_K), finally = dev.off())
   if (write_png) {
-    png(file.path(output_dir, paste0(name, ".png")), width = 13.5, height = height,
+    png(file.path(output_dir, paste0(name, ".png")), width = 16, height = height,
         units = "in", res = 180)
     tryCatch(draw_figure(metric, scenarios, only_K), finally = dev.off())
   }
 }
 
 for (metric in c("coverage", "purity", "power", "cs_size")) {
-  save_figure(metric, pure_rows, paste0(metric, "_pure"))
-  save_figure(metric, mixed_rows, paste0(metric, "_mixed"))
+  for (group in names(scenario_groups))
+    save_figure(metric, scenario_groups[[group]], paste0(metric, "_", group))
 }
 
 save_roc_figures <- function(metric = "roc") {
-  for (group in c("pure", "mixed")) {
-    scenarios <- if (group == "pure") pure_rows else mixed_rows
-    ks <- if (group == "pure") 1:5 else 2:5
+  for (group in names(scenario_groups)) {
+    scenarios <- scenario_groups[[group]]
+    min_K <- length(strsplit(scenarios[1L], " + ", fixed = TRUE)[[1L]])
+    ks <- min_K:5
     for (k in ks) {
       save_figure(metric, scenarios, paste0(metric, "_", group, "_L", k), only_K = k)
     }
@@ -524,7 +544,7 @@ save_roc_figures <- function(metric = "roc") {
     }
     if (write_roc_pages) {
       pdf(file.path(output_dir, paste0(metric, "_", group, "_by_L.pdf")),
-          width = 13.5, height = 2.0 * length(scenarios) + 1.4, useDingbats = FALSE)
+          width = 16, height = 2.0 * length(scenarios) + 1.4, useDingbats = FALSE)
       tryCatch(for (k in ks) draw_figure(metric, scenarios, only_K = k), finally = dev.off())
     }
   }
@@ -535,7 +555,7 @@ save_roc_figures("power_fdr")
 cat("\nFigures and summary tables saved in:", output_dir, "\n")
 cat("Included", sum(audit$included), "unique simulations; skipped",
     sum(audit$duplicates), "duplicate copies; recorded", sum(audit$errors), "error entries.\n")
-cat("Nonconverged replicate pairs:", sum(audit$nonconverged),
+cat("Replicates with a nonconverged fit:", sum(audit$nonconverged),
     "; excluded:", sum(audit$excluded_nonconverged), "\n")
 cat("L in each ROC title is the TRUE causal count; fitted SuSiE L =", fit_L, ".\n")
 cat("Check configuration_counts.csv for incomplete or unbalanced conditions.\n")
