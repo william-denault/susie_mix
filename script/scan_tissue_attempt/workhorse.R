@@ -762,7 +762,28 @@ run_susie_gene <- function(
       verbose = verbose
     )
 
+
+
     fit_perm <- susie(
+      geno,
+      perm_y,
+      L = L,
+      standardize = standardize,
+      estimate_prior_method = estimate_prior_method,
+      min_abs_corr = min_abs_corr,
+      verbose = verbose
+    )
+
+    fit_slide <- susieSlide:: susie(
+      geno,
+      pheno$y,
+      L = L,
+      standardize = standardize,
+      estimate_prior_method = estimate_prior_method,
+      min_abs_corr = min_abs_corr,
+      verbose = verbose
+    )
+    fit_slide_perm <- susieSlide:: susie(
       geno,
       perm_y,
       L = L,
@@ -839,6 +860,8 @@ run_susie_gene <- function(
     list(
       susie_add = fit,
       susie_add_perm = fit_perm,
+      fit_slide= fit_slide,
+      fit_slide_perm= fit_slide_perm,
       susie_mix = fit_mix,
       susie_mix_perm = fit_mix_perm,
       weighted_fit_mix = weighted_fit_mix,
