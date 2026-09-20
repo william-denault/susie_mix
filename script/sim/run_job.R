@@ -1,4 +1,4 @@
-# One manifest row per SLURM task. Can also be sourced for a small local run.
+# Shared runner for generated R jobs or a manifest row; owns save/resume logic.
 .run_sources <- vapply(sys.frames(), function(f) if (is.null(f$ofile)) "" else f$ofile, "")
 .run_source <- if (any(nzchar(.run_sources))) tail(.run_sources[nzchar(.run_sources)], 1L) else
   sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1L])
@@ -9,12 +9,19 @@ rm(.run_source, .run_sources)
 
 run_simulation_job <- function(job_id, project_dir = sim_project_dir,
                                temp_dir = file.path(project_dir, "temp_plink"),
-                               manifest_file = file.path(project_dir, "script/sim/jobs_slide/manifest.csv")) {
-  manifest <- read.csv(manifest_file, stringsAsFactors = FALSE)
+                               manifest_file = file.path(project_dir, "script/sim/jobs_slide/manifest.csv"),
+                               job = NULL) {
   if (length(job_id) != 1L || !is.finite(job_id) || job_id != floor(job_id))
     stop("job_id must be one integer from the manifest.")
-  row <- manifest[manifest$job_id == job_id, , drop = FALSE]
-  if (nrow(row) != 1L) stop("Job id is missing or repeated in the manifest: ", job_id)
+  if (is.null(job)) {
+    manifest <- read.csv(manifest_file, stringsAsFactors = FALSE)
+    row <- manifest[manifest$job_id == job_id, , drop = FALSE]
+    if (nrow(row) != 1L) stop("Job id is missing or repeated in the manifest: ", job_id)
+  } else {
+    if (!is.data.frame(job) || nrow(job) != 1L || !identical(as.numeric(job$job_id), as.numeric(job_id)))
+      stop("The embedded job settings must describe exactly job ", job_id)
+    row <- job
+  }
   counts <- as.numeric(row[sim_count_columns])
   if (row$schema_version != sim_schema_version || row$delta_prec != -.5 || row$delta_pdom != .5 ||
       row$K != sum(counts) || row$name != sim_scenario_name(counts))

@@ -1,5 +1,7 @@
 # Run from the project root with Rscript. Uses installed fitting packages.
+.writer_options <- options(susie.sim.generate_jobs = FALSE)
 source("script/sim/write_jobs.R")
+options(.writer_options)
 source("script/sim/run_job.R")
 root <- normalizePath(".", winslash = "/")
 validation <- file.path(root, "tmp/slide_simulation_validation")
@@ -38,6 +40,29 @@ manifest <- write_simulation_jobs(validation)
 stopifnot(nrow(manifest) == 1125L, sum(manifest$reps_per_chunk) == 450000,
           identical(sort(unique(manifest$pve)), c(.05, .1, .2, .3, .4)),
           !anyDuplicated(manifest$output_file))
+# Every generated driver parses and embeds precisely its own manifest row.
+disk_manifest <- read.csv(file.path(validation, "script/sim/jobs_slide/manifest.csv"))
+for (i in seq_len(nrow(disk_manifest))) {
+  driver <- parse(file.path(validation, "script/sim/jobs_slide", paste0("sim_job_", i, ".R")))
+  settings <- Filter(function(x) is.call(x) && identical(x[[1]], as.name("<-")) &&
+                       identical(x[[2]], as.name("job")), as.list(driver))
+  stopifnot(length(settings) == 1L,
+            identical(eval(settings[[1]][[3]]), disk_manifest[i, , drop = FALSE]))
+}
+batches <- read.csv(file.path(validation, "script/sim/jobs_slide/submission_batches.csv"))
+stopifnot(identical(batches$first_job, c(1L, 301L, 601L, 901L)),
+          identical(batches$last_job, c(300L, 600L, 900L, 1125L)),
+          identical(batches$array_end, c(299L, 299L, 299L, 224L)))
+for (launcher in batches$launcher) {
+  path <- file.path(validation, launcher)
+  stopifnot(file.exists(path), !any(readBin(path, "raw", n = file.info(path)$size) == as.raw(13)))
+}
+# Regenerating a smaller layout must remove stale jobs and batch launchers.
+invisible(write_simulation_jobs(validation, pve_values = .05, array_batch_size = 50L))
+stopifnot(length(list.files(file.path(validation, "script/sim/jobs_slide"), "^sim_job_[0-9]+\\.R$")) == 225L,
+          length(list.files(file.path(validation, "job"), "^run_simulation_slide_batch_")) == 5L)
+invisible(write_simulation_jobs(validation, pve_values = .05, array_batch_size = 300L))
+stopifnot(length(list.files(file.path(validation, "job"), "^run_simulation_slide_batch_")) == 1L)
 parsed <- sim_parse_checkpoints(manifest$output_file)
 stopifnot(all(as.matrix(parsed[sim_count_columns]) == as.matrix(manifest[sim_count_columns])),
           all(parsed$pve == manifest$pve))
@@ -130,6 +155,14 @@ stopifnot(max(abs(unname(reference$pip) - low$susie_pip)) < 1e-7)
 # an incompatible checkpoint. Use two reps only, in this isolated test project.
 runner_root <- file.path(validation, "runner")
 runner_manifest <- write_simulation_jobs(runner_root, pve_values = .05, reps_per_chunk = 2)
+# Copy only the shared source files so the generated script can resolve its
+# own test project, just as a locally generated script resolves the RCC copy.
+shared <- c("script/sim/run_job.R", "script/sim/sim_workhorse.R",
+            "script/sim/simulation_design.R", "script/scan_tissue_attempt/workhorse_utils.R")
+for (file in shared) {
+  dir.create(dirname(file.path(runner_root, file)), recursive = TRUE, showWarnings = FALSE)
+  stopifnot(file.copy(file.path(root, file), file.path(runner_root, file), overwrite = TRUE))
+}
 job_id <- runner_manifest$job_id[runner_manifest$L_prec == 1 & runner_manifest$K == 1]
 checkpoint <- run_simulation_job(job_id, runner_root, genotypes)
 saved <- new.env()
@@ -139,11 +172,20 @@ original <- saved$results
 # Truncate a completed checkpoint to emulate interruption after its first save.
 saved$results <- saved$results[1]
 save(list = c("results", "checkpoint_settings"), envir = saved, file = checkpoint)
-run_simulation_job(job_id, runner_root, genotypes)
+generated_job <- file.path(runner_root, "script/sim/jobs_slide", paste0("sim_job_", job_id, ".R"))
+previous_genotypes <- Sys.getenv("SUSIE_MIX_GENOTYPE_DIR", unset = NA_character_)
+Sys.setenv(SUSIE_MIX_GENOTYPE_DIR = genotypes)
+source(generated_job, local = new.env())
 load(checkpoint, saved)
 stopifnot(identical(saved$results, original))
 before <- tools::md5sum(checkpoint)
-run_simulation_job(job_id, runner_root, genotypes)
+# An embedded job can resume even when the manifest is not present.
+manifest_path <- file.path(runner_root, "script/sim/jobs_slide/manifest.csv")
+stopifnot(file.rename(manifest_path, paste0(manifest_path, ".saved")))
+source(generated_job, local = new.env())
+stopifnot(file.rename(paste0(manifest_path, ".saved"), manifest_path))
+if (is.na(previous_genotypes)) Sys.unsetenv("SUSIE_MIX_GENOTYPE_DIR") else
+  Sys.setenv(SUSIE_MIX_GENOTYPE_DIR = previous_genotypes)
 stopifnot(identical(before, tools::md5sum(checkpoint)))
 saved$checkpoint_settings$design$delta_prec <- -.25
 save(list = c("results", "checkpoint_settings"), envir = saved, file = checkpoint)

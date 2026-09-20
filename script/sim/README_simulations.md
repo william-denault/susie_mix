@@ -53,57 +53,110 @@ The local slider source is the root package in the `susieR` repository on the
 point is `susieSlide::susie()`. The runner checks required packages before any
 replicates are started. Local installation does not install it on the cluster.
 
-From the project root, generate the manifest and submit the first batch:
-
-```sh
-Rscript script/sim/write_jobs.R
-sbatch --array=0-399 job/run_simulation 0
-```
-
-**Wait until that batch finishes**, then submit the second batch:
-
-```sh
-sbatch --array=0-399 job/run_simulation 400
-```
-
-**Wait until the second batch finishes**, then submit the last batch:
-
-```sh
-sbatch --array=0-324 job/run_simulation 800
-```
-
-These submissions cover manifest jobs **1–400**, **401–800**, and **801–1125**.
-Each array has at most 400 tasks and uses indices no higher than 399. The final
-argument is the manifest offset: `job_id = offset + SLURM_ARRAY_TASK_ID + 1`.
-Submit one batch at a time so these simulations do not queue more than 400
-tasks at once. If other jobs use your quota, use a smaller batch size below.
-Submitting `sbatch job/run_simulation` defaults to the first 400 tasks only.
-To resume an interrupted batch, repeat its command; completed checkpoints are
-detected and skipped by the R runner.
-
-The generator writes `script/sim/jobs_slide/conditions.csv`, `manifest.csv`,
-and `submission_batches.csv`, and prints the batch submission commands.
-The checked-in files are already generated for the design above. The launcher
-calls `script/sim/run_job.R` with the mapped manifest job and uses separate log
-files per array task. Set `SUSIE_MIX_PROJECT_DIR` if its project path differs from
-`/project2/mstephens/wdenault/susie_mix`. Genotypes default to `temp_plink/*.raw`.
-The old `script/sim/jobs/sim_job_*.R` files are legacy jobs and are no longer
-used by this launcher.
-
-In R, the generator can also be used explicitly:
+From R at the project root, source the writer. Sourcing **generates the files**;
+it does not fit models or submit jobs:
 
 ```r
 source("script/sim/write_jobs.R")
-write_simulation_jobs()  # Call after sourcing; sourcing alone does not generate jobs.
-# If needed, print and save a plan with smaller submission batches:
-# write_simulation_jobs(array_batch_size = 300L)
 ```
 
-For one job, without submitting the array:
+Alternatively, run `Rscript --vanilla script/sim/write_jobs.R` in a terminal.
+The writer creates:
+
+- `script/sim/jobs_slide/sim_job_1.R` through `sim_job_1125.R`. Each is an
+  executable R script containing its scenario counts, PVE, seeds, replicate
+  count and output filename. It uses `run_job.R` for fitting and checkpointing.
+- `job/run_simulation_slide_batch_1` through `run_simulation_slide_batch_4`.
+- `conditions.csv`, `manifest.csv` and `submission_batches.csv` in `jobs_slide`
+  for inspecting the full design and batch mapping. Generated R scripts carry
+  their own settings and do not need the manifest at execution time.
+
+The default batch size is **300 tasks**. On RCC, from the project root, start
+the whole sequence with one command:
 
 ```sh
-Rscript script/sim/run_job.R 1 /path/to/susie_mix /path/to/genotypes
+sbatch job/launch_simulation_slide
 ```
+
+The global launcher submits batch 1 and queues one small continuation job. After
+all tasks in batch 1 finish successfully, that continuation submits batch 2,
+then repeats for batches 3 and 4. It does **not** queue all 1,125 array tasks.
+At most one simulation batch, one pending continuation and the briefly running
+submission job count toward your quota (302 jobs with a 300-task batch).
+No terminal needs to remain open.
+
+This follows the EM launcher's `afterok` dependency pattern. A failed, cancelled
+or timed-out task stops the chain. Once the cause is fixed and the previous
+jobs have stopped, resume from that batch, for example:
+
+```sh
+sbatch job/launch_simulation_slide 2
+```
+
+Completed compatible checkpoints are skipped. If only the continuation failed
+to submit, the log gives the next batch number to launch after the active array
+finishes. Active-job checks and a submission lock prevent duplicate launches
+through this global launcher. It records job IDs under
+`simulation results/slide_v1/launcher/` and prints a `scancel` command for stopping
+future batches while leaving the current array running.
+
+For manual submission instead, the same four launchers are available:
+
+```sh
+sbatch job/run_simulation_slide_batch_1  # jobs 1–300
+# After batch 1 finishes:
+sbatch job/run_simulation_slide_batch_2  # jobs 301–600
+# After batch 2 finishes:
+sbatch job/run_simulation_slide_batch_3  # jobs 601–900
+# After batch 3 finishes:
+sbatch job/run_simulation_slide_batch_4  # jobs 901–1125
+```
+
+When submitting manually, submit one batch at a time. Other running and pending jobs also consume your
+QoS quota; 300 is a configurable batch size, not a guarantee of available slots.
+To generate smaller batches, set the option before sourcing:
+
+```r
+options(susie.sim.array_batch_size = 50L)
+source("script/sim/write_jobs.R")
+```
+
+The writer prints the corresponding commands and removes obsolete generated
+batch launchers and numbered R scripts if the design or batch count shrinks.
+Regenerate only when no jobs from the previous layout are pending or running.
+For custom generation without the automatic default run:
+
+```r
+options(susie.sim.generate_jobs = FALSE)
+source("script/sim/write_jobs.R")
+write_simulation_jobs(array_batch_size = 300L)
+```
+
+Each batch uses local array indices starting at zero and a built-in offset,
+with `job_id = offset + SLURM_ARRAY_TASK_ID + 1`. No array index exceeds 299
+with the default plan. `job/run_simulation_slide` is also generated and defaults
+to the first batch; it accepts an optional offset for manual submissions.
+The legacy `job/run_simulation` and `script/sim/jobs` are separate and are not
+used by the new batches.
+
+The launchers default to `/project2/mstephens/wdenault/susie_mix`; set
+`SUSIE_MIX_PROJECT_DIR` if the project is elsewhere. Generated R scripts find
+the project from their own location, so they can be generated locally and synced
+to RCC. Genotypes default to `temp_plink/*.raw`; set `SUSIE_MIX_GENOTYPE_DIR` to
+use another genotype directory. With the global launcher, task logs are
+`job/logs/susie_slide_sim_ARRAYID_TASKID.out` and `.err`, and continuation logs
+are `job/logs/susie_slide_launch_JOBID.out` and `.err`. The initial global launch
+logs are written where `sbatch` was invoked, as are task logs for manual batches.
+Shell scripts are generated with Unix line endings, including on Windows.
+
+To resume an interrupted batch, repeat its submission command. Completed
+compatible checkpoints are skipped. For one job, without submitting an array:
+
+```sh
+Rscript --vanilla script/sim/jobs_slide/sim_job_1.R
+```
+
+`source("script/sim/jobs_slide/sim_job_1.R")` also runs that individual job.
 
 ## Checkpoints and output
 
@@ -140,11 +193,16 @@ With the packages available in `.libPaths()`, run from the project root:
 
 ```sh
 Rscript script/sim/tests/test_slide_simulation.R
+bash script/sim/tests/test_slide_launchers.sh
 ```
 
-The test independently enumerates the grid; fits all 25 scenario families,
+The R test checks every generated job's settings and independently enumerates
+the grid; fits all 25 scenario families,
 an unequal five-SNP triple, and a high-PVE paired repeat; checks the generating
 effects and variance scaling; exercises interrupted and completed checkpoint
-resumption; and validates plots and all three paired method contrasts.
+resumption through a generated R script; and validates plots and all three
+paired method contrasts. The shell test checks batch boundaries, the four-stage
+continuation chain, duplicate prevention and failure propagation using fake
+Slurm commands and Rscript, without submitting anything to Slurm.
 Fixtures and figure previews are written only to `tmp/slide_simulation_validation`.
 These are small validation runs, not the full cluster simulation.

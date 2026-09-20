@@ -1,0 +1,131 @@
+#!/bin/bash
+# Start all generated batches: sbatch job/launch_simulation_slide
+# Resume from a stopped batch: sbatch job/launch_simulation_slide BATCH_NUMBER
+#SBATCH --job-name=susie_slide_launch
+#SBATCH --output=susie_slide_launch_%j.out
+#SBATCH --error=susie_slide_launch_%j.err
+#SBATCH --time=00:10:00
+#SBATCH --partition=broadwl
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=1G
+
+set -euo pipefail
+batch="${1:-1}"
+if (( $# > 1 )) || [[ ! "$batch" =~ ^[1-9][0-9]*$ || ${#batch} -gt 9 ]]; then
+    echo "Usage: sbatch job/launch_simulation_slide [BATCH_NUMBER]" >&2
+    exit 1
+fi
+if [[ ! "${SLURM_JOB_ID:-}" =~ ^[0-9]+$ ]]; then
+    echo "Submit this launcher with sbatch so continuations can depend on it." >&2
+    exit 1
+fi
+project_dir="${SUSIE_MIX_PROJECT_DIR:-/project2/mstephens/wdenault/susie_mix}"
+project_dir=$(cd "$project_dir" && pwd -P)
+export SUSIE_MIX_PROJECT_DIR="$project_dir"
+plan="${project_dir}/script/sim/jobs_slide/submission_batches.csv"
+if [[ ! -r "$plan" ]]; then
+    echo "Missing batch plan: $plan. Source script/sim/write_jobs.R first." >&2
+    exit 1
+fi
+
+# The generator owns this fixed CSV schema. Strip CSV quotes and Windows CRs;
+# validate every range and filename before submitting anything.
+mapfile -t lines < "$plan"
+launchers=()
+last_job=0
+for ((i=1; i<${#lines[@]}; i++)); do
+    line=${lines[i]//$'\r'/}
+    line=${line//\"/}
+    IFS=, read -r number start end offset first last launcher extra <<< "$line"
+    if [[ ! "$number,$start,$end,$offset,$first,$last" =~ ^[0-9]+,[0-9]+,[0-9]+,[0-9]+,[0-9]+,[0-9]+$ ]] ||
+       [[ -n "${extra:-}" || "$launcher" != "job/run_simulation_slide_batch_${i}" ]] ||
+       (( number != i || start != 0 || end >= 400 || offset != last_job ||
+          first != offset + 1 || last != offset + end + 1 )); then
+        echo "Invalid batch plan at row $i; regenerate with script/sim/write_jobs.R." >&2
+        exit 1
+    fi
+    if [[ ! -r "${project_dir}/${launcher}" ]]; then
+        echo "Missing generated launcher: ${project_dir}/${launcher}" >&2
+        exit 1
+    fi
+    launchers+=("${project_dir}/${launcher}")
+    last_job=$last
+done
+total=${#launchers[@]}
+if (( batch > total || total == 0 )); then
+    echo "Batch $batch is outside the generated range 1-$total." >&2
+    exit 1
+fi
+
+state_dir="${project_dir}/simulation results/slide_v1/launcher"
+log_dir="${project_dir}/job/logs"
+mkdir -p "$state_dir" "$log_dir"
+exec 9>"${state_dir}/.submit.lock"
+if ! flock -n 9; then
+    echo "Another simulation launcher is already submitting jobs." >&2
+    exit 1
+fi
+
+array_file="${state_dir}/last_array_job_id.txt"
+continuation_file="${state_dir}/last_continuation_job_id.txt"
+if [[ -f "$array_file" || -f "$continuation_file" ]]; then
+    active_jobs=$(squeue --noheader --user "${USER}" --format='%F')
+    for job_file in "$array_file" "$continuation_file"; do
+        [[ -f "$job_file" ]] || continue
+        read -r recorded < "$job_file"
+        if [[ "$job_file" == "$continuation_file" && "$recorded" == "$SLURM_JOB_ID" ]]; then
+            continue
+        fi
+        while read -r active; do
+            if [[ "$active" == "$recorded" ]]; then
+                echo "Simulation job $recorded is still queued/running. Wait, or cancel the queued continuation before restarting." >&2
+                exit 1
+            fi
+        done <<< "$active_jobs"
+    done
+fi
+
+echo "Submitting simulation batch $batch of $total."
+if ! submission=$(sbatch --parsable --export=ALL --chdir="${project_dir}/job" \
+    --output="${log_dir}/susie_slide_sim_%A_%a.out" \
+    --error="${log_dir}/susie_slide_sim_%A_%a.err" "${launchers[batch-1]}"); then
+    echo "Batch submission failed. Retry when quota is available: sbatch job/launch_simulation_slide $batch" >&2
+    exit 1
+fi
+array_id="${submission%%;*}"
+if [[ ! "$array_id" =~ ^[0-9]+$ ]]; then
+    echo "Invalid sbatch response: $submission. Check Slurm before retrying." >&2
+    exit 1
+fi
+printf '%s\n' "$array_id" > "$array_file"
+printf '%s\n' "$batch" > "${state_dir}/last_batch.txt"
+printf '%s\t%s\t%s\n' "$batch" array "$array_id" >> "${state_dir}/submissions.tsv"
+echo "Submitted array $array_id. Results: ${project_dir}/simulation results/slide_v1/chunks"
+
+if (( batch < total )); then
+    next=$((batch + 1))
+    # Queue only ONE small launcher, not the next array. It submits that array
+    # after every task here succeeds, and after this job releases its lock.
+    if ! continuation=$(sbatch --parsable \
+        --dependency="afterok:${array_id}:${SLURM_JOB_ID}" --kill-on-invalid-dep=yes \
+        --export=ALL --chdir="${project_dir}/job" \
+        --output="${log_dir}/susie_slide_launch_%j.out" \
+        --error="${log_dir}/susie_slide_launch_%j.err" \
+        "${project_dir}/job/launch_simulation_slide" "$next"); then
+        echo "Array $array_id was submitted, but its continuation failed. After it finishes, run: sbatch job/launch_simulation_slide $next" >&2
+        exit 1
+    fi
+    continuation_id="${continuation%%;*}"
+    if [[ ! "$continuation_id" =~ ^[0-9]+$ ]]; then
+        echo "Invalid continuation response: $continuation. Check Slurm before retrying." >&2
+        exit 1
+    fi
+    printf '%s\n' "$continuation_id" > "$continuation_file"
+    printf '%s\t%s\t%s\n' "$next" continuation "$continuation_id" >> "${state_dir}/submissions.tsv"
+    echo "Queued launcher $continuation_id for batch $next after batch $batch succeeds."
+    echo "To stop the chain after this batch: scancel $continuation_id"
+else
+    echo "Final batch submitted; no further batches will be queued."
+fi
