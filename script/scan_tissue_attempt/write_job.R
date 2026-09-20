@@ -1,5 +1,5 @@
 # generate_chunks.R
-chunk_size <- 100
+chunk_size <- 62
 
 genes    <- readLines("/project2/mstephens/wdenault/susie_mix/data/genes_protein_coding.txt")
 n_genes  <- length(genes)
@@ -24,7 +24,7 @@ for (i in seq_len(n_chunks)) {
   gene_file <- file.path(index_dir,sprintf("chunk_%s_genes.txt",tag))
   writeLines(gset,gene_file)
 
-  script_file <- file.path(script_dir,sprintf(paste0("run_chunk_",i,"_.R" )))
+  script_file <- file.path(script_dir,sprintf(paste0("run_chunk_",i,".R" )))
 
   # 6 real conversions below (the %%s inside the inner cat(sprintf(...))
   # are escaped and don't count) -> must pass exactly 6 arguments, in
