@@ -11,7 +11,7 @@ write_simulation_jobs <- function(project_dir = sim_project_dir,
                                   pve_values = c(.05, .10, .20, .30, .40),
                                   n = 500L, L = 10L, chunks_per_cell = 1L,
                                   reps_per_chunk = 400L, seed_base = 1000000L,
-                                  array_batch_size = 50L) {
+                                  array_batch_size = 400L) {
   stopifnot(length(pve_values) > 0L, !anyDuplicated(pve_values),
             all(pve_values > 0 & pve_values < 1), n >= 3, L >= 1,
             chunks_per_cell >= 1, reps_per_chunk >= 1,
@@ -52,9 +52,8 @@ write_simulation_jobs <- function(project_dir = sim_project_dir,
   cat("Generated", nrow(conditions), "configurations and", nrow(manifest),
       "jobs (", sum(manifest$reps_per_chunk), "replicates).\n")
   cat("Submit ONE batch at a time; wait for it to finish before submitting the next:\n")
-  cat("Check your free QoS submission slots first; other pending/running jobs also count.\n")
   for (i in seq_len(nrow(batches))) {
-    cat("  sbatch --array=0-", batches$array_end[i], " job/run_simulation_slide ",
+    cat("  sbatch --array=0-", batches$array_end[i], " job/run_simulation ",
         batches$offset[i], "  # manifest jobs ", batches$first_job[i], "-",
         batches$last_job[i], "\n", sep = "")
   }

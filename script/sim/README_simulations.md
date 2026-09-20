@@ -53,62 +53,31 @@ The local slider source is the root package in the `susieR` repository on the
 point is `susieSlide::susie()`. The runner checks required packages before any
 replicates are started. Local installation does not install it on the cluster.
 
-### Check your submission quota first
-
-`QOSMaxSubmitJobPerUserLimit` means the requested tasks would exceed the QoS
-limit on your running **plus pending** jobs. Each array task counts separately.
-An array `0-200` contains 201 tasks; appending `%20` limits concurrency but does
-not reduce the number submitted. See [Slurm resource limits](https://slurm.schedmd.com/resource_limits.html)
-and [array limits](https://slurm.schedmd.com/job_array.html).
-
-On RCC, inspect your actual quota and existing tasks:
-
-```sh
-rcchelp qos
-squeue -u "$USER" --array -h -o '%i %q %T'
-```
-
-If `rcchelp` is unavailable on Midway2, try `accounts qos`. RCC documents
-`rcchelp qos` in its [FAQ](https://docs.rcc.uchicago.edu/slurm/faq/).
-Choose a batch size no larger than the available slots for the applicable QoS.
-Even a single task can be rejected while the quota is full; wait for existing
-jobs to finish. Failed submissions in this state do not start simulations.
-
-### Submit the slide simulations
-
-The dedicated launcher is **`job/run_simulation_slide`**. `job/run_simulation`
-is currently the legacy launcher and must not be used for these manifest jobs.
-Copy the new launcher to RCC along with the updated simulation scripts.
-
-The default plan now uses **50 tasks per batch** (22 batches of 50, then 25).
-This is a configurable batch size, not an assertion about RCC's actual quota.
-From the project root, generate the manifest and, if 50 slots are available,
-submit the first batch:
+From the project root, generate the manifest and submit the first batch:
 
 ```sh
 Rscript script/sim/write_jobs.R
-sbatch --array=0-49 job/run_simulation_slide 0
+sbatch --array=0-399 job/run_simulation 0
 ```
 
 **Wait until that batch finishes**, then submit the second batch:
 
 ```sh
-sbatch --array=0-49 job/run_simulation_slide 50
+sbatch --array=0-399 job/run_simulation 400
 ```
 
-Continue through the offsets printed by the generator: 100, 150, ... 1050.
-**Wait for each batch to finish** before submitting the next. The final batch is:
+**Wait until the second batch finishes**, then submit the last batch:
 
 ```sh
-sbatch --array=0-24 job/run_simulation_slide 1100
+sbatch --array=0-324 job/run_simulation 800
 ```
 
-The complete generated plan covers manifest jobs **1–1125** exactly once.
-Each default array has at most 50 tasks and uses indices no higher than 49. The final
+These submissions cover manifest jobs **1–400**, **401–800**, and **801–1125**.
+Each array has at most 400 tasks and uses indices no higher than 399. The final
 argument is the manifest offset: `job_id = offset + SLURM_ARRAY_TASK_ID + 1`.
-Submit one batch at a time so these simulations do not queue more than 50
+Submit one batch at a time so these simulations do not queue more than 400
 tasks at once. If other jobs use your quota, use a smaller batch size below.
-Submitting `sbatch job/run_simulation_slide` defaults to the first 50 tasks only.
+Submitting `sbatch job/run_simulation` defaults to the first 400 tasks only.
 To resume an interrupted batch, repeat its command; completed checkpoints are
 detected and skipped by the R runner.
 
@@ -127,7 +96,7 @@ In R, the generator can also be used explicitly:
 source("script/sim/write_jobs.R")
 write_simulation_jobs()  # Call after sourcing; sourcing alone does not generate jobs.
 # If needed, print and save a plan with smaller submission batches:
-# write_simulation_jobs(array_batch_size = 20L)
+# write_simulation_jobs(array_batch_size = 300L)
 ```
 
 For one job, without submitting the array:
