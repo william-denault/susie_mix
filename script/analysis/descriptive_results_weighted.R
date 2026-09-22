@@ -4,14 +4,10 @@
 # written to descriptive_results_weighted/ and do not replace the original
 # unweighted descriptive analysis.
 
+run_weighted_descriptive_results <- function(
+    summary_file, cs_summary_file, output_dir,
+    association_threshold = 1e-8, minimum_mean_reads = 100) {
 library(data.table)
-
-summary_file <- "/project2/mstephens/wdenault/susie_mix/res_summary.RData"
-cs_summary_file <- "/project2/mstephens/wdenault/susie_mix/res_cs_summary.RData"
-output_dir <- paste0(
-  "/project2/mstephens/wdenault/susie_mix/",
-  "descriptive_results_weighted/"
-)
 
 load(summary_file)
 load(cs_summary_file)
@@ -26,8 +22,6 @@ if (!exists("res_cs_summary")) {
 res <- as.data.table(res_summary)
 cs_res <- as.data.table(res_cs_summary)
 
-association_threshold <- 1e-8
-minimum_mean_reads <- 100
 tss_plot_limit_kb <- 200
 tss_bin_width_kb <- 10
 
@@ -792,3 +786,15 @@ cat(
   "\n"
 )
 cat("Outputs saved in:", output_dir, "\n")
+invisible(tables)
+}
+
+if (sys.nframe() == 0L) {
+  args <- commandArgs(trailingOnly = TRUE)
+  project_dir <- if (length(args)) args[1] else
+    Sys.getenv("SUSIE_MIX_PROJECT_DIR", "/project2/mstephens/wdenault/susie_mix")
+  run_weighted_descriptive_results(
+    file.path(project_dir, "res_summary.RData"),
+    file.path(project_dir, "res_cs_summary.RData"),
+    file.path(project_dir, "descriptive_results_weighted"))
+}

@@ -1141,7 +1141,8 @@ plot_one_cs_four_panel_case <- function(
     normalized_expression,
     likelihood_comparison,
     output_file,
-    genotype_axis_ticks = FALSE) {
+    genotype_axis_ticks = FALSE,
+    mixed_label = "SuSiE-mix") {
 
   expression_limits <- finite_plot_limits(normalized_expression)
   n_add_cs <- length(fit_add$sets[["cs"]])
@@ -1174,7 +1175,7 @@ plot_one_cs_four_panel_case <- function(
   susieR::susie_plot(
     fit_mix,
     y = "PIP",
-    main = "SuSiE-mix: 1 credible set"
+    main = paste0(mixed_label, ": 1 credible set")
   )
   add_mix_coding_boundaries(predictor_map)
 
@@ -1190,7 +1191,7 @@ plot_one_cs_four_panel_case <- function(
     }
   )
   mix_title <- paste0(
-    "SuSiE-mix lead: ", mix_lead$lead_snp,
+    mixed_label, " lead: ", mix_lead$lead_snp,
     "\n", tools::toTitleCase(mix_lead$lead_coding),
     "; PIP = ", sprintf("%.3f", mix_lead$lead_pip),
     " (", mix_lead$cs_name, ")"
@@ -1247,7 +1248,10 @@ run_one_cs_fit_mix_plots <- function(
     min_n_rec = 5,
     cis_window = 5e5,
     min_samples = 50,
-    genotype_axis_ticks = FALSE) {
+    genotype_axis_ticks = FALSE,
+    result_reader = NULL,
+    mixed_fit_name = "susie_mix",
+    mixed_label = "SuSiE-mix") {
 
   expected_coding <- match.arg(
     expected_coding,
@@ -1335,8 +1339,8 @@ run_one_cs_fit_mix_plots <- function(
 
     gene_cases <- cases[gene == gene_name]
 
-    gene_data <- tryCatch(
-      prepare_fit_mix_gene_data(
+    gene_data <- tryCatch({
+      prepared <- prepare_fit_mix_gene_data(
         gene_name = gene_name,
         shared_inputs = shared_inputs,
         results_dir = results_dir,
@@ -1347,7 +1351,12 @@ run_one_cs_fit_mix_plots <- function(
         min_maf_plink = min_maf_plink,
         min_maf = min_maf,
         hwe_thresh = hwe_thresh
-      ),
+      )
+      if (!is.null(result_reader)) {
+        prepared$gene_results <- result_reader(file.path(results_dir, paste0(gene_name, ".rds")))
+      }
+      prepared
+    },
       error = function(e) e
     )
 
@@ -1379,14 +1388,16 @@ run_one_cs_fit_mix_plots <- function(
 
           tissue_result <- gene_data$gene_results[[tissue_name]]
           fit_add <- tissue_result$susie_add
-          fit_mix <- tissue_result$susie_mix
+          fit_mix <- tissue_result[[mixed_fit_name]]
+          # The reconstruction helper consumes this field in a local copy.
+          tissue_result$susie_mix <- fit_mix
 
           if (is.null(fit_add)) {
             stop("The saved tissue result has no susie_add fit.")
           }
 
           if (is.null(fit_mix)) {
-            stop("The saved tissue result has no susie_mix fit.")
+            stop("The saved tissue result has no ", mixed_fit_name, " fit.")
           }
 
           cs_list <- fit_mix$sets[["cs"]]
@@ -1469,7 +1480,8 @@ run_one_cs_fit_mix_plots <- function(
             normalized_expression = tissue_data$y,
             likelihood_comparison = likelihood_comparison,
             output_file = output_file,
-            genotype_axis_ticks = genotype_axis_ticks
+            genotype_axis_ticks = genotype_axis_ticks,
+            mixed_label = mixed_label
           )
 
           data.table(
@@ -1477,7 +1489,8 @@ run_one_cs_fit_mix_plots <- function(
             tissue = tissue_name,
             expected_coding = expected_coding,
             status = "plotted",
-            message = "Four-panel SuSiE / SuSiE-mix comparison created",
+            message = paste("Four-panel SuSiE /", mixed_label, "comparison created"),
+            mixed_fit_name = mixed_fit_name,
             additive_n_cs = length(fit_add$sets[["cs"]]),
             additive_cs_name = add_lead$cs_name,
             additive_component_index = add_lead$component_index,

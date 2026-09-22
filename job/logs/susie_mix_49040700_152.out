@@ -1,0 +1,1868 @@
+Starting chunk 152 at Mon Sep 21 00:35:48 CDT 2026
+[2026-09-21 00:35:48] starting MRPL16
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL16 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/temp_plink/plink_MRPL16.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 11
+  --export A
+  --from-bp 59310778
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/temp_plink/plink_MRPL16
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 60310778
+
+Start time: Mon Sep 21 00:37:09 2026
+63721 MiB RAM detected, ~17059 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+64515227 excluded by --chr + --max-alleles + --snps-only, 2719306 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+17654 variants remaining after main filters.
+--export A pass 1/1: loading... 0%writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A: /project2/mstephens/wdenault/susie_mix/temp_plink/plink_MRPL16.raw
+written.
+End time: Mon Sep 21 00:37:16 2026
+11 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr11_59437246_G_A_b38_G" "chr11_59438049_A_G_b38_A"
+ [3] "chr11_59443077_G_A_b38_G" "chr11_59473464_A_G_b38_A"
+ [5] "chr11_59473956_C_T_b38_C" "chr11_59474111_C_G_b38_C"
+ [7] "chr11_59474875_T_C_b38_T" "chr11_59475286_A_T_b38_A"
+ [9] "chr11_59481644_C_T_b38_C" "chr11_59481839_T_C_b38_T"
+[11] "chr11_59482460_T_C_b38_T"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Blood 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Brain 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Breast 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Colon 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Esophagus 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Heart 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Kidney 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Liver 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Lung 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Muscle 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Nerve 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Ovary 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Pancreas 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Pituitary 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Prostate 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Skin 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Spleen 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Stomach 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Testis 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Thyroid 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Uterus 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Vagina 
+=====================================
+[1] TRUE
+Running SuSiE.
+[2026-09-21 00:42:43] starting MRPL17
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL17 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 00:43:57] starting MRPL18
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL18 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 00:45:15] starting MRPL19
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL19 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 00:46:35] starting MRPL2
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL2 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 00:47:54] starting MRPL20
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL20 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/temp_plink/plink_MRPL20.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 1
+  --export A
+  --from-bp 907293
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/temp_plink/plink_MRPL20
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 1907293
+
+Start time: Mon Sep 21 00:49:15 2026
+63721 MiB RAM detected, ~10810 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+62424502 excluded by --chr + --max-alleles + --snps-only, 4810031 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+28484 variants remaining after main filters.
+--export A pass 1/1: loading... 0%writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A: /project2/mstephens/wdenault/susie_mix/temp_plink/plink_MRPL20.raw
+written.
+End time: Mon Sep 21 00:49:22 2026
+277 SNP(s) removed because HWE P < 1e-08 :
+  [1] "chr1_911085_C_T_b38_C"  "chr1_921797_T_C_b38_T"  "chr1_925081_G_A_b38_G" 
+  [4] "chr1_925141_C_A_b38_C"  "chr1_925628_G_C_b38_G"  "chr1_926428_A_G_b38_A" 
+  [7] "chr1_926713_T_C_b38_T"  "chr1_926744_A_G_b38_A"  "chr1_927003_C_T_b38_C" 
+ [10] "chr1_927009_A_G_b38_A"  "chr1_927744_G_T_b38_G"  "chr1_928252_C_T_b38_C" 
+ [13] "chr1_928309_A_G_b38_A"  "chr1_928396_A_C_b38_A"  "chr1_928463_C_T_b38_C" 
+ [16] "chr1_928483_G_A_b38_G"  "chr1_929375_A_G_b38_A"  "chr1_929377_G_A_b38_G" 
+ [19] "chr1_931143_T_C_b38_T"  "chr1_931147_A_C_b38_A"  "chr1_932716_T_C_b38_T" 
+ [22] "chr1_933601_C_T_b38_C"  "chr1_938014_A_G_b38_A"  "chr1_959193_G_A_b38_G" 
+ [25] "chr1_960326_G_A_b38_G"  "chr1_965350_G_A_b38_G"  "chr1_966179_G_A_b38_G" 
+ [28] "chr1_966426_G_C_b38_G"  "chr1_967724_C_T_b38_C"  "chr1_969562_A_G_b38_A" 
+ [31] "chr1_969637_T_C_b38_T"  "chr1_969780_C_T_b38_C"  "chr1_969785_A_G_b38_A" 
+ [34] "chr1_972790_C_G_b38_C"  "chr1_1008527_C_G_b38_C" "chr1_1009716_C_T_b38_C"
+ [37] "chr1_1012158_C_T_b38_C" "chr1_1013312_G_A_b38_G" "chr1_1042190_G_A_b38_G"
+ [40] "chr1_1050080_T_C_b38_T" "chr1_1055153_G_A_b38_G" "chr1_1058607_T_C_b38_T"
+ [43] "chr1_1059337_A_G_b38_A" "chr1_1113260_C_A_b38_C" "chr1_1113344_A_C_b38_A"
+ [46] "chr1_1114143_C_A_b38_C" "chr1_1114769_G_A_b38_G" "chr1_1116304_A_C_b38_A"
+ [49] "chr1_1116992_A_G_b38_A" "chr1_1118491_T_C_b38_T" "chr1_1118777_T_C_b38_T"
+ [52] "chr1_1118779_C_T_b38_C" "chr1_1118832_C_T_b38_C" "chr1_1118835_A_G_b38_A"
+ [55] "chr1_1119363_C_G_b38_C" "chr1_1119514_G_A_b38_G" "chr1_1120626_G_A_b38_G"
+ [58] "chr1_1120771_G_A_b38_G" "chr1_1120821_T_G_b38_T" "chr1_1170732_A_G_b38_A"
+ [61] "chr1_1184478_C_T_b38_C" "chr1_1220377_C_T_b38_C" "chr1_1235720_T_G_b38_T"
+ [64] "chr1_1246172_G_C_b38_G" "chr1_1258333_C_G_b38_C" "chr1_1258343_A_C_b38_A"
+ [67] "chr1_1259424_T_C_b38_T" "chr1_1274256_A_G_b38_A" "chr1_1274972_A_G_b38_A"
+ [70] "chr1_1274980_C_T_b38_C" "chr1_1275091_T_C_b38_T" "chr1_1275583_T_C_b38_T"
+ [73] "chr1_1275912_C_T_b38_C" "chr1_1277269_T_C_b38_T" "chr1_1277415_C_A_b38_C"
+ [76] "chr1_1278556_G_A_b38_G" "chr1_1279694_A_G_b38_A" "chr1_1279698_A_G_b38_A"
+ [79] "chr1_1282706_C_T_b38_C" "chr1_1284756_A_G_b38_A" "chr1_1285574_G_A_b38_G"
+ [82] "chr1_1290968_C_G_b38_C" "chr1_1295039_T_C_b38_T" "chr1_1296939_G_A_b38_G"
+ [85] "chr1_1298561_T_C_b38_T" "chr1_1300330_T_A_b38_T" "chr1_1301656_T_C_b38_T"
+ [88] "chr1_1303959_T_G_b38_T" "chr1_1306420_A_G_b38_A" "chr1_1306584_G_A_b38_G"
+ [91] "chr1_1307327_A_G_b38_A" "chr1_1307603_G_A_b38_G" "chr1_1309988_G_A_b38_G"
+ [94] "chr1_1312114_T_C_b38_T" "chr1_1313807_G_A_b38_G" "chr1_1318756_G_A_b38_G"
+ [97] "chr1_1319063_G_A_b38_G" "chr1_1319461_C_G_b38_C" "chr1_1322866_A_C_b38_A"
+[100] "chr1_1327211_C_T_b38_C" "chr1_1327982_G_A_b38_G" "chr1_1330080_T_C_b38_T"
+[103] "chr1_1330125_G_A_b38_G" "chr1_1341030_C_A_b38_C" "chr1_1357046_C_G_b38_C"
+[106] "chr1_1357246_C_T_b38_C" "chr1_1357369_C_T_b38_C" "chr1_1358384_G_C_b38_G"
+[109] "chr1_1358907_C_A_b38_C" "chr1_1359138_C_T_b38_C" "chr1_1359943_G_A_b38_G"
+[112] "chr1_1360023_T_C_b38_T" "chr1_1363153_T_G_b38_T" "chr1_1387698_A_G_b38_A"
+[115] "chr1_1389827_C_T_b38_C" "chr1_1394423_A_G_b38_A" "chr1_1395346_A_G_b38_A"
+[118] "chr1_1402457_A_G_b38_A" "chr1_1410616_G_T_b38_G" "chr1_1410877_A_G_b38_A"
+[121] "chr1_1411323_A_C_b38_A" "chr1_1411525_T_A_b38_T" "chr1_1415976_G_A_b38_G"
+[124] "chr1_1419135_C_G_b38_C" "chr1_1421170_A_G_b38_A" "chr1_1421814_G_A_b38_G"
+[127] "chr1_1422081_C_T_b38_C" "chr1_1424727_C_A_b38_C" "chr1_1424819_C_T_b38_C"
+[130] "chr1_1425013_C_T_b38_C" "chr1_1445187_T_G_b38_T" "chr1_1445240_A_G_b38_A"
+[133] "chr1_1449831_A_G_b38_A" "chr1_1450193_C_T_b38_C" "chr1_1452511_A_G_b38_A"
+[136] "chr1_1452888_C_A_b38_C" "chr1_1452909_A_C_b38_A" "chr1_1453703_A_G_b38_A"
+[139] "chr1_1454092_A_G_b38_A" "chr1_1454770_T_C_b38_T" "chr1_1455617_T_G_b38_T"
+[142] "chr1_1457919_C_A_b38_C" "chr1_1457922_T_C_b38_T" "chr1_1458967_T_C_b38_T"
+[145] "chr1_1459004_T_C_b38_T" "chr1_1459273_T_C_b38_T" "chr1_1459357_C_A_b38_C"
+[148] "chr1_1459391_A_G_b38_A" "chr1_1459658_G_A_b38_G" "chr1_1459662_C_T_b38_C"
+[151] "chr1_1460370_T_C_b38_T" "chr1_1468048_A_G_b38_A" "chr1_1468636_G_A_b38_G"
+[154] "chr1_1468856_C_T_b38_C" "chr1_1469429_A_G_b38_A" "chr1_1470034_T_C_b38_T"
+[157] "chr1_1471144_G_C_b38_G" "chr1_1472158_C_G_b38_C" "chr1_1473089_T_C_b38_T"
+[160] "chr1_1476266_T_C_b38_T" "chr1_1481959_C_T_b38_C" "chr1_1482402_A_G_b38_A"
+[163] "chr1_1482624_T_C_b38_T" "chr1_1483898_G_A_b38_G" "chr1_1485282_A_G_b38_A"
+[166] "chr1_1486151_C_A_b38_C" "chr1_1487887_A_G_b38_A" "chr1_1488652_A_G_b38_A"
+[169] "chr1_1490027_A_G_b38_A" "chr1_1490032_A_G_b38_A" "chr1_1490320_T_C_b38_T"
+[172] "chr1_1492292_C_G_b38_C" "chr1_1492850_G_A_b38_G" "chr1_1495204_T_C_b38_T"
+[175] "chr1_1495221_G_A_b38_G" "chr1_1495222_T_G_b38_T" "chr1_1500729_G_A_b38_G"
+[178] "chr1_1500745_A_C_b38_A" "chr1_1501403_T_C_b38_T" "chr1_1511945_G_A_b38_G"
+[181] "chr1_1513923_G_C_b38_G" "chr1_1515567_A_C_b38_A" "chr1_1516000_T_C_b38_T"
+[184] "chr1_1516109_T_C_b38_T" "chr1_1516110_G_A_b38_G" "chr1_1517993_A_G_b38_A"
+[187] "chr1_1518285_T_C_b38_T" "chr1_1519934_T_G_b38_T" "chr1_1519938_T_C_b38_T"
+[190] "chr1_1520875_A_G_b38_A" "chr1_1521518_G_A_b38_G" "chr1_1522905_A_G_b38_A"
+[193] "chr1_1523022_A_G_b38_A" "chr1_1523187_A_G_b38_A" "chr1_1524202_G_A_b38_G"
+[196] "chr1_1524664_A_G_b38_A" "chr1_1524911_C_T_b38_C" "chr1_1525526_C_T_b38_C"
+[199] "chr1_1526169_C_T_b38_C" "chr1_1527386_C_T_b38_C" "chr1_1530002_A_G_b38_A"
+[202] "chr1_1530331_T_C_b38_T" "chr1_1531133_G_A_b38_G" "chr1_1531448_C_T_b38_C"
+[205] "chr1_1531601_A_G_b38_A" "chr1_1532105_T_C_b38_T" "chr1_1533018_T_C_b38_T"
+[208] "chr1_1533095_G_A_b38_G" "chr1_1533178_A_G_b38_A" "chr1_1533253_C_T_b38_C"
+[211] "chr1_1534915_T_C_b38_T" "chr1_1546962_G_A_b38_G" "chr1_1547458_A_G_b38_A"
+[214] "chr1_1634663_C_G_b38_C" "chr1_1638657_A_G_b38_A" "chr1_1638714_G_A_b38_G"
+[217] "chr1_1640475_C_G_b38_C" "chr1_1644693_C_A_b38_C" "chr1_1645377_T_A_b38_T"
+[220] "chr1_1645704_G_C_b38_G" "chr1_1645735_C_T_b38_C" "chr1_1646243_G_A_b38_G"
+[223] "chr1_1646352_A_C_b38_A" "chr1_1646352_A_G_b38_A" "chr1_1646398_G_A_b38_G"
+[226] "chr1_1646520_T_C_b38_T" "chr1_1646565_G_T_b38_G" "chr1_1646597_T_C_b38_T"
+[229] "chr1_1646841_C_T_b38_C" "chr1_1647255_T_C_b38_T" "chr1_1647280_T_C_b38_T"
+[232] "chr1_1647480_A_G_b38_A" "chr1_1647483_G_T_b38_G" "chr1_1647519_G_C_b38_G"
+[235] "chr1_1647600_C_G_b38_C" "chr1_1647642_C_T_b38_C" "chr1_1647727_A_G_b38_A"
+[238] "chr1_1648134_T_C_b38_T" "chr1_1648395_C_T_b38_C" "chr1_1648402_G_A_b38_G"
+[241] "chr1_1650452_G_A_b38_G" "chr1_1657093_C_A_b38_C" "chr1_1657220_G_A_b38_G"
+[244] "chr1_1657267_G_A_b38_G" "chr1_1657287_C_T_b38_C" "chr1_1657293_A_T_b38_A"
+[247] "chr1_1660271_T_C_b38_T" "chr1_1660318_C_T_b38_C" "chr1_1660386_T_C_b38_T"
+[250] "chr1_1660408_T_C_b38_T" "chr1_1668373_C_T_b38_C" "chr1_1668449_A_G_b38_A"
+[253] "chr1_1688442_T_C_b38_T" "chr1_1688457_G_A_b38_G" "chr1_1688531_T_C_b38_T"
+[256] "chr1_1688548_G_A_b38_G" "chr1_1688570_A_T_b38_A" "chr1_1688586_C_T_b38_C"
+[259] "chr1_1688647_G_A_b38_G" "chr1_1688786_G_A_b38_G" "chr1_1691579_C_A_b38_C"
+[262] "chr1_1695459_A_G_b38_A" "chr1_1697014_G_T_b38_G" "chr1_1697272_G_A_b38_G"
+[265] "chr1_1697818_G_C_b38_G" "chr1_1697830_G_A_b38_G" "chr1_1697979_G_A_b38_G"
+[268] "chr1_1698022_G_A_b38_G" "chr1_1698040_G_C_b38_G" "chr1_1698048_T_C_b38_T"
+[271] "chr1_1706027_G_A_b38_G" "chr1_1728671_C_A_b38_C" "chr1_1729859_A_G_b38_A"
+[274] "chr1_1750428_G_C_b38_G" "chr1_1750440_G_A_b38_G" "chr1_1750935_G_A_b38_G"
+[277] "chr1_1756753_A_G_b38_A"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Blood 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Brain 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Breast 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Colon 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Esophagus 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Heart 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Kidney 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Liver 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Lung 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Muscle 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Nerve 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Ovary 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Pancreas 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Pituitary 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Prostate 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Skin 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Spleen 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Stomach 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Testis 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Thyroid 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Uterus 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Vagina 
+=====================================
+[1] TRUE
+Running SuSiE.
+[2026-09-21 00:55:40] starting MRPL21
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL21 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 00:56:58] starting MRPL22
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL22 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/temp_plink/plink_MRPL22.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 5
+  --export A
+  --from-bp 154441073
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/temp_plink/plink_MRPL22
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 155441073
+
+Start time: Mon Sep 21 00:58:20 2026
+63721 MiB RAM detected, ~10807 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+63805389 excluded by --chr + --max-alleles + --snps-only, 3429144 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+17770 variants remaining after main filters.
+--export A pass 1/1: loading... 0%56% writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A: /project2/mstephens/wdenault/susie_mix/temp_plink/plink_MRPL22.raw
+written.
+End time: Mon Sep 21 00:58:27 2026
+5 SNP(s) removed because HWE P < 1e-08 :
+[1] "chr5_154453360_G_T_b38_G" "chr5_154626865_T_G_b38_T"
+[3] "chr5_155020027_G_C_b38_G" "chr5_155020399_A_C_b38_A"
+[5] "chr5_155023421_C_T_b38_C"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Blood 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Brain 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Breast 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Colon 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Esophagus 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Heart 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Kidney 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Liver 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Lung 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Muscle 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Nerve 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Ovary 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Pancreas 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Pituitary 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Prostate 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Skin 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Spleen 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Stomach 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Testis 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Thyroid 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Uterus 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Vagina 
+=====================================
+[1] TRUE
+Running SuSiE.
+[2026-09-21 01:05:11] starting MRPL23
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL23 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:06:29] starting MRPL24
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL24 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:07:48] starting MRPL27
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL27 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/temp_plink/plink_MRPL27.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 17
+  --export A
+  --from-bp 49873207
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/temp_plink/plink_MRPL27
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 50873207
+
+Start time: Mon Sep 21 01:09:09 2026
+63721 MiB RAM detected, ~11418 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+65601655 excluded by --chr + --max-alleles + --snps-only, 1632878 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+18630 variants remaining after main filters.
+--export A pass 1/1: loading... 0%writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A: /project2/mstephens/wdenault/susie_mix/temp_plink/plink_MRPL27.raw
+written.
+End time: Mon Sep 21 01:09:15 2026
+18 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr17_49883034_G_A_b38_G" "chr17_49888642_C_A_b38_C"
+ [3] "chr17_49976919_A_C_b38_A" "chr17_50167031_C_T_b38_C"
+ [5] "chr17_50288073_T_C_b38_T" "chr17_50291788_G_C_b38_G"
+ [7] "chr17_50291945_T_G_b38_T" "chr17_50293207_G_A_b38_G"
+ [9] "chr17_50320465_A_G_b38_A" "chr17_50398174_T_C_b38_T"
+[11] "chr17_50585349_G_A_b38_G" "chr17_50586650_G_A_b38_G"
+[13] "chr17_50789922_G_A_b38_G" "chr17_50790712_A_G_b38_A"
+[15] "chr17_50815290_C_G_b38_C" "chr17_50817795_T_C_b38_T"
+[17] "chr17_50819293_A_G_b38_A" "chr17_50819423_C_T_b38_C"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Blood 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Brain 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Breast 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Colon 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Esophagus 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Heart 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Kidney 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Liver 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Lung 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Muscle 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Nerve 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Ovary 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Pancreas 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Pituitary 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Prostate 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Skin 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Spleen 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Stomach 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Testis 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Thyroid 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Uterus 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Vagina 
+=====================================
+[1] TRUE
+Running SuSiE.
+[2026-09-21 01:16:10] starting MRPL28
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL28 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/temp_plink/plink_MRPL28.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 16
+  --export A
+  --from-bp 0
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/temp_plink/plink_MRPL28
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 871289
+
+Start time: Mon Sep 21 01:17:27 2026
+63721 MiB RAM detected, ~11412 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+65423567 excluded by --chr + --max-alleles + --snps-only, 1810966 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+24720 variants remaining after main filters.
+--export A pass 1/1: loading... 0%42% writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A: /project2/mstephens/wdenault/susie_mix/temp_plink/plink_MRPL28.raw
+written.
+End time: Mon Sep 21 01:17:34 2026
+88 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr16_10954_G_C_b38_G"  "chr16_11076_G_C_b38_G"  "chr16_11159_C_A_b38_C" 
+ [4] "chr16_11212_G_C_b38_G"  "chr16_17058_A_G_b38_A"  "chr16_17089_C_T_b38_C" 
+ [7] "chr16_17780_C_T_b38_C"  "chr16_17832_A_G_b38_A"  "chr16_18977_C_A_b38_C" 
+[10] "chr16_18995_T_A_b38_T"  "chr16_71847_C_T_b38_C"  "chr16_72884_T_A_b38_T" 
+[13] "chr16_73222_A_G_b38_A"  "chr16_74163_G_C_b38_G"  "chr16_77825_G_A_b38_G" 
+[16] "chr16_77828_C_T_b38_C"  "chr16_77906_C_T_b38_C"  "chr16_77907_G_C_b38_G" 
+[19] "chr16_78177_C_T_b38_C"  "chr16_79224_C_T_b38_C"  "chr16_79278_A_G_b38_A" 
+[22] "chr16_79655_C_T_b38_C"  "chr16_80197_A_G_b38_A"  "chr16_80198_C_T_b38_C" 
+[25] "chr16_80581_T_C_b38_T"  "chr16_80854_A_G_b38_A"  "chr16_81110_C_T_b38_C" 
+[28] "chr16_97525_T_C_b38_T"  "chr16_118692_C_G_b38_C" "chr16_153177_C_G_b38_C"
+[31] "chr16_175945_C_T_b38_C" "chr16_176044_A_G_b38_A" "chr16_176332_G_A_b38_G"
+[34] "chr16_182834_T_C_b38_T" "chr16_270065_C_A_b38_C" "chr16_270106_G_A_b38_G"
+[37] "chr16_278541_A_G_b38_A" "chr16_279211_T_C_b38_T" "chr16_429010_A_G_b38_A"
+[40] "chr16_434589_C_A_b38_C" "chr16_441125_T_C_b38_T" "chr16_444929_A_G_b38_A"
+[43] "chr16_481056_G_A_b38_G" "chr16_666273_T_C_b38_T" "chr16_691298_C_A_b38_C"
+[46] "chr16_693670_C_T_b38_C" "chr16_698095_G_C_b38_G" "chr16_716690_C_T_b38_C"
+[49] "chr16_717426_T_G_b38_T" "chr16_742193_T_A_b38_T" "chr16_764307_G_A_b38_G"
+[52] "chr16_765413_C_A_b38_C" "chr16_770215_T_A_b38_T" "chr16_773094_A_G_b38_A"
+[55] "chr16_773446_T_C_b38_T" "chr16_774141_T_C_b38_T" "chr16_810673_T_C_b38_T"
+[58] "chr16_811268_G_A_b38_G" "chr16_811996_T_C_b38_T" "chr16_812656_C_T_b38_C"
+[61] "chr16_813192_T_C_b38_T" "chr16_813336_T_C_b38_T" "chr16_814097_A_G_b38_A"
+[64] "chr16_814123_A_G_b38_A" "chr16_814508_A_G_b38_A" "chr16_814700_T_C_b38_T"
+[67] "chr16_815040_G_A_b38_G" "chr16_816225_A_G_b38_A" "chr16_817460_A_G_b38_A"
+[70] "chr16_820569_G_A_b38_G" "chr16_849056_T_C_b38_T" "chr16_855031_A_G_b38_A"
+[73] "chr16_856611_A_G_b38_A" "chr16_860029_A_T_b38_A" "chr16_860394_T_C_b38_T"
+[76] "chr16_860601_A_G_b38_A" "chr16_860950_T_C_b38_T" "chr16_861690_A_G_b38_A"
+[79] "chr16_861717_G_A_b38_G" "chr16_862137_A_G_b38_A" "chr16_862160_G_C_b38_G"
+[82] "chr16_863183_C_T_b38_C" "chr16_863305_C_A_b38_C" "chr16_863781_T_G_b38_T"
+[85] "chr16_864426_C_T_b38_C" "chr16_866122_T_C_b38_T" "chr16_866890_A_G_b38_A"
+[88] "chr16_870310_C_G_b38_C"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Blood 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Brain 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Breast 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Colon 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Esophagus 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Heart 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Kidney 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Liver 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Lung 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Muscle 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Nerve 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Ovary 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Pancreas 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Pituitary 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Prostate 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Skin 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Spleen 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Stomach 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Testis 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Thyroid 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Uterus 
+=====================================
+[1] TRUE
+Running SuSiE.
+
+=====================================
+Tissue: Vagina 
+=====================================
+[1] TRUE
+Running SuSiE.
+[2026-09-21 01:24:12] starting MRPL3
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL3 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:25:29] starting MRPL30
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL30 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:26:48] starting MRPL32
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL32 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:28:09] starting MRPL33
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL33 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:29:28] starting MRPL34
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL34 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:30:47] starting MRPL35
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL35 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:32:03] starting MRPL36
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL36 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:33:22] starting MRPL37
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL37 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:34:40] starting MRPL38
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL38 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:35:59] starting MRPL39
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL39 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:37:19] starting MRPL4
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL4 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:38:38] starting MRPL40
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL40 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:39:56] starting MRPL41
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL41 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:41:15] starting MRPL42
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL42 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:42:35] starting MRPL43
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL43 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:43:54] starting MRPL44
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL44 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:45:13] starting MRPL45
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL45 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:46:32] starting MRPL46
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL46 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:47:52] starting MRPL47
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL47 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:49:11] starting MRPL48
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL48 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:50:31] starting MRPL49
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL49 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:51:50] starting MRPL50
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL50 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:53:06] starting MRPL51
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL51 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:54:26] starting MRPL52
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL52 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:55:42] starting MRPL53
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL53 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:57:01] starting MRPL54
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL54 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:58:20] starting MRPL55
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL55 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 01:59:39] starting MRPL57
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL57 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 02:00:58] starting MRPL58
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL58 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 02:02:16] starting MRPL9
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPL9 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 02:03:32] starting MRPS10
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPS10 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 02:04:50] starting MRPS11
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPS11 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 02:06:09] starting MRPS12
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPS12 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 02:07:28] starting MRPS14
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPS14 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 02:08:48] starting MRPS15
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPS15 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 02:10:06] starting MRPS16
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPS16 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 02:11:25] starting MRPS17
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPS17 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 02:12:44] starting MRPS18A
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPS18A :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 02:14:04] starting MRPS18B
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPS18B :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 02:15:23] starting MRPS18C
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPS18C :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 02:16:41] starting MRPS2
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPS2 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 02:17:59] starting MRPS21
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPS21 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 02:19:17] starting MRPS22
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPS22 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 02:20:37] starting MRPS23
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPS23 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 02:21:55] starting MRPS24
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPS24 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 02:23:14] starting MRPS25
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPS25 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 02:24:33] starting MRPS26
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPS26 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 02:25:53] starting MRPS27
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPS27 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 02:27:13] starting MRPS28
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPS28 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+[2026-09-21 02:28:32] starting MRPS30
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene MRPS30 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+Chunk 152 done.
+Finished chunk 152 at Mon Sep 21 02:29:53 CDT 2026

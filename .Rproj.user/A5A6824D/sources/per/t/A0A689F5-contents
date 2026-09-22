@@ -1,0 +1,299 @@
+# =========================================================================
+# BINOMIAL THINNING WITH A SNP COVARIATE
+#
+# Counts: individuals in rows, positions in columns.
+# All genotypes start from the same expected baseline.
+# Thinning introduces positive, negative, and zero SNP effects.
+#
+# Requires: fsusieR
+# =========================================================================
+
+library(fsusieR)
+
+
+# 1. Binomial-thinning function --------------------------------------------
+
+binomial_thin_snp <- function(counts, snp, beta) {
+  # snp: one genotype (0, 1, or 2) per individual.
+  # beta: one natural-log effect per position.
+  #       log(1.5) means a 1.5-fold change per additional allele.
+
+  if (!is.matrix(counts) || !is.numeric(counts) || is.complex(counts) ||
+      any(dim(counts) == 0) || any(!is.finite(counts)) ||
+      any(counts < 0) || any(counts != floor(counts))) {
+    stop("counts must be a nonempty matrix of non-negative integers.")
+  }
+
+  if (!is.numeric(snp) || is.complex(snp) || !is.null(dim(snp)) ||
+      length(snp) != nrow(counts) || any(!snp %in% 0:2)) {
+    stop("snp must contain one genotype (0, 1, or 2) per row.")
+  }
+
+  if (!is.numeric(beta) || is.complex(beta) || !is.null(dim(beta)) ||
+      length(beta) != ncol(counts) || any(!is.finite(beta))) {
+    stop("beta must contain one finite numeric effect per column.")
+  }
+
+  # Genetic contribution to the log mean.
+  eta <- outer(snp, beta)
+  if (any(!is.finite(eta))) stop("Effects are too large.")
+
+  # A position-specific shift makes every retention probability <= 1.
+  # This changes the baseline while preserving the per-allele effect.
+  log_shift <- apply(eta, 2, max)
+  probability <- exp(sweep(eta, 2, log_shift, "-"))
+  dimnames(probability) <- dimnames(counts)
+
+  thinned <- matrix(
+    rbinom(
+      n = length(counts),
+      size = as.vector(counts),
+      prob = as.vector(probability)
+    ),
+    nrow = nrow(counts),
+    ncol = ncol(counts),
+    dimnames = dimnames(counts)
+  )
+
+  list(
+    counts = thinned,
+    probability = probability,
+    log_shift = log_shift
+  )
+}
+
+
+# 2. Generate structured counts with a common baseline ---------------------
+
+set.seed(2026)
+
+n_per_genotype <- 100
+n_individuals <- 3 * n_per_genotype
+position <- 1:128
+snp <- rep(0:2, each = n_per_genotype)
+
+# Two smooth peaks shared by all genotype groups.
+baseline <- 8 +
+  40 * exp(-0.5 * ((position - 35) / 12)^2) +
+  30 * exp(-0.5 * ((position - 95) / 15)^2)
+
+# Independent Poisson draws from the SAME baseline for every genotype.
+# Observed group means differ slightly because of sampling variation.
+counts_before <- matrix(
+  rpois(
+    n_individuals * length(position),
+    lambda = rep(baseline, each = n_individuals)
+  ),
+  nrow = n_individuals
+)
+
+
+# 3. Create the SNP effect by thinning -------------------------------------
+
+beta <- rep(0, length(position))
+beta[25:45] <- log(1.5)   # 50% increase per additional allele.
+beta[85:105] <- log(0.7)  # 30% decrease per additional allele.
+
+result <- binomial_thin_snp(counts_before, snp, beta)
+counts_after <- result$counts
+
+# A positive association is created by retaining more counts at higher
+# SNP dosages. No count increases relative to its starting value.
+stopifnot(
+  all(counts_after >= 0),
+  all(counts_after <= counts_before),
+  all(counts_after[, beta == 0] == counts_before[, beta == 0])
+)
+
+
+# 4. Calculate mean profiles by genotype ----------------------------------
+
+group_means <- function(counts, snp) {
+  vapply(0:2, function(g) {
+    colMeans(counts[snp == g, , drop = FALSE])
+  }, numeric(ncol(counts)))
+}
+
+before <- group_means(counts_before, snp)
+after <- group_means(counts_after, snp)
+
+
+# 5. Estimate the effects --------------------------------------------------
+
+# Pointwise Poisson GLM: one regression at each position.
+beta_hat <- vapply(position, function(j) {
+  y <- counts_after[, j]
+
+  if (all(y == 0)) return(NA_real_)
+
+  fit <- glm(y ~ snp, family = poisson(link = "log"))
+  unname(coef(fit)["snp"])
+}, numeric(1))
+
+# Functional regression on log1p(counts).
+# Use one effect because this example contains one SNP.
+res <- fsusieR::susiF(
+  log1p(counts_after),
+  X = matrix(snp, ncol = 1),
+  L = 1
+)
+
+regions <- list(
+  positive = 25:45,
+  negative = 85:105,
+  null = which(beta == 0)
+)
+
+effect_summary <- data.frame(
+  region = names(regions),
+  true_log_effect =
+    vapply(regions, function(j) mean(beta[j]), numeric(1)),
+  estimated_glm_effect =
+    vapply(
+      regions,
+      function(j) mean(beta_hat[j], na.rm = TRUE),
+      numeric(1)
+    )
+)
+
+print(effect_summary, row.names = FALSE, digits = 3)
+
+
+# 6. Plot the profiles and estimated effects -------------------------------
+
+plot_thinning_comparison <- function(position, before, after,
+                                     beta, beta_hat, res) {
+  old_par <- par(no.readonly = TRUE)
+  on.exit({
+    layout(1)
+    par(old_par)
+  })
+
+  # Two-by-two panels, with separate rows reserved for legends.
+  layout(
+    matrix(c(1, 2,
+             3, 3,
+             4, 5,
+             6, 7), ncol = 2, byrow = TRUE),
+    heights = c(3.3, 0.45, 3.3, 0.55)
+  )
+
+  par(
+    cex = 1,
+    cex.main = 1.05,
+    cex.lab = 0.95,
+    cex.axis = 0.85,
+    mgp = c(2.5, 0.7, 0),
+    las = 1,
+    bty = "l",
+    family = "sans"
+  )
+
+  colors <- c("#0072B2", "#009E73", "#D55E00")
+  line_types <- c(1, 2, 3)
+  blue <- "#0072B2"
+
+  count_limits <- c(0, 1.05 * max(before, after))
+  fitted <- as.numeric(res$fitted_func[[1]])
+  band <- res$cred_band[[1]]
+
+  # Include all estimates and both credible-band boundaries.
+  effect_limits <- range(beta, beta_hat, fitted, band, finite = TRUE)
+  effect_limits <- effect_limits +
+    c(-1, 1) * 0.08 * max(diff(effect_limits), 0.1)
+
+  panel_margins <- function() {
+    par(mar = c(3.7, 4.4, 2.5, 1))
+  }
+
+  legend_panel <- function(...) {
+    par(mar = rep(0, 4))
+    plot.new()
+    legend(
+      "center", ...,
+      horiz = TRUE,
+      bty = "n",
+      cex = 0.9,
+      seg.len = 2.3,
+      x.intersp = 0.7
+    )
+  }
+
+  # A. Before thinning.
+  panel_margins()
+  matplot(
+    position, before,
+    type = "l", lty = line_types, lwd = 2, col = colors,
+    ylim = count_limits,
+    xlab = "Position", ylab = "Mean count",
+    main = "A. Before thinning"
+  )
+
+  # B. After thinning.
+  panel_margins()
+  matplot(
+    position, after,
+    type = "l", lty = line_types, lwd = 2, col = colors,
+    ylim = count_limits,
+    xlab = "Position", ylab = "Mean count",
+    main = "B. After thinning"
+  )
+
+  # Shared genotype legend, outside both count panels.
+  legend_panel(
+    legend = paste("SNP =", 0:2),
+    col = colors, lty = line_types, lwd = 2
+  )
+
+  # C. Pointwise Poisson GLM estimates.
+  panel_margins()
+  plot(
+    position, beta,
+    type = "n", ylim = effect_limits,
+    xlab = "Position", ylab = "Log-rate effect per allele",
+    main = "C. Pointwise Poisson GLM"
+  )
+  abline(h = 0, col = "grey85")
+  lines(position, beta, type = "s", col = "black", lwd = 2)
+  points(position, beta_hat, pch = 16, cex = 0.65, col = blue)
+
+  # D. Functional estimate and credible band.
+  # The injected beta is a log-rate reference. The fSuSiE response is
+  # log1p(count), so its effect need not equal beta exactly.
+  panel_margins()
+  plot(
+    position, fitted,
+    type = "n", ylim = effect_limits,
+    xlab = "Position", ylab = "Effect per allele",
+    main = "D. fSuSiE on log1p(count)"
+  )
+  abline(h = 0, col = "grey85")
+  lines(position, band[1, ], col = blue, lty = 2, lwd = 1.3)
+  lines(position, band[2, ], col = blue, lty = 2, lwd = 1.3)
+  lines(position, fitted, col = blue, lwd = 2)
+  lines(position, beta, type = "s", col = "black", lwd = 2)
+
+  # Separate legends with matching colors, lines, and symbols.
+  legend_panel(
+    legend = c("Injected", "GLM estimate"),
+    col = c("black", blue),
+    lty = c(1, NA),
+    lwd = c(2, NA),
+    pch = c(NA, 16)
+  )
+
+  legend_panel(
+    legend = c("Injected", "fSuSiE", "Credible band"),
+    col = c("black", blue, blue),
+    lty = c(1, 1, 2),
+    lwd = c(2, 2, 1.3)
+  )
+}
+
+# Display in RStudio; use Zoom for comfortable viewing.
+plot_thinning_comparison(position, before, after, beta, beta_hat, res)
+
+# Optional: save at a fixed size for sharing.
+# png("binomial_thinning.png", width = 1600, height = 1200, res = 150)
+# plot_thinning_comparison(position, before, after, beta, beta_hat, res)
+# dev.off()

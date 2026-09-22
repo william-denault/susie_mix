@@ -1,55 +1,5 @@
-# summarize_susie_results.R
-
-path_res <- "/project2/mstephens/wdenault/susie_mix/results/"
-
-summary_file <- paste0(
-  "/project2/mstephens/wdenault/susie_mix/",
-  "res_summary.RData"
-)
-
-summary_csv <- paste0(
-  "/project2/mstephens/wdenault/susie_mix/",
-  "res_summary.csv"
-)
-
-cs_summary_file <- paste0(
-  "/project2/mstephens/wdenault/susie_mix/",
-  "res_cs_summary.RData"
-)
-
-cs_summary_csv <- paste0(
-  "/project2/mstephens/wdenault/susie_mix/",
-  "res_cs_summary.csv"
-)
-
-cs_error_csv <- paste0(
-  "/project2/mstephens/wdenault/susie_mix/",
-  "res_cs_errors.csv"
-)
-
-error_csv <- paste0(
-  "/project2/mstephens/wdenault/susie_mix/",
-  "res_errors.csv"
-)
-
-failed_gene_file <- paste0(
-  "/project2/mstephens/wdenault/susie_mix/",
-  "failed_genes.txt"
-)
-
-result_files <- list.files(
-  path_res,
-  pattern = "\\.rds$",
-  full.names = TRUE
-)
-
-cat("Found", length(result_files), "result files.\n")
-
-
-# ============================================================
-# Helper functions
-# ============================================================
-
+# Shared summary functions. CLI: Rscript generate_summary_results.R [PROJECT_DIR]
+# When sourced, call generate_summary_results(path_res, output_dir) explicitly.
 get_cs <- function(fit) {
 
   cs <- fit$sets$cs
@@ -2355,7 +2305,9 @@ summarize_tissue <- function(
     stringsAsFactors = FALSE
   )
 
-  cbind(summary_row, summarize_weighted_mix(x))
+  summary_row <- cbind(summary_row, summarize_weighted_mix(x))
+  if (!is.null(x[["em_iteration"]])) summary_row$em_iteration <- x[["em_iteration"]]
+  summary_row
 }
 
 
@@ -2363,6 +2315,21 @@ summarize_tissue <- function(
 # Read and summarize result files
 # ============================================================
 
+generate_summary_results <- function(path_res, output_dir = dirname(path_res),
+                                     result_files = NULL, result_reader = readRDS) {
+  dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+  summary_file <- file.path(output_dir, "res_summary.RData")
+  summary_csv <- file.path(output_dir, "res_summary.csv")
+  cs_summary_file <- file.path(output_dir, "res_cs_summary.RData")
+  cs_summary_csv <- file.path(output_dir, "res_cs_summary.csv")
+  cs_error_csv <- file.path(output_dir, "res_cs_errors.csv")
+  error_csv <- file.path(output_dir, "res_errors.csv")
+  failed_gene_file <- file.path(output_dir, "failed_genes.txt")
+  if (is.null(result_files)) {
+    result_files <- list.files(path_res, pattern = "\\.rds$", full.names = TRUE)
+  }
+  if (!length(result_files)) stop("No result files found in ", path_res)
+  cat("Found", length(result_files), "result files.\n")
 result_rows <- list()
 cs_result_rows <- list()
 error_rows <- list()
@@ -2421,7 +2388,7 @@ for (file_index in  seq_along(result_files)) {
   )
 
   out <- tryCatch(
-    readRDS(result_file),
+    result_reader(result_file),
     error = function(e) e
   )
 
@@ -2478,6 +2445,12 @@ for (file_index in  seq_along(result_files)) {
     )
 
     next
+  }
+
+  tissue_errors <- attr(out, "tissue_errors", exact = TRUE)
+  for (tissue in names(tissue_errors)) {
+    record_error(result_file, gene_from_file, paste0("tissue_analysis:", tissue),
+                 tissue_errors[[tissue]])
   }
 
   if (length(out) == 0L) {
@@ -2812,3 +2785,13 @@ cat("Saved:", cs_summary_csv, "\n")
 cat("Saved:", cs_error_csv, "\n")
 cat("Saved:", error_csv, "\n")
 cat("Saved:", failed_gene_file, "\n")
+  invisible(list(res_summary = res_summary, res_cs_summary = res_cs_summary,
+                 res_errors = res_errors, cs_errors = cs_errors))
+}
+
+if (sys.nframe() == 0L) {
+  args <- commandArgs(trailingOnly = TRUE)
+  project_dir <- if (length(args)) args[1] else
+    Sys.getenv("SUSIE_MIX_PROJECT_DIR", "/project2/mstephens/wdenault/susie_mix")
+  generate_summary_results(file.path(project_dir, "results"), project_dir)
+}

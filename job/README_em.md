@@ -1,5 +1,9 @@
 # Run one or several EM iterations
 
+After fitting, use the [dedicated EM analysis scripts](../script/analysis/README_em_analysis.md)
+to generate summaries, descriptive results, and dominant one-CS lead-distance
+comparisons from the last completed iteration.
+
 On the cluster, from the project's `job` directory:
 
 ```bash

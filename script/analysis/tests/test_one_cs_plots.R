@@ -177,4 +177,17 @@ empty_rows <- plot_env$run_one_cs_fit_mix_plots(
   summary_filename = "plot_summary.csv", project_dir = output_dir
 )
 stopifnot(nrow(empty_rows) == 0L)
+# EM plotting must consume the selected weighted fit even if the baseline
+# unweighted fit has a different coding and lead SNP.
+em_tissue <- fixtures[["Synthetic recessive"]]$tissue_result
+em_tissue$weighted_fit_mix <- dom_fit
+em_rows <- plot_env$run_one_cs_fit_mix_plots(
+  cases = data.table::data.table(gene = "Synthetic recessive", tissue = "Small Intestine"),
+  expected_coding = "dominant", plot_dir = tempfile("em-expression-"),
+  summary_filename = "plot_summary.csv", project_dir = output_dir,
+  result_reader = function(file) list(`Small Intestine` = em_tissue),
+  mixed_fit_name = "weighted_fit_mix", mixed_label = "EM 12 SuSiE-mix")
+stopifnot(em_rows$status == "plotted", em_rows$lead_snp == snps[4],
+          em_rows$lead_coding == "dominant", em_rows$mixed_fit_name == "weighted_fit_mix",
+          em_rows$likelihood_statistic == 16)
 cat("One-CS plot tests passed. Synthetic previews:", output_dir, "\n")

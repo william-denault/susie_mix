@@ -4,7 +4,9 @@ plot_one_cs_lead_distance_overview <- function(
     plot_summary,
     expected_coding,
     output_file,
-    top_n = 20L) {
+    top_n = 20L,
+    title_prefix = "",
+    annotate_examples = TRUE) {
 
   expected_coding <- match.arg(expected_coding, c("dominant", "recessive"))
   if (length(top_n) != 1L || !is.finite(top_n) ||
@@ -153,7 +155,7 @@ plot_one_cs_lead_distance_overview <- function(
       y = c(.35, .82, .49, .83, .18, .12), pos = c(3, 3, 1, 3, 1, 3)
     )
   }
-  for (i in seq_len(nrow(annotations))) {
+  for (i in if (annotate_examples) seq_len(nrow(annotations)) else integer()) {
     r <- scatter[scatter$gene == annotations$gene[i] &
                    scatter$tissue == annotations$tissue[i], , drop = FALSE]
     if (nrow(r) != 1L) next
@@ -171,7 +173,7 @@ plot_one_cs_lead_distance_overview <- function(
     text(mean(log_limits), .5, "No changed leads with positive distance and valid PIP")
   }
   coding_title <- paste0(toupper(substr(expected_coding, 1, 1)), substring(expected_coding, 2))
-  mtext(paste0(coding_title, " one-CS examples: lead shifts and posterior support"),
+  mtext(paste0(title_prefix, coding_title, " one-CS examples: lead shifts and posterior support"),
         outer = TRUE, side = 3, line = 2.4, cex = 1.45, font = 2)
   count_text <- function(x) format(x, big.mark = ",", trim = TRUE)
   mtext(sprintf("%s examples   |   %s changed leads   |   %s shifts > 100 kb",

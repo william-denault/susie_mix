@@ -1,0 +1,144 @@
+---
+title: "Binomial_thinning"
+output: html_document
+date: "2026-08-05"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(susieR)
+library(fsusieR)
+library(wavethresh)
+library(assertthat)
+set.seed(1)
+```
+
+## Main function
+ This is a light weight version David Gerard binomial thinning method
+
+```{r function}
+# ----------------- binomial thinning (seqgendiff) -------------------- #
+# Faithful port of seqgendiff:::thin_base, with the dimension checks made
+# active (the original used bare assertthat::are_equal(), which never
+# throws -- so mismatched dimensions slipped through and rbinom() then
+# silently recycled size/prob into garbage).
+thin_base <- function(mat, designmat, coefmat,
+                      relative = TRUE, type = c("thin", "mult")) {
+  assert_that(is.matrix(mat), is.matrix(designmat), is.matrix(coefmat))
+  assert_that(is.numeric(mat), is.numeric(designmat), is.numeric(coefmat))
+  assert_that(nrow(mat)       == nrow(coefmat))    # features  (positions)
+  assert_that(ncol(mat)       == nrow(designmat))  # samples   (individuals)
+  assert_that(ncol(designmat) == ncol(coefmat))    # covariates (effects)
+  assert_that(is.logical(relative), length(relative) == 1L)
+  stopifnot(mat >= 0)
+  type    <- match.arg(type)
+  meanmat <- tcrossprod(coefmat, designmat)        # positions x individuals
+  maxvec  <- apply(meanmat, 1, max)
+  if (!relative) {
+    if (any(maxvec > 0))
+      stop("thin_base: positive log2-means with relative = FALSE.")
+    qmat <- 2^meanmat
+  } else {
+    qmat <- 2^(meanmat - maxvec)
+  }
+  newmat <- if (type == "thin")
+    stats::rbinom(prod(dim(mat)), size = mat, prob = qmat)
+  else
+    round(qmat * mat)
+  dim(newmat) <- dim(mat)
+  newmat
+}
+```
+
+## Simulated ATAC
+
+I used the rescaled Bumps wavelet function to simulate "population intensity
+```{r ATAC}
+patern= .1+ (DJ.EX()$bumps)/3
+plot(patern, type="l")
+```
+
+here I sample each individual from the Poisson baseline intensity
+
+
+```{r  Poisson data}
+N=100
+n_bins= length(patern)
+lambda= matrix(patern, byrow = TRUE, N, n_bins)
+image(lambda)
+count.data    <- matrix(rpois(N * n_bins, lambda = lambda), N, n_bins)
+image(count.data)
+plot(count.data[1,])
+```
+
+## Performing Binomial Thinning
+
+In our case we want to thin say the largest peak, so the SNP will affect one peak each
+over say 'eff_width' =10 with an effect_size of 1.5 see David Gerard BMC paper for detail
+
+
+```{r}
+  Y= count.data
+  eff_width=10
+  L=2
+  effect_size=1.5
+  P       <- ncol(Y)
+  magnitude <- colMeans(Y)
+  ord       <- order(magnitude, decreasing = TRUE)
+  starts    <- integer(0)
+  for (p in ord) {
+    s <- min(p, P - eff_width + 1L)
+    if (length(starts) == 0 || all(abs(s - starts) >= eff_width))
+      starts <- c(starts, s)
+    if (length(starts) == L) break
+  }
+  if (length(starts) < L) return(NULL)
+
+  lf <- lapply(starts, function(s) {
+    v <- numeric(P)
+    v[(s- eff_width/2):(s + eff_width/2 - 1L)] <- effect_size
+    v
+  })
+  B <- do.call(cbind, lf)          
+  
+  plot(lf[[1]], type="l")
+  lines(lf[[2]], col="red")
+```
+Here you see where causal SNP 1 and 2 will affect the counts
+
+
+Now getting some SNP (for the sake of ease I will use the data from susie package, for good simulation use MAF>5% ) and make it "SNP like"
+
+Here we have L=2 causal SNP
+```{r}
+L=2
+genotype= abs(N3finemapping$X[1:N,])
+genotype=ifelse(genotype<.5, 0,genotype)
+genotype=ifelse(genotype>=.5 & genotype< 1.5 , 1,genotype) 
+
+genotype=ifelse(genotype>=1.5  , 2,genotype) 
+true_pos <- sample(seq_len(ncol(genotype)), size = L)
+```
+
+Finally thinning the data
+
+```{r}
+  Ynew <- t(thin_base(mat       =  t(Y),
+                      designmat = genotype[, true_pos, drop = FALSE],
+                      coefmat   = B))
+```
+
+
+Checking what binomial thinning do
+
+```{r}
+i=3
+genotype[i, true_pos[1]]
+genotype[i, true_pos[2]]
+  plot(Ynew[i,], type="l", lwd=2)
+  lines(Y[i,],col="green")
+  lines(lf[[1]] , col="red", lwd=2)
+ 
+  lines(lf[[2]] , col="red", lwd=2)
+```
+

@@ -121,6 +121,7 @@ stopifnot(
 weighted_descriptive_program <- parse(
   file = "script/analysis/descriptive_results_weighted.R"
 )
+weighted_descriptive_program <- as.list(weighted_descriptive_program[[1]][[3]][[3]])[-1]
 read_assignment <- function(program, name) {
   match <- vapply(program, function(expr) {
     is.call(expr) && identical(expr[[1]], as.name("<-")) &&
@@ -237,7 +238,7 @@ bad_fit <- x
 bad_fit$weighted_fit_mix$alpha <- matrix(1, 4, 2)
 expect_error(summarize(bad_fit), "weighted_fit_mix_predictor_map")
 
-# Execute the complete summarizer, overriding only its path assignments.
+# Execute the complete summarizer through its reusable function.
 # All RDS/CSV/RData fixtures live in this R session's temporary directory.
 run_pipeline <- function(fixtures) {
   root <- tempfile("weighted-summary-test-")
@@ -249,22 +250,11 @@ run_pipeline <- function(fixtures) {
   }
   outputs <- c("summary_file", "summary_csv", "cs_summary_file", "cs_summary_csv",
                "cs_error_csv", "error_csv", "failed_gene_file")
-  extensions <- c("RData", "csv", "RData", "csv", "csv", "csv", "txt")
-  paths <- c(list(path_res = input), setNames(as.list(
-    file.path(root, paste0(outputs, ".", extensions))
-  ), outputs))
-  run_env <- new.env(parent = globalenv())
+  paths <- setNames(as.list(file.path(root, c("res_summary.RData", "res_summary.csv",
+    "res_cs_summary.RData", "res_cs_summary.csv", "res_cs_errors.csv", "res_errors.csv", "failed_genes.txt"))), outputs)
   warnings <- character(0)
   log <- capture.output(withCallingHandlers({
-    for (expr in program) {
-      name <- if (is.call(expr) && identical(expr[[1]], as.name("<-")) &&
-                  is.symbol(expr[[2]])) as.character(expr[[2]]) else ""
-      if (name %in% names(paths)) {
-        assign(name, paths[[name]], envir = run_env)
-      } else {
-        eval(expr, envir = run_env)
-      }
-    }
+    run_result <- summary_env$generate_summary_results(input, root)
   }, warning = function(w) {
     warnings <<- c(warnings, conditionMessage(w))
     invokeRestart("muffleWarning")
@@ -273,8 +263,8 @@ run_pipeline <- function(fixtures) {
   saved <- new.env()
   load(paths$summary_file, saved)
   load(paths$cs_summary_file, saved)
-  stopifnot(identical(saved$res_summary, run_env$res_summary),
-            identical(saved$res_cs_summary, run_env$res_cs_summary))
+  stopifnot(identical(saved$res_summary, run_result$res_summary),
+            identical(saved$res_cs_summary, run_result$res_cs_summary))
   csv <- read.csv(paths$summary_csv, check.names = FALSE)
   # The existing pipeline writes a zero-column CSV when no model has a CS.
   cs_csv <- if (ncol(saved$res_cs_summary) > 0L) {
