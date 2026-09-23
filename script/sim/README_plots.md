@@ -39,8 +39,10 @@ Each figure is saved as PDF and PNG by default:
   directory. Calibration CSV summaries and the RDS cache are retained.
 
 All scenario/PVE panels in a given PDF/PNG share the same y-axis limits and
-ticks. Coverage and purity run from the lowest point estimate anywhere in
-that figure to 1, ignoring confidence bounds when choosing the limits. CS size
+ticks. Coverage always uses 0.7-1; points below 0.7 are outside the displayed
+range, and intervals are clipped at the boundary. Purity runs from the lowest
+point estimate anywhere in that figure to 1, ignoring confidence bounds when
+choosing the limits. CS size
 runs from 0 to the highest point estimate anywhere in that figure. Power-FDR
 runs from 0 to the highest curve value across all panels within the displayed
 FDR window, including line intersections with the window boundary. Only the
@@ -49,9 +51,10 @@ contribute to its limits. Optional multipage PDFs also share limits across
 their pages. Confidence intervals can be clipped by these limits.
 Power, ROC and calibration retain a 0-1 y-axis;
 calibration also uses a 0-1 x-axis. The 0.95 coverage reference is shown when
-inside the panel. An all-one coverage/purity figure uses 0.95-1 to avoid a
-zero-height plot; empty/all-zero figures use 0-1. Missing cells say "No saved
-results". PNGs use Cairo when available to preserve labels on Windows.
+inside the panel. An all-one purity figure uses 0.95-1 to avoid a zero-height
+plot. Empty purity figures and empty/all-zero CS-size or power-FDR figures
+use 0-1; coverage remains 0.7-1 even for empty panels. Missing cells say "No saved
+results". PNGs use the `cairo-png` device when available to preserve labels on Windows.
 
 ## Metric definitions
 

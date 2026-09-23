@@ -148,31 +148,6 @@ visible_curve_segments <- function(x, y, xlim) {
         y1 = u + end * (v - u))
 }
 
-# Clip actual line segments before drawing, retaining their threshold order.
-# Explicit clipping also avoids label loss on Windows PNG devices when curves
-# extend beyond the displayed window.
-visible_curve_segments <- function(x, y, xlim) {
-  empty <- matrix(numeric(), ncol = 4,
-                  dimnames = list(NULL, c("x0", "y0", "x1", "y1")))
-  if (length(x) < 2) return(empty)
-  a <- head(x, -1); b <- tail(x, -1)
-  u <- head(y, -1); v <- tail(y, -1)
-  ok <- is.finite(a) & is.finite(b) & is.finite(u) & is.finite(v) &
-    pmax(a, b) >= xlim[1] & pmin(a, b) <= xlim[2]
-  a <- a[ok]; b <- b[ok]; u <- u[ok]; v <- v[ok]
-  if (!length(a)) return(empty)
-  start <- rep(0, length(a)); end <- rep(1, length(a))
-  moving <- a != b
-  t0 <- (xlim[1] - a[moving]) / (b[moving] - a[moving])
-  t1 <- (xlim[2] - a[moving]) / (b[moving] - a[moving])
-  start[moving] <- pmax(0, pmin(t0, t1))
-  end[moving] <- pmin(1, pmax(t0, t1))
-  cbind(x0 = pmax(xlim[1], pmin(xlim[2], a + start * (b - a))),
-        y0 = u + start * (v - u),
-        x1 = pmax(xlim[1], pmin(xlim[2], a + end * (b - a))),
-        y1 = u + end * (v - u))
-}
-
 # Maximal visible line height, including intersections with the x-window edges.
 visible_curve_max <- function(d, xlim) {
   values <- numeric()

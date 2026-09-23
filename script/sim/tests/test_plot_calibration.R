@@ -46,12 +46,12 @@ stopifnot(u$n_snps == 10, u$n_causal == 1, u$frequency == .1,
 d <- data.frame(coverage = c(.91, .98), coverage_lo = c(.2, .3),
                 purity = c(.84, .94), purity_lo = c(.1, .2),
                 cs_size = c(7, 21), cs_size_hi = c(10, 40))
-stopifnot(identical(figure_y_limits("coverage", d), c(.91, 1)),
+stopifnot(identical(figure_y_limits("coverage", d), c(.7, 1)),
           identical(figure_y_limits("purity", d), c(.84, 1)),
           identical(figure_y_limits("cs_size", d), c(0, 21)),
           identical(figure_y_limits("power", d), c(0, 1)),
-          identical(figure_y_limits("coverage", d[FALSE, ]), c(0, 1)),
-          diff(figure_y_limits("coverage", data.frame(coverage = 1))) > 0)
+          identical(figure_y_limits("coverage", d[FALSE, ]), c(.7, 1)),
+          identical(figure_y_limits("coverage", data.frame(coverage = c(.2, 1))), c(.7, 1)))
 curve <- data.frame(method = "SuSiE", threshold = c(Inf, .1), fdr = c(0, .5), tpr = c(0, 1))
 stopifnot(identical(figure_y_limits("power_fdr", curve, c(0, .25)), c(0, .5)))
 # Nonmonotone FDR must preserve threshold ordering when clipping line segments.

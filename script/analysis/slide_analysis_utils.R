@@ -1,5 +1,16 @@
 # Post-processing of workhorse.R's fit_slide / fit_slide_perm; no refitting.
-.slide_source_dir <- dirname(normalizePath(sys.frame(1)$ofile, winslash = "/"))
+# Jobs and other source wrappers add call frames, so frame 1 need not belong
+# to source(). Find this helper's innermost source frame instead.
+.slide_source_dir <- (function() {
+  for (frame in rev(sys.frames())) {
+    path <- get0("ofile", envir = frame, inherits = FALSE)
+    if (is.character(path) && length(path) == 1L && !is.na(path) &&
+        basename(path) == "slide_analysis_utils.R") {
+      return(dirname(normalizePath(path, winslash = "/", mustWork = TRUE)))
+    }
+  }
+  stop("Cannot locate slide_analysis_utils.R; load it with source() using its full path.")
+})()
 source(file.path(.slide_source_dir, "generate_summary_results.R"), local = TRUE)
 source(file.path(.slide_source_dir, "tss_disagreement_utils.R"), local = TRUE)
 source(file.path(.slide_source_dir, "one_cs_lead_distance_plot_utils.R"), local = TRUE)

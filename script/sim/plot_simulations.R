@@ -442,7 +442,7 @@ draw_figure <- function(metric, scenarios, only_K = NULL, y_limits = NULL,
   panels <- matrix(seq_len(nr * nc), nrow = nr, byrow = TRUE)
   layout(cbind(panels, nr * nc + seq_len(nr)), widths = c(rep(1, nc), 1.15))
   par(oma = c(6, 3.5, 3, 0.3), mar = c(2.3, 3.15, 1.7, 0.65),
-      mgp = c(1.3, 0.4, 0), tcl = -0.2, family = "sans", cex = 0.9)
+      mgp = c(1.3, 0.4, 0), tcl = -0.2, family = "sans", cex = 0.9, xpd = FALSE)
   is_roc <- metric == "roc"
   is_fdr <- metric == "power_fdr"
   is_calibration <- metric == "pip_calibration"
@@ -476,8 +476,10 @@ draw_figure <- function(metric, scenarios, only_K = NULL, y_limits = NULL,
       axis(1, at = xticks, cex.axis = 0.9, col = "#777777")
       axis(2, at = yticks, labels = format(signif(yticks, 3), trim = TRUE),
            las = 1, cex.axis = .78, col = "#777777")
+      par(xpd = NA)
       if (i == 1) mtext(paste0("PVE = ", round(100 * pve_values[j]), "%"),
-                        side = 3, line = 0.55, font = 2, xpd = NA)
+                        side = 3, line = 0.55, font = 2)
+      par(xpd = FALSE)
       if (!nrow(d)) {
         label <- if (!is.null(only_K) && only_K < min_K) "Not applicable" else "No saved results"
         text(mean(xlim), mean(ylim), label, col = "#777777", cex = .8)
@@ -506,7 +508,7 @@ draw_figure <- function(metric, scenarios, only_K = NULL, y_limits = NULL,
           lo <- dm[[paste0(metric, "_lo")]]
           hi <- dm[[paste0(metric, "_hi")]]
           if (!is.null(lo) && !is.null(hi)) {
-            ok <- is.finite(lo) & is.finite(hi)
+            ok <- is.finite(lo) & is.finite(hi) & hi >= ylim[1] & lo <= ylim[2]
             bar_color <- adjustcolor(method_colors[m], alpha.f = .65)
             # Clip explicitly: some Windows raster devices mishandle a segment
             # outside the plot followed by symbols drawn on the boundary.
@@ -516,7 +518,8 @@ draw_figure <- function(metric, scenarios, only_K = NULL, y_limits = NULL,
             segments(xpos[lo_inside] - .035, lo[lo_inside], xpos[lo_inside] + .035, lo[lo_inside], col = bar_color)
             segments(xpos[hi_inside] - .035, hi[hi_inside], xpos[hi_inside] + .035, hi[hi_inside], col = bar_color)
           }
-          points(xpos, dm[[metric]],
+          shown <- is.finite(dm[[metric]]) & dm[[metric]] >= ylim[1] & dm[[metric]] <= ylim[2]
+          points(xpos[shown], dm[[metric]][shown],
                  pch = 16, cex = 0.95, col = method_colors[m],
                  xpd = NA)
         }
@@ -524,7 +527,7 @@ draw_figure <- function(metric, scenarios, only_K = NULL, y_limits = NULL,
     }
   }
   # A narrow column at the right labels each scenario, without crowding panels.
-  par(mar = c(0, 0, 0, 0))
+  par(mar = c(0, 0, 0, 0), xpd = NA)
   for (s in scenarios) {
     plot.new()
     plot.window(xlim = c(0, 1), ylim = c(0, 1))
@@ -550,7 +553,7 @@ draw_figure <- function(metric, scenarios, only_K = NULL, y_limits = NULL,
   mtext(ylab[metric], side = 2, outer = TRUE, line = 1.8)
 
   # Draw a common legend in the outer bottom margin.
-  par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE)
+  par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE, xpd = NA)
   plot.new()
   plot.window(xlim = c(0, 1), ylim = c(0, 1), xaxs = "i", yaxs = "i")
   legend(.5, .045, legend = methods, col = method_colors[method_ids],
@@ -572,7 +575,7 @@ save_figure <- function(metric, scenarios, name, only_K = NULL, methods = method
   if (write_png) {
     png(file.path(output_dir, paste0(name, ".png")), width = 16, height = height,
         units = "in", res = 180,
-        type = if (capabilities("cairo")) "cairo" else getOption("bitmapType"))
+        type = if (capabilities("cairo")) "cairo-png" else getOption("bitmapType"))
     tryCatch(draw_figure(metric, scenarios, only_K, methods = methods), finally = dev.off())
   }
 }
