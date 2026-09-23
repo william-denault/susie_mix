@@ -6,9 +6,11 @@ plot_one_cs_lead_distance_overview <- function(
     output_file,
     top_n = 20L,
     title_prefix = "",
-    annotate_examples = TRUE) {
+    annotate_examples = TRUE,
+    annotation_mode = c("reviewed", "largest_shifts")) {
 
   expected_coding <- match.arg(expected_coding, c("dominant", "recessive"))
+  annotation_mode <- match.arg(annotation_mode)
   if (length(top_n) != 1L || !is.finite(top_n) ||
       top_n < 1L || top_n != as.integer(top_n)) {
     stop("top_n must be a positive integer.")
@@ -100,7 +102,7 @@ plot_one_cs_lead_distance_overview <- function(
   } else {
     plot.new()
     title(main = "Largest physical shifts", adj = 0, cex.main = 1.15)
-    text(.5, .5, if (n_completed == 0L) "No completed four-panel plots" else
+    text(.5, .5, if (n_completed == 0L) "No eligible one-CS comparisons" else
       "No changed leads with comparable coordinates", cex = .85)
   }
 
@@ -155,7 +157,28 @@ plot_one_cs_lead_distance_overview <- function(
       y = c(.35, .82, .49, .83, .18, .12), pos = c(3, 3, 1, 3, 1, 3)
     )
   }
-  for (i in if (annotate_examples) seq_len(nrow(annotations)) else integer()) {
+  annotated_cases <- scatter[FALSE, , drop = FALSE]
+  if (annotate_examples && annotation_mode == "largest_shifts" && nrow(scatter)) {
+    # Final-EM examples can differ from the reviewed unweighted examples.
+    # Label the six largest shifts using their current coordinates and PIPs.
+    annotated_cases <- head(scatter, 6L)
+    annotated_cases <- annotated_cases[order(annotated_cases$lead_pip), , drop = FALSE]
+    labels <- as.character(annotated_cases$gene)
+    duplicates <- duplicated(labels) | duplicated(labels, fromLast = TRUE)
+    labels[duplicates] <- paste(labels[duplicates], annotated_cases$tissue[duplicates], sep = " / ")
+    label_y <- pmax(.08, annotated_cases$lead_pip + .06)
+    if (length(label_y) > 1L) for (i in 2:length(label_y)) {
+      label_y[i] <- max(label_y[i], label_y[i - 1L] + .11)
+    }
+    label_y <- label_y - max(0, max(label_y) - 1.02)
+    point_x <- log10(annotated_cases$distance_kb)
+    label_x <- pmax(par("usr")[1] + strwidth(labels, cex = .78) + .04,
+                    point_x - .14)
+    points(point_x, annotated_cases$lead_pip, pch = 21, bg = "#13786f", col = "white", cex = 1.05)
+    segments(point_x, annotated_cases$lead_pip, label_x, label_y, col = "#13786f", lwd = .7)
+    text(label_x, label_y, labels, adj = c(1, .5), col = "#07534d", cex = .78)
+  }
+  for (i in if (annotate_examples && annotation_mode == "reviewed") seq_len(nrow(annotations)) else integer()) {
     r <- scatter[scatter$gene == annotations$gene[i] &
                    scatter$tissue == annotations$tissue[i], , drop = FALSE]
     if (nrow(r) != 1L) next
@@ -194,5 +217,6 @@ plot_one_cs_lead_distance_overview <- function(
   message("Lead-SNP distance overview: ", output_file)
   invisible(list(distance_data = d, top_cases = top, n_completed = n_completed,
                  n_changed = sum(changed), n_invalid = n_invalid,
-                 n_scatter = nrow(scatter), output_file = output_file))
+                 n_scatter = nrow(scatter), annotated_cases = annotated_cases,
+                 output_file = output_file))
 }

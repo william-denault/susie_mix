@@ -108,7 +108,8 @@ em_plot_one_cs <- function(project_dir, iteration = "latest", expected_coding = 
   overview_input$status <- rep("plotted", nrow(overview_input))
   overview <- plot_one_cs_lead_distance_overview(
     overview_input, expected_coding, file.path(output_dir, "lead_snp_distance_overview.png"),
-    top_n = top_n, title_prefix = paste0("EM ", context$iteration, " | "), annotate_examples = FALSE)
+    top_n = top_n, title_prefix = paste0("EM ", context$iteration, " | "),
+    annotate_examples = TRUE, annotation_mode = "largest_shifts")
   write.csv(overview$top_cases, file.path(output_dir, "largest_lead_shifts.csv"), row.names = FALSE)
   distance <- completed$distance_bp[is.finite(completed$distance_bp)]
   stats <- data.frame(

@@ -6,6 +6,7 @@ Run from the project root, in this order:
 Rscript --vanilla script/analysis/generate_summary_results_em.R
 Rscript --vanilla script/analysis/descriptive_results_em.R
 Rscript --vanilla script/analysis/finding_interesting_dominant_1cs_em.R
+Rscript --vanilla script/analysis/finding_interesting_recessive_1cs_em.R
 ```
 
 Each script also supports RStudio **Source**: edit the settings list at its top.
@@ -16,6 +17,7 @@ The project defaults to the current project root, then the RCC path, with
 Rscript --vanilla script/analysis/generate_summary_results_em.R /project2/mstephens/wdenault/susie_mix 12
 Rscript --vanilla script/analysis/descriptive_results_em.R /project2/mstephens/wdenault/susie_mix 12
 Rscript --vanilla script/analysis/finding_interesting_dominant_1cs_em.R /project2/mstephens/wdenault/susie_mix 12 --expression-plots
+Rscript --vanilla script/analysis/finding_interesting_recessive_1cs_em.R /project2/mstephens/wdenault/susie_mix 12 --expression-plots
 ```
 
 `latest` selects the highest iteration in `prior_history.csv` with a valid
@@ -53,18 +55,38 @@ All new products live under `results_em/iteration_012/` (or the selected iterati
   `em_summary_metadata.rds`, and `em_priors_used.csv`.
 - `descriptive_results/`: the existing weighted descriptive CSV/PDF outputs,
   now describing the final EM fit versus additive and original unweighted fits.
-- `plot/one_cs_dominant/`: `lead_snp_comparisons.csv`, `lead_distance_summary.csv`,
+- `plot/one_cs_dominant/` and `plot/one_cs_recessive/`: `lead_snp_comparisons.csv`, `lead_distance_summary.csv`,
   `largest_lead_shifts.csv`, and `lead_snp_distance_overview.png`.
 - With `expression_plots = TRUE` or `--expression-plots`, the last folder also
   contains `expression/` with four-panel PIP/expression plots and an error audit.
 
 The descriptive analysis keeps the existing P < 1e-8 and mean reads >= 100
 thresholds. The one-CS analysis keeps the original P < 5e-8 and mean reads >= 100
-thresholds and requires one **EM** CS with a dominant lead. It does not require
+thresholds and requires one **EM** CS with a dominant or recessive lead, respectively. It does not require
 one additive CS by default. For multiple additive CSs it selects the highest-PIP
 CS lead; with no additive CS it uses the highest-PIP SNP and labels that fallback.
-Set `both_one_cs = TRUE` for strictly one CS in both models. Set
-`expected_coding = "recessive"` to run the same analysis for recessive leads.
+Set `both_one_cs = TRUE` for strictly one CS in both models. Both overview plots
+show the 20 largest physical shifts beside a distance-versus-PIP scatter. The
+six largest shifts with usable PIPs are labeled using the current EM results.
+
+### TSS plots: only disagreeing CS leads
+
+The original `descriptive results.R`, the weighted analysis, and the EM wrapper
+now exclude individual credible sets whose **biological lead SNP** is also a
+CS lead in the other model for the same gene/tissue. Coding is ignored for this
+decision. A shared lead is excluded even if another CS in the same gene/tissue
+disagrees. Different leads remain eligible even when their CSs overlap; CSs
+reported by only one model remain eligible too. Other descriptive/coding
+statistics still use the full primary analysis set.
+
+Overall and tissue-specific TSS distributions use only those selected CSs.
+Each model is normalized by its number of selected, finite distances within
+the existing plotted window (10-kb bins centered from -200 to +200 kb).
+`tss_cs_agreement_audit.csv` records inclusion for each CS, and
+`tss_cs_selection_summary.csv` counts shared leads excluded, selected CSs,
+missing distances, and distances outside the window. Weighted/EM outputs use
+the same filenames prefixed with `weighted_`. TSS plot filenames are unchanged;
+rerun the descriptive script to replace the old all-CS distributions.
 
 Distances use biological SNP coordinates, retain unchanged leads and zero
 distances in the comparison table, and audit unavailable coordinates. The
@@ -93,4 +115,5 @@ Rscript --vanilla script/analysis/tests/test_em_analysis.R
 Rscript --vanilla script/analysis/tests/test_weighted_summary.R
 Rscript --vanilla script/analysis/tests/test_one_cs_plots.R
 Rscript --vanilla script/analysis/tests/test_one_cs_lead_distance_plots.R
+Rscript --vanilla script/analysis/tests/test_tss_disagreement.R
 ```

@@ -106,5 +106,19 @@ if (requireNamespace("data.table", quietly = TRUE)) {
   stopifnot(nrow(tables$weighted_primary_analysis_set) == 2L,
             file.exists(file.path(context$iteration_dir, "descriptive_results/weighted_overall_summary.csv")))
 } else message("SKIP descriptive integration: data.table not installed")
+# Exercise the dedicated recessive Source entry against a real saved EM fit.
+recessive_out <- good_out
+recessive_out$Tissue$weighted_fit_mix <- make_fit(6, TRUE, 4L)
+saveRDS(recessive_out, bad_path)
+suppressWarnings(em_generate_summary(root, 12))
+saved_project <- Sys.getenv("SUSIE_MIX_PROJECT_DIR", unset = NA_character_)
+Sys.setenv(SUSIE_MIX_PROJECT_DIR = root)
+recessive_env <- new.env(parent = globalenv())
+suppressWarnings(source("script/analysis/finding_interesting_recessive_1cs_em.R", local = recessive_env))
+if (is.na(saved_project)) Sys.unsetenv("SUSIE_MIX_PROJECT_DIR") else Sys.setenv(SUSIE_MIX_PROJECT_DIR = saved_project)
+stopifnot(recessive_env$em_one_cs_results$summary$n_compared == 1L,
+          recessive_env$em_one_cs_results$comparisons$lead_coding == "recessive",
+          recessive_env$em_one_cs_results$comparisons$distance_bp == 250000,
+          nrow(recessive_env$em_one_cs_results$overview$annotated_cases) == 1L)
 cat("PASS: latest complete iteration, EM/baseline joining, audit records, zero-CS fits, provenance,\n",
     "250-kb lead shift, empty selection, and downstream outputs. Fixtures: ", root, "\n", sep = "")

@@ -6,8 +6,11 @@
 
 run_weighted_descriptive_results <- function(
     summary_file, cs_summary_file, output_dir,
-    association_threshold = 1e-8, minimum_mean_reads = 100) {
+    association_threshold = 1e-8, minimum_mean_reads = 100,
+    project_dir = Sys.getenv("SUSIE_MIX_PROJECT_DIR", if (dir.exists("script/analysis")) getwd() else
+                              "/project2/mstephens/wdenault/susie_mix")) {
 library(data.table)
+source(file.path(project_dir, "script/analysis/tss_disagreement_utils.R"), local = TRUE)
 
 load(summary_file)
 load(cs_summary_file)
@@ -598,8 +601,13 @@ prior_sensitivity_statistics <- rbindlist(list(
 
 
 # ============================================================
-# Weighted lead-SNP distance to the TSS
+# TSS distances only for CSs without a shared biological lead SNP.
 # ============================================================
+
+tss_selection <- select_tss_disagreement(
+  primary_cs, mixed_model = "Weighted SuSiE-mix",
+  plot_limit_kb = tss_plot_limit_kb, bin_width_kb = tss_bin_width_kb)
+tss_cs <- as.data.table(tss_selection$selected)
 
 bin_centers <- seq(
   -tss_plot_limit_kb,
@@ -632,6 +640,7 @@ make_tss_summary <- function(
   data.table(
     tissue = tissue_name,
     model = model_name,
+    analysis_set = "CSs without a shared biological lead SNP",
     distance_to_tss_kb = bin_centers,
     bin_lower_kb = head(bin_breaks, -1),
     bin_upper_kb = tail(bin_breaks, -1),
@@ -645,23 +654,23 @@ make_tss_summary <- function(
 
 tss_distance_summary <- rbindlist(list(
   make_tss_summary(
-    primary_cs[model_key == "susie_add"],
+    tss_cs[model_key == "susie_add"],
     "SuSiE"
   ),
   make_tss_summary(
-    weighted_cs,
+    tss_cs[model_key == "weighted_fit_mix"],
     "Weighted SuSiE-mix"
   )
 ))
 tissue_tss_distance_summary <- rbindlist(lapply(tissues, function(tissue_name) {
   rbindlist(list(
     make_tss_summary(
-      primary_cs[tissue == tissue_name & model_key == "susie_add"],
+      tss_cs[tissue == tissue_name & model_key == "susie_add"],
       "SuSiE",
       tissue_name
     ),
     make_tss_summary(
-      weighted_cs[tissue == tissue_name],
+      tss_cs[tissue == tissue_name & model_key == "weighted_fit_mix"],
       "Weighted SuSiE-mix",
       tissue_name
     )
@@ -692,6 +701,8 @@ tables <- list(
   weighted_fit_comparison_summary = fit_comparison_summary,
   weighted_tss_distance_distribution = tss_distance_summary,
   weighted_tissue_tss_distance_distribution = tissue_tss_distance_summary,
+  weighted_tss_cs_agreement_audit = as.data.table(tss_selection$audit),
+  weighted_tss_cs_selection_summary = as.data.table(tss_selection$summary),
   weighted_additive_gene_tissue_pairs = additive_regions,
   weighted_recessive_gene_tissue_pairs = recessive_regions,
   weighted_dominant_gene_tissue_pairs = dominant_regions,
@@ -743,10 +754,11 @@ plot(
   xlim = c(-tss_plot_limit_kb, tss_plot_limit_kb),
   ylim = c(0, y_max),
   xlab = "Distance to TSS (kb)",
-  ylab = "Proportion of credible sets",
-  main = "Additive versus weighted mixed CS leads"
+  ylab = "Proportion of disagreeing CSs",
+  main = "TSS distance for disagreeing CS leads"
 )
 abline(v = 0, col = "gray65", lty = 3)
+if (!any(valid_tss)) text(0, .5, "No disagreeing CS leads with finite TSS distance")
 model_colors <- c(
   SuSiE = "#E69F00",
   `Weighted SuSiE-mix` = "#009E73"
@@ -762,7 +774,10 @@ for (model_name in names(model_colors)) {
 }
 legend(
   "topright",
-  legend = names(model_colors),
+  legend = vapply(names(model_colors), function(name) {
+    n <- unique(tss_distance_summary[model == name, n_cs_in_window])
+    sprintf("%s (n = %d)", name, if (length(n)) n[1] else 0L)
+  }, character(1)),
   col = unname(model_colors),
   lwd = 2.5,
   bty = "n"
@@ -796,5 +811,5 @@ if (sys.nframe() == 0L) {
   run_weighted_descriptive_results(
     file.path(project_dir, "res_summary.RData"),
     file.path(project_dir, "res_cs_summary.RData"),
-    file.path(project_dir, "descriptive_results_weighted"))
+    file.path(project_dir, "descriptive_results_weighted"), project_dir = project_dir)
 }

@@ -21,4 +21,5 @@ em_descriptive_tables <- run_weighted_descriptive_results(
   file.path(em_context$summary_dir, "res_cs_summary.RData"),
   file.path(em_context$iteration_dir, "descriptive_results"),
   association_threshold = em_descriptive_settings$association_threshold,
-  minimum_mean_reads = em_descriptive_settings$minimum_mean_reads)
+  minimum_mean_reads = em_descriptive_settings$minimum_mean_reads,
+  project_dir = em_context$project_dir)

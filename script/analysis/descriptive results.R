@@ -1,12 +1,10 @@
 library(data.table)
 
-load(
-  "/project2/mstephens/wdenault/susie_mix/res_summary.RData"
-)
-
-load(
-  "/project2/mstephens/wdenault/susie_mix/res_cs_summary.RData"
-)
+project_dir <- Sys.getenv("SUSIE_MIX_PROJECT_DIR", if (dir.exists("script/analysis")) getwd() else
+                           "/project2/mstephens/wdenault/susie_mix")
+source(file.path(project_dir, "script/analysis/tss_disagreement_utils.R"))
+load(file.path(project_dir, "res_summary.RData"))
+load(file.path(project_dir, "res_cs_summary.RData"))
 
 res <- as.data.table(res_summary)
 
@@ -249,6 +247,7 @@ summarize_tss_distribution <- function(
 
         data.table(
           model = model_name,
+          analysis_set = "CSs without a shared biological lead SNP",
           distance_to_tss_kb = bin_centers,
           bin_lower_kb = head(
             bin_breaks,
@@ -594,13 +593,17 @@ cs_idx <- cs_res[
     )
 ]
 
+tss_selection <- select_tss_disagreement(
+  cs_idx, plot_limit_kb = tss_plot_limit_kb, bin_width_kb = tss_bin_width_kb)
+tss_cs <- as.data.table(tss_selection$selected)
+
 tss_distance_summary <- summarize_tss_distribution(
-  x = cs_idx,
+  x = tss_cs,
   plot_limit_kb = tss_plot_limit_kb,
   bin_width_kb = tss_bin_width_kb
 )
 
-finite_tss_distance <- cs_idx[
+finite_tss_distance <- tss_cs[
   is.finite(distance_to_tss_kb),
   distance_to_tss_kb
 ]
@@ -641,7 +644,7 @@ cat(
   "\n"
 )
 cat(
-  "CS rows with finite TSS distance:",
+  "Disagreeing CS rows with finite TSS distance:",
   length(finite_tss_distance),
   "\n\n"
 )
@@ -1736,7 +1739,7 @@ tissue_tss_distance_summary <- rbindlist(
     function(tissue_name) {
 
       tissue_tss <- summarize_tss_distribution(
-        x = cs_idx[
+        x = tss_cs[
           tissue == tissue_name
         ],
         plot_limit_kb = tss_plot_limit_kb,
@@ -2225,7 +2228,7 @@ plot_tissue_coding_patterns <- function(
 plot_tss_distribution <- function(
     x,
     plot_limit_kb,
-    main_title = "CS lead SNPs around the TSS",
+    main_title = "TSS distance for disagreeing CS leads",
     compact = FALSE) {
 
   model_levels <- c(
@@ -2251,7 +2254,7 @@ plot_tss_distribution <- function(
     text(
       0.5,
       0.5,
-      "No finite CS-to-TSS distances"
+      "No disagreeing CS leads with finite TSS distance"
     )
     return(invisible(NULL))
   }
@@ -2291,7 +2294,7 @@ plot_tss_distribution <- function(
     xaxt = "n",
     bty = "l",
     xlab = "Distance to TSS (kb)",
-    ylab = "Proportion of credible sets",
+    ylab = "Proportion of disagreeing CSs",
     main = main_title,
     cex.main = if (compact) 0.85 else 1,
     cex.lab = if (compact) 0.8 else 1,
@@ -2403,7 +2406,7 @@ plot_tissue_specific_page <- function(
       plot_limit_kb = plot_limit_kb,
       main_title = paste0(
         tissue_name,
-        ": CS lead SNPs around the TSS"
+        ": TSS distance for disagreeing CS leads"
       ),
       compact = TRUE
     )
@@ -2884,10 +2887,7 @@ plot_tissue_additive_proportion(
 # Save descriptive results
 # ============================================================
 
-output_dir <- paste0(
-  "/project2/mstephens/wdenault/susie_mix/",
-  "descriptive_results/"
-)
+output_dir <- file.path(project_dir, "descriptive_results")
 
 dir.create(
   output_dir,
@@ -3060,6 +3060,8 @@ fwrite(
     "tss_distance_distribution.csv"
   )
 )
+fwrite(tss_selection$audit, file.path(output_dir, "tss_cs_agreement_audit.csv"))
+fwrite(tss_selection$summary, file.path(output_dir, "tss_cs_selection_summary.csv"))
 
 fwrite(
   tissue_coding_pattern_summary[

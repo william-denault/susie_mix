@@ -103,3 +103,14 @@ for (coding in c("dominant", "recessive")) {
 }
 stopifnot(grDevices::dev.cur() == 1L)
 cat("One-CS lead-distance overview tests passed.\n")
+# EM overviews label the current largest shifts in both coding classes.
+for (coding in c("dominant", "recessive")) {
+  auto_fixture <- fixture
+  auto_fixture$lead_coding <- coding
+  automatic <- plot_one_cs_lead_distance_overview(
+    auto_fixture, coding, file.path(output_dir, paste0("em_", coding, ".png")),
+    title_prefix = "EM 12 | ", annotation_mode = "largest_shifts")
+  stopifnot(nrow(automatic$top_cases) == 20L, nrow(automatic$annotated_cases) == 6L,
+            setequal(automatic$annotated_cases$gene, sprintf("Gene%02d", 20:25)))
+}
+cat("EM overview annotation tests passed.\n")
