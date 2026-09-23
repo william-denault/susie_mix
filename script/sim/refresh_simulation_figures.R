@@ -1,4 +1,5 @@
-# Redraw the current saved analysis without recomputing ROC/CS summaries.
+# Redraw the current saved analysis, recomputing analytic CIs from compact counts.
+# Old compact counts without CS-size sums of squares are rebuilt once.
 # A first calibration run reads the original checkpoints for exact PIP means;
 # subsequent redraws reuse its compact bin counts.
 local({

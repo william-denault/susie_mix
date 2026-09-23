@@ -5,9 +5,11 @@ Run `source("script/sim/plot_simulations.R")` from R at the project root, or use
 The script reads `simulation results/slide_v1/chunks` and writes to `simulation results/slide_v1/figures`. It never refits models. See [README_simulations.md](README_simulations.md) for the generating design and cluster commands.
 
 To redraw an existing analysis after changing figure settings, use
-`source("script/sim/refresh_simulation_figures.R")`. This reuses the saved CS/ROC
-summaries. The first refresh of older summaries reads the checkpoints once to
-calculate exact PIP calibration bin totals; later refreshes reuse those totals.
+`source("script/sim/refresh_simulation_figures.R")`. This reuses the saved compact
+CS counts and ROC tables, and recomputes analytic confidence intervals each
+time. Older compact counts without CS-size sums of squares are rebuilt once
+from the checkpoints. Calibration bin totals are also cached after their
+first calculation. Later refreshes reuse these saved quantities.
 Use the full `plot_simulations.R` after adding results or changing inclusion
 settings, so all summaries use the new selection.
 
@@ -25,7 +27,7 @@ Effect order is additive, recessive, dominant, partial recessive, partial domina
 
 Each figure is saved as PDF and PNG by default:
 
-- `coverage_<group>`, `purity_<group>`, `power_<group>`, `cs_size_<group>`: points and 95% bootstrap intervals against the number of causal SNPs.
+- `coverage_<group>`, `purity_<group>`, `power_<group>`, `cs_size_<group>`: points and 95% analytic normal intervals against the number of causal SNPs.
 - `roc_<group>_L<K>` and `power_fdr_<group>_L<K>`: three method curves at a fixed true causal count.
 - `roc_<group>_all_L` and `power_fdr_<group>_all_L`: all applicable causal counts pooled into one curve per method. Set `write_roc_all_L <- FALSE` to omit.
 - Optional `roc_<group>_by_L.pdf` and `power_fdr_<group>_by_L.pdf`: multipage collections when `write_roc_pages <- TRUE`.
@@ -71,11 +73,40 @@ Pooling sums counts before calculating ratios, including pooled-K curves. Larger
 
 ## Intervals and paired comparisons
 
-The bootstrap resamples **simulation seeds**, carrying all their methods, configurations and PVE values together. Defaults are 1,000 resamples and 95% percentile intervals. Every resample recomputes pooled ratios. The reader and summary code require identical replicate identities for all selected methods.
+No bootstrap is used. Point estimates still pool the same counts. By default,
+`interval_level = 0.95`, with `z = qnorm((1 + interval_level)/2)` (about 1.96).
+
+- **Coverage:** `SE = sqrt(p * (1-p) / n)`, where `p = covered_cs / n_cs`
+  and `n` is the total number of reported credible sets.
+- **Power:** the same formula, where `p = recovered / n_causal` and `n` is
+  the total number of true causal SNPs across included replicates.
+- **Purity:** the same requested formula, where `p = purity_sum / n_cs`
+  and `n` is the total number of reported credible sets. Purity is continuous,
+  so `p(1-p)` is an approximation here, not its empirical sample variance.
+- **CS size:** Gaussian interval `mean +/- z * s / sqrt(n_cs)`, where `s`
+  is the sample SD of individual credible-set sizes. It is computed exactly
+  from saved size sums and sums of squared sizes, using divisor `n_cs - 1`.
+  This preserves the pooled CS mean, rather than averaging replicate means.
+
+Bounds are `estimate +/- z * SE`, restricted to 0-1 for coverage, power and
+purity, and to a nonnegative lower bound for CS size. Zero reported sets give
+undefined coverage, purity and size; fewer than two reported sets give no
+CS-size interval. The proportion formula gives zero-width intervals at p=0
+or p=1. The plot's y-axis may further clip these bounds. These marginal bars
+use the requested event-count formulas and do not adjust for shared seeds
+or dependence among credible sets. `proportion_ci_n = "denominator"` is the
+default; `"replicates"` is an optional alternative for the three bounded metrics.
 
 `method_comparison.csv` reports all three paired contrasts: SuSiE-mix minus SuSiE, SuSiE-slide minus SuSiE, and SuSiE-slide minus SuSiE-mix. The `method` and `reference` columns specify subtraction direction. Positive CS-size differences mean larger sets, not improved resolution. Overlapping marginal intervals are not a paired comparison.
 
-Intervals describe Monte Carlo uncertainty within this design. Fewer than two seed blocks gives unavailable bounds. Undefined bootstrap ratios are omitted for that metric and valid draw counts are saved. At boundaries intervals can collapse. ROC and power–FDR figures have no uncertainty bands.
+The separate paired contrasts use Gaussian delta-method intervals with seed
+blocks, retaining covariance between methods without resampling. For method
+m, seed s, pooled ratio q_m, numerator A_ms and denominator B_ms, define
+`g_ms = (A_ms - q_m * B_ms) / sum_s(B_ms)`. The SE for a contrast is
+`sqrt(S/(S-1) * sum_s((g_2s - g_1s)^2))`. Fewer than two seed blocks gives
+unavailable contrast bounds. The reader and summary code require identical
+replicate identities for all selected methods. ROC and power-FDR figures
+have no uncertainty bands; calibration keeps its empirical-SE bars below.
 
 ## PIP calibration
 
@@ -112,9 +143,12 @@ Larger advertised checkpoints are preferred; repeated configuration/seed pairs a
 
 - `file_audit.csv`: saved, examined, included, duplicate, error and convergence counts.
 - `configuration_counts.csv`: included replicates per exact allocation/PVE/method.
-- `metric_summary.csv`: pooled metrics, interval bounds and contributing counts.
-- `method_comparison.csv`: paired method-minus-reference differences and intervals.
-- `replicate_metrics.rds`: per-replicate compact metric counts.
+- `metric_summary.csv`: pooled metrics, analytic SEs, interval bounds and
+  the denominator used for each SE (`coverage_n`, `power_n`, `purity_n`, `cs_size_n`).
+- `method_comparison.csv`: paired method-minus-reference differences,
+  analytic SEs and Gaussian intervals across seed blocks.
+- `replicate_metrics.rds`: per-replicate compact metric counts, including
+  `cs_size_sum_sq` for Gaussian CS-size intervals.
 - `roc_counts.rds` and `roc_counts_all_L.rds`: threshold counts/rates by K and pooled K.
 - `pip_calibration.csv` and `pip_calibration_all_L.csv`: bin counts, causal
   counts, PIP sums/means, observed frequencies, empirical SEs and error bars.
@@ -124,6 +158,8 @@ Larger advertised checkpoints are preferred; repeated configuration/seed pairs a
 Run `Rscript script/sim/tests/test_plot_calibration.R` for base-R checks of
 bin boundaries, pooled means/frequencies, seed-level uncertainty and panel
 limits shared across each figure; this does not fit models.
+Run `Rscript script/sim/tests/test_metric_intervals.R` for hand-calculated
+normal/Gaussian interval checks, edge cases and analytic paired contrasts.
 
 For a small preview, set `max_reps_per_file <- 5`, use another output directory and optionally disable PNG output. Restore `Inf` for final figures. `tests/test_slide_simulation.R` validates all 25 families and exports representative figures to `tmp/slide_simulation_validation/figures`.
 

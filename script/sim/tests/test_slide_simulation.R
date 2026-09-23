@@ -198,7 +198,7 @@ save(list = c("results", "checkpoint_settings"), envir = saved, file = checkpoin
 script <- parse("script/sim/plot_simulations.R")
 preview <- file.path(validation, "figures")
 overrides <- list(project_dir = root, chunk_dir = chunks, output_dir = preview,
-                  bootstrap_reps = 50, write_png = FALSE)
+                  write_png = FALSE)
 e <- new.env()
 for (expression in script) {
   if (is.call(expression) && identical(expression[[1]], as.name("<-")) && is.symbol(expression[[2]])) {
@@ -210,6 +210,7 @@ for (expression in script) {
   if (is.call(expression) && identical(expression[[1]], as.name("for")) &&
       identical(expression[[2]], as.name("metric"))) next
   if (is.call(expression) && identical(expression[[1]], as.name("save_roc_figures"))) next
+  if (is.call(expression) && identical(expression[[1]], as.name("save_calibration_figures"))) next
   eval(expression, e)
 }
 stopifnot(sum(e$audit$included) == length(fitted), nrow(e$replicates) == 3L * length(fitted),
@@ -227,20 +228,21 @@ e$save_figure("power", e$scenario_groups$triples_2, "review_power_triples")
 # must have the same point and interval even when configurations are repeated.
 toy <- data.frame(scenario = "test", pve = .05, K = 5, configuration = "one", seed = 1:20,
                    method = "SuSiE", n_cs = 1, covered_cs = rep(0:1, 10),
-                   purity_sum = .8, cs_size_sum = 2, recovered = rep(0:1, 10), n_causal = 5)
+                   purity_sum = .8, cs_size_sum = 2, cs_size_sum_sq = 4,
+                   recovered = rep(0:1, 10), n_causal = 5)
 mix <- slide <- toy
 mix$method <- "SuSiE-mix"; mix$recovered <- toy$recovered + 1
 slide$method <- "SuSiE-slide"; slide$recovered <- toy$recovered + 2
 paired <- rbind(toy, mix, slide)
 duplicated_config <- paired; duplicated_config$configuration <- "two"
-a <- e$summarize_metrics(paired, B = 100, seed = 42)
-b <- e$summarize_metrics(rbind(paired, duplicated_config), B = 100, seed = 42)
+a <- e$summarize_metrics(paired)
+b <- e$summarize_metrics(rbind(paired, duplicated_config))
 contrasts <- a$differences[a$differences$metric == "power", ]
 stopifnot(isTRUE(all.equal(contrasts$difference, c(.2, .4, .2))),
           max(abs(contrasts$lower - contrasts$difference)) < 1e-12,
           max(abs(contrasts$upper - contrasts$difference)) < 1e-12,
           isTRUE(all.equal(a$differences, b$differences)))
-expect_error(e$summarize_metrics(paired[-1, ], B = 20), "same replicates")
+expect_error(e$summarize_metrics(paired[-1, ]), "same replicates")
 empty <- e$cs_summary(list(cs = NULL, purity = NULL), list(), c(1, 2))
 stopifnot(empty["n_cs"] == 0, empty["recovered"] == 0, empty["n_causal"] == 2)
 t <- c(0, .1, .5, .9, 1)

@@ -9,6 +9,7 @@ project_dir <- Sys.getenv("SUSIE_MIX_PROJECT_DIR",
                          "C:/Document/Serieux/Travail/Data_analysis_and_papers/susie_mix")
 source(file.path(project_dir, "script/sim/simulation_design.R"), local = TRUE)
 source(file.path(project_dir, "script/sim/simulation_plot_helpers.R"), local = TRUE)
+source(file.path(project_dir, "script/sim/simulation_metric_helpers.R"), local = TRUE)
 chunk_dir <- file.path(project_dir, "simulation results/slide_v1/chunks")
 output_dir <- file.path(project_dir, "simulation results/slide_v1/figures")
 reuse_saved_summaries <- isTRUE(getOption("susie.sim.reuse_saved_summaries", FALSE))
@@ -19,8 +20,8 @@ fit_L <- 10                   # SuSiE's fitted upper bound, NOT the true count.
 target_coverage <- 0.95
 exclude_nonconverged <- FALSE # TRUE excludes a replicate if ANY fit did not converge.
 interval_level <- 0.95
-bootstrap_reps <- 1000        # Resample whole seeds, keeping methods/configurations paired.
-bootstrap_seed <- 20260910
+proportion_ci_n <- "denominator" # n_cs for coverage/purity; n_causal for power.
+                                # Set "replicates" to use the simulation count instead.
 
 file_pattern <- "\\.RData$"
 max_reps_per_file <- Inf      # For a quick preview, change this to e.g. 5.
@@ -78,104 +79,6 @@ pip_counts <- function(pip, truth, thresholds = pip_thresholds) {
   cbind(tp = c(tp, 0), fp = c(fp, 0)) # Final row is threshold = Inf.
 }
 
-cs_summary <- function(sets, cs_snps, truth) {
-  n_cs <- length(cs_snps)
-  if (length(sets$cs) != n_cs) stop("Saved CS mapping has the wrong length.")
-  hit <- vapply(cs_snps, function(cs) any(cs %in% truth), logical(1))
-  purity <- sets$purity$min.abs.corr
-  if (n_cs && (length(purity) != n_cs || any(!is.finite(purity)))) {
-    stop("Missing or invalid minimum-correlation purity for a reported CS.")
-  }
-  c(n_cs = n_cs, covered_cs = sum(hit), purity_sum = sum(purity),
-    cs_size_sum = sum(vapply(cs_snps, function(cs) length(unique(cs)), integer(1))),
-    recovered = sum(unique(truth) %in% unlist(cs_snps, use.names = FALSE)),
-    n_causal = length(unique(truth)))
-}
-
-# Pool the same counts as before, and bootstrap independent seed blocks.
-# One seed is reused across methods, causal allocations and PVE values in jobs.
-# We therefore use ONE shared matrix of bootstrap weights for every comparison.
-summarize_metrics <- function(replicates, B = bootstrap_reps,
-                              level = interval_level, seed = bootstrap_seed,
-                              methods = method_names) {
-  stopifnot(B >= 2, B == as.integer(B), level > 0, level < 1)
-  group_vars <- c("scenario", "pve", "K", "method")
-  cell_vars <- c("scenario", "pve", "K")
-  numerators <- c(coverage = "covered_cs", purity = "purity_sum", power = "recovered")
-  denominators <- c(coverage = "n_cs", purity = "n_cs", power = "n_causal")
-  # Older compact summaries can still supply the other three metrics.
-  if ("cs_size_sum" %in% names(replicates)) {
-    numerators <- c(numerators, cs_size = "cs_size_sum")
-    denominators <- c(denominators, cs_size = "n_cs")
-  }
-  count_vars <- unique(c(unname(numerators), unname(denominators)))
-  seeds <- sort(unique(replicates$seed))
-  set.seed(seed)
-  weights <- rmultinom(B, size = length(seeds), prob = rep(1, length(seeds)))
-  ratio <- function(a, b) ifelse(b > 0, a / b, NA_real_)
-  interval <- function(x, n_blocks) {
-    x <- x[is.finite(x)]
-    if (n_blocks < 2 || length(x) < 2) return(c(NA_real_, NA_real_))
-    unname(quantile(x, c((1 - level) / 2, (1 + level) / 2)))
-  }
-  groups <- split(seq_len(nrow(replicates)),
-                  interaction(replicates[cell_vars], drop = TRUE, sep = "|"))
-  summary_rows <- list()
-  difference_rows <- list()
-  for (ids in groups) {
-    cell <- replicates[ids, , drop = FALSE]
-    draws <- estimates <- list()
-    reference_keys <- NULL
-    for (method in methods) {
-      d <- cell[cell$method == method, , drop = FALSE]
-      if (!nrow(d)) stop("All selected methods are required for paired intervals.")
-      keys <- sort(paste(d$configuration, d$seed, sep = "|"))
-      if (anyDuplicated(keys)) stop("Duplicate configuration/seed within a method.")
-      if (is.null(reference_keys)) reference_keys <- keys
-      if (!identical(keys, reference_keys)) stop("Methods must use the same replicates for paired intervals.")
-      totals_by_seed <- rowsum(as.matrix(d[count_vars]), group = d$seed)
-      totals <- matrix(0, nrow = length(seeds), ncol = length(count_vars),
-                       dimnames = list(NULL, count_vars))
-      totals[match(rownames(totals_by_seed), as.character(seeds)), ] <- totals_by_seed
-      boot <- crossprod(weights, totals)
-      point <- colSums(totals)
-      n_blocks <- length(unique(d$seed))
-      row <- data.frame(d[1, group_vars, drop = FALSE], as.list(point),
-                         n_replicates = nrow(d), n_configurations = length(unique(d$configuration)),
-                         n_seed_blocks = n_blocks, row.names = NULL)
-      draws[[method]] <- list()
-      estimates[[method]] <- numeric()
-      for (metric in names(numerators)) {
-        a <- numerators[[metric]]
-        b <- denominators[[metric]]
-        estimate <- ratio(point[a], point[b])
-        values <- ratio(boot[, a], boot[, b])
-        bounds <- interval(values, n_blocks)
-        row[[metric]] <- unname(estimate)
-        row[[paste0(metric, "_lo")]] <- bounds[1]
-        row[[paste0(metric, "_hi")]] <- bounds[2]
-        row[[paste0(metric, "_n_boot")]] <- sum(is.finite(values))
-        draws[[method]][[metric]] <- values
-        estimates[[method]][metric] <- estimate
-      }
-      summary_rows[[length(summary_rows) + 1L]] <- row
-    }
-    # Paired differences answer whether the methods differ; overlap of their
-    # separate marginal intervals is not a test of their difference.
-    for (pair in combn(methods, 2L, simplify = FALSE)) for (metric in names(numerators)) {
-      delta <- draws[[pair[2]]][[metric]] - draws[[pair[1]]][[metric]]
-      bounds <- interval(delta, length(unique(cell$seed)))
-      difference_rows[[length(difference_rows) + 1L]] <- data.frame(
-        cell[1, cell_vars, drop = FALSE], metric = metric,
-        reference = pair[1], method = pair[2],
-        difference = unname(estimates[[pair[2]]][metric] - estimates[[pair[1]]][metric]),
-        lower = bounds[1], upper = bounds[2], n_boot = sum(is.finite(delta)), row.names = NULL
-      )
-    }
-  }
-  list(summary = do.call(rbind, summary_rows), differences = do.call(rbind, difference_rows))
-}
-
 # This is pooled empirical FDP (often labelled empirical FDR in power-FDR plots),
 # not FPR and not the unweighted mean of each replicate's FDP.
 add_fdr <- function(counts) {
@@ -208,6 +111,13 @@ pool_curve_counts <- function(counts) {
 # ------------------------------------------------------------
 
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+if (reuse_saved_summaries) {
+  replicates <- readRDS(file.path(output_dir, "replicate_metrics.rds"))
+  if (!"cs_size_sum_sq" %in% names(replicates)) {
+    cat("Older summaries lack CS-size sums of squares; rebuilding them once from checkpoints for Gaussian intervals.\n")
+    reuse_saved_summaries <- FALSE
+  }
+}
 if (!reuse_saved_summaries) {
 files <- list.files(chunk_dir, pattern = file_pattern, full.names = TRUE)
 if (!length(files)) stop("No matching .RData files found in: ", chunk_dir)
@@ -362,14 +272,10 @@ replicates <- do.call(rbind, replicate_rows)
 rm(replicate_rows, seen)
 
 # ------------------------------------------------------------
-# Pool counts and calculate seed-block bootstrap intervals
+# Save compact counts for analytic intervals and later redraws
 # ------------------------------------------------------------
 
 group_vars <- c("scenario", "pve", "K", "method")
-cat("Calculating", bootstrap_reps, "paired seed-block bootstrap draws...\n")
-metric_analysis <- summarize_metrics(replicates)
-summary_table <- metric_analysis$summary
-write.csv(metric_analysis$differences, file.path(output_dir, "method_comparison.csv"), row.names = FALSE)
 
 # Every causal allocation at a given total K is pooled. If jobs are incomplete,
 # allocations with more completed replicates contribute more observations.
@@ -377,7 +283,6 @@ write.csv(metric_analysis$differences, file.path(output_dir, "method_comparison.
 configuration_counts <- aggregate(list(n_replicates = replicates$seed),
                                   replicates[c(group_vars, "configuration")], length)
 write.csv(configuration_counts, file.path(output_dir, "configuration_counts.csv"), row.names = FALSE)
-write.csv(summary_table, file.path(output_dir, "metric_summary.csv"), row.names = FALSE)
 saveRDS(replicates, file.path(output_dir, "replicate_metrics.rds"))
 
 curve_rows <- lapply(names(curve_counts), function(key) {
@@ -406,13 +311,17 @@ rm(calibration_state)
 } else {
   cat("Refreshing figures from saved summaries; no models are fitted.\n")
   audit <- read.csv(file.path(output_dir, "file_audit.csv"), stringsAsFactors = FALSE)
-  summary_table <- read.csv(file.path(output_dir, "metric_summary.csv"), stringsAsFactors = FALSE)
-  replicates <- readRDS(file.path(output_dir, "replicate_metrics.rds"))
   roc_table <- readRDS(file.path(output_dir, "roc_counts.rds"))
   pooled_roc_table <- readRDS(file.path(output_dir, "roc_counts_all_L.rds"))
   calibration_groups <- collect_calibration(file.path(chunk_dir, audit$file), replicates,
     method_names, file.path(output_dir, "pip_calibration_seed_counts.rds"))
 }
+cat("Calculating", round(100 * interval_level), "% analytic normal intervals (no bootstrap)...\n")
+metric_analysis <- summarize_metrics(replicates, level = interval_level,
+  methods = method_names, proportion_n = proportion_ci_n)
+summary_table <- metric_analysis$summary
+write.csv(summary_table, file.path(output_dir, "metric_summary.csv"), row.names = FALSE)
+write.csv(metric_analysis$differences, file.path(output_dir, "method_comparison.csv"), row.names = FALSE)
 calibration_table <- calibration_summary(calibration_groups)
 pooled_calibration_table <- calibration_summary(calibration_groups, pool_K = TRUE)
 write.csv(calibration_table, file.path(output_dir, "pip_calibration.csv"), row.names = FALSE)
@@ -490,19 +399,21 @@ draw_figure <- function(metric, scenarios, only_K = NULL, y_limits = NULL,
         if (is_calibration) {
           dm <- dm[order(dm$bin), ]
           ok <- is.finite(dm$lower) & is.finite(dm$upper) & is.finite(dm$mean_pip)
-          segments(dm$mean_pip[ok], dm$lower[ok], dm$mean_pip[ok], dm$upper[ok],
-                   col = adjustcolor(method_colors[m], alpha.f = .6))
-          points(dm$mean_pip, dm$frequency, pch = c(16, 17, 15)[m], cex = .75,
-                 col = method_colors[m], xpd = NA)
+          if (any(ok)) segments(dm$mean_pip[ok], dm$lower[ok], dm$mean_pip[ok], dm$upper[ok],
+                               col = adjustcolor(method_colors[m], alpha.f = .6))
+          shown <- is.finite(dm$mean_pip) & is.finite(dm$frequency)
+          if (any(shown)) points(dm$mean_pip[shown], dm$frequency[shown],
+                                 pch = c(16, 17, 15)[m], cex = .75,
+                                 col = method_colors[m], xpd = NA)
         } else if (is_curve) {
           # The all-L table already pools the underlying TP/FP counts.
           # FDR need not increase monotonically: preserve threshold order,
           # rather than sorting FDR or reporting an optimized envelope.
           dm <- dm[order(dm$threshold, decreasing = TRUE), ]
           seg <- visible_curve_segments(if (is_fdr) dm$fdr else dm$fpr, dm$tpr, xlim)
-          segments(seg[, "x0"], pmax(ylim[1], pmin(ylim[2], seg[, "y0"])),
-                   seg[, "x1"], pmax(ylim[1], pmin(ylim[2], seg[, "y1"])),
-                   col = method_colors[m], lty = 1, lwd = 1.5)
+          if (nrow(seg)) segments(seg[, "x0"], pmax(ylim[1], pmin(ylim[2], seg[, "y0"])),
+                                 seg[, "x1"], pmax(ylim[1], pmin(ylim[2], seg[, "y1"])),
+                                 col = method_colors[m], lty = 1, lwd = 1.5)
         } else {
           xpos <- dm$K + seq(-.12, .12, length.out = length(method_names))[m]
           lo <- dm[[paste0(metric, "_lo")]]
@@ -512,16 +423,15 @@ draw_figure <- function(metric, scenarios, only_K = NULL, y_limits = NULL,
             bar_color <- adjustcolor(method_colors[m], alpha.f = .65)
             # Clip explicitly: some Windows raster devices mishandle a segment
             # outside the plot followed by symbols drawn on the boundary.
-            segments(xpos[ok], pmax(lo[ok], ylim[1]), xpos[ok], pmin(hi[ok], ylim[2]), col = bar_color)
+            if (any(ok)) segments(xpos[ok], pmax(lo[ok], ylim[1]), xpos[ok], pmin(hi[ok], ylim[2]), col = bar_color)
             lo_inside <- ok & lo >= ylim[1] & lo <= ylim[2]
             hi_inside <- ok & hi >= ylim[1] & hi <= ylim[2]
-            segments(xpos[lo_inside] - .035, lo[lo_inside], xpos[lo_inside] + .035, lo[lo_inside], col = bar_color)
-            segments(xpos[hi_inside] - .035, hi[hi_inside], xpos[hi_inside] + .035, hi[hi_inside], col = bar_color)
+            if (any(lo_inside)) segments(xpos[lo_inside] - .035, lo[lo_inside], xpos[lo_inside] + .035, lo[lo_inside], col = bar_color)
+            if (any(hi_inside)) segments(xpos[hi_inside] - .035, hi[hi_inside], xpos[hi_inside] + .035, hi[hi_inside], col = bar_color)
           }
           shown <- is.finite(dm[[metric]]) & dm[[metric]] >= ylim[1] & dm[[metric]] <= ylim[2]
-          points(xpos[shown], dm[[metric]][shown],
-                 pch = 16, cex = 0.95, col = method_colors[m],
-                 xpd = NA)
+          if (any(shown)) points(xpos[shown], dm[[metric]][shown],
+                                 pch = 16, cex = 0.95, col = method_colors[m], xpd = NA)
         }
       }
     }
@@ -562,7 +472,11 @@ draw_figure <- function(metric, scenarios, only_K = NULL, y_limits = NULL,
   if (is_calibration) {
     text(.5, .015, "Ten equal-width PIP bins; error bars: +/-2 empirical SE across seed blocks", cex = .85)
   } else if (!is_curve && paste0(metric, "_lo") %in% names(summary_table)) {
-    text(.5, .015, paste0(round(100 * interval_level), "% seed-block bootstrap intervals",
+    text(.5, .015, paste0(round(100 * interval_level),
+      if (metric == "cs_size") "% Gaussian CI: mean +/- z * SD/sqrt(n CS)" else
+        paste0("% normal CI: p +/- z * sqrt(p(1-p)/n); n = ",
+          if (proportion_ci_n == "replicates") "simulation replicates" else
+            if (metric == "power") "true causal SNPs" else "reported CS"),
       if (metric != "power") "; intervals may be clipped by shared y-axis limits" else ""), cex = .85)
   }
 }
