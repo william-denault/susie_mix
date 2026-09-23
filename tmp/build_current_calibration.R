@@ -1,0 +1,13 @@
+root <- normalizePath('.', winslash = '/')
+source(file.path(root, 'script/sim/simulation_design.R'))
+source(file.path(root, 'script/sim/simulation_plot_helpers.R'))
+out <- file.path(root, 'simulation results/slide_v1/figures')
+audit <- read.csv(file.path(out, 'file_audit.csv'), stringsAsFactors = FALSE)
+replicates <- readRDS(file.path(out, 'replicate_metrics.rds'))
+methods <- c('SuSiE', 'SuSiE-mix', 'SuSiE-slide')
+files <- file.path(root, 'simulation results/slide_v1/chunks', audit$file)
+groups <- collect_calibration(files, replicates, methods,
+  file.path(out, 'pip_calibration_seed_counts.rds'))
+write.csv(calibration_summary(groups), file.path(out, 'pip_calibration.csv'), row.names = FALSE)
+write.csv(calibration_summary(groups, pool_K = TRUE), file.path(out, 'pip_calibration_all_L.csv'), row.names = FALSE)
+cat('Calibration extraction complete.\n')
