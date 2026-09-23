@@ -422,7 +422,21 @@ write.csv(pooled_calibration_table, file.path(output_dir, "pip_calibration_all_L
 # Draw the panels in the style of the supplementary figures
 # ------------------------------------------------------------
 
-draw_figure <- function(metric, scenarios, only_K = NULL) {
+figure_data <- function(metric, scenarios, only_K = NULL, methods = method_names) {
+  d <- if (metric == "pip_calibration" && is.null(only_K)) pooled_calibration_table else
+    if (metric == "pip_calibration") calibration_table else
+    if (metric %in% c("roc", "power_fdr") && is.null(only_K)) pooled_roc_table else
+    if (metric %in% c("roc", "power_fdr")) roc_table else summary_table
+  d <- d[d$scenario %in% scenarios & d$pve %in% pve_values &
+           d$method %in% methods, , drop = FALSE]
+  if (!is.null(only_K)) d <- d[d$K %in% only_K, , drop = FALSE]
+  d
+}
+
+draw_figure <- function(metric, scenarios, only_K = NULL, y_limits = NULL,
+                        methods = method_names) {
+  method_ids <- match(methods, method_names)
+  stopifnot(length(method_ids) > 0, !anyNA(method_ids))
   nr <- length(scenarios)
   nc <- length(pve_values)
   panels <- matrix(seq_len(nr * nc), nrow = nr, byrow = TRUE)
@@ -434,16 +448,15 @@ draw_figure <- function(metric, scenarios, only_K = NULL) {
   is_calibration <- metric == "pip_calibration"
   is_curve <- is_roc || is_fdr
   is_pip <- is_curve || is_calibration
+  d_figure <- figure_data(metric, scenarios, only_K, methods)
+  # Every panel in this output shares the range of all displayed estimates.
+  ylim <- if (is.null(y_limits)) figure_y_limits(metric, d_figure, c(0, fdr_max)) else y_limits
+  yticks <- if (metric %in% c("power", "roc", "pip_calibration")) seq(0, 1, .25) else panel_y_ticks(ylim)
 
   for (i in seq_along(scenarios)) {
     min_K <- length(strsplit(scenarios[i], " + ", fixed = TRUE)[[1L]])
     for (j in seq_along(pve_values)) {
-      d <- if (is_calibration && is.null(only_K)) pooled_calibration_table else
-        if (is_calibration) calibration_table else
-        if (is_curve && is.null(only_K)) pooled_roc_table else
-        if (is_curve) roc_table else summary_table
-      d <- d[d$scenario == scenarios[i] & d$pve == pve_values[j], , drop = FALSE]
-      if (!is.null(only_K)) d <- d[d$K == only_K, , drop = FALSE]
+      d <- d_figure[d_figure$scenario == scenarios[i] & d_figure$pve == pve_values[j], , drop = FALSE]
       if (is_calibration) {
         xlim <- c(0, 1)
         xticks <- seq(0, 1, .25)
@@ -455,8 +468,6 @@ draw_figure <- function(metric, scenarios, only_K = NULL) {
         xlim <- c(min_K - 0.35, 5.35)
         xticks <- min_K:5
       }
-      ylim <- panel_y_limits(metric, d, xlim)
-      yticks <- if (metric %in% c("power", "roc", "pip_calibration")) seq(0, 1, .25) else panel_y_ticks(ylim)
       plot(NA, xlim = xlim, ylim = ylim, xaxs = "i", yaxs = "i",
            axes = FALSE, xlab = "", ylab = "")
       abline(v = xticks, h = yticks, col = "#DEDEDE", lwd = 0.8)
@@ -472,7 +483,7 @@ draw_figure <- function(metric, scenarios, only_K = NULL) {
         text(mean(xlim), mean(ylim), label, col = "#777777", cex = .8)
         next
       }
-      for (m in seq_along(method_names)) {
+      for (m in method_ids) {
         dm <- d[d$method == method_names[m], , drop = FALSE]
         if (is_calibration) {
           dm <- dm[order(dm$bin), ]
@@ -486,8 +497,10 @@ draw_figure <- function(metric, scenarios, only_K = NULL) {
           # FDR need not increase monotonically: preserve threshold order,
           # rather than sorting FDR or reporting an optimized envelope.
           dm <- dm[order(dm$threshold, decreasing = TRUE), ]
-          lines(if (is_fdr) dm$fdr else dm$fpr, dm$tpr, col = method_colors[m],
-                lty = 1, lwd = 1.5)
+          seg <- visible_curve_segments(if (is_fdr) dm$fdr else dm$fpr, dm$tpr, xlim)
+          segments(seg[, "x0"], pmax(ylim[1], pmin(ylim[2], seg[, "y0"])),
+                   seg[, "x1"], pmax(ylim[1], pmin(ylim[2], seg[, "y1"])),
+                   col = method_colors[m], lty = 1, lwd = 1.5)
         } else {
           xpos <- dm$K + seq(-.12, .12, length.out = length(method_names))[m]
           lo <- dm[[paste0(metric, "_lo")]]
@@ -526,6 +539,7 @@ draw_figure <- function(metric, scenarios, only_K = NULL) {
   if (!is.null(only_K)) title_text <- paste0(title_text, "  |  L = ", only_K, " causal SNP",
                                           if (only_K == 1) "" else "s")
   if (is_pip && is.null(only_K)) title_text <- paste0(title_text, "  |  All L pooled")
+  if (length(methods) == 1L) title_text <- paste0(title_text, "  |  ", methods)
   mtext(title_text, side = 3, outer = TRUE, line = 1.2, font = 2, cex = 1.1)
   mtext(if (is_calibration) "Mean PIP within bin" else if (is_fdr) "Empirical FDR" else if (is_roc) "False positive rate" else "Number of causal SNPs",
         side = 1, outer = TRUE, line = 0.5)
@@ -539,27 +553,27 @@ draw_figure <- function(metric, scenarios, only_K = NULL) {
   par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE)
   plot.new()
   plot.window(xlim = c(0, 1), ylim = c(0, 1), xaxs = "i", yaxs = "i")
-  legend(.5, .045, legend = method_names, col = method_colors,
-         pch = if (is_curve) NA else if (is_calibration) c(16, 17, 15) else 16, lty = if (is_curve) 1 else NA,
+  legend(.5, .045, legend = methods, col = method_colors[method_ids],
+         pch = if (is_curve) NA else if (is_calibration) c(16, 17, 15)[method_ids] else 16, lty = if (is_curve) 1 else NA,
          lwd = 1.5, horiz = TRUE, xjust = .5, yjust = .5, bty = "n", cex = .95)
   if (is_calibration) {
     text(.5, .015, "Ten equal-width PIP bins; error bars: +/-2 empirical SE across seed blocks", cex = .85)
   } else if (!is_curve && paste0(metric, "_lo") %in% names(summary_table)) {
     text(.5, .015, paste0(round(100 * interval_level), "% seed-block bootstrap intervals",
-      if (metric != "power") "; intervals may be clipped by panel limits" else ""), cex = .85)
+      if (metric != "power") "; intervals may be clipped by shared y-axis limits" else ""), cex = .85)
   }
 }
 
-save_figure <- function(metric, scenarios, name, only_K = NULL) {
+save_figure <- function(metric, scenarios, name, only_K = NULL, methods = method_names) {
   height <- 2.0 * length(scenarios) + 1.4
   pdf(file.path(output_dir, paste0(name, ".pdf")), width = 16, height = height,
       useDingbats = FALSE)
-  tryCatch(draw_figure(metric, scenarios, only_K), finally = dev.off())
+  tryCatch(draw_figure(metric, scenarios, only_K, methods = methods), finally = dev.off())
   if (write_png) {
     png(file.path(output_dir, paste0(name, ".png")), width = 16, height = height,
         units = "in", res = 180,
         type = if (capabilities("cairo")) "cairo" else getOption("bitmapType"))
-    tryCatch(draw_figure(metric, scenarios, only_K), finally = dev.off())
+    tryCatch(draw_figure(metric, scenarios, only_K, methods = methods), finally = dev.off())
   }
 }
 
@@ -580,15 +594,38 @@ save_roc_figures <- function(metric = "roc") {
       save_figure(metric, scenarios, paste0(metric, "_", group, "_all_L"))
     }
     if (write_roc_pages) {
+      # Also share the range across pages of the optional combined PDF.
+      y_limits <- figure_y_limits(metric, figure_data(metric, scenarios, only_K = ks), c(0, fdr_max))
       pdf(file.path(output_dir, paste0(metric, "_", group, "_by_L.pdf")),
           width = 16, height = 2.0 * length(scenarios) + 1.4, useDingbats = FALSE)
-      tryCatch(for (k in ks) draw_figure(metric, scenarios, only_K = k), finally = dev.off())
+      tryCatch(for (k in ks) draw_figure(metric, scenarios, only_K = k, y_limits = y_limits), finally = dev.off())
     }
   }
 }
 save_roc_figures()
 save_roc_figures("power_fdr")
-save_roc_figures("pip_calibration")
+
+save_calibration_figures <- function() {
+  # Calibration exports always pool all L and show one method per figure.
+  for (group in names(scenario_groups)) {
+    for (method in method_names) {
+      method_suffix <- tolower(gsub("[^[:alnum:]]+", "_", method))
+      save_figure("pip_calibration", scenario_groups[[group]],
+        paste0("pip_calibration_", group, "_all_L_", method_suffix), methods = method)
+    }
+  }
+  # Remove only obsolete generated calibration figures, after all replacements
+  # have been written successfully. Preserve CSV summaries and the RDS cache.
+  obsolete <- list.files(output_dir,
+    pattern = "^pip_calibration_(pure|pairs_[12]|triples_[12])_(L[1-5]|by_L|all_L)\\.(pdf|png)$",
+    full.names = TRUE)
+  if (length(obsolete)) {
+    removed <- file.remove(obsolete)
+    cat("Removed", sum(removed), "obsolete calibration plot files.\n")
+    if (!all(removed)) warning("Some obsolete calibration plots could not be removed; check whether they are open.")
+  }
+}
+save_calibration_figures()
 
 cat("\nFigures and summary tables saved in:", output_dir, "\n")
 cat("Included", sum(audit$included), "unique simulations; skipped",

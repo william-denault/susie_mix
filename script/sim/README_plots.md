@@ -29,20 +29,28 @@ Each figure is saved as PDF and PNG by default:
 - `roc_<group>_L<K>` and `power_fdr_<group>_L<K>`: three method curves at a fixed true causal count.
 - `roc_<group>_all_L` and `power_fdr_<group>_all_L`: all applicable causal counts pooled into one curve per method. Set `write_roc_all_L <- FALSE` to omit.
 - Optional `roc_<group>_by_L.pdf` and `power_fdr_<group>_by_L.pdf`: multipage collections when `write_roc_pages <- TRUE`.
-- `pip_calibration_<group>_all_L` and `pip_calibration_<group>_L<K>`: mean PIP
-  against the fraction of SNPs that are causal, for each method and PVE. The
-  same `write_roc_all_L` and `write_roc_pages` settings control pooled and
-  optional multipage calibration exports.
+- `pip_calibration_<group>_all_L_<method>`: mean PIP against the fraction of
+  SNPs that are causal, with one method per figure and the same scenario/PVE
+  panels. Method suffixes are `susie`, `susie_mix`, and `susie_slide`, retaining
+  their original colors and symbols. Calibration exports only pooled all-L
+  figures (15 PDFs and 15 PNGs by default), independently of the ROC settings.
+  After successful export, the script removes the obsolete L-specific,
+  multipage and combined-method calibration PDF/PNG files from the output
+  directory. Calibration CSV summaries and the RDS cache are retained.
 
-Each scenario/PVE panel has its own labelled y-axis. Coverage and purity run
-from the lowest point estimate to 1, ignoring confidence bounds when choosing
-the limits. CS size runs from 0 to the highest point estimate. Power-FDR runs
-from 0 to the highest curve value within the displayed FDR window, including
-line intersections with the window boundary. Confidence intervals can be
-clipped by these limits. Power, ROC and calibration retain a 0-1 y-axis;
+All scenario/PVE panels in a given PDF/PNG share the same y-axis limits and
+ticks. Coverage and purity run from the lowest point estimate anywhere in
+that figure to 1, ignoring confidence bounds when choosing the limits. CS size
+runs from 0 to the highest point estimate anywhere in that figure. Power-FDR
+runs from 0 to the highest curve value across all panels within the displayed
+FDR window, including line intersections with the window boundary. Only the
+scenarios, PVE values, methods and causal counts displayed in that output
+contribute to its limits. Optional multipage PDFs also share limits across
+their pages. Confidence intervals can be clipped by these limits.
+Power, ROC and calibration retain a 0-1 y-axis;
 calibration also uses a 0-1 x-axis. The 0.95 coverage reference is shown when
-inside the panel. An all-one coverage/purity panel uses 0.95-1 to avoid a
-zero-height plot; empty/all-zero panels use 0-1. Missing cells say "No saved
+inside the panel. An all-one coverage/purity figure uses 0.95-1 to avoid a
+zero-height plot; empty/all-zero figures use 0-1. Missing cells say "No saved
 results". PNGs use Cairo when available to preserve labels on Windows.
 
 ## Metric definitions
@@ -112,7 +120,7 @@ Larger advertised checkpoints are preferred; repeated configuration/seed pairs a
 
 Run `Rscript script/sim/tests/test_plot_calibration.R` for base-R checks of
 bin boundaries, pooled means/frequencies, seed-level uncertainty and panel
-limits; this does not fit models.
+limits shared across each figure; this does not fit models.
 
 For a small preview, set `max_reps_per_file <- 5`, use another output directory and optionally disable PNG output. Restore `Inf` for final figures. `tests/test_slide_simulation.R` validates all 25 families and exports representative figures to `tmp/slide_simulation_validation/figures`.
 

@@ -1256,40 +1256,43 @@ summarize_credible_sets <- function(
     gene,
     tissue,
     result_file,
-    tissue_summary) {
+    tissue_summary,
+    model_inputs = NULL) {
 
-  model_inputs <- list(
-    list(
-      model = "SuSiE",
-      model_key = "susie_add",
-      fit = x$susie_add,
-      predictor_map = x$add_predictor_map,
-      saved_tss_summary = (
-        x$susie_add_lead_snp_tss_distance
-      )
-    ),
-    list(
-      model = "SuSiE-mix",
-      model_key = "susie_mix",
-      fit = x$susie_mix,
-      predictor_map = x$mix_predictor_map,
-      saved_tss_summary = (
-        x$susie_mix_lead_snp_tss_distance
+  if (is.null(model_inputs)) {
+    model_inputs <- list(
+      list(
+        model = "SuSiE",
+        model_key = "susie_add",
+        fit = x$susie_add,
+        predictor_map = x$add_predictor_map,
+        saved_tss_summary = (
+          x$susie_add_lead_snp_tss_distance
+        )
+      ),
+      list(
+        model = "SuSiE-mix",
+        model_key = "susie_mix",
+        fit = x$susie_mix,
+        predictor_map = x$mix_predictor_map,
+        saved_tss_summary = (
+          x$susie_mix_lead_snp_tss_distance
+        )
       )
     )
-  )
 
-  # The weighted fit uses the same filtered predictors as susie_mix.
-  # Exact lookup avoids partially matching the saved TSS-distance field
-  # when an older result does not contain the fit itself.
-  if (!is.null(x[["weighted_fit_mix"]])) {
-    model_inputs[[length(model_inputs) + 1L]] <- list(
-      model = "Weighted SuSiE-mix",
-      model_key = "weighted_fit_mix",
-      fit = x[["weighted_fit_mix"]],
-      predictor_map = x$mix_predictor_map,
-      saved_tss_summary = x[["weighted_fit_mix_lead_snp_tss_distance"]]
-    )
+    # The weighted fit uses the same filtered predictors as susie_mix.
+    # Exact lookup avoids partially matching the saved TSS-distance field
+    # when an older result does not contain the fit itself.
+    if (!is.null(x[["weighted_fit_mix"]])) {
+      model_inputs[[length(model_inputs) + 1L]] <- list(
+        model = "Weighted SuSiE-mix",
+        model_key = "weighted_fit_mix",
+        fit = x[["weighted_fit_mix"]],
+        predictor_map = x$mix_predictor_map,
+        saved_tss_summary = x[["weighted_fit_mix_lead_snp_tss_distance"]]
+      )
+    }
   }
 
   cs_rows <- list()

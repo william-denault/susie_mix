@@ -7,7 +7,9 @@ plot_one_cs_lead_distance_overview <- function(
     top_n = 20L,
     title_prefix = "",
     annotate_examples = TRUE,
-    annotation_mode = c("reviewed", "largest_shifts")) {
+    annotation_mode = c("reviewed", "largest_shifts"),
+    lead_pip_label = paste0("Mixed lead PIP (", expected_coding, " coding)"),
+    pip_note = "Distance uses base-pair coordinates. PIP is coding-specific.") {
 
   expected_coding <- match.arg(expected_coding, c("dominant", "recessive"))
   annotation_mode <- match.arg(annotation_mode)
@@ -60,12 +62,19 @@ plot_one_cs_lead_distance_overview <- function(
     add$position > 0 & mix$position > 0 &
     !is.na(add$chromosome) & !is.na(mix$chromosome) &
     add$chromosome == mix$chromosome
+  # Saved-fit callers may supply coordinates from their predictor map, which
+  # also supports variant identifiers that do not encode a genomic position.
+  supplied_distance <- all(c("distance_bp", "valid_coordinates") %in% names(completed))
+  if (supplied_distance) {
+    valid_coordinates <- completed$valid_coordinates %in% TRUE &
+      is.finite(completed$distance_bp) & completed$distance_bp >= 0
+  }
   n_invalid <- sum(!valid_coordinates)
   if (n_invalid > 0L) {
     warning(n_invalid, " plotted lead pair(s) lack comparable GRCh38 coordinates; ",
             "excluded from the distance panels.")
   }
-  completed$distance_bp <- abs(mix$position - add$position)
+  if (!supplied_distance) completed$distance_bp <- abs(mix$position - add$position)
   completed$distance_bp[!valid_coordinates] <- NA_real_
   completed$distance_kb <- completed$distance_bp / 1000
   changed <- !is.na(completed$additive_lead_snp) & !is.na(completed$lead_snp) &
@@ -111,7 +120,7 @@ plot_one_cs_lead_distance_overview <- function(
     max(log10(scatter$distance_kb)) + .2 else 3.2))
   plot(NA, xlim = log_limits, ylim = c(-.02, 1.12), axes = FALSE,
        xlab = "Lead-SNP distance (kb, logarithmic scale)",
-       ylab = paste0("Mixed lead PIP (", expected_coding, " coding)"))
+       ylab = lead_pip_label)
   ticks <- seq(-3, floor(log_limits[2]))
   axis(1, at = ticks, labels = format(10^ticks, scientific = FALSE, trim = TRUE,
                                      big.mark = ",", drop0trailing = TRUE))
@@ -210,7 +219,7 @@ plot_one_cs_lead_distance_overview <- function(
     mtext(paste(omissions, collapse = "; "), outer = TRUE, side = 1, line = .1,
           cex = .8, col = "#555555")
   }
-  mtext("Distance uses base-pair coordinates. PIP is coding-specific.",
+  mtext(pip_note,
         outer = TRUE, side = 1, line = 1.5, cex = .87, col = "#555555")
   mtext("A large lead shift alone does not establish different credible sets or low LD.",
         outer = TRUE, side = 1, line = 3, cex = .87, col = "#555555")
