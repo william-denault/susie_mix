@@ -1,0 +1,21 @@
+#!/bin/bash
+# Four chunks of 100 paired replicates: two additive causal SNPs, PVE 5%.
+#SBATCH --job-name=additive_slide_init
+#SBATCH --output=additive_slide_init_%A_%a.out
+#SBATCH --error=additive_slide_init_%A_%a.err
+#SBATCH --time=23:00:00
+#SBATCH --partition=broadwl
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=20G
+#SBATCH --array=1-4
+
+set -euo pipefail
+project_dir="${SUSIE_MIX_PROJECT_DIR:-/project2/mstephens/wdenault/susie_mix}"
+export SUSIE_MIX_PROJECT_DIR="$project_dir"
+export SUSIE_MIX_GENOTYPE_DIR="${SUSIE_MIX_GENOTYPE_DIR:-$project_dir/temp_plink}"
+export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+module load R/4.2.0
+cd "$project_dir"
+Rscript --vanilla script/sim/sim_additive_slide_init.R "${SLURM_ARRAY_TASK_ID:?Submit with sbatch}" 100
