@@ -1,0 +1,347 @@
+\section{From slider SER to variational empirical Bayes}
+\label{sec:slider-veb}
+
+The one-SNP calculation extends to a single-effect regression (SER)
+with uncertainty over which SNP has an effect. Fitting this SER model
+by empirical Bayes (EB) to the expected residuals of the other effects
+then gives a block coordinate-ascent algorithm for a variational
+empirical-Bayes (VEB) objective. The argument follows the general
+additive-effects construction of Wang et al.~\cite{wang2018susie},
+Appendix B, especially Proposition 2. Here ``additive effects'' means
+that the component contributions are summed; each component may have
+a nonadditive genotype coding.
+
+The distinction between SNP-specific and shared sliders is essential.
+Within one SER component we fit one slider for each candidate SNP.
+In the sum of $L$ components these parameters are
+$\Delta=(\delta_{\ell j})$, with a separate slider for every
+component--SNP pair. They are model parameters estimated by EB.
+The latent variables are the selected SNP identities and their effect
+sizes.
+
+\subsection{Working coordinates and a slider SER model}
+
+We condition on the observed genotype matrix. To retain the
+intercept-integrated convention used above, let
+$\mathbf U\in\mathbb R^{n\times N}$ have orthonormal columns spanning
+the orthogonal complement of $\mathbf 1$, where $N=n-1$. Thus
+$\mathbf U^\top\mathbf U=I_N$ and
+$\mathbf U\mathbf U^\top=I_n-\mathbf 1\mathbf 1^\top/n$.
+Define
+\begin{equation}
+\widetilde{\mathbf y}=\mathbf U^\top\mathbf y,\qquad
+\mathbf z_j(\delta)
+ =\frac{\mathbf U^\top(\mathbf x_j+\delta\mathbf h_j)}{s_j},
+\qquad h_{ij}=\ind_{\{x_{ij}=1\}}.
+\label{eq:veb-working-design}
+\end{equation}
+No explicit construction of $\mathbf U$ is needed: inner products in
+these coordinates equal the corresponding centered inner products.
+Without an intercept take $\mathbf U=I_n$ and $N=n$.
+The scales $s_j>0$ are fixed functions of the genotypes, independent
+of $\delta$. Taking $s_j=1$ gives the raw-scale model above; taking
+$s_j$ to be the additive genotype standard deviation matches the
+scaling convention in \texttt{susieSlide}. Constant predictors are
+excluded when this latter convention is used. The Gaussian effect
+prior is defined on the chosen scale.
+
+For a response $\mathbf r\in\mathbb R^N$, the slider SER model is
+\begin{align}
+J&\sim\operatorname{Categorical}(\pi_1,\ldots,\pi_p),
+ &\beta&\sim\Normal(0,V),\qquad J\perp\beta,\nonumber\\
+\mathbf r\mid J=j,\beta,\boldsymbol\delta
+ &\sim\Normal\{\beta\mathbf z_j(\delta_j),\sigma^2 I_N\},
+ &\delta_j&\in\mathcal D_j.
+\label{eq:veb-ser-model}
+\end{align}
+Here $V>0$, $\sigma^2>0$, and the prior weights are fixed, with
+$\pi_j>0$ and $\sum_j\pi_j=1$. Ordinarily
+$\mathcal D_j=[-1,1]$; a genotype-count rule can instead impose
+$\mathcal D_j=\{0\}$. These constraints depend only on the observed
+genotypes. There is exactly one selected SNP in this component,
+although a slider is specified for every candidate SNP.
+
+For any fixed $\boldsymbol\delta$, put
+\begin{align}
+S_j(\delta)&=\|\mathbf z_j(\delta)\|^2,
+ &T_j(\delta)&=\mathbf z_j(\delta)^\top\mathbf r,\nonumber\\
+v_j(\delta)&=\left\{V^{-1}+S_j(\delta)/\sigma^2\right\}^{-1},
+ &m_j(\delta)&=v_j(\delta)T_j(\delta)/\sigma^2.
+\label{eq:veb-ser-moments}
+\end{align}
+Integration over $\beta$ gives
+\begin{equation}
+\BF_j(\delta;V,\sigma^2)
+ =\left\{1+\frac{VS_j(\delta)}{\sigma^2}\right\}^{-1/2}
+ \exp\left\{\frac{VT_j(\delta)^2}
+ {2\sigma^2\{\sigma^2+VS_j(\delta)\}}\right\}.
+\label{eq:veb-ser-bf}
+\end{equation}
+Thus, with $p_0(\mathbf r;\sigma^2)$ the $\Normal(0,\sigma^2 I_N)$
+density, the SER marginal likelihood and exact conditional posterior
+are
+\begin{align}
+M(\mathbf r;\boldsymbol\delta,V,\sigma^2)
+ &=p_0(\mathbf r;\sigma^2)
+   \sum_{j=1}^p\pi_j\BF_j(\delta_j;V,\sigma^2),
+\label{eq:veb-ser-evidence}\\
+a_j:=\Pr(J=j\mid\mathbf r,\boldsymbol\delta)
+ &=\frac{\pi_j\BF_j(\delta_j;V,\sigma^2)}
+ {\sum_{k=1}^p\pi_k\BF_k(\delta_k;V,\sigma^2)},
+\label{eq:veb-ser-weights}\\
+\beta\mid J=j,\mathbf r,\boldsymbol\delta
+ &\sim\Normal\{m_j(\delta_j),v_j(\delta_j)\}.
+\label{eq:veb-ser-posterior}
+\end{align}
+The variances are suppressed in the posterior conditioning notation.
+
+\subsection{Why independent slider maximizations solve the SER EB problem}
+
+\paragraph{Proposition 1 (SNP-specific slider EB update).}
+For fixed $V$, $\sigma^2$, and $\boldsymbol\pi$, choose
+\begin{equation}
+\widehat\delta_j\in\argmax_{\delta\in\mathcal D_j}
+       \BF_j(\delta;V,\sigma^2),\qquad j=1,\ldots,p.
+\label{eq:veb-separate-maxima}
+\end{equation}
+Then $\widehat{\boldsymbol\delta}$ maximizes the SER marginal
+likelihood in equation~\eqref{eq:veb-ser-evidence} over
+$\mathcal D_1\times\cdots\times\mathcal D_p$.
+
+\paragraph{Proof.}
+Each summand in equation~\eqref{eq:veb-ser-evidence} depends on only
+one slider. For every admissible $\boldsymbol\delta$,
+\begin{equation}
+\sum_j\pi_j\BF_j(\delta_j;V,\sigma^2)
+ \leq\sum_j\pi_j\BF_j(\widehat\delta_j;V,\sigma^2).
+\label{eq:veb-separability-proof}
+\end{equation}
+The null density is positive and independent of
+$\boldsymbol\delta$, so the same inequality holds for $M$.
+Continuity on the compact allowed intervals ensures that maximizers
+exist. This proves the result.\hfill$\square$
+
+The cubic maximization already derived in equation~\eqref{eq:cubic}
+therefore solves each required one-dimensional problem. No posterior
+SNP weight is needed in that maximization: the evidence is a sum of
+independently adjustable nonnegative terms. The posterior weights
+are recomputed from equation~\eqref{eq:veb-ser-weights} afterwards.
+If a \emph{single} slider were shared across candidate SNPs, the
+correct objective would instead be
+$\sum_j\pi_j\BF_j(\delta;V,\sigma^2)$; separate candidate-wise
+maximizations would not solve that different model.
+
+\subsection{The sum-of-single-effects model and its ELBO}
+
+Let the $L$ pairs $(J_\ell,\beta_\ell)$ be independent a priori,
+with $J_\ell\sim\operatorname{Categorical}(\boldsymbol\pi)$ and
+$\beta_\ell\sim\Normal(0,V_\ell)$. Define
+\begin{equation}
+\boldsymbol\eta_\ell
+ =\beta_\ell\mathbf z_{J_\ell}(\delta_{\ell J_\ell}),\qquad
+\widetilde{\mathbf y}=\sum_{\ell=1}^L\boldsymbol\eta_\ell
+      +\boldsymbol\epsilon,\qquad
+\boldsymbol\epsilon\sim\Normal(0,\sigma^2 I_N).
+\label{eq:veb-sum-model}
+\end{equation}
+For every fixed $\Delta$, this specifies a proper probability model
+on the working coordinates. Equivalently, the prior on
+$\boldsymbol\eta_\ell$ is a mixture over $p$ Gaussian single-effect
+directions, with directions determined by the sliders. This is a
+special case of the general additive-effects model in Appendix B.2
+of Wang et al.~\cite{wang2018susie}.
+
+We use the variational family
+\begin{equation}
+q(J_1,\beta_1,\ldots,J_L,\beta_L)
+  =\prod_{\ell=1}^Lq_\ell(J_\ell,\beta_\ell).
+\label{eq:veb-family}
+\end{equation}
+Each factor is unrestricted on the pair $(J_\ell,\beta_\ell)$;
+it does not factorize over candidate SNPs. Write $p_\ell$ for the
+categorical--Gaussian prior on this pair and
+$\theta=(\Delta,V_1,\ldots,V_L,\sigma^2)$. The objective is
+\begin{align}
+\mathcal F(q,\theta)
+ &=E_q\log p(\widetilde{\mathbf y}\mid J,\beta,\Delta,\sigma^2)
+   -\sum_{\ell=1}^L\operatorname{KL}(q_\ell\|p_\ell)
+\label{eq:veb-elbo}\\
+ &=\log p(\widetilde{\mathbf y}\mid\theta)
+   -\operatorname{KL}\{q\|p(J,\beta\mid
+                           \widetilde{\mathbf y},\theta)\}.
+\label{eq:veb-bound-identity}
+\end{align}
+Consequently $\mathcal F$ is a lower bound on the log marginal
+likelihood for every fixed $\theta$. Maximizing it over the
+factorized family and over the chosen model parameters is a VEB
+optimization problem. No prior on $\Delta$ is required for this
+interpretation: $\Delta$ is optimized as a parameter, whereas
+$q$ approximates the posterior of the latent variables conditional
+on those parameter estimates.
+
+\subsection{A slider SER update is an exact VEB block update}
+
+\paragraph{Proposition 2 (residual SER update).}
+Hold $\sigma^2$, $q_k$, $V_k$, and $\boldsymbol\delta_k$ fixed
+for all $k\neq\ell$, and define the expected residual
+\begin{equation}
+\mathbf r_\ell=\widetilde{\mathbf y}
+       -\sum_{k\neq\ell}\overline{\boldsymbol\eta}_k,
+\qquad
+\overline{\boldsymbol\eta}_k=E_{q_k}\boldsymbol\eta_k.
+\label{eq:veb-expected-residual}
+\end{equation}
+For fixed $V_\ell$, jointly maximizing $\mathcal F$ over
+$(q_\ell,\boldsymbol\delta_\ell)$ is achieved by fitting the
+slider SER model to $\mathbf r_\ell$: first apply
+equation~\eqref{eq:veb-separate-maxima}, then set $q_\ell$ to the
+exact posterior in equations~\eqref{eq:veb-ser-weights}--\eqref{eq:veb-ser-posterior}.
+
+\paragraph{Proof.}
+Independence across components under $q$ gives
+\begin{align}
+E_q\left\|\widetilde{\mathbf y}
+          -\sum_k\boldsymbol\eta_k\right\|^2
+ &=E_{q_\ell}\|\mathbf r_\ell-\boldsymbol\eta_\ell\|^2
+   +C_{-\ell},\nonumber\\
+C_{-\ell}
+ &=\sum_{k\neq\ell}
+   E_{q_k}\|\boldsymbol\eta_k
+                 -\overline{\boldsymbol\eta}_k\|^2.
+\label{eq:veb-residual-decomposition}
+\end{align}
+The second term does not depend on the parameters of component
+$\ell$ or on $q_\ell$. Thus
+\begin{align}
+\mathcal F(q,\theta)
+ &=C+\mathcal F_{\mathrm{SER}}
+       (q_\ell,\boldsymbol\delta_\ell,V_\ell;\mathbf r_\ell)
+\label{eq:veb-block-identity}\\
+ &=C+\log M(\mathbf r_\ell;
+           \boldsymbol\delta_\ell,V_\ell,\sigma^2)
+   -\operatorname{KL}(q_\ell\|p_{\mathrm{SER},\ell}),
+\label{eq:veb-block-kl}
+\end{align}
+where $C$ is independent of $(q_\ell,\boldsymbol\delta_\ell,V_\ell)$,
+and $p_{\mathrm{SER},\ell}$ is the exact SER posterior at the
+displayed parameters. For any fixed slider vector, the KL term
+has minimum zero, attained at that posterior. It follows that
+\begin{equation}
+\max_{q_\ell,\boldsymbol\delta_\ell}\mathcal F(q,\theta)
+ =C+\max_{\boldsymbol\delta_\ell}
+       \log M(\mathbf r_\ell;
+                \boldsymbol\delta_\ell,V_\ell,\sigma^2).
+\label{eq:veb-profiled-block}
+\end{equation}
+Proposition 1 solves the remaining maximization. This proves the
+claim.\hfill$\square$
+
+This is a \emph{joint} update of the slider vector and its
+variational factor. It need not increase the ELBO if one changes
+the sliders while keeping the old posterior moments. The posterior
+weights, means, variances, and fitted component must all be refreshed
+at the new slider values. Also, the residual construction does not
+assume that the other components are known: their posterior
+uncertainty is the term $C_{-\ell}$, which is constant only for this
+component update at fixed noise variance.
+
+\subsection{Algorithm, variance updates, and interpretation}
+
+Cycle over components. For each $\ell$, compute
+$\mathbf r_\ell$, maximize every candidate's log-BF over
+$\mathcal D_j$, compute the exact SER posterior at those sliders,
+and refresh
+\begin{equation}
+\overline{\boldsymbol\eta}_\ell
+ =\sum_j a_{\ell j}m_{\ell j}
+              \mathbf z_j(\delta_{\ell j}).
+\label{eq:veb-component-mean}
+\end{equation}
+Here $a_{\ell j}$, $m_{\ell j}$, and $v_{\ell j}$ denote the
+current posterior probability, conditional mean, and conditional
+variance. With exact block maximization each update is
+nondecreasing in the same ELBO. This establishes a valid VEB
+coordinate-ascent algorithm; it does not establish a global optimum.
+The local SER problem is solved exactly conditional on its EB
+parameters, while the approximation in the full model is the
+factorization across components.
+
+If $V_\ell$ is also learned by marginal likelihood, profile the
+sliders at each trial value of $V$ and optimize
+\begin{equation}
+\widehat V_\ell\in\argmax_V
+ \log\left\{\sum_j\pi_j
+  \BF_j\bigl(\widehat\delta_{\ell j}(V);V,\sigma^2\bigr)\right\}.
+\label{eq:veb-profile-prior-variance}
+\end{equation}
+The variance is shared across the candidate SNPs in that component,
+so this outer maximization does not separate over SNPs. A numerical
+outer search should retain the previous value unless it improves
+the objective. Alternatively, an EM coordinate update at fixed
+$q$ is $V_\ell\leftarrow\sum_j a_{\ell j}(v_{\ell j}+m_{\ell j}^2)$,
+followed by subsequent posterior updates. The derivation above
+assumes positive variances; $V_\ell=0$ can be handled separately
+as an inactive, zero-effect component.
+
+The expected residual sum of squares is
+\begin{align}
+\operatorname{ERSS}
+ &=\left\|\widetilde{\mathbf y}
+        -\sum_\ell\overline{\boldsymbol\eta}_\ell\right\|^2
+   +\sum_\ell\left\{
+      \sum_j a_{\ell j}(v_{\ell j}+m_{\ell j}^2)
+                    S_j(\delta_{\ell j})
+      -\|\overline{\boldsymbol\eta}_\ell\|^2\right\}.
+\label{eq:veb-erss}
+\end{align}
+At fixed $q$, $\Delta$, and prior variances, maximizing the ELBO
+over the noise variance gives $\sigma^2\leftarrow\operatorname{ERSS}/N$.
+The dimension is $N=n-1$ for the intercept-integrated likelihood used
+here. An implementation that instead estimates the intercept as a
+fixed parameter in the full Gaussian likelihood uses $n$ in the
+normalizing term and this denominator, as does the current
+\texttt{susieSlide} implementation. The two conventions give the
+same centered SER updates at a fixed $\sigma^2$, but their
+noise-variance updates should not be conflated.
+
+For completeness, a directly evaluable expression for the ELBO is
+\begin{align}
+\mathcal F
+ &=-\frac N2\log(2\pi\sigma^2)
+   -\frac{\operatorname{ERSS}}{2\sigma^2}
+   -\sum_\ell K_\ell,\nonumber\\
+K_\ell
+ &=\sum_j a_{\ell j}\log\frac{a_{\ell j}}{\pi_j}
+  +\frac12\sum_j a_{\ell j}
+   \left\{\frac{v_{\ell j}+m_{\ell j}^2}{V_\ell}
+                -1+\log\frac{V_\ell}{v_{\ell j}}\right\}.
+\label{eq:veb-computable-elbo}
+\end{align}
+This expression includes both uncertainty about SNP identity and
+uncertainty about the effect size.
+
+For active components, the variational probability that SNP $j$
+is selected by at least one component is
+\begin{equation}
+\operatorname{PIP}_j
+  =1-\prod_{\ell=1}^L(1-a_{\ell j}).
+\label{eq:veb-pip}
+\end{equation}
+A component credible set collects SNPs whose $a_{\ell j}$ sum to
+at least the requested probability. Both summaries condition on
+the fitted sliders and variances. The VEB derivation establishes
+the model and objective; frequentist coverage and PIP calibration
+remain empirical properties to assess. In particular,
+$\BF_j(\widehat\delta_{\ell j})$ is conditional fitted-slider
+evidence, not evidence averaged over a prior for $\delta$.
+
+The separate-component assumption matters. A slider shared across
+all components for a given SNP would change several component
+contributions simultaneously and require a different parameter
+update; the candidate-wise update above would not by itself prove
+ascent for that model. In the present model, multiple components
+may select the same SNP with different sliders. The monotonicity
+constraint applies to each single effect; their sum need not be
+monotone if their effect directions differ. Setting all sliders to
+zero recovers additive SuSiE on the same working design, with the
+same priors and variance conventions.

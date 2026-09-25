@@ -21,7 +21,8 @@ sim_mix <- function(
     temp_dir = "/project2/mstephens/wdenault/susie_mix/temp_plink/",
     L_prec = 0,
     L_pdom = 0,
-    slide_min_obs = 5
+    slide_min_obs = 5,
+    return_data = FALSE
 ) {
 
   for (package in c("data.table", "matrixStats", "susieR", "susieSlide")) {
@@ -173,6 +174,15 @@ sim_mix <- function(
   g <- drop(Z %*% beta)
   noise <- rnorm(n, mean = 0, sd = sqrt(1 - pve))
   y <- g + noise
+
+  # Let the initialization experiment reuse this exact generator. Normal
+  # simulation jobs keep the existing fits and compact return value below.
+  if (return_data) return(list(
+    X = geno_all, y = y, true_pos = true_pos, causal_snps = causal_snps,
+    causal_coding = causal_coding, raw_file = raw_file,
+    beta_standardized = beta, genetic_variance = var(g),
+    phenotype_variance = var(y), seed = seed
+  ))
 
   # ------------------------------------------------------------
   # Fit all three methods to the same phenotype; namespace calls avoid masking.

@@ -4,7 +4,7 @@ source("script/sim/sim_workhorse.R")
 check_init_packages()
 near <- function(x, y) stopifnot(isTRUE(all.equal(x, y, tolerance = 1e-8)))
 expect_error <- function(expr) stopifnot(inherits(try(expr, silent = TRUE), "try-error"))
-test_dir <- file.path(init_project_dir, "tmp/additive_init_validation")
+test_dir <- tempfile("additive_init_original_validation_")
 genotypes <- file.path(test_dir, "genotypes")
 dir.create(genotypes, recursive = TRUE, showWarnings = FALSE)
 # Fixed, small genotype fixture; no external data or live temp_plink required.
@@ -20,6 +20,12 @@ data <- simulate_additive_init_data(1000001L, genotypes)
 stopifnot(nrow(data$X) == 500, length(unique(data$true_pos)) == 2)
 near(data$genetic_variance, .05)
 near(data, simulate_additive_init_data(1000001L, genotypes))
+low_pve <- simulate_additive_init_data(1000001L, genotypes, pve = .025)
+near(low_pve$X, data$X)
+stopifnot(identical(low_pve$true_pos, data$true_pos))
+near(low_pve$beta_standardized / sqrt(.025), data$beta_standardized / sqrt(.05))
+noise <- function(x, pve) drop(x$y - scale(x$X[, x$true_pos]) %*% x$beta_standardized) / sqrt(1 - pve)
+near(noise(low_pve, .025), noise(data, .05))
 # Execute the original generator up to its first fit, comparing X and y
 # directly rather than relying on version-dependent optimizer defaults.
 reference <- new.env()
@@ -39,9 +45,16 @@ fitted <- fit_additive_init(data)
 # Independently reproduce the requested direct warm-start call.
 args <- list(X = data$X, y = data$y, L = 10, standardize = TRUE,
   estimate_prior_method = "optim", coverage = .95, min_abs_corr = .5,
-  max_iter = 1000, tol = .001, verbose = FALSE)
+  max_iter = 1000)
 cold <- do.call(susieR::susie, args)
 near(fitted$fits$SuSiE$pip, cold$pip)
+# Compare the unmodified baseline route in sim_mix(), including its defaults.
+baseline <- sim_mix(pve = .05, n = 500, L_add = 2, L_rec = 0,
+                    seed = 1000001, temp_dir = genotypes)
+near(unname(fitted$fits$SuSiE$pip), baseline$susie_pip)
+near(fitted$fits$SuSiE$sets, baseline$susie_cs)
+near(unname(fitted$fits[["SuSiE-slide"]]$pip), baseline$susie_slide_pip)
+near(fitted$fits[["SuSiE-slide"]]$sets, baseline$susie_slide_cs)
 args[[check_init_packages()$init_arg]] <- fitted$fits[["SuSiE-slide"]]
 direct <- do.call(susieR::susie, args)
 near(fitted$fits[["SuSiE-init-slide"]]$pip, direct$pip)
@@ -71,4 +84,18 @@ stopifnot(nrow(summary$metrics) == 6, nrow(summary$summary) == 3,
           all(summary$summary$n_replicates == 2))
 near(summary$optimization$additive_elbo_gain,
   summary$optimization$initialized_additive_elbo - summary$optimization$additive_elbo)
-cat("PASS: paired additive generator, direct slide initialization, compact results, checkpoint resume/retry, and summaries.\n")
+experiment_dir <- file.path(test_dir, "experiment")
+experiment <- run_additive_initialization_experiment(chunks = 1L, reps_per_chunk = 1L,
+  genotype_dir = genotypes, output_dir = experiment_dir)
+stopifnot(nrow(experiment$summary) == 6L, nrow(experiment$metrics) == 6L,
+          identical(sort(unique(experiment$summary$pve)), c(.025, .05)),
+          nrow(experiment$optimization) == 2L, nrow(experiment$errors) == 0L)
+# A completely failed PVE must not prevent summaries of the other PVE.
+failed_path <- file.path(experiment_dir, "pve_0.025/chunks/additive_init_chunk001.rds")
+failed <- readRDS(failed_path)
+failed$results[[1L]] <- list(seed = 1000001L, error = "test missing region")
+saveRDS(failed, failed_path)
+partial <- summarize_additive_experiment(experiment_dir)
+stopifnot(nrow(partial$summary) == 3L, all(partial$summary$pve == .05),
+          nrow(partial$errors) == 1L, partial$errors$pve == .025)
+cat("PASS: original sim_mix generator and baseline fits, paired PVEs, direct slide initialization, checkpoint resume/retry, and summaries.\n")

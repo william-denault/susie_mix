@@ -1,78 +1,156 @@
-# Additive simulation: initialization from SuSiE-slide
+# Test SuSiE initialization using the original simulations
 
-This focused experiment uses **two true additive causal SNPs**, n = 500,
-total PVE = 0.05, and **fitted L = 10** for all methods, matching the existing
-simulation settings. Four array tasks run 100 replicates each (400 total).
-Seeds are 1000001-1000400. Genotype selection, QC, causal sampling, equal
-effect magnitudes with random signs, and LD-adjusted genetic variance match
-the pure-additive generator in `sim_workhorse.R`.
+The focused experiment calls the existing `sim_mix()` generator in
+`script/sim/sim_workhorse.R` with `L_add = 2`, all other causal counts zero,
+and PVE 0.025 or 0.05. It uses the original genotype file pool when available;
+otherwise it extracts real GTEx genotypes for a gene using the scanning
+workhorse's procedure. Both paths then use the original sim_mix() QC, donor
+sampling, causal selection, random signs, LD-adjusted effect scaling and
+Gaussian noise.
 
-Each replicate fits exactly the same additive genotype matrix and phenotype:
+The new optional `return_data = TRUE` argument to `sim_mix()` returns its X/y
+immediately before fitting. Its default is FALSE, so the original simulation
+jobs retain their existing behavior and output.
 
-1. `susieR::susie(X, y, L = 10)` from its default initialization.
-2. `susieSlide::susie(X, y, L = 10)` with estimated genotype sliders.
-3. `susieR::susie(X, y, L = 10, model_init = slide_fit)`.
+The focused runner fits these three methods to each generated dataset:
 
-The third fit is an additive refit; it does not optimize slider deltas.
-On older susieR installations the runner uses the equivalent `s_init`
-argument and records that choice. All fits use `estimate_prior_method =
-"optim"`, 95% credible sets, minimum absolute correlation 0.5, tolerance
-0.001 and up to 1000 iterations. Namespace-qualified calls select the
-intended package. Package versions and settings are saved in checkpoints.
+1. SuSiE with its default initialization.
+2. SuSiE-slide.
+3. Additive SuSiE on the same original X/y, with `model_init = slide_fit`
+   (or the equivalent `s_init` on older susieR versions).
 
-## Run on RCC
+Both baseline calls use the same arguments as `sim_mix()`: fitted L = 10,
+standardization, prior method "optim", coverage 0.95, minimum absolute
+correlation 0.5 and max_iter = 1000. Package defaults, including convergence
+tolerance, are used as in the original workhorse. Slide uses min_obs = 5.
+The warm-start call uses the same additive fitting arguments plus the
+initialization object. SuSiE-mix is not fitted in this focused comparison.
 
-Sync the new R script, `simulation_metric_helpers.R`, the existing
-`script/scan_tissue_attempt/workhorse_utils.R`, and the job file to the project.
-Use a stable directory of PLINK `.raw` files. From the project root:
+## Run in RCC RStudio
+
+Upload/extract the current ZIP into the project root on RCC, including the
+updated `sim_workhorse.R`. Then run in the R Console:
+
+```r
+project_dir <- "/project2/mstephens/wdenault/susie_mix"
+Sys.setenv(SUSIE_MIX_PROJECT_DIR = project_dir)
+source(file.path(project_dir, "script/sim/sim_additive_slide_init.R"))
+
+results <- run_additive_initialization_experiment()
+```
+
+This uses n = 500, two true additive causal SNPs, fitted L = 10, both PVE
+values, and 400 replicates per PVE (four chunks of 100). Seeds
+1000001-1000400 match the original 400-replicate jobs. Reusing the same seed,
+genotype files and R/package versions reproduces the original generator's
+dataset at the matching PVE. Across PVEs, genotypes, causal SNPs, signs and
+standardized noise are paired.
+
+The genotype directory is resolved exactly as in the original generated jobs:
+`SUSIE_MIX_GENOTYPE_DIR`, if set, otherwise the project's `temp_plink` folder.
+If your original jobs use an override, use that same value in RStudio.
+If that folder contains .raw files, they are used as before. If it is empty or
+missing, the runner automatically extracts real cis-genotypes from GTEx. For
+each seed it samples an autosomal protein-coding gene from
+`data/genes_protein_coding.txt`, obtains its annotation using the scanning
+workhorse's parser, and exports SNPs within 500 kb of its TSS with PLINK.
+The same seed picks the same gene at both PVEs and on reruns. The selected gene
+and coordinates are saved with the results.
+
+The fallback uses the scanning workhorse's existing paths:
+
+- `/project2/mstephens/gtex/plink2`
+- `/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.{bed,bim,fam}`
+- `/project2/mstephens/gtex/Homo_sapiens.GRCh38.103.chr.reformatted.collapse_only.gene.gtf.gz`
+
+PLINK uses the workhorse's SNP/duplicate filtering and additive export flags,
+with one thread and a 2000 MB workspace. The resulting .raw file is passed to
+the original sim_mix() generator in a private temporary folder. Its temporary
+export and logs are removed after use, including on failure. They are not added
+to the original genotype pool. The genotype data remain real; only the phenotype
+is simulated. Since the fallback samples genes afresh, its regions need not be
+identical to those in an older cached-file run.
+
+No new arguments are needed for the fallback. If desired, specify one gene
+instead of randomly selecting genes (this applies when no cached files exist):
+
+```r
+Sys.setenv(SUSIE_MIX_SIM_GENE = "GTF2H2")
+results <- run_additive_initialization_experiment()
+```
+
+Unset `SUSIE_MIX_SIM_GENE` to restore random gene selection. If the data paths
+differ from the scanning workhorse defaults, set `SUSIE_MIX_GTEX_DIR` or
+`SUSIE_MIX_PLINK` before running. A change of input mode or selected gene requires
+a separate output directory when checkpoints already exist.
+
+Sourcing or pasting the main script only loads functions. The explicit
+experiment call runs sequentially inside the existing RStudio session.
+It does not submit a Slurm job. Packages are checked before fitting.
+
+To start with the first 100 replicates at each PVE:
+
+```r
+results <- run_additive_initialization_experiment(chunks = 1L)
+```
+
+Later, repeat the full command to skip successes and retry failures, or use
+`chunks = 2:4`. Keep reps_per_chunk = 100 when resuming because it determines
+the seed numbering. For a two-replicate pilot, use a separate output folder:
+
+```r
+pilot <- run_additive_initialization_experiment(chunks = 1L, reps_per_chunk = 2L,
+  output_dir = file.path(project_dir, "simulation results/additive_init_pilot"))
+```
+
+## Results
+
+Checkpoints and summaries go to `simulation results/additive_slide_init_v3/`.
+Each PVE has its own `pve_0.025/` or `pve_0.05/` subfolder. This separates the
+original-generator experiment from the previous runner's outputs.
+
+Each replicate is checkpointed. Successful records are skipped on rerun;
+failures are retried. Changes in settings, genotype file signatures or package
+versions require a new output directory. Do not run the same PVE/chunk twice
+concurrently. All three methods use the same X and y within a replicate.
+
+```r
+results <- summarize_additive_experiment()
+results$summary
+```
+
+The per-PVE and combined CSV files are `replicate_metrics.csv`,
+`metric_summary.csv`, `method_comparison.csv`, `optimization_comparison.csv`,
+and `errors.csv`. Coverage, power and purity use the requested denominator-based
+normal intervals; CS size uses Gaussian intervals. Successful nonconverged fits
+remain included and their convergence counts are reported.
+
+Compare SuSiE versus SuSiE-init-slide in `optimization_comparison.csv`:
+a higher additive ELBO after initialization indicates a better solution for
+the additive objective. The saved results also include PIPs, credible sets,
+ELBO histories, convergence, timings and causal slider estimates.
+Set `save_fits = TRUE` to retain complete models as well.
+
+## Optional Slurm execution
 
 ```sh
 sbatch job/run_additive_slide_init
 ```
 
-The defaults are `/project2/mstephens/wdenault/susie_mix` and its `temp_plink`
-subdirectory. Set `SUSIE_MIX_PROJECT_DIR` / `SUSIE_MIX_GENOTYPE_DIR` to override
-them. The R/4.2.0 module must have susieR, susieSlide, data.table and matrixStats
-installed. The runner checks the packages and initialization API before fitting.
+Tasks 1-4 run chunks 1-4 at 2.5% PVE; tasks 5-8 run them at 5% PVE.
 
-Results go to `simulation results/additive_slide_init_v1/chunks`. Each replicate
-is checkpointed. Resubmitting skips successful replicates and retries failures;
-incompatible settings, genotype file signatures or packages are rejected.
-Do not run two copies of the same chunk concurrently. Errors and nonconvergence
-are recorded separately. No simulations are submitted when sourcing the R file.
-
-## Summarize locally after copying the results
-
-```r
-project_dir <- "C:/Document/Serieux/Travail/Data_analysis_and_papers/susie_mix"
-Sys.setenv(SUSIE_MIX_PROJECT_DIR = project_dir)
-source(file.path(project_dir, "script/sim/sim_additive_slide_init.R"))
-summarize_additive_initialization()
+```sh
+Rscript --vanilla script/sim/sim_additive_slide_init.R 1 100 0.025
+Rscript --vanilla script/sim/sim_additive_slide_init.R 1 100 0.05
+Rscript --vanilla script/sim/sim_additive_slide_init.R summarize
 ```
 
-Alternatively: `Rscript --vanilla script/sim/sim_additive_slide_init.R summarize`.
-Outputs are `metric_summary.csv`, `method_comparison.csv`,
-`replicate_metrics.csv`, `optimization_comparison.csv` and `errors.csv`.
-Coverage/power/purity use the requested denominator-based normal intervals;
-CS size uses Gaussian intervals. Successful nonconverged fits remain included
-and their counts are reported. Partial checkpoints summarize completed records.
+## Validation
 
-Compare **SuSiE versus SuSiE-init-slide ELBOs** in `optimization_comparison.csv`:
-both optimize the same additive model. A positive gain indicates a better
-additive objective from slide initialization. The slider has a different model,
-so its raw ELBO is not an additive-optimization comparison. Power improvement
-after initialization would support an optimization explanation, but the
-experiment alone does not establish why the original performance gap occurred.
-
-Checkpoints retain PIPs, credible sets, objective histories, convergence,
-iteration counts, variance estimates, timing and slider deltas at causal SNPs.
-Use `save_fits = TRUE` in `run_additive_initialization()` if full fitted models
-are needed. For a small local run after sourcing:
-
-```r
-run_additive_initialization(chunk = 1L, reps_per_chunk = 2L,
-  genotype_dir = "path/to/stable/genotypes",
-  output_dir = file.path(project_dir, "simulation results/additive_init_pilot"))
-```
-
-`fit_L` is adjustable in that function; the true causal count remains two.
+The focused tests compare X, y, causal SNPs and effects against the original
+generator and compare both baseline fits against the original `sim_mix()`
+route. They also verify the direct warm-start call, pairing across PVEs,
+checkpoint resume/retry, summaries and Console/source loading. GTEx extraction
+tests use fixture annotations and a mocked PLINK export to check selection,
+arguments, temporary-file cleanup, reproducibility and unchanged phenotype
+generation. Running against the actual GTEx files requires the RCC environment.

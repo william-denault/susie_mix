@@ -1,5 +1,5 @@
 #!/bin/bash
-# Four chunks of 100 paired replicates: two additive causal SNPs, PVE 5%.
+# Two additive causal SNPs: four chunks of 100 replicates at each PVE.
 #SBATCH --job-name=additive_slide_init
 #SBATCH --output=additive_slide_init_%A_%a.out
 #SBATCH --error=additive_slide_init_%A_%a.err
@@ -9,7 +9,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=20G
-#SBATCH --array=1-4
+#SBATCH --array=1-8
 
 set -euo pipefail
 project_dir="${SUSIE_MIX_PROJECT_DIR:-/project2/mstephens/wdenault/susie_mix}"
@@ -18,4 +18,15 @@ export SUSIE_MIX_GENOTYPE_DIR="${SUSIE_MIX_GENOTYPE_DIR:-$project_dir/temp_plink
 export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
 module load R/4.2.0
 cd "$project_dir"
-Rscript --vanilla script/sim/sim_additive_slide_init.R "${SLURM_ARRAY_TASK_ID:?Submit with sbatch}" 100
+task="${SLURM_ARRAY_TASK_ID:?Submit with sbatch}"
+if (( task < 1 || task > 8 )); then
+  echo "Expected array task 1-8" >&2
+  exit 1
+fi
+chunk=$(( (task - 1) % 4 + 1 ))
+if (( task <= 4 )); then
+  pve=0.025
+else
+  pve=0.05
+fi
+Rscript --vanilla script/sim/sim_additive_slide_init.R "$chunk" 100 "$pve"
