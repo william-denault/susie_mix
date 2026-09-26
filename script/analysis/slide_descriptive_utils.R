@@ -1,18 +1,10 @@
 # Source slide_analysis_utils.R before this file.
-slide_tss_distribution <- function(cs, tissues = NULL, limit_kb = 200, width_kb = 10) {
-  centers <- seq(-limit_kb, limit_kb, by = width_kb)
-  breaks <- c(centers - width_kb / 2, tail(centers, 1) + width_kb / 2)
+slide_tss_distribution <- function(cs, tissues = NULL, limit_kb = 200, bandwidth_kb = 10) {
   rows <- list()
   for (tissue in c("All tissues", tissues)) for (model in c("SuSiE", "SuSiE-slide")) {
     z <- cs[cs$model == model & (tissue == "All tissues" | cs$tissue == tissue), , drop = FALSE]
-    d <- z$distance_to_tss_kb
-    finite <- d[is.finite(d)]
-    inside <- finite[abs(finite) <= limit_kb + width_kb / 2]
-    counts <- if (length(inside)) hist(inside, breaks = breaks, plot = FALSE, include.lowest = TRUE)$counts else
-      rep(0L, length(centers))
-    rows[[length(rows) + 1L]] <- data.frame(tissue = tissue, model = model, bin_center_kb = centers,
-      count = counts, n_cs_selected = nrow(z), n_cs_finite = length(finite), n_cs_in_window = length(inside),
-      proportion = if (length(inside)) counts / length(inside) else rep(NA_real_, length(centers)))
+    rows[[length(rows) + 1L]] <- summarize_tss_kde(
+      z, model, tissue, plot_limit_kb = limit_kb, bandwidth_kb = bandwidth_kb)
   }
   do.call(rbind, rows)
 }
@@ -20,7 +12,8 @@ slide_tss_distribution <- function(cs, tissues = NULL, limit_kb = 200, width_kb 
 run_slide_descriptive_results <- function(project_dir,
     summary_dir = file.path(project_dir, "results_slide/summary"),
     output_dir = file.path(project_dir, "results_slide/descriptive_results"),
-    association_threshold = 1e-8, minimum_mean_reads = 100) {
+    association_threshold = 1e-8, minimum_mean_reads = 100,
+    tss_bandwidth_kb = 10, tss_plot_limit_kb = 200) {
   summaries <- slide_load_summary(summary_dir)
   res <- summaries$res
   primary <- slide_primary(res, association_threshold, minimum_mean_reads)
@@ -34,9 +27,11 @@ run_slide_descriptive_results <- function(project_dir,
     expected <- primary[[if (model == "susie_add") "ncs_susie" else "ncs_slide"]]
     if (any(observed != expected)) stop("CS counts disagree with tissue summary; regenerate slide summaries together.")
   }
-  selection <- select_tss_disagreement(cs, mixed_model = "SuSiE-slide")
+  selection <- select_tss_disagreement(cs, mixed_model = "SuSiE-slide",
+                                        plot_limit_kb = tss_plot_limit_kb)
   tissues <- sort(unique(primary$tissue))
-  tss <- slide_tss_distribution(selection$selected, tissues)
+  tss <- slide_tss_distribution(selection$selected, tissues, limit_kb = tss_plot_limit_kb,
+                                bandwidth_kb = tss_bandwidth_kb)
   coding_levels <- c("additive", "partial_recessive", "recessive", "partial_dominant", "dominant")
   coding_colors <- c("#4584AD", "#EBA77F", "#CC603D", "#AC9CC8", "#795294")
   summaries_by_tissue <- codings <- agreements <- list()
@@ -98,20 +93,10 @@ run_slide_descriptive_results <- function(project_dir,
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
   for (nm in names(tables)) write.csv(tables[[nm]], file.path(output_dir, paste0(nm, ".csv")), row.names = FALSE)
   plot_tss <- function(tissue) {
-    z <- tss[tss$tissue == tissue, ]
-    ymax <- max(c(.05, z$proportion[is.finite(z$proportion)])) * 1.1
-    plot(NA, xlim = c(-200, 200), ylim = c(0, ymax), xlab = "Lead-SNP distance to TSS (kb)",
-         ylab = "Fraction of selected CSs in window", main = "TSS distance: disagreeing CS leads", cex.main = .95)
-    for (i in 1:2) {
-      model <- c("SuSiE", "SuSiE-slide")[i]
-      p <- z[z$model == model, ]
-      if (any(is.finite(p$proportion))) lines(p$bin_center_kb, p$proportion, col = c("#4584AD", "#CC603D")[i], lwd = 2)
-    }
-    if (!any(z$n_cs_in_window > 0)) text(0, ymax / 2, "No disagreeing leads in window", cex = .85)
-    legend("topright", legend = vapply(c("SuSiE", "SuSiE-slide"), function(model) {
-      sprintf("%s (n=%d)", model, z$n_cs_in_window[z$model == model][1])
-    }, character(1)), col = c("#4584AD", "#CC603D"), lty = 1, lwd = 2, bty = "n", cex = .8)
-    mtext("Shared biological leads excluded; 10-kb bins", side = 3, line = .15, cex = .65)
+    plot_tss_kde(tss[tss$tissue == tissue, ],
+                 model_colors = c(SuSiE = "#4584AD", `SuSiE-slide` = "#CC603D"),
+                 plot_limit_kb = tss_plot_limit_kb,
+                 main_title = "TSS distance: disagreeing CS leads", compact = TRUE)
   }
   plot_coding <- function(tissue) {
     z <- coding_summary[coding_summary$tissue == tissue, ]

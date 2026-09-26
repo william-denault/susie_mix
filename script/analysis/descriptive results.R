@@ -26,7 +26,7 @@ if (exists("res_cs_summary")) {
 association_threshold <- 1e-8
 minimum_mean_reads <- 100
 tss_plot_limit_kb <- 200
-tss_bin_width_kb <- 10
+tss_bandwidth_kb <- 10  # Shared Gaussian KDE bandwidth, in kb.
 
 strong_label <- sprintf(
   "P < %.1e",
@@ -192,92 +192,11 @@ collapse_sorted_values <- function(x) {
 }
 
 
-summarize_tss_distribution <- function(
-    x,
-    plot_limit_kb,
-    bin_width_kb) {
-
-  model_levels <- c(
-    "SuSiE",
-    "SuSiE-mix"
-  )
-
-  bin_centers <- seq(
-    -plot_limit_kb,
-    plot_limit_kb,
-    by = bin_width_kb
-  )
-
-  bin_breaks <- c(
-    bin_centers - bin_width_kb / 2,
-    tail(bin_centers, 1) + bin_width_kb / 2
-  )
-
-  rbindlist(
-    lapply(
-      model_levels,
-      function(model_name) {
-
-        model_distance <- x[
-          model == model_name &
-            is.finite(distance_to_tss_kb),
-          distance_to_tss_kb
-        ]
-
-        in_window <- (
-          model_distance >= min(bin_breaks) &
-            model_distance <= max(bin_breaks)
-        )
-
-        plotted_distance <- model_distance[
-          in_window
-        ]
-
-        bin_count <- hist(
-          plotted_distance,
-          breaks = bin_breaks,
-          plot = FALSE,
-          include.lowest = TRUE,
-          right = FALSE
-        )$counts
-
-        total_in_window <- length(
-          plotted_distance
-        )
-
-        data.table(
-          model = model_name,
-          analysis_set = "CSs without a shared biological lead SNP",
-          distance_to_tss_kb = bin_centers,
-          bin_lower_kb = head(
-            bin_breaks,
-            -1
-          ),
-          bin_upper_kb = tail(
-            bin_breaks,
-            -1
-          ),
-          count = bin_count,
-          proportion = if (
-            total_in_window > 0L
-          ) {
-            bin_count / total_in_window
-          } else {
-            NA_real_
-          },
-          percentage = if (
-            total_in_window > 0L
-          ) {
-            100 * bin_count / total_in_window
-          } else {
-            NA_real_
-          },
-          n_cs_total = length(model_distance),
-          n_cs_in_window = total_in_window
-        )
-      }
-    )
-  )
+summarize_tss_distribution <- function(x, plot_limit_kb, bandwidth_kb) {
+  rbindlist(lapply(c("SuSiE", "SuSiE-mix"), function(model_name) {
+    summarize_tss_kde(x[model == model_name], model_name,
+                      plot_limit_kb = plot_limit_kb, bandwidth_kb = bandwidth_kb)
+  }))
 }
 
 
@@ -594,13 +513,13 @@ cs_idx <- cs_res[
 ]
 
 tss_selection <- select_tss_disagreement(
-  cs_idx, plot_limit_kb = tss_plot_limit_kb, bin_width_kb = tss_bin_width_kb)
+  cs_idx, plot_limit_kb = tss_plot_limit_kb)
 tss_cs <- as.data.table(tss_selection$selected)
 
 tss_distance_summary <- summarize_tss_distribution(
   x = tss_cs,
   plot_limit_kb = tss_plot_limit_kb,
-  bin_width_kb = tss_bin_width_kb
+  bandwidth_kb = tss_bandwidth_kb
 )
 
 finite_tss_distance <- tss_cs[
@@ -616,7 +535,7 @@ if (
     paste0(
       "All CS-to-TSS distances are nonnegative. ",
       "The workhorse may have saved absolute rather than signed ",
-      "distances, so the TSS plot will be one-sided."
+      "distances; signed-distance KDE interpretation would then be inappropriate."
     )
   )
 }
@@ -1743,7 +1662,7 @@ tissue_tss_distance_summary <- rbindlist(
           tissue == tissue_name
         ],
         plot_limit_kb = tss_plot_limit_kb,
-        bin_width_kb = tss_bin_width_kb
+        bandwidth_kb = tss_bandwidth_kb
       )
 
       tissue_tss[
@@ -2226,150 +2145,11 @@ plot_tissue_coding_patterns <- function(
 
 
 plot_tss_distribution <- function(
-    x,
-    plot_limit_kb,
-    main_title = "TSS distance for disagreeing CS leads",
-    compact = FALSE) {
-
-  model_levels <- c(
-    "SuSiE",
-    "SuSiE-mix"
-  )
-
-  model_colors <- c(
-    SuSiE = "#E69F00",
-    `SuSiE-mix` = "#0072B2"
-  )
-
-  valid_proportion <- is.finite(
-    x$proportion
-  )
-
-  if (!any(valid_proportion)) {
-    plot.new()
-    title(
-      main_title,
-      cex.main = if (compact) 0.85 else 1
-    )
-    text(
-      0.5,
-      0.5,
-      "No disagreeing CS leads with finite TSS distance"
-    )
-    return(invisible(NULL))
-  }
-
-  y_max <- max(
-    x$proportion[valid_proportion]
-  )
-
-  y_max <- max(
-    0.01,
-    1.12 * y_max
-  )
-
-  par(
-    mar = if (compact) {
-      c(3.8, 4.2, 2.8, 1)
-    } else {
-      c(5, 5, 4, 1)
-    },
-    mgp = if (compact) {
-      c(2.4, 0.7, 0)
-    } else {
-      c(2.8, 0.8, 0)
-    }
-  )
-
-  plot(
-    NA_real_,
-    NA_real_,
-    xlim = c(
-      -plot_limit_kb,
-      plot_limit_kb
-    ),
-    ylim = c(0, y_max),
-    xaxs = "i",
-    yaxs = "i",
-    xaxt = "n",
-    bty = "l",
-    xlab = "Distance to TSS (kb)",
-    ylab = "Proportion of disagreeing CSs",
-    main = main_title,
-    cex.main = if (compact) 0.85 else 1,
-    cex.lab = if (compact) 0.8 else 1,
-    cex.axis = if (compact) 0.75 else 1
-  )
-
-  axis(
-    side = 1,
-    at = seq(
-      -plot_limit_kb,
-      plot_limit_kb,
-      length.out = 5
-    ),
-    cex.axis = if (compact) 0.75 else 1
-  )
-
-  abline(
-    v = 0,
-    col = "gray65",
-    lty = 3,
-    lwd = 1.5
-  )
-
-  for (model_name in model_levels) {
-
-    model_index <- (
-      x[["model"]] == model_name
-    )
-
-    lines(
-      x[["distance_to_tss_kb"]][model_index],
-      x[["proportion"]][model_index],
-      col = model_colors[[model_name]],
-      lwd = 2.5
-    )
-  }
-
-  legend_labels <- vapply(
-    model_levels,
-    function(model_name) {
-
-      model_index <- (
-        x[["model"]] == model_name
-      )
-
-      model_n <- unique(
-        x[["n_cs_in_window"]][model_index]
-      )
-
-      if (length(model_n) == 0L) {
-        model_n <- 0L
-      }
-
-      paste0(
-        model_name,
-        " (n = ",
-        model_n[1],
-        ")"
-      )
-    },
-    character(1)
-  )
-
-  legend(
-    "topright",
-    legend = legend_labels,
-    col = unname(
-      model_colors[model_levels]
-    ),
-    lwd = 2.5,
-    bty = "n",
-    cex = if (compact) 0.65 else 0.8
-  )
-
-  invisible(NULL)
+    x, plot_limit_kb,
+    main_title = "TSS distance for disagreeing CS leads", compact = FALSE) {
+  plot_tss_kde(x, model_colors = c(SuSiE = "#E69F00", `SuSiE-mix` = "#0072B2"),
+               plot_limit_kb = plot_limit_kb, main_title = main_title,
+               compact = compact, set_margins = TRUE)
 }
 
 

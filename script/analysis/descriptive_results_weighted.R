@@ -8,7 +8,8 @@ run_weighted_descriptive_results <- function(
     summary_file, cs_summary_file, output_dir,
     association_threshold = 1e-8, minimum_mean_reads = 100,
     project_dir = Sys.getenv("SUSIE_MIX_PROJECT_DIR", if (dir.exists("script/analysis")) getwd() else
-                              "/project2/mstephens/wdenault/susie_mix")) {
+                              "/project2/mstephens/wdenault/susie_mix"),
+    tss_bandwidth_kb = 10, tss_plot_limit_kb = 200) {
 library(data.table)
 source(file.path(project_dir, "script/analysis/tss_disagreement_utils.R"), local = TRUE)
 
@@ -25,8 +26,6 @@ if (!exists("res_cs_summary")) {
 res <- as.data.table(res_summary)
 cs_res <- as.data.table(res_cs_summary)
 
-tss_plot_limit_kb <- 200
-tss_bin_width_kb <- 10
 
 required_columns <- c(
   "gene",
@@ -606,50 +605,14 @@ prior_sensitivity_statistics <- rbindlist(list(
 
 tss_selection <- select_tss_disagreement(
   primary_cs, mixed_model = "Weighted SuSiE-mix",
-  plot_limit_kb = tss_plot_limit_kb, bin_width_kb = tss_bin_width_kb)
+  plot_limit_kb = tss_plot_limit_kb)
 tss_cs <- as.data.table(tss_selection$selected)
 
-bin_centers <- seq(
-  -tss_plot_limit_kb,
-  tss_plot_limit_kb,
-  by = tss_bin_width_kb
-)
-bin_breaks <- c(
-  bin_centers - tss_bin_width_kb / 2,
-  tail(bin_centers, 1) + tss_bin_width_kb / 2
-)
-
-make_tss_summary <- function(
-    x,
-    model_name,
-    tissue_name = "All tissues") {
-  distance <- x[
-    is.finite(distance_to_tss_kb),
-    distance_to_tss_kb
-  ]
-  plotted <- distance[
-    distance >= min(bin_breaks) & distance <= max(bin_breaks)
-  ]
-  counts <- hist(
-    plotted,
-    breaks = bin_breaks,
-    plot = FALSE,
-    include.lowest = TRUE,
-    right = FALSE
-  )$counts
-  data.table(
-    tissue = tissue_name,
-    model = model_name,
-    analysis_set = "CSs without a shared biological lead SNP",
-    distance_to_tss_kb = bin_centers,
-    bin_lower_kb = head(bin_breaks, -1),
-    bin_upper_kb = tail(bin_breaks, -1),
-    count = counts,
-    proportion = if (length(plotted) > 0L) counts / length(plotted) else NA_real_,
-    percentage = if (length(plotted) > 0L) 100 * counts / length(plotted) else NA_real_,
-    n_cs_total = length(distance),
-    n_cs_in_window = length(plotted)
-  )
+make_tss_summary <- function(x, model_name, tissue_name = "All tissues") {
+  as.data.table(summarize_tss_kde(
+    x, model_name, tissue_name,
+    plot_limit_kb = tss_plot_limit_kb, bandwidth_kb = tss_bandwidth_kb
+  ))
 }
 
 tss_distance_summary <- rbindlist(list(
@@ -742,45 +705,10 @@ pdf(
   width = 8,
   height = 5
 )
-valid_tss <- is.finite(tss_distance_summary$proportion)
-y_max <- if (any(valid_tss)) {
-  max(0.01, 1.1 * max(tss_distance_summary$proportion[valid_tss]))
-} else {
-  1
-}
-plot(
-  NA_real_,
-  NA_real_,
-  xlim = c(-tss_plot_limit_kb, tss_plot_limit_kb),
-  ylim = c(0, y_max),
-  xlab = "Distance to TSS (kb)",
-  ylab = "Proportion of disagreeing CSs",
-  main = "TSS distance for disagreeing CS leads"
-)
-abline(v = 0, col = "gray65", lty = 3)
-if (!any(valid_tss)) text(0, .5, "No disagreeing CS leads with finite TSS distance")
-model_colors <- c(
-  SuSiE = "#E69F00",
-  `Weighted SuSiE-mix` = "#009E73"
-)
-for (model_name in names(model_colors)) {
-  temp <- tss_distance_summary[model == model_name]
-  lines(
-    temp$distance_to_tss_kb,
-    temp$proportion,
-    lwd = 2.5,
-    col = model_colors[[model_name]]
-  )
-}
-legend(
-  "topright",
-  legend = vapply(names(model_colors), function(name) {
-    n <- unique(tss_distance_summary[model == name, n_cs_in_window])
-    sprintf("%s (n = %d)", name, if (length(n)) n[1] else 0L)
-  }, character(1)),
-  col = unname(model_colors),
-  lwd = 2.5,
-  bty = "n"
+plot_tss_kde(
+  tss_distance_summary,
+  model_colors = c(SuSiE = "#E69F00", `Weighted SuSiE-mix` = "#009E73"),
+  plot_limit_kb = tss_plot_limit_kb
 )
 invisible(dev.off())
 

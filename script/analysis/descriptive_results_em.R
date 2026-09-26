@@ -4,7 +4,9 @@ em_descriptive_settings <- list(
                             "/project2/mstephens/wdenault/susie_mix"),
   iteration = "latest",
   association_threshold = 1e-8,
-  minimum_mean_reads = 100
+  minimum_mean_reads = 100,
+  tss_bandwidth_kb = 10,         # Same Gaussian bandwidth for both models.
+  tss_plot_limit_kb = 200
 )
 if (sys.nframe() == 0L) {
   args <- commandArgs(trailingOnly = TRUE)
@@ -22,4 +24,6 @@ em_descriptive_tables <- run_weighted_descriptive_results(
   file.path(em_context$iteration_dir, "descriptive_results"),
   association_threshold = em_descriptive_settings$association_threshold,
   minimum_mean_reads = em_descriptive_settings$minimum_mean_reads,
-  project_dir = em_context$project_dir)
+  project_dir = em_context$project_dir,
+  tss_bandwidth_kb = em_descriptive_settings$tss_bandwidth_kb,
+  tss_plot_limit_kb = em_descriptive_settings$tss_plot_limit_kb)
