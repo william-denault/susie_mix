@@ -26,6 +26,14 @@ for (.init_helper in .init_helpers) source(.init_helper, local = TRUE)
 rm(.init_helpers, .init_missing, .init_helper)
 init_methods <- c("SuSiE", "SuSiE-slide", "SuSiE-init-slide")
 
+# PLINK workspace size affects execution, not the genotype/phenotype design.
+# Keep recording its actual value, while allowing memory-only resume changes.
+init_comparable_settings <- function(settings) {
+  if (identical(settings$genotype_inputs$mode, "gtex_fallback"))
+    settings$genotype_inputs$plink_memory <- NULL
+  settings
+}
+
 check_init_packages <- function() {
   packages <- c("susieR", "susieSlide", "data.table", "matrixStats")
   for (pkg in packages) if (!requireNamespace(pkg, quietly = TRUE)) stop("Install required package: ", pkg)
@@ -149,7 +157,8 @@ run_additive_initialization <- function(chunk = 1L, reps_per_chunk = 100L,
   results <- vector("list", reps_per_chunk)
   if (file.exists(output)) {
     old <- readRDS(output)
-    if (!identical(old$settings, settings)) stop("Checkpoint settings, input files or packages changed; use a new output_dir.")
+    if (!identical(init_comparable_settings(old$settings), init_comparable_settings(settings)))
+      stop("Checkpoint settings, input files or packages changed; use a new output_dir.")
     results <- old$results
     if (!is.list(results) || length(results) != reps_per_chunk) stop("Invalid checkpoint length.")
   }
@@ -159,16 +168,22 @@ run_additive_initialization <- function(chunk = 1L, reps_per_chunk = 100L,
       if (results[[i]]$seed != seed) stop("Checkpoint seed mismatch.")
       next
     }
+    fatal_error <- NULL
     results[[i]] <- tryCatch({
       data <- simulate_additive_init_data(seed, n = n, pve = pve, genotype_source = genotype_source)
       fitted <- fit_additive_init(data, fit_L, max_iter, tol)
       compact_additive_init(data, fitted, pve, save_fits)
-    }, error = function(e) list(seed = seed, error = conditionMessage(e)))
+    }, error = function(e) {
+      if (inherits(e, "init_plink_memory_error")) fatal_error <<- e
+      list(seed = seed, error = conditionMessage(e))
+    })
     temporary <- paste0(output, ".tmp")
     saveRDS(list(settings = settings, results = results), temporary)
     if (!file.rename(temporary, output)) stop("Could not replace checkpoint: ", output)
     message("PVE ", 100 * pve, "%, chunk ", chunk, ": ", i, "/", reps_per_chunk, " (seed ", seed, ")",
       if (!is.null(results[[i]]$error)) paste0(" ERROR: ", results[[i]]$error) else "")
+    # Save the failed seed first, then stop instead of repeating a resource error.
+    if (!is.null(fatal_error)) stop(fatal_error)
   }
   n_errors <- sum(vapply(results, function(x) !is.null(x$error), logical(1)))
   message("Saved ", output, "; ", n_errors, " failed replicates. Repeating the job retries failures and skips successes.")
@@ -183,7 +198,7 @@ summarize_additive_initialization <- function(
   results <- list(); reference <- NULL
   for (file in files) {
     saved <- readRDS(file)
-    design <- saved$settings; design$chunk <- NULL
+    design <- init_comparable_settings(saved$settings); design$chunk <- NULL
     if (is.null(reference)) reference <- design
     if (!identical(design, reference)) stop("Incompatible checkpoint settings: ", file)
     results <- c(results, Filter(Negate(is.null), saved$results))
@@ -263,6 +278,7 @@ run_additive_initialization_experiment <- function(
       output_dir = file.path(output_dir, sprintf("pve_%g", pve)),
       n = n, pve = pve, fit_L = fit_L, max_iter = max_iter, tol = tol,
       save_fits = save_fits, genotype_source = source), error = function(e) {
+        if (inherits(e, "init_plink_memory_error")) stop(e)
         detail <- paste0("PVE ", pve, ", chunk ", chunk, ": ", conditionMessage(e))
         failures <<- c(failures, detail)
         message(detail)

@@ -11,7 +11,8 @@ prepare_additive_genotypes <- function(
     datadir = Sys.getenv("SUSIE_MIX_GTEX_DIR", "/project2/mstephens/gtex"),
     project_dir = init_project_dir,
     target_gene = Sys.getenv("SUSIE_MIX_SIM_GENE", ""),
-    cis_window = 5e5, plink_threads = 1L, plink_memory = 2000L) {
+    cis_window = 5e5, plink_threads = 1L,
+    plink_memory = as.numeric(Sys.getenv("SUSIE_MIX_PLINK_MEMORY_MB", "8000"))) {
   if (!nzchar(genotype_dir)) genotype_dir <- file.path(init_project_dir, "temp_plink")
   files <- list.files(genotype_dir, pattern = "\\.raw$", full.names = TRUE)
   if (length(files)) {
@@ -26,7 +27,8 @@ prepare_additive_genotypes <- function(
   stopifnot(length(target_gene) == 1L, !is.na(target_gene),
     cis_window > 0, cis_window == floor(cis_window),
     plink_threads >= 1L, plink_threads == floor(plink_threads),
-    plink_memory >= 640L, plink_memory == floor(plink_memory))
+    length(plink_memory) == 1L, is.finite(plink_memory),
+    plink_memory >= 640L, plink_memory <= .Machine$integer.max, plink_memory == floor(plink_memory))
   bfile <- file.path(datadir, "GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv")
   gtf <- file.path(datadir, "Homo_sapiens.GRCh38.103.chr.reformatted.collapse_only.gene.gtf.gz")
   plink <- Sys.getenv("SUSIE_MIX_PLINK", file.path(datadir, "plink2"))
@@ -60,7 +62,8 @@ prepare_additive_genotypes <- function(
   if (!nrow(loci)) stop("No matching autosomal protein-coding gene regions in the GTEx annotations.")
   message("No cached .raw files: using real GTEx cis-genotypes from ", datadir, ". ",
     if (nzchar(target_gene)) paste0("Gene: ", target_gene) else
-      paste0("Each seed selects one of ", nrow(loci), " autosomal protein-coding genes."))
+      paste0("Each seed selects one of ", nrow(loci), " autosomal protein-coding genes."),
+    " PLINK workspace: ", plink_memory, " MiB.")
   list(mode = "gtex", bfile = bfile, plink = plink, loci = loci,
     plink_threads = as.integer(plink_threads), plink_memory = as.integer(plink_memory),
     settings = list(mode = "gtex_fallback", files = init_file_signatures(required), loci = loci,
@@ -100,7 +103,16 @@ extract_additive_region <- function(source, index, temp_dir = tempdir(), run_pli
   status <- run_plink(source$plink, args, logfile)
   raw_file <- paste0(prefix, ".raw")
   if (status != 0L || !file.exists(raw_file)) {
-    detail <- if (file.exists(logfile)) paste(tail(readLines(logfile, warn = FALSE), 12L), collapse = "\n") else ""
+    log_lines <- if (file.exists(logfile)) readLines(logfile, warn = FALSE) else character()
+    detail <- paste(tail(log_lines, 12L), collapse = "\n")
+    if (any(grepl("out of memory|cannot allocate|failed to allocate|bad_alloc", log_lines, ignore.case = TRUE))) {
+      message <- paste0("PLINK ran out of memory for ", locus$gene,
+        " with --memory ", source$plink_memory, " MiB (exit ", status, ").\n",
+        "Stopping the experiment. Increase SUSIE_MIX_PLINK_MEMORY_MB within the RStudio/job memory allocation, then rerun.\n",
+        detail)
+      stop(structure(list(message = message, call = NULL),
+        class = c("init_plink_memory_error", "error", "condition")))
+    }
     stop("PLINK extraction failed for ", locus$gene, " (exit ", status, ").\n", detail)
   }
   succeeded <- TRUE

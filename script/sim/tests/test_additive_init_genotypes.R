@@ -44,17 +44,25 @@ test_gt_extraction <- function() {
   Sys.unsetenv("SUSIE_MIX_PLINK")
   on.exit(if (is.na(previous_plink)) Sys.unsetenv("SUSIE_MIX_PLINK") else
     Sys.setenv(SUSIE_MIX_PLINK = previous_plink), add = TRUE)
+  previous_memory <- Sys.getenv("SUSIE_MIX_PLINK_MEMORY_MB", unset = NA_character_)
+  Sys.unsetenv("SUSIE_MIX_PLINK_MEMORY_MB")
+  on.exit(if (is.na(previous_memory)) Sys.unsetenv("SUSIE_MIX_PLINK_MEMORY_MB") else
+    Sys.setenv(SUSIE_MIX_PLINK_MEMORY_MB = previous_memory), add = TRUE)
   prepare <- function(target_gene = "") prepare_additive_genotypes(
     genotype_dir = file.path(directory, "empty"), datadir = datadir,
     project_dir = project, target_gene = target_gene)
   source <- prepare()
   stopifnot(identical(source$mode, "gtex"), identical(source$loci$gene, c("A", "B")),
     identical(source$loci$chromosome, c("1", "2")), source$plink_threads == 1L,
+    source$plink_memory == 8000L,
     identical(as.numeric(source$loci$tss), c(1000000, 2010000)),
     identical(as.numeric(source$loci$from_bp), c(500000, 1510000)),
     identical(prepare("B")$loci$gene, "B"))
   failure <- tryCatch(prepare("Missing"), error = conditionMessage)
   stopifnot(grepl("No matching autosomal", failure, fixed = TRUE))
+  Sys.setenv(SUSIE_MIX_PLINK_MEMORY_MB = "16000")
+  stopifnot(prepare()$plink_memory == 16000L)
+  Sys.unsetenv("SUSIE_MIX_PLINK_MEMORY_MB")
 
   genotypes <- file.path(directory, "genotypes")
   dir.create(genotypes)
@@ -81,7 +89,8 @@ test_gt_extraction <- function() {
   value <- function(flag) called[match(flag, called) + 1L]
   stopifnot(file.exists(region$file), region$gene == "B", value("--bfile") == bfile,
     value("--chr") == "2", value("--from-bp") == "1510000", value("--to-bp") == "2510000",
-    value("--recode") == "A", value("--maf") == "0", value("--threads") == "1")
+    value("--recode") == "A", value("--maf") == "0", value("--threads") == "1",
+    value("--memory") == "8000")
   region$cleanup()
   stopifnot(!file.exists(region$file), !length(list.files(region$directory)), file.exists(unrelated))
   failed_prefix <- NULL
@@ -115,5 +124,52 @@ test_gt_extraction <- function() {
                       error = conditionMessage)
   stopifnot(grepl("Not enough donors", failure, fixed = TRUE), !any(file.exists(produced)))
   cat("PASS: GTEx fallback, optional gene, workhorse cis windows/flags, cleanup, unchanged sim_mix generation, paired PVEs and reproducibility.\n")
+
+  # Reproduce the reported 2000-MiB failure. It must stop the whole experiment
+  # after one extraction, checkpoint the failed seed, and release its files.
+  source$plink_memory <- source$settings$plink_memory <- 2000L
+  original_prepare <- prepare_additive_genotypes
+  assign("prepare_additive_genotypes", function(...) source, envir = .GlobalEnv)
+  on.exit(assign("prepare_additive_genotypes", original_prepare, envir = .GlobalEnv), add = TRUE)
+  extraction_attempts <- 0L
+  assign(".init_plink_call", function(executable, args, logfile) {
+    extraction_attempts <<- extraction_attempts + 1L
+    prefix <- args[match("--out", args) + 1L]
+    produced <<- c(produced, paste0(prefix, ".raw"))
+    writeLines("partial", paste0(prefix, ".raw"))
+    writeLines(c("reserving 2000 MiB for main workspace.", "Error: Out of memory."), logfile)
+    2L
+  }, envir = .GlobalEnv)
+  experiment_dir <- file.path(directory, "oom_resume")
+  failure <- tryCatch(run_additive_initialization_experiment(chunks = 1:2,
+    reps_per_chunk = 2L, output_dir = experiment_dir), error = identity)
+  checkpoint <- file.path(experiment_dir, "pve_0.025/chunks/additive_init_chunk001.rds")
+  saved <- readRDS(checkpoint)
+  stopifnot(inherits(failure, "init_plink_memory_error"), extraction_attempts == 1L,
+    !any(file.exists(produced)), !dir.exists(file.path(experiment_dir, "pve_0.05")),
+    !file.exists(file.path(dirname(checkpoint), "additive_init_chunk002.rds")),
+    grepl("2000", saved$results[[1L]]$error, fixed = TRUE), is.null(saved$results[[2L]]))
+  # Include an old-format failed record, as produced before fail-fast handling.
+  saved$results[[2L]] <- list(seed = 1000002L, error = "PLINK extraction failed: Out of memory.")
+  saveRDS(saved, checkpoint)
+  assign(".init_plink_call", fake_plink, envir = .GlobalEnv)
+  source$plink_memory <- source$settings$plink_memory <- 8000L
+  output_dir <- file.path(experiment_dir, "pve_0.025")
+  run_additive_initialization(chunk = 1L, reps_per_chunk = 2L, output_dir = output_dir,
+    pve = .025, genotype_source = source)
+  recovered <- readRDS(checkpoint)
+  stopifnot(recovered$settings$genotype_inputs$plink_memory == 8000L,
+    all(vapply(recovered$results, function(x) is.null(x$error), logical(1))))
+  # A further memory-only change skips successes; mixed-memory chunks summarize.
+  digest <- tools::md5sum(checkpoint)
+  source$plink_memory <- source$settings$plink_memory <- 16000L
+  run_additive_initialization(chunk = 1L, reps_per_chunk = 2L, output_dir = output_dir,
+    pve = .025, genotype_source = source)
+  stopifnot(identical(digest, tools::md5sum(checkpoint)))
+  run_additive_initialization(chunk = 2L, reps_per_chunk = 2L, output_dir = output_dir,
+    pve = .025, genotype_source = source)
+  summary <- summarize_additive_initialization(output_dir)
+  stopifnot(nrow(summary$metrics) == 12L, nrow(summary$errors) == 0L)
+  cat("PASS: memory override, immediate OOM stop, saved failure, retry of old 2000-MiB checkpoints, preserved successes and mixed-memory summaries.\n")
 }
 test_gt_extraction()

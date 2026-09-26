@@ -64,7 +64,8 @@ The fallback uses the scanning workhorse's existing paths:
 - `/project2/mstephens/gtex/Homo_sapiens.GRCh38.103.chr.reformatted.collapse_only.gene.gtf.gz`
 
 PLINK uses the workhorse's SNP/duplicate filtering and additive export flags,
-with one thread and a 2000 MB workspace. The resulting .raw file is passed to
+with one thread and an 8000 MiB workspace, matching the scanning workhorse's
+memory setting. The resulting .raw file is passed to
 the original sim_mix() generator in a private temporary folder. Its temporary
 export and logs are removed after use, including on failure. They are not added
 to the original genotype pool. The genotype data remain real; only the phenotype
@@ -83,6 +84,22 @@ Unset `SUSIE_MIX_SIM_GENE` to restore random gene selection. If the data paths
 differ from the scanning workhorse defaults, set `SUSIE_MIX_GTEX_DIR` or
 `SUSIE_MIX_PLINK` before running. A change of input mode or selected gene requires
 a separate output directory when checkpoints already exist.
+
+If PLINK reports an out-of-memory error, the runner saves the failed seed and
+stops the entire experiment immediately. The PLINK workspace is configurable:
+
+```r
+Sys.setenv(SUSIE_MIX_PLINK_MEMORY_MB = "8000")
+results <- run_additive_initialization_experiment()
+```
+
+The earlier 2000 MiB setting was insufficient for the GTEx input in the reported
+RCC run. The updated default is 8000 MiB, as in the scanning workhorse. This is
+PLINK's workspace setting, not an increase to the RStudio/server job allocation;
+choose a larger value only when the session has enough allocated memory for it
+and the existing R process. Memory-only changes can resume existing checkpoints:
+failed seeds are retried and successful replicates are kept. No deletion of old
+failed checkpoints is needed. Other input/design changes remain incompatible.
 
 Sourcing or pasting the main script only loads functions. The explicit
 experiment call runs sequentially inside the existing RStudio session.
@@ -130,6 +147,52 @@ a higher additive ELBO after initialization indicates a better solution for
 the additive objective. The saved results also include PIPs, credible sets,
 ELBO histories, convergence, timings and causal slider estimates.
 Set `save_fits = TRUE` to retain complete models as well.
+
+## ROC plots from saved PIPs
+
+Upload `script/sim/plot_additive_init_roc.R` to the same location on RCC, then
+run this in RStudio. It uses only base R and reads the saved checkpoints:
+
+```r
+project_dir <- "/project2/mstephens/wdenault/susie_mix"
+Sys.setenv(SUSIE_MIX_PROJECT_DIR = project_dir)
+source(file.path(project_dir, "script/sim/plot_additive_init_roc.R"))
+```
+
+The output folder is `simulation results/additive_slide_init_v3/figures/`:
+
+- `roc_pip.pdf` / `.png`: full ROC, false positive rate 0-1.
+- `roc_pip_zoom.pdf` / `.png`: false positive rate 0-0.25, matching the main plots.
+- `roc_pip_counts.csv`: PIP thresholds, pooled TP/FP counts and rates.
+- `roc_pip_replicates.csv`: included, nonconverged, failed and pending replicates.
+
+Each figure has a panel for each PVE and curves for SuSiE, SuSiE-slide and
+SuSiE-init-slide. Both panels use the same y-axis range, 0-1. True-positive rate
+is detected causal SNPs divided by all causal SNPs; false-positive rate is
+selected noncausal SNPs divided by all noncausal SNPs. Counts are pooled across
+successful replicates at each common PIP threshold. The threshold grid matches
+the main simulation plots, with dense tails near zero and one, including exact
+endpoints. Equal PIPs always enter together. These are ROC curves, not
+power-versus-FDR curves or PIP calibration plots.
+
+Failed and unfinished replicates are omitted. All methods use the same included
+replicates. By default, successful nonconverged fits are included and flagged
+in the audit CSV, matching the metric summaries. A panel without successful
+replicates is labelled accordingly; if neither PVE has successes, the script
+writes the audit CSV and reports that ROC plotting is not yet possible.
+
+For a different results directory or to exclude a replicate when any method
+did not converge, load the functions without automatic plotting:
+
+```r
+options(susie.init.roc.autorun = FALSE)
+source(file.path(project_dir, "script/sim/plot_additive_init_roc.R"))
+roc <- plot_additive_init_roc(
+  results_dir = file.path(project_dir, "simulation results/additive_slide_init_v3"),
+  exclude_nonconverged = TRUE
+)
+options(susie.init.roc.autorun = TRUE)
+```
 
 ## Optional Slurm execution
 
