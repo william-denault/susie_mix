@@ -1117,11 +1117,33 @@ get_one_cs_likelihood_comparison <- function(fit_add, fit_mix) {
 
 
 describe_one_cs_lead_change <- function(add_lead, mix_lead) {
+  same_lead <- identical(add_lead$lead_snp, mix_lead$lead_snp)
+  distance_label <- ""
+  if (!same_lead) {
+    # Use biological SNP coordinates, not indices in the mixed coding blocks.
+    ids <- as.character(c(add_lead$lead_snp, mix_lead$lead_snp))
+    valid <- length(ids) == 2L && !anyNA(ids) && all(grepl(
+      "^chr[^_]+_[0-9]+_[^_]+_[^_]+_b38(?:_|$)", ids, perl = TRUE
+    ))
+    distance_label <- " (distance unavailable)"
+    if (valid) {
+      chromosomes <- sub("^(chr[^_]+)_.*$", "\\1", ids)
+      positions <- as.numeric(sub("^chr[^_]+_([0-9]+)_.*$", "\\1", ids))
+      if (all(is.finite(positions) & positions > 0) && chromosomes[1] == chromosomes[2]) {
+        distance_bp <- abs(diff(positions))
+        distance_label <- paste0(
+          " (", format(if (distance_bp < 1000) distance_bp else distance_bp / 1000,
+                       big.mark = ",", scientific = FALSE, trim = TRUE),
+          if (distance_bp < 1000) " bp" else " kb", " apart, GRCh38)"
+        )
+      }
+    }
+  }
   paste0(
-    if (identical(add_lead$lead_snp, mix_lead$lead_snp)) {
+    if (same_lead) {
       "Same lead SNP; coding change only: "
     } else {
-      "Different lead SNP; coding change: "
+      paste0("Different lead SNP", distance_label, "; coding change: ")
     },
     "additive -> ", mix_lead$lead_coding
   )

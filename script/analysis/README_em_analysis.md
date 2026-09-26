@@ -7,6 +7,7 @@ Rscript --vanilla script/analysis/generate_summary_results_em.R
 Rscript --vanilla script/analysis/descriptive_results_em.R
 Rscript --vanilla script/analysis/finding_interesting_dominant_1cs_em.R
 Rscript --vanilla script/analysis/finding_interesting_recessive_1cs_em.R
+Rscript --vanilla script/analysis/plot_additive_1cs_vs_mix_2cs_em.R
 ```
 
 Each script also supports RStudio **Source**: edit the settings list at its top.
@@ -18,6 +19,7 @@ Rscript --vanilla script/analysis/generate_summary_results_em.R /project2/msteph
 Rscript --vanilla script/analysis/descriptive_results_em.R /project2/mstephens/wdenault/susie_mix 12
 Rscript --vanilla script/analysis/finding_interesting_dominant_1cs_em.R /project2/mstephens/wdenault/susie_mix 12
 Rscript --vanilla script/analysis/finding_interesting_recessive_1cs_em.R /project2/mstephens/wdenault/susie_mix 12
+Rscript --vanilla script/analysis/plot_additive_1cs_vs_mix_2cs_em.R /project2/mstephens/wdenault/susie_mix 12
 ```
 
 `latest` selects the highest iteration in `prior_history.csv` with a valid
@@ -62,6 +64,18 @@ All new products live under `results_em/iteration_012/` (or the selected iterati
   grouped by each model's lead-SNP genotype. `expression/plot_summary.csv`
   records successful plots and errors. These are the same four-panel plots as
   in the original unweighted scripts, using the selected EM fit.
+  When the two lead SNPs differ, the subtitle includes their physical GRCh38
+  distance (bp below 1 kb, otherwise kb). The same text is saved in the
+  expression audit's `lead_comparison` column. Non-comparable coordinates are
+  labeled as distance unavailable. This subtitle helper is shared with the
+  original one-CS plots.
+- `plot/additive_1cs_vs_mix_2cs/`: individual `GENE_TISSUE_add1_mix2.png`
+  figures, `selected_cases.csv`, and `additive_1cs_vs_mix_2cs_plot_summary.csv`.
+  Each figure shows additive PIPs, EM PIPs, and expression at each of the two
+  EM CS leads adjusted for the other lead's predictor coding. The title reports
+  the closest additive-to-EM lead distance and the ELBO + KL comparison; the
+  audit retains all three pairwise lead distances, codings, PIPs, genotype
+  counts, and the EM iteration. Errors are recorded as rows in the audit.
 
 Individual plots are enabled by default (`expression_plots = TRUE`). For a
 summary-only run without GTEx data, set this to `FALSE` or pass `--summary-only`.
@@ -75,6 +89,18 @@ CS lead; with no additive CS it uses the highest-PIP SNP and labels that fallbac
 Set `both_one_cs = TRUE` for strictly one CS in both models. Both overview plots
 show the 20 largest physical shifts beside a distance-versus-PIP scatter. The
 six largest shifts with usable PIPs are labeled using the current EM results.
+
+`plot_additive_1cs_vs_mix_2cs_em.R` keeps the original comparison's P < 1e-8
+and mean reads >= 100 thresholds. It selects **one original additive CS and
+two final EM CSs**, across all coding combinations, using
+`ncs_weighted_fit_mix` and `overlap_snp_add_weighted` from the selected EM
+summary. The original `ncs_susie_mix` count is not used for EM selection.
+Run `generate_summary_results_em.R` for the same iteration first. Individual
+four-panel figures are always enabled and require the GTEx inputs. Edit
+`datadir` in the entry script for a different data location. The original and
+EM scripts share `add1_mix2_plot_utils.R` and `fit_mix_expression_plot_utils.R`.
+The EM entry also uses `em_add1_mix2_utils.R` and the existing EM summary helpers;
+sync the updated `script/analysis/` directory when updating the cluster.
 
 ### TSS plots: only disagreeing CS leads
 
@@ -123,4 +149,6 @@ Rscript --vanilla script/analysis/tests/test_weighted_summary.R
 Rscript --vanilla script/analysis/tests/test_one_cs_plots.R
 Rscript --vanilla script/analysis/tests/test_one_cs_lead_distance_plots.R
 Rscript --vanilla script/analysis/tests/test_tss_disagreement.R
+Rscript --vanilla script/analysis/tests/test_add1_mix2_comparison.R
+Rscript --vanilla script/analysis/tests/test_em_add1_mix2_plots.R
 ```

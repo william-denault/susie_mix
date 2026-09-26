@@ -14,7 +14,7 @@ load_functions <- function(path, wanted, envir) {
   stopifnot(all(vapply(wanted, exists, logical(1), envir = envir, inherits = FALSE)))
 }
 load_functions(
-  "script/analysis/plot_additive_1cs_vs_mix_2cs.R",
+  "script/analysis/add1_mix2_plot_utils.R",
   c("get_add1_mix2_lead_distances", "plot_four_panel_case"), plot_env
 )
 load_functions(
