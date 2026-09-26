@@ -83,7 +83,7 @@ em_one_cs_distances <- function(context, res, expected_coding = "dominant",
 
 em_plot_one_cs <- function(project_dir, iteration = "latest", expected_coding = "dominant",
                            association_threshold = 5e-8, minimum_mean_reads = 100,
-                           both_one_cs = FALSE, expression_plots = FALSE,
+                           both_one_cs = FALSE, expression_plots = TRUE,
                            datadir = "/project2/mstephens/gtex", top_n = 20L) {
   context <- em_analysis_context(project_dir, iteration)
   source(file.path(context$project_dir, "script/analysis/generate_summary_results.R"), local = TRUE)
@@ -122,13 +122,23 @@ em_plot_one_cs <- function(project_dir, iteration = "latest", expected_coding = 
     max_distance_kb = if (length(distance)) max(distance) / 1000 else NA_real_)
   write.csv(stats, file.path(output_dir, "lead_distance_summary.csv"), row.names = FALSE)
   print(stats)
+  expression_summary <- NULL
   if (expression_plots) {
+    expression_dir <- file.path(output_dir, "expression")
+    message("Generating individual SNP/PIP and expression plots for ", nrow(completed),
+            " gene-tissue pairs in: ", expression_dir)
     source(file.path(context$project_dir, "script/analysis/fit_mix_expression_plot_utils.R"), local = TRUE)
-    run_one_cs_fit_mix_plots(
-      completed, expected_coding, file.path(output_dir, "expression"), "plot_summary.csv",
+    expression_summary <- run_one_cs_fit_mix_plots(
+      completed, expected_coding, expression_dir, "plot_summary.csv",
       project_dir = context$project_dir, datadir = datadir,
       result_reader = function(file) em_join_gene(file.path(context$iteration_dir, "results", basename(file)), context),
       mixed_fit_name = "weighted_fit_mix", mixed_label = paste0("EM ", context$iteration, " SuSiE-mix"))
+    n_errors <- sum(expression_summary$status == "error")
+    if (n_errors > 0L) warning(n_errors, " individual plots failed; see ",
+                               file.path(expression_dir, "plot_summary.csv"), call. = FALSE)
+  } else {
+    message("Individual SNP/PIP and expression plots skipped (expression_plots = FALSE).")
   }
-  invisible(list(comparisons = comparisons, summary = stats, overview = overview))
+  invisible(list(comparisons = comparisons, summary = stats, overview = overview,
+                 expression_summary = expression_summary))
 }

@@ -87,12 +87,12 @@ attr(bad_out, "em_iteration") <- 9L
 saveRDS(bad_out, bad_path)
 expect_error(em_join_gene(bad_path, context), "wrong em_iteration")
 saveRDS(good_out, bad_path)
-plots <- em_plot_one_cs(root, 12)
+plots <- em_plot_one_cs(root, 12, expression_plots = FALSE)
 stopifnot(nrow(plots$comparisons) == 1L, plots$comparisons$distance_bp == 250000,
           plots$comparisons$lead_snp == snps[2], plots$comparisons$selected_cs_overlap_snps == 0,
           plots$summary$max_distance_kb == 250,
           file.info(plots$overview$output_file)$size > 10000)
-empty <- em_plot_one_cs(root, 12, expected_coding = "recessive")
+empty <- em_plot_one_cs(root, 12, expected_coding = "recessive", expression_plots = FALSE)
 stopifnot(nrow(empty$comparisons) == 0L, empty$summary$n_compared == 0L)
 # Cover the additive no-CS fallback.
 no_cs <- baseline$susie_add
@@ -107,6 +107,17 @@ if (requireNamespace("data.table", quietly = TRUE)) {
             file.exists(file.path(context$iteration_dir, "descriptive_results/weighted_overall_summary.csv")))
 } else message("SKIP descriptive integration: data.table not installed")
 # Exercise the dedicated recessive Source entry against a real saved EM fit.
+# Stub the GTEx-dependent renderer; test_one_cs_plots.R checks actual panels.
+writeLines(c(
+  'run_one_cs_fit_mix_plots <- function(cases, expected_coding, plot_dir, summary_filename,',
+  '                                  result_reader, mixed_fit_name, ...) {',
+  '  stopifnot(nrow(cases) == 1L, mixed_fit_name == "weighted_fit_mix")',
+  '  saved <- result_reader(paste0(cases$gene[1], ".rds"))',
+  '  stopifnot(!is.null(saved[[cases$tissue[1]]][[mixed_fit_name]]))',
+  '  data.frame(status = "plotted", gene = cases$gene, tissue = cases$tissue,',
+  '             coding = expected_coding, mixed_fit_name = mixed_fit_name)',
+  '}'
+), file.path(root, "script/analysis/fit_mix_expression_plot_utils.R"))
 recessive_out <- good_out
 recessive_out$Tissue$weighted_fit_mix <- make_fit(6, TRUE, 4L)
 saveRDS(recessive_out, bad_path)
@@ -116,7 +127,10 @@ Sys.setenv(SUSIE_MIX_PROJECT_DIR = root)
 recessive_env <- new.env(parent = globalenv())
 suppressWarnings(source("script/analysis/finding_interesting_recessive_1cs_em.R", local = recessive_env))
 if (is.na(saved_project)) Sys.unsetenv("SUSIE_MIX_PROJECT_DIR") else Sys.setenv(SUSIE_MIX_PROJECT_DIR = saved_project)
-stopifnot(recessive_env$em_one_cs_results$summary$n_compared == 1L,
+stopifnot(isTRUE(recessive_env$em_one_cs_settings$expression_plots),
+          recessive_env$em_one_cs_results$expression_summary$status == "plotted",
+          recessive_env$em_one_cs_results$expression_summary$coding == "recessive",
+          recessive_env$em_one_cs_results$summary$n_compared == 1L,
           recessive_env$em_one_cs_results$comparisons$lead_coding == "recessive",
           recessive_env$em_one_cs_results$comparisons$distance_bp == 250000,
           nrow(recessive_env$em_one_cs_results$overview$annotated_cases) == 1L)

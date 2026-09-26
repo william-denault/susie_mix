@@ -16,8 +16,8 @@ The project defaults to the current project root, then the RCC path, with
 ```bash
 Rscript --vanilla script/analysis/generate_summary_results_em.R /project2/mstephens/wdenault/susie_mix 12
 Rscript --vanilla script/analysis/descriptive_results_em.R /project2/mstephens/wdenault/susie_mix 12
-Rscript --vanilla script/analysis/finding_interesting_dominant_1cs_em.R /project2/mstephens/wdenault/susie_mix 12 --expression-plots
-Rscript --vanilla script/analysis/finding_interesting_recessive_1cs_em.R /project2/mstephens/wdenault/susie_mix 12 --expression-plots
+Rscript --vanilla script/analysis/finding_interesting_dominant_1cs_em.R /project2/mstephens/wdenault/susie_mix 12
+Rscript --vanilla script/analysis/finding_interesting_recessive_1cs_em.R /project2/mstephens/wdenault/susie_mix 12
 ```
 
 `latest` selects the highest iteration in `prior_history.csv` with a valid
@@ -57,8 +57,15 @@ All new products live under `results_em/iteration_012/` (or the selected iterati
   now describing the final EM fit versus additive and original unweighted fits.
 - `plot/one_cs_dominant/` and `plot/one_cs_recessive/`: `lead_snp_comparisons.csv`, `lead_distance_summary.csv`,
   `largest_lead_shifts.csv`, and `lead_snp_distance_overview.png`.
-- With `expression_plots = TRUE` or `--expression-plots`, the last folder also
-  contains `expression/` with four-panel PIP/expression plots and an error audit.
+- By default, both coding folders also contain `expression/` with individual
+  `GENE_TISSUE_add_vs_mix.png` figures: additive/EM SNP PIPs above expression
+  grouped by each model's lead-SNP genotype. `expression/plot_summary.csv`
+  records successful plots and errors. These are the same four-panel plots as
+  in the original unweighted scripts, using the selected EM fit.
+
+Individual plots are enabled by default (`expression_plots = TRUE`). For a
+summary-only run without GTEx data, set this to `FALSE` or pass `--summary-only`.
+The older `--expression-plots` flag remains accepted but is no longer needed.
 
 The descriptive analysis keeps the existing P < 1e-8 and mean reads >= 100
 thresholds. The one-CS analysis keeps the original P < 5e-8 and mean reads >= 100
