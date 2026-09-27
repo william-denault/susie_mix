@@ -72,7 +72,8 @@ fi
 iteration_dir="${launch[0]}"
 chunks="${launch[1]}"
 
-# Same resource settings as test1; array size comes from the saved gene chunks.
+# Same resource settings as test1. New iterations use 298 balanced chunks;
+# resumes use the pending chunks from that iteration's frozen manifest.
 if ! submission=$(sbatch --parsable --array="$chunks" \
     --output="${iteration_dir}/logs/susie_mix_%A_%a.out" \
     --error="${iteration_dir}/logs/susie_mix_%A_%a.err" \

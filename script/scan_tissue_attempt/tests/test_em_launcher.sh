@@ -39,7 +39,7 @@ Rscript() {
         mkdir -p "$iteration_dir"
         printf '%s\n' "$iteration_dir"
         local i sep=""
-        for ((i=1; i<=185; i++)); do printf '%s%d' "$sep" "$i"; sep=","; done
+        for ((i=1; i<=298; i++)); do printf '%s%d' "$sep" "$i"; sep=","; done
         printf '\n'
     fi
 }
@@ -61,7 +61,8 @@ sbatch() {
 export -f module flock squeue Rscript sbatch
 
 "$BASH" "$repo_dir/job/em_susie_mix" > "${test_dir}/out" 2>&1
-grep -q -- '--array=1,2,3,.*184,185' "$EM_TEST_ARGS"
+expected_chunks=$(seq -s, 1 298)
+grep -Fxq -- "--array=$expected_chunks" "$EM_TEST_ARGS"
 grep -Fxq "${SUSIE_MIX_PROJECT_DIR}/job/em_susie_mix_array" "$EM_TEST_ARGS"
 grep -Fxq "${SUSIE_MIX_PROJECT_DIR}/results_em/iteration_001" "$EM_TEST_ARGS"
 grep -Fxq '4242' "${SUSIE_MIX_PROJECT_DIR}/results_em/last_array_job_id.txt"
@@ -172,7 +173,7 @@ fi
 [[ ! -e "$EM_TEST_ARGS" && ! -e "$EM_TEST_CONT_ARGS" ]]
 
 # The worker passes the project, exact iteration directory, and chunk ID.
-export SLURM_ARRAY_TASK_ID=185
+export SLURM_ARRAY_TASK_ID=298
 if "$BASH" "$repo_dir/job/em_susie_mix_array" "$SUSIE_MIX_PROJECT_DIR" \
     "${SUSIE_MIX_PROJECT_DIR}/results_em/iteration_001"; then
     echo 'Expected worker R failure to propagate to Slurm' >&2; exit 1
@@ -180,7 +181,7 @@ fi
 export EM_TEST_FAIL_R=0
 "$BASH" "$repo_dir/job/em_susie_mix_array" "$SUSIE_MIX_PROJECT_DIR" \
     "${SUSIE_MIX_PROJECT_DIR}/results_em/iteration_001"
-grep -Fxq '185' "$EM_TEST_R_ARGS"
+grep -Fxq '298' "$EM_TEST_R_ARGS"
 grep -Fxq "${SUSIE_MIX_PROJECT_DIR}/script/scan_tissue_attempt/run_em_chunk.R" "$EM_TEST_R_ARGS"
 # A fresh four-iteration request starts at 001 and submits four arrays, with
 # exactly three continuations. Use a new temporary project; no real results

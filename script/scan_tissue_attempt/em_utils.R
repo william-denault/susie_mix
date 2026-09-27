@@ -69,6 +69,27 @@ em_read_manifest <- function(index_dir) {
   manifest
 }
 
+# Balance gene counts independently of the baseline scan's chunk boundaries.
+# Call only when preparing a new iteration; saved manifests stay frozen on resume.
+em_rechunk_manifest <- function(manifest, n_chunks = 298L) {
+  if (!is.data.frame(manifest) || !all(c("chunk", "gene") %in% names(manifest)) ||
+      !nrow(manifest) || !is.character(manifest$gene) || anyNA(manifest$gene) ||
+      any(!nzchar(manifest$gene)) || anyDuplicated(manifest$gene)) {
+    stop("Cannot repartition an empty or invalid gene manifest.")
+  }
+  if (!is.numeric(n_chunks) || length(n_chunks) != 1L || !is.finite(n_chunks) ||
+      n_chunks < 1 || n_chunks != floor(n_chunks) || n_chunks > .Machine$integer.max) {
+    stop("The number of EM chunks must be a positive integer.")
+  }
+  n_genes <- nrow(manifest)
+  n_chunks <- min(as.integer(n_chunks), n_genes)
+  sizes <- rep.int(n_genes %/% n_chunks, n_chunks)
+  larger <- seq_len(n_genes %% n_chunks)
+  sizes[larger] <- sizes[larger] + 1L
+  manifest$chunk <- rep.int(seq_len(n_chunks), sizes)
+  manifest
+}
+
 em_check_result_files <- function(results_dir, manifest) {
   files <- sort(list.files(results_dir, "\\.rds$", full.names = TRUE))
   genes <- sub("\\.rds$", "", basename(files))

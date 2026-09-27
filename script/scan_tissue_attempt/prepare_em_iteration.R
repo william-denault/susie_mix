@@ -1,6 +1,6 @@
 # Estimate priors before any fine mapping, or resume an unfinished iteration.
 # CLI: Rscript --vanilla prepare_em_iteration.R PROJECT_DIR [new|resume]
-em_prepare_iteration <- function(project_dir, mode = "new") {
+em_prepare_iteration <- function(project_dir, mode = "new", n_chunks = 298L) {
   if (!mode %in% c("new", "resume")) stop("Mode must be new or resume.")
   project_dir <- normalizePath(project_dir, winslash = "/", mustWork = TRUE)
   em_dir <- file.path(project_dir, "results_em")
@@ -55,6 +55,11 @@ em_prepare_iteration <- function(project_dir, mode = "new") {
     fit_name <- "susie_mix"
   }
 
+  # New iterations use smaller EM jobs regardless of the baseline/previous
+  # layout. The previous iteration's completion check and resume return above
+  # must happen first: its saved assignments and markers remain authoritative.
+  manifest <- em_rechunk_manifest(manifest, n_chunks)
+
   # This checks every expected gene, including explicit failed-fit records.
   files <- em_check_result_files(source_dir, manifest)
   message("Reading all ", length(files), " gene results from ", source_dir)
@@ -80,7 +85,9 @@ em_prepare_iteration <- function(project_dir, mode = "new") {
   em_atomic_write(pooled$audit, file.path(iteration_dir, "source_audit.csv"), csv = TRUE)
   em_atomic_write(pooled$component_counts, file.path(iteration_dir, "component_counts.rds"))
   em_atomic_write(em_bind_history(history, priors), history_file, csv = TRUE)
-  message("Prepared iteration ", iteration, " for ", nrow(priors), " tissues; ",
+  chunk_sizes <- table(manifest$chunk)
+  message("Prepared iteration ", iteration, " with ", length(chunk_sizes), " chunks (",
+          min(chunk_sizes), "-", max(chunk_sizes), " genes per chunk) for ", nrow(priors), " tissues; ",
           nrow(pooled$audit), " source audit entries. Priors saved before job submission.")
   list(iteration_dir = iteration_dir, chunks = sort(unique(manifest$chunk)))
 }

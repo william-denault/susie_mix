@@ -53,8 +53,9 @@ run_tests <- function() {
   }, add = TRUE)
   writeLines(c("G1", "G2"), file.path(project, "data/temp_index/chunk_001_genes.txt"))
   writeLines("G3", file.path(project, "data/temp_index/chunk_185_genes.txt"))
-  prepare <- function(mode = "new") em_prepare_iteration(project, mode)
-  # The directory is enumerated, not assumed to contain 100 or 185 chunks.
+  # Keep this small fixture at two EM chunks; production defaults to 298.
+  prepare <- function(mode = "new", n_chunks = 2L) em_prepare_iteration(project, mode, n_chunks)
+  # Source genes are enumerated independently of their original chunk labels.
   g1 <- list(Brain = make_tissue(c(.6, .3, .1), weighted = c(.01, .01, .98)),
              Liver = make_tissue(c(.1, .2, .7)))
   g2 <- list(Brain = make_tissue(c(.1, .1, .1, .1),
@@ -76,6 +77,10 @@ run_tests <- function() {
   saveRDS(g1, file.path(project, "results/G1.rds"))
   first <- prepare()
   equal(first$chunks, 1:2)
+  first_manifest <- readLines(file.path(first$iteration_dir, "manifest.csv"))
+  first_assignments <- read.csv(file.path(first$iteration_dir, "manifest.csv"))
+  equal(first_assignments$gene, c("G1", "G2", "G3"))
+  equal(first_assignments$chunk, c(1L, 1L, 2L))
   p1 <- read.csv(history_file)
   stopifnot(all(p1$iteration == 1), all(p1$source_fit == "susie_mix"))
   # Use component assignment probabilities, with unequal coding block sizes.
@@ -131,8 +136,9 @@ run_tests <- function() {
             is.finite(timing$elapsed_seconds), timing$elapsed_seconds >= 0)
   # Simulate a killed worker after saving its genes but before its marker.
   unlink(file.path(first$iteration_dir, "completed/chunk_001.done"))
-  resume <- prepare("resume")
+  resume <- prepare("resume", n_chunks = 3L)
   equal(resume$chunks, 1:2)
+  stopifnot(identical(readLines(file.path(first$iteration_dir, "manifest.csv")), first_manifest))
   stopifnot(identical(readLines(history_file), history_before))
   em_run_chunk(project, first$iteration_dir, 1L, fake_run)
   equal(calls, c("G1", "G2")) # Existing successful results were reused.
@@ -285,7 +291,16 @@ run_tests <- function() {
   write.csv(bad_history, history_file, row.names = FALSE)
   expect_error(prepare(), "differ from")
   write.csv(history_v1, history_file, row.names = FALSE)
-  third <- prepare()
+  second_manifest <- readLines(file.path(second$iteration_dir, "manifest.csv"))
+  # A completed iteration can transition to a new layout. The default is
+  # capped at the number of genes, so this three-gene fixture uses three jobs.
+  third <- em_prepare_iteration(project)
+  equal(third$chunks, 1:3)
+  third_assignments <- read.csv(file.path(third$iteration_dir, "manifest.csv"))
+  equal(third_assignments$gene, first_assignments$gene)
+  equal(third_assignments$chunk, 1:3)
+  stopifnot(identical(readLines(file.path(second$iteration_dir, "manifest.csv")), second_manifest),
+            identical(readLines(file.path(first$iteration_dir, "manifest.csv")), first_manifest))
   p3 <- read.csv(file.path(third$iteration_dir, "priors.csv"))
   stopifnot(all(p3$source_iteration == 2L), all(p3$update_method == "susie_purity_component_alpha_v3"))
   equal(read.csv(file.path(second$iteration_dir, "priors.csv")), p2_v1)
