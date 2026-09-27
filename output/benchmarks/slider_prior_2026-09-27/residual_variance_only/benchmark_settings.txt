@@ -1,0 +1,18 @@
+Complete individual-level fits; actual separately installed implementations.
+Sequential worker order: susie_slide, susie_slide_prior, susie
+Repetitions per method and scenario: 5
+Genotypes are iid Binomial(2, 0.3), complete 0/1/2 hard calls.
+Three causal SNPs: effects (0.9,-0.7,0.8), sliders (-0.5,0,0.5); noise SD 0.8.
+Matched L=10; intercept=TRUE; original additive-SD scaling; tol=1e-6; max_iter=300.
+Initial coefficient-prior variance 0.5 and noise variance 0.64 for every method.
+Fixed: neither variance estimated. Residual_only: sigma2 updated after each sweep; all effect-prior V values fixed.
+The new slider probabilities remain fixed at 1/17 in both variance settings. No prior-variance optimization is performed.
+Slider defaults: min_obs=5, chunk_size=1000, cache_heterozygotes=FALSE.
+coverage=NULL omits credible-set construction/purity in all methods.
+One full fit warm-up per method/case; convergence verified before timing.
+microbenchmark uses its default timer warmup; setup=invisible(gc()) is outside each timing.
+Includes input preparation, IBSS, fitting output construction; excludes simulation, startup and I/O.
+All workers run sequentially with OMP/MKL/OpenBLAS thread environment variables set to 1.
+One simulated data set per size; method/variance settings use exactly the same X and y.
+Different iteration counts reflect different models. Per-iteration times include amortized setup/output.
+Returned-fit memory is object.size, not peak process memory.

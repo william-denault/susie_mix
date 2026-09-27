@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head><title>R: Sum of Single Effects with Genotype Sliders</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<link rel="stylesheet" type="text/css" href="R.css">
+</head><body><div class="container">
+<h1> Sum of Single Effects with Genotype Sliders
+<img class="toplogo" src="../../../doc/html/Rlogo.svg" alt="[R logo]">
+</h1>
+<hr>
+<div style="text-align: center;">
+<a href="../../../doc/html/packages.html"><img class="arrow" src="../../../doc/html/left.jpg" alt="[Up]"></a>
+<a href="../../../doc/html/index.html"><img class="arrow" src="../../../doc/html/up.jpg" alt="[Top]"></a>
+</div><h2>Documentation for package &lsquo;susieRSlidePrior&rsquo; version 0.3.0</h2>
+
+<ul><li><a href="../DESCRIPTION" type="text/plain; charset=utf-8">DESCRIPTION file</a></li>
+<li><a href="../README.md">Package README</a></li>
+</ul>
+
+<h2>Help Pages</h2>
+
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="absolute.order.html">absolute.order</a></td>
+<td>Ordering of Predictors from Coefficient Estimates</td></tr>
+<tr><td style="width: 25%;"><a href="block_coordinate_ascent.html">block_coordinate_ascent</a></td>
+<td>Block coordinate ascent for iterative model refinement.</td></tr>
+<tr><td style="width: 25%;"><a href="univariate_regression.html">calc_z</a></td>
+<td>Perform Univariate Linear Regression Separately for Columns of X</td></tr>
+<tr><td style="width: 25%;"><a href="coef.mr.ash.html">coef.mr.ash</a></td>
+<td>Extract Regression Coefficients from Mr.ASH Fit</td></tr>
+<tr><td style="width: 25%;"><a href="coef.susie.html">coef.susie</a></td>
+<td>Extract regression coefficients from susie fit</td></tr>
+<tr><td style="width: 25%;"><a href="slider_cs_table.html">coef.susie_slide</a></td>
+<td>Slider coefficients, predictions, and credible-set output</td></tr>
+<tr><td style="width: 25%;"><a href="compute_marginal_bhat_shat.html">compute_marginal_bhat_shat</a></td>
+<td>Per-Position Marginal OLS Regression of 'Y' on Each Column of 'X'</td></tr>
+<tr><td style="width: 25%;"><a href="compute_suff_stat.html">compute_suff_stat</a></td>
+<td>Compute sufficient statistics for input to 'susie_ss'</td></tr>
+<tr><td style="width: 25%;"><a href="data_small.html">data_small</a></td>
+<td>Simulated Small-sample eQTL Data.</td></tr>
+<tr><td style="width: 25%;"><a href="estimate_s_rss.html">estimate_s_rss</a></td>
+<td>Estimate s in 'susie_rss' Model Using Regularized LD</td></tr>
+<tr><td style="width: 25%;"><a href="FinemappingConvergence.html">FinemappingConvergence</a></td>
+<td>Simulated Fine-mapping Data with Convergence Problem.</td></tr>
+<tr><td style="width: 25%;"><a href="get.full.posterior.html">get.full.posterior</a></td>
+<td>Approximation Posterior Expectations from Mr.ASH Fit</td></tr>
+<tr><td style="width: 25%;"><a href="get_cs_correlation.html">get_cs_correlation</a></td>
+<td>Get Correlations Between CSs, using Variable with Maximum PIP From Each CS</td></tr>
+<tr><td style="width: 25%;"><a href="kriging_rss.html">kriging_rss</a></td>
+<td>Compute Distribution of z-scores of Variant j Given Other z-scores, and Detect Possible Allele Switch Issue</td></tr>
+<tr><td style="width: 25%;"><a href="mr.ash.html">mr.ash</a></td>
+<td>Multiple Regression with Adaptive Shrinkage</td></tr>
+<tr><td style="width: 25%;"><a href="mr.ash.rss.html">mr.ash.rss</a></td>
+<td>Bayesian Multiple Regression with Mixture-of-Normals Prior (RSS)</td></tr>
+<tr><td style="width: 25%;"><a href="N2finemapping.html">N2finemapping</a></td>
+<td>Simulated Fine-mapping Data with Two Effect Variables</td></tr>
+<tr><td style="width: 25%;"><a href="N3finemapping.html">N3finemapping</a></td>
+<td>Simulated Fine-mapping Data with Three Effect Variables.</td></tr>
+<tr><td style="width: 25%;"><a href="path.order.html">path.order</a></td>
+<td>Ordering of Predictors by Regularization Path</td></tr>
+<tr><td style="width: 25%;"><a href="predict.mr.ash.html">predict.mr.ash</a></td>
+<td>Predict Outcomes or Extract Coefficients from Mr.ASH Fit</td></tr>
+<tr><td style="width: 25%;"><a href="predict.susie.html">predict.susie</a></td>
+<td>Predict outcomes or extract coefficients from susie fit.</td></tr>
+<tr><td style="width: 25%;"><a href="slider_cs_table.html">predict.susie_slide</a></td>
+<td>Slider coefficients, predictions, and credible-set output</td></tr>
+<tr><td style="width: 25%;"><a href="summary.susie.html">print.summary.susie</a></td>
+<td>Summarize Susie Fit.</td></tr>
+<tr><td style="width: 25%;"><a href="print.summary.susie_post_outcome_configuration.html">print.summary.susie_post_outcome_configuration</a></td>
+<td>Print a summary.susie_post_outcome_configuration object</td></tr>
+<tr><td style="width: 25%;"><a href="rss_mismatch_example.html">rss_mismatch_example</a></td>
+<td>Real-data SuSiE-RSS example with R-reference mismatch.</td></tr>
+<tr><td style="width: 25%;"><a href="slider_cs_table.html">slider_cs_table</a></td>
+<td>Slider coefficients, predictions, and credible-set output</td></tr>
+<tr><td style="width: 25%;"><a href="slot_prior_betabinom.html">slot_prior_betabinom</a></td>
+<td>Slot Activity Prior for SuSiE</td></tr>
+<tr><td style="width: 25%;"><a href="slot_prior_betabinom.html">slot_prior_poisson</a></td>
+<td>Slot Activity Prior for SuSiE</td></tr>
+<tr><td style="width: 25%;"><a href="summary.susie.html">summary.susie</a></td>
+<td>Summarize Susie Fit.</td></tr>
+<tr><td style="width: 25%;"><a href="summary.susie_post_outcome_configuration.html">summary.susie_post_outcome_configuration</a></td>
+<td>Summarise a susie_post_outcome_configuration result</td></tr>
+<tr><td style="width: 25%;"><a href="slider_cs_table.html">summary.susie_slide</a></td>
+<td>Slider coefficients, predictions, and credible-set output</td></tr>
+<tr><td style="width: 25%;"><a href="SummaryConsistency.html">SummaryConsistency</a></td>
+<td>Simulated Fine-mapping Data with LD matrix From Reference Panel.</td></tr>
+<tr><td style="width: 25%;"><a href="susie.html">susie</a></td>
+<td>SuSiE with a fixed finite prior on the heterozygote slider</td></tr>
+<tr><td style="width: 25%;"><a href="susie_additive.html">susie_additive</a></td>
+<td>Sum of Single Effects (SuSiE) Regression</td></tr>
+<tr><td style="width: 25%;"><a href="susie_auto.html">susie_auto</a></td>
+<td>Attempt at Automating SuSiE for Hard Problems</td></tr>
+<tr><td style="width: 25%;"><a href="susie_get_methods.html">susie_get_cs</a></td>
+<td>Inferences From Fitted SuSiE Model</td></tr>
+<tr><td style="width: 25%;"><a href="susie_get_methods.html">susie_get_cs_attainable</a></td>
+<td>Inferences From Fitted SuSiE Model</td></tr>
+<tr><td style="width: 25%;"><a href="susie_get_methods.html">susie_get_lfsr</a></td>
+<td>Inferences From Fitted SuSiE Model</td></tr>
+<tr><td style="width: 25%;"><a href="susie_get_methods.html">susie_get_niter</a></td>
+<td>Inferences From Fitted SuSiE Model</td></tr>
+<tr><td style="width: 25%;"><a href="susie_get_methods.html">susie_get_objective</a></td>
+<td>Inferences From Fitted SuSiE Model</td></tr>
+<tr><td style="width: 25%;"><a href="susie_get_methods.html">susie_get_pip</a></td>
+<td>Inferences From Fitted SuSiE Model</td></tr>
+<tr><td style="width: 25%;"><a href="susie_get_methods.html">susie_get_posterior_mean</a></td>
+<td>Inferences From Fitted SuSiE Model</td></tr>
+<tr><td style="width: 25%;"><a href="susie_get_methods.html">susie_get_posterior_samples</a></td>
+<td>Inferences From Fitted SuSiE Model</td></tr>
+<tr><td style="width: 25%;"><a href="susie_get_methods.html">susie_get_posterior_sd</a></td>
+<td>Inferences From Fitted SuSiE Model</td></tr>
+<tr><td style="width: 25%;"><a href="susie_get_methods.html">susie_get_prior_variance</a></td>
+<td>Inferences From Fitted SuSiE Model</td></tr>
+<tr><td style="width: 25%;"><a href="susie_get_methods.html">susie_get_residual_variance</a></td>
+<td>Inferences From Fitted SuSiE Model</td></tr>
+<tr><td style="width: 25%;"><a href="susie_init_coef.html">susie_init_coef</a></td>
+<td>Initialize a susie object using regression coefficients</td></tr>
+<tr><td style="width: 25%;"><a href="susie_plots.html">susie_plot</a></td>
+<td>SuSiE Plots.</td></tr>
+<tr><td style="width: 25%;"><a href="susie_plot_changepoint.html">susie_plot_changepoint</a></td>
+<td>Plot changepoint data and susie fit using ggplot2</td></tr>
+<tr><td style="width: 25%;"><a href="susie_plots.html">susie_plot_iteration</a></td>
+<td>SuSiE Plots.</td></tr>
+<tr><td style="width: 25%;"><a href="susie_post_outcome_configuration.html">susie_post_outcome_configuration</a></td>
+<td>Post-hoc causal-configuration probabilities for one or more SuSiE-class fits</td></tr>
+<tr><td style="width: 25%;"><a href="susie_rss.html">susie_rss</a></td>
+<td>SuSiE with Regression Summary Statistics (RSS)</td></tr>
+<tr><td style="width: 25%;"><a href="susie_rss_control.html">susie_rss_control</a></td>
+<td>Control parameters for SuSiE RSS</td></tr>
+<tr><td style="width: 25%;"><a href="susie_rss_lambda.html">susie_rss_lambda</a></td>
+<td>Sum of Single Effects Regression using the RSS-lambda likelihood</td></tr>
+<tr><td style="width: 25%;"><a href="susie_ser.html">susie_ser</a></td>
+<td>Single-effect regression from summary statistics</td></tr>
+<tr><td style="width: 25%;"><a href="susie_ss.html">susie_ss</a></td>
+<td>SuSiE using Sufficient Statistics</td></tr>
+<tr><td style="width: 25%;"><a href="susie_trendfilter.html">susie_trendfilter</a></td>
+<td>Apply susie to trend filtering (especially changepoint problems), a type of non-parametric regression.</td></tr>
+<tr><td style="width: 25%;"><a href="univar.order.html">univar.order</a></td>
+<td>Ordering of Predictors from Univariate Regression</td></tr>
+<tr><td style="width: 25%;"><a href="univariate_regression.html">univariate_regression</a></td>
+<td>Perform Univariate Linear Regression Separately for Columns of X</td></tr>
+<tr><td style="width: 25%;"><a href="unmappable_data.html">unmappable_data</a></td>
+<td>Simulated Fine-mapping Data with Sparse, Oligogenic and Polygenic Effects.</td></tr>
+</table>
+</div></body></html>

@@ -1,0 +1,45 @@
+Encoding: UTF-8
+Type: Package
+Package: susieRSlidePrior
+Title: Sum of Single Effects with Genotype Sliders
+Description: Fits genetic effects using the Sum of Single Effects (SuSiE)
+    model with a bounded heterozygote slider for each candidate SNP and
+    component. Gaussian effect coefficients are integrated analytically;
+    sliders are integrated over a fixed finite prior, with optional legacy
+    empirical-Bayes optimization and a rare-genotype additive fallback.
+    Includes the IBSS engine, compiled slider inference,
+    slider-aware predictions and credible sets, and an explicitly named
+    additive fitting entry point. Derived from susieR and Wang et al (2020)
+    <DOI:10.1101/501114> and Zou et al (2021) <DOI:10.1101/2021.11.03.467167>.
+Date: 2026-09-27
+Version: 0.3.0
+Authors@R: c(person("Gao","Wang",role="aut",email="wang.gao@columbia.edu"),
+             person("Yuxin","Zou",role="aut"),
+             person("Alexander","McCreight",role="aut"),
+             person("Kaiqian","Zhang",role="aut"),
+             person("William","R.P. Denault",role="aut"),
+             person("Peter","Carbonetto",role=c("aut","cre"),
+                    email="peter.carbonetto@gmail.com"),
+	     person("Matthew","Stephens",role="aut"))
+License: BSD_3_clause + file LICENSE
+Depends: R (>= 4.1.0)
+Imports: methods, graphics, grDevices, stats, Matrix, matrixStats,
+        mixsqp, reshape, crayon, ggplot2, Rfast
+LinkingTo: cpp11, cpp11armadillo
+Suggests: curl, pkgload, rprojroot, testthat, microbenchmark, knitr,
+        rmarkdown, cowplot, L0Learn, susieR, decor
+LazyData: yes
+LazyDataCompression: xz
+NeedsCompilation: yes
+VignetteBuilder: knitr
+Config/roxygen2/version: 8.1.0
+Author: Gao Wang [aut],
+  Yuxin Zou [aut],
+  Alexander McCreight [aut],
+  Kaiqian Zhang [aut],
+  William R.P. Denault [aut],
+  Peter Carbonetto [aut, cre],
+  Matthew Stephens [aut]
+Maintainer: Peter Carbonetto <peter.carbonetto@gmail.com>
+Built: R 4.6.1; x86_64-w64-mingw32; 2026-09-27 17:19:38 UTC; windows
+Archs: x64

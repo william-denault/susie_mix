@@ -1,0 +1,437 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[margin=0.9in]{geometry}
+\usepackage{amsmath,amssymb,booktabs,array}
+\usepackage[hidelinks]{hyperref}
+\newcommand{\Normal}{\mathcal N}
+\newcommand{\BF}{\mathrm{BF}}
+\newcommand{\E}{\mathbb E}
+\newcommand{\KL}{\operatorname{KL}}
+\newcommand{\ERSS}{\operatorname{ERSS}}
+\newcommand{\ind}{\mathbf 1}
+\newcommand{\T}{^{\mathsf T}}
+\newcommand{\yb}{\widetilde{\mathbf y}}
+\newcommand{\etal}{\overline{\boldsymbol\eta}}
+\setlength{\parskip}{0.35em}
+\setlength{\parindent}{0pt}
+\allowdisplaybreaks
+\title{SuSiE with a finite slider prior\\\large A 17-point model and variational EM algorithm}
+\author{Model draft for \texttt{susie\_slide\_prior}}
+\date{27 September 2026}
+\begin{document}
+\maketitle
+
+\section{Model and the parameter learned by EM}
+We extend the slider model in Denault's manuscript~\cite{slider},
+Sections 2--5: retain the Gaussian prior on the effect size $\beta$,
+put a discrete prior on the slider $\delta$, and learn its probabilities
+by empirical Bayes. The support stays fixed:
+\begin{equation}
+ K=17,\qquad d_k=-1+\frac{k}{8},\quad k=0,\ldots,16.
+ \label{eq:grid}
+\end{equation}
+Thus the spacing is $1/8=0.125$, and
+\begin{align*}
+\mathcal D=\{&-1,-0.875,-0.75,-0.625,-0.5,-0.375,-0.25,-0.125,0,\\
+             &0.125,0.25,0.375,0.5,0.625,0.75,0.875,1\}.
+\end{align*}
+Write $\Pr(\delta=d_k)=w_k$, with $w_k\geq0$ and
+$\sum_{k=0}^{16}w_k=1$. Initialize $w_k^{(0)}=1/17$.
+Equal probabilities are the initialization; if they are fixed permanently,
+there is no slider-prior parameter for EM to estimate. This is a discrete
+distribution, not quadrature for a continuous uniform prior. In particular,
+the endpoints initially receive the same mass as every other point.
+
+For hard-call genotypes $x_{ij}\in\{0,1,2\}$, set
+$h_{ij}=\ind\{x_{ij}=1\}$. The coding is
+$f_\delta(x)=x+\delta\ind\{x=1\}$: $\delta=-1,0,1$ correspond to
+recessive, additive and dominant effects relative to the counted allele.
+Use the manuscript's intercept-integrated coordinates:
+\begin{equation}
+ \yb=U\T\mathbf y,\qquad
+ \mathbf a_j=\frac{U\T\mathbf x_j}{s_j},\qquad
+ \mathbf h_j=\frac{U\T\mathbf h_j^{\rm raw}}{s_j},\qquad
+ \mathbf z_{jk}=\mathbf a_j+d_k\mathbf h_j.
+ \label{eq:design}
+\end{equation}
+Here $U\T U=I_N$, $UU\T=I_n-\mathbf1\mathbf1\T/n$ and $N=n-1$.
+An explicit $U$ is unnecessary: centered inner products give the same
+results. Without an intercept, take $U=I_n$ and $N=n$.
+Set $s_j=1$ for raw units, or use the original additive genotype standard
+deviation, as in \texttt{susieSlide}. Exclude constant columns in the
+latter case. Keep $s_j$ fixed across all slider values.
+
+For $\ell=1,\ldots,L$, independently across components, let
+\begin{align}
+ J_\ell&\sim\operatorname{Categorical}(\pi_1,\ldots,\pi_p),&
+ C_\ell&\sim\operatorname{Categorical}(w_0,\ldots,w_{16}),\nonumber\\
+ \delta_\ell&=d_{C_\ell},&\beta_\ell&\sim\Normal(0,V_\ell),\nonumber\\
+ \boldsymbol\eta_\ell&=\beta_\ell\mathbf z_{J_\ell C_\ell},&
+ \yb&=\sum_{\ell=1}^L\boldsymbol\eta_\ell+
+       \boldsymbol\epsilon,\quad
+       \boldsymbol\epsilon\sim\Normal(0,\sigma^2 I_N).
+ \label{eq:model}
+\end{align}
+The three latent variables in a component are independent a priori.
+The SNP weights $\pi_j$ are fixed (usually $1/p$); $V_\ell>0$ and
+$\sigma^2>0$. A single common $\mathbf w$ is learned across components.
+Each component selects one SNP and one slider; there are not $p$
+independent observed slider draws per component. Different components may
+select the same SNP with different sliders.
+
+\newpage
+\section{Exact single-effect posterior on the grid}
+For an expected residual vector $\mathbf r_\ell$, precompute
+\begin{align}
+ A_j&=\mathbf a_j\T\mathbf a_j,&
+ B_j&=\mathbf a_j\T\mathbf h_j,&
+ D_j&=\mathbf h_j\T\mathbf h_j,\nonumber\\
+ t_{\ell j}&=\mathbf a_j\T\mathbf r_\ell,&
+ u_{\ell j}&=\mathbf h_j\T\mathbf r_\ell.
+ \label{eq:stats}
+\end{align}
+The first three quantities depend only on the genotypes. For all 17 values,
+\begin{equation}
+ S_{jk}=A_j+2d_kB_j+d_k^2D_j,\qquad
+ T_{\ell jk}=t_{\ell j}+d_ku_{\ell j}.
+ \label{eq:ST}
+\end{equation}
+Consequently, each grid evaluation needs only scalar arithmetic after two
+residual inner products per SNP. No transformed $n\times17p$ matrix is needed.
+
+Integrating the Gaussian effect size gives the conditional Bayes factor
+against a zero-effect component:
+\begin{align}
+ v_{\ell jk}&=\left(V_\ell^{-1}+S_{jk}/\sigma^2\right)^{-1},&
+ m_{\ell jk}&=v_{\ell jk}T_{\ell jk}/\sigma^2,\label{eq:moments}\\
+ b_{\ell jk}:=\log\BF_{\ell jk}
+ &=-\frac12\log\left(1+\frac{V_\ell S_{jk}}{\sigma^2}\right)
+ +\frac{V_\ell T_{\ell jk}^{\,2}}
+ {2\sigma^2(\sigma^2+V_\ell S_{jk})}.
+ \label{eq:bf}
+\end{align}
+These are the manuscript's Gaussian formulas evaluated at $\delta=d_k$.
+For one SER problem the evidence, relative to its null density $p_0$, is
+\begin{equation}
+ Z_\ell=\sum_{j=1}^p\sum_{k=0}^{16}\pi_jw_k\BF_{\ell jk},
+ \qquad p(\mathbf r_\ell)=p_0(\mathbf r_\ell)Z_\ell.
+ \label{eq:evidence}
+\end{equation}
+The exact SER posterior is
+\begin{align}
+ \rho_{\ell jk}
+ &:=\Pr(J_\ell=j,C_\ell=k\mid\mathbf r_\ell)
+   =\frac{\pi_jw_k\exp(b_{\ell jk})}{Z_\ell},\label{eq:rho}\\
+ \beta_\ell\mid J_\ell=j,C_\ell=k,\mathbf r_\ell
+ &\sim\Normal(m_{\ell jk},v_{\ell jk}).\label{eq:beta}
+\end{align}
+Normalize $\log\pi_j+\log w_k+b_{\ell jk}$ over \emph{all} $17p$ pairs
+using log-sum-exp. The SNP evidence is the prior average
+$\sum_k w_k\BF_{\ell jk}$, not the largest grid Bayes factor.
+
+The posterior SNP probability and conditional slider probabilities are
+\begin{equation}
+ \alpha_{\ell j}=\sum_k\rho_{\ell jk},\qquad
+ \Pr(\delta_\ell=d_k\mid J_\ell=j,\mathbf r_\ell)
+       =\rho_{\ell jk}/\alpha_{\ell j},
+ \label{eq:marginals}
+\end{equation}
+when $\alpha_{\ell j}>0$. Marginalizing $\beta$ over the slider therefore
+produces a mixture of 17 Gaussians, not generally a single Gaussian.
+
+For efficient fitted values define the \emph{joint} first moments
+\begin{equation}
+ a_{\ell j}^{*}=\sum_k\rho_{\ell jk}m_{\ell jk},\qquad
+ h_{\ell j}^{*}=\sum_k\rho_{\ell jk}d_km_{\ell jk},\qquad
+ \etal_\ell=X_c\mathbf a_\ell^{*}+H_c\mathbf h_\ell^{*},
+ \label{eq:fit}
+\end{equation}
+where $X_c$ and $H_c$ have columns $\mathbf a_j$ and $\mathbf h_j$.
+In general, $\E(\beta_\ell\delta_\ell\mid J_\ell=j)$ is not
+$\E(\beta_\ell\mid J_\ell=j)\E(\delta_\ell\mid J_\ell=j)$.
+Using the latter product would give an incorrect component fit.
+
+\newpage
+\section{SuSiE fitting: variational EM with IBSS updates}
+Use the factorization
+\begin{equation}
+ q(J,C,\beta)=\prod_{\ell=1}^L q_\ell(J_\ell,C_\ell,\beta_\ell).
+ \label{eq:q}
+\end{equation}
+Within a component retain all dependence between SNP identity, slider and
+effect size. Only the factors across components are separated. As in
+SuSiE~\cite{susie}, this yields a variational approximation for $L>1$;
+it is not an exact E-step for the full multi-effect posterior.
+
+\paragraph{E-step (coordinate ascent).}
+For each component, restore its old fitted contribution to the current
+residual and form
+\begin{equation}
+ \mathbf r_\ell=\yb-\sum_{b\ne\ell}\etal_b.
+ \label{eq:residual}
+\end{equation}
+Compute equations~\eqref{eq:stats}--\eqref{eq:rho} and update
+$q_\ell$ by equation~\eqref{eq:beta}. Then refresh its fitted contribution
+using equation~\eqref{eq:fit} before moving to the next component.
+
+\paragraph{M-step (learn the slider probabilities).}
+With the variational distribution fixed, the part of the expected
+complete-data log likelihood depending on $\mathbf w$ is
+\begin{equation}
+ Q(\mathbf w)=\sum_{k=0}^{16}N_k\log w_k+\text{constant},
+ \qquad N_k=\sum_{\ell=1}^L\sum_{j=1}^p\rho_{\ell jk}.
+ \label{eq:Q}
+\end{equation}
+Since $\sum_kN_k=L$, maximizing on the probability simplex gives
+\begin{equation}
+ \boxed{\displaystyle
+   w_k^{\rm new}=\frac1L\sum_{\ell=1}^L\sum_{j=1}^p\rho_{\ell jk},
+   \qquad k=0,\ldots,16.}
+ \label{eq:wupdate}
+\end{equation}
+The denominator is $L$, not $Lp$ or $17L$. The grid values $d_k$ do not
+move. Share $\mathbf w$ across components; independently fitting one prior
+per candidate SNP would defeat the intended pooling.
+
+\paragraph{Algorithm.}
+\begin{enumerate}
+ \item Initialize $w_k=1/17$, positive variances and zero component
+ fitted means. Equivalently initialize each variational factor to its
+ prior. Precompute $A_j,B_j,D_j$.
+ \item Holding $\mathbf w$ and the variances fixed, cycle over
+ $\ell=1,\ldots,L$ using the residual SER update above. One sweep is
+ a valid coordinate-ascent pass; more sweeps may improve the E-step.
+ \item Update all $w_k$ once using the current factors and
+ equation~\eqref{eq:wupdate}. Optionally update $V_\ell$ and $\sigma^2$
+ by the formulas on the next page.
+ \item Repeat until the ELBO and prior weights stabilize. Refresh the
+ posterior factors after the final hyperparameter change so that
+ reported summaries agree with the fitted parameters.
+\end{enumerate}
+
+\paragraph{Why the updates are valid.}
+For fixed parameters and other factors, independence in~\eqref{eq:q}
+gives
+\begin{equation}
+ \E_q\left\|\yb-\sum_b\boldsymbol\eta_b\right\|^2
+ =\E_{q_\ell}\|\mathbf r_\ell-\boldsymbol\eta_\ell\|^2+C_{-\ell},
+ \label{eq:residual-identity}
+\end{equation}
+where $C_{-\ell}$ is independent of $q_\ell$. Hence the ELBO as a function
+of $q_\ell$ equals $C+\log p(\mathbf r_\ell)
+-\KL(q_\ell\|p_{\rm SER,\ell})$. The grid SER posterior minimizes this
+KL to zero. Equation~\eqref{eq:wupdate} maximizes the same ELBO over
+$\mathbf w$ at fixed $q$. Exact coordinate updates are therefore
+nondecreasing in the ELBO, without guaranteeing a global optimum.
+For $L=1$, the posterior is exact and the procedure is ordinary EM.
+
+\newpage
+\section{Variance updates, objective and posterior summaries}
+The Gaussian prior on $\beta$ remains in the model. If its variance is
+learned, the EM update at fixed $q$ is
+\begin{equation}
+ V_\ell^{\rm new}=\sum_{j,k}\rho_{\ell jk}
+                         (v_{\ell jk}+m_{\ell jk}^{,2}).
+ \label{eq:Vupdate}
+\end{equation}
+All posterior moments on the right-hand sides of the M-step are held
+fixed at their current values. Do not omit uncertainty in the slider or
+in the effect size when computing the residual variance:
+\begin{align}
+ R&=\left\|\yb-\sum_\ell\etal_\ell\right\|^2,
+ \nonumber\\
+ \ERSS&=R+\sum_\ell\left\{
+  \sum_{j,k}\rho_{\ell jk}(v_{\ell jk}+m_{\ell jk}^{,2})S_{jk}
+                         -\|\etal_\ell\|^2\right\},\label{eq:erss}\\
+ (\sigma^2)^{\rm new}&=\ERSS/N.\label{eq:sigma}
+\end{align}
+Here $N=n-1$ is correct for the manuscript's intercept-integrated
+likelihood. Matching the current package's convention of estimating a
+fixed intercept in the full likelihood instead uses $n$ in this
+denominator and in the likelihood normalizing term. The centered SER
+updates at fixed $\sigma^2$ coincide under these two conventions.
+
+A computable ELBO for the stated intercept-integrated model is
+\begin{align}
+ \mathcal F&=-\frac N2\log(2\pi\sigma^2)-\frac{\ERSS}{2\sigma^2}
+             -\sum_\ell K_\ell,\label{eq:elbo}\\
+ K_\ell&=\sum_{j,k}\rho_{\ell jk}
+               \log\frac{\rho_{\ell jk}}{\pi_jw_k}\nonumber\\
+ &\quad+\frac12\sum_{j,k}\rho_{\ell jk}
+ \left\{\frac{v_{\ell jk}+m_{\ell jk}^{,2}}{V_\ell}
+                 -1+\log\frac{V_\ell}{v_{\ell jk}}\right\}.
+ \label{eq:kl}
+\end{align}
+This includes categorical uncertainty in both SNP and slider. Terms with
+zero posterior mass contribute zero; a posterior cannot assign positive
+mass where the prior has zero mass. Use log probabilities numerically.
+
+For positive-variance components, ordinary SNP PIPs remain
+\begin{equation}
+ \operatorname{PIP}_j=1-\prod_{\ell=1}^L(1-\alpha_{\ell j}).
+ \label{eq:pip}
+\end{equation}
+Construct component credible sets from the SNP probabilities
+$\alpha_{\ell j}$ after summing over the grid. Conditional slider
+summaries include
+\begin{align}
+ \E(\delta_\ell\mid J_\ell=j,\mathbf y)
+     &\simeq\frac{\sum_k d_k\rho_{\ell jk}}{\alpha_{\ell j}},\nonumber\\
+ \Pr(\delta_\ell=0\mid J_\ell=j,\mathbf y)
+     &\simeq\frac{\rho_{\ell j8}}{\alpha_{\ell j}}.
+ \label{eq:delta-summary}
+\end{align}
+These are summaries of the component-specific slider, not a unique
+SNP-wide slider if several components select the same SNP.
+Inference averages over slider uncertainty at the fitted $\mathbf w$;
+it does not integrate uncertainty in the empirical-Bayes estimate of
+$\mathbf w$. Setting $w_8=1$ exactly recovers additive SuSiE under
+the same scaling, priors and intercept convention.
+
+\newpage
+\section{Computational cost relative to Gaussian additive SuSiE}
+The comparison is with individual-level additive SuSiE on the same data,
+with a Gaussian prior on each selected coefficient and the same $L$.
+Both models integrate $\beta$ analytically.
+
+\paragraph{Setup and one residual SER calculation.}
+Both designs can be prepared in $O(np)$ work. The slider additionally
+needs the heterozygote indicators and the fixed cross-products
+$B_j,D_j$; these are computed once. At each new residual the additive
+calculation requires $t_{\ell j}$, while the slider also requires
+$u_{\ell j}$. This is one extra length-$n$ inner product per SNP per
+component update: approximately $n$ multiply-accumulate operations
+($2n-1$ separate multiplication/addition operations for a dense dot
+product), plus 16 extra grid-specific BF/moment evaluations and
+the associated mixture sums. Binary genotype implementations may use
+cheaper group sums, so this is a dense arithmetic comparison.
+
+After the two inner products, all 17 grid values cost $O(17)$ per SNP,
+not $O(17n)$. If only $\mathbf w$ is changed with a fixed residual,
+$V_\ell$ and $\sigma^2$, cached BFs can be reweighted in $O(17p)$
+without another pass through the samples.
+
+\paragraph{A full component update also refreshes fitted values.}
+Equation~\eqref{eq:fit} adds one multiplication by $H_c$ to the usual
+multiplication by $X_c$. The main dense operations are therefore
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.29\textwidth}p{0.29\textwidth}p{0.32\textwidth}@{}}
+\toprule
+Work per component & Additive Gaussian SuSiE & 17-point slider SuSiE\\
+\midrule
+Residual scores & $X_c\T\mathbf r_\ell$ &
+ $X_c\T\mathbf r_\ell$, $H_c\T\mathbf r_\ell$\\[0.4em]
+Scalar posterior work & $p$ candidate calculations & $17p$ pair calculations\\[0.4em]
+Fitted contribution & $X_c\mathbf a_\ell^{*}$ &
+ $X_c\mathbf a_\ell^{*}+H_c\mathbf h_\ell^{*}$\\[0.4em]
+Grid-prior update & None & $O(17p)$ count accumulation\\
+\bottomrule
+\end{tabular}
+\end{center}
+Counting a dense multiplication and addition separately, the leading
+matrix-vector work is approximately $4np$ operations per additive
+component update versus $8np$ per slider component update. Thus the
+extra leading cost is approximately $4np$ per component, or $4nLp$
+per sweep, plus $O(17Lp)$ scalar work. Equivalently there are two
+extra length-$n$ multiply-accumulate passes per SNP per full update.
+Updating $\mathbf w$ itself needs no new sample-level calculation.
+
+For $T$ total IBSS sweeps the optimized time order is
+\begin{equation}
+ O\{np+TL(np+17p)\},
+ \label{eq:cost}
+\end{equation}
+compared with $O\{np+TL(np+p)\}$ for additive SuSiE. With fixed $17$
+and $n$ large, both are $O(TLnp)$; the slider roughly doubles the
+dominant matrix work. This is not a measured twofold runtime guarantee:
+transcendental functions, implementation overhead, storage, genotype
+sparsity and the number of convergence sweeps also matter.
+
+Compared with the existing plug-in slider code, both residual products
+and both fitted-value products are already present. The main difference
+is replacing the cubic maximization by 17 BF/moment calculations and
+mixture bookkeeping, with no additional asymptotic sample pass.
+The manuscript's reported 10--20-fold integration slowdown describes
+its earlier implementation; it is not an inherent cost of this finite
+grid algorithm. Benchmarking is needed to compare elapsed times.
+
+\newpage
+\section{Choices relevant to implementation in this branch}
+\paragraph{Learning a distribution needs replicated effects.}
+There are 16 free prior weights. A single region with a small number of
+signals provides limited information about their population distribution.
+In particular, for $L=1$ and fixed variances,
+\begin{equation}
+ Z(\mathbf w)=\sum_k w_k B_k,\qquad B_k=\sum_j\pi_j\BF_{jk}.
+\end{equation}
+Its maximum over the simplex puts all mass on a maximizing $k$
+(or a mixture of tied maxima). Thus unregularized EB with one effect
+does not generally learn a diffuse distribution. To learn a shared
+inheritance-mode distribution, pool independent loci $g$:
+\begin{equation}
+ w_k^{\rm new}=
+ \frac{\sum_g\sum_{\ell=1}^{L_g}\sum_j\rho_{g\ell jk}}
+      {\sum_g L_g}.
+ \label{eq:pooled}
+\end{equation}
+Each locus retains its own residuals, noise variance and effect variances.
+An optional regularized alternative is a symmetric Dirichlet prior
+with parameters $1+\lambda/17$, giving the MAP update
+$(N_k+\lambda/17)/(L+\lambda)$. This changes the objective to
+penalized EB and is not required for the unregularized model above.
+
+\paragraph{The current \texttt{min\_obs} rule.}
+The package forces $\delta=0$ when any genotype class is too small.
+If retaining this rule, let $\mathcal J_{\rm free}$ be the SNPs passing
+the genotype-count filter. Use the conditional prior
+\begin{equation}
+ w_{jk}=\begin{cases}w_k,&j\in\mathcal J_{\rm free},\\
+                       \ind\{k=8\},&j\notin\mathcal J_{\rm free}.
+          \end{cases}
+ \label{eq:forced-prior}
+\end{equation}
+Replace $w_k$ by $w_{jk}$ in the SER probabilities and categorical KL.
+A forced SNP has evidence $\BF_{\ell j8}$, without a factor $w_8$.
+It does not provide evidence that the learned population prior is
+additive. The correct update becomes
+\begin{equation}
+ w_k^{\rm new}=
+ \frac{\sum_\ell\sum_{j\in\mathcal J_{\rm free}}\rho_{\ell jk}}
+      {\sum_\ell\sum_{j\in\mathcal J_{\rm free}}\alpha_{\ell j}}.
+ \label{eq:forced-update}
+\end{equation}
+If the denominator is zero, retain the previous weights. The same
+restriction applies to pooled-locus sums. Disabling the count rule
+gives the simpler common-prior model and update~\eqref{eq:wupdate}.
+
+\paragraph{Zero effects, orientation and storage.}
+The main derivation assumes $V_\ell>0$. An exactly zero-variance
+component can instead be represented as the deterministic zero vector
+with no SNP or slider draw, and omitted from prior-learning counts and
+the count denominator. A null alternative similarly has no slider
+draw. Weak positive-variance components remain in the stated model;
+dropping them by a heuristic threshold changes the update.
+
+Reversing the counted allele maps $(\beta,\delta)$ to
+$(-\beta,-\delta)$, after changing the intercept. A learned asymmetric
+prior therefore needs a consistent allele convention. If invariance
+to arbitrary per-SNP allele flips is desired, impose $w_k=w_{16-k}$;
+the constrained M-step pools each reflected pair's counts equally.
+
+Storing every posterior pair takes $O(17Lp)$ memory. This can be
+reduced by processing a component at a time and retaining its
+aggregated moments and grid counts; full pair posteriors can be
+recomputed when requested. $H_c$ can also be formed in chunks.
+Neither an $n\times17p$ design nor 17 residual cross-products is needed.
+
+\begin{thebibliography}{9}
+\bibitem{slider} W. Denault (September 2026).
+\emph{The slider model}. User-supplied manuscript
+\texttt{slider\_model-6.pdf}, especially Sections 2--5 and 8.
+\bibitem{susie} G. Wang, A. Sarkar, P. Carbonetto and M. Stephens (2020).
+A simple new approach to variable selection in regression, with
+application to genetic fine mapping. \emph{JRSS B}, 82, 1273--1300.
+\href{https://doi.org/10.1111/rssb.12388}{doi:10.1111/rssb.12388}.
+\end{thebibliography}
+\end{document}
