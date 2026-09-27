@@ -102,7 +102,7 @@ fi
 printf '%s\n' "$array_id" > "$array_file"
 printf '%s\n' "$batch" > "${state_dir}/last_batch.txt"
 printf '%s\t%s\t%s\n' "$batch" array "$array_id" >> "${state_dir}/submissions.tsv"
-echo "Submitted array $array_id. Results: ${project_dir}/simulation results/slide_v1/chunks"
+echo "Submitted array $array_id. Results: ${project_dir}/simulation results/slide_prior_v1/chunks"
 
 if (( batch < total )); then
     next=$((batch + 1))

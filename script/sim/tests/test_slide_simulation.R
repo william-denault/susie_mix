@@ -196,7 +196,8 @@ runner_manifest <- write_simulation_jobs(runner_root, pve_values = .05, reps_per
 # Copy only the shared source files so the generated script can resolve its
 # own test project, just as a locally generated script resolves the RCC copy.
 shared <- c("script/sim/run_job.R", "script/sim/sim_workhorse.R",
-            "script/sim/simulation_design.R", "script/scan_tissue_attempt/workhorse_utils.R")
+            "script/sim/simulation_design.R", "script/sim/additive_init_genotypes.R",
+            "script/scan_tissue_attempt/workhorse_utils.R")
 for (file in shared) {
   dir.create(dirname(file.path(runner_root, file)), recursive = TRUE, showWarnings = FALSE)
   stopifnot(file.copy(file.path(root, file), file.path(runner_root, file), overwrite = TRUE))

@@ -73,7 +73,7 @@ devtools::install_github("stephenslab/susieR", ref = "susie_slide_prior",
 ```
 
 For this update, sync `sim_workhorse.R`, `simulation_design.R`, `run_job.R`,
-`write_jobs.R`, `plot_simulations.R`, `simulation_plot_helpers.R`,
+`additive_init_genotypes.R`, `write_jobs.R`, `plot_simulations.R`, `simulation_plot_helpers.R`,
 `simulation_metric_helpers.R`, and
 `job/launch_simulation_slide` to their existing project locations. Then
 regenerate the numbered R jobs below. Old generated scripts carry schema 2;
@@ -170,8 +170,10 @@ used by the new batches.
 The launchers default to `/project2/mstephens/wdenault/susie_mix`; set
 `SUSIE_MIX_PROJECT_DIR` if the project is elsewhere. Generated R scripts find
 the project from their own location, so they can be generated locally and synced
-to RCC. Genotypes default to `temp_plink/*.raw`; set `SUSIE_MIX_GENOTYPE_DIR` to
-use another genotype directory. With the global launcher, task logs are
+to RCC. Existing `temp_plink/*.raw` files are used first; set
+`SUSIE_MIX_GENOTYPE_DIR` to use another cached genotype directory. If that
+directory is empty or absent, the runner uses the same direct GTEx extraction
+as the smaller initialization experiment (see below). With the global launcher, task logs are
 `job/logs/susie_slide_sim_ARRAYID_TASKID.out` and `.err`, and continuation logs
 are `job/logs/susie_slide_launch_JOBID.out` and `.err`. The initial global launch
 logs are written where `sbatch` was invoked, as are task logs for manual batches.
@@ -185,6 +187,56 @@ Rscript --vanilla script/sim/jobs_slide/sim_job_1.R
 ```
 
 `source("script/sim/jobs_slide/sim_job_1.R")` also runs that individual job.
+
+## Direct GTEx genotypes when no cached pool exists
+
+No genotype ZIP or pre-exported `.raw` pool is required. The shared runner
+loads `additive_init_genotypes.R`, the existing loader used by
+`sim_additive_slide_init.R`. For each replicate seed it samples an autosomal
+protein-coding gene from `data/genes_protein_coding.txt`, uses
+`script/scan_tissue_attempt/get_gene_annotations.R` to obtain its TSS, and
+extracts the surrounding +/-500 kb with PLINK. All five methods then fit the
+same simulated phenotype on that gene's real genotypes. The same seed selects
+the same gene across scenarios, PVEs and resumed runs.
+
+The loader uses the existing RCC paths:
+
+- `/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.{bed,bim,fam}`
+- `/project2/mstephens/gtex/Homo_sapiens.GRCh38.103.chr.reformatted.collapse_only.gene.gtf.gz`
+- `/project2/mstephens/gtex/plink2`
+
+Set `SUSIE_MIX_GTEX_DIR` or `SUSIE_MIX_PLINK` if these locations differ.
+Leave `SUSIE_MIX_SIM_GENE` unset for random genes; setting it selects a fixed
+gene. PLINK uses one thread and an 8000 MiB workspace by default, adjustable
+with `SUSIE_MIX_PLINK_MEMORY_MB` within the job's memory allocation.
+Each replicate has a private temporary export, removed after use. Exports
+are never added to the shared genotype pool. The checkpoint records the gene,
+coordinates, source-file signatures and eligible gene pool.
+
+An extraction failure stops the job before recording that replicate as done.
+Rerunning resumes from the unfinished seed, preserving completed replicates.
+A memory-only change is allowed on resume. Switching input modes, gene pools
+or source files requires a separate output directory. Simulation/fitting errors
+retain the existing handling described below.
+
+To fix a run that stopped with `No genotype .raw files found`, upload the
+updated `script/sim/run_job.R` and ensure `script/sim/additive_init_genotypes.R`,
+the annotation parser and gene list above are present on RCC. The existing
+schema-3 numbered jobs do not need regenerating. Check the input paths before
+submitting another array (this checks metadata; it does not fit models):
+
+```sh
+module load R/4.2.0
+Rscript --vanilla -e 'source("script/sim/run_job.R"); invisible(prepare_simulation_genotypes())'
+```
+
+Once the failed chain is no longer queued/running, restart batch 1. For the
+`pi-wdenault` allocation, the one-command account setting is inherited by the
+arrays and continuation launchers:
+
+```sh
+SBATCH_ACCOUNT=pi-wdenault sbatch --export=ALL job/launch_simulation_slide 1
+```
 
 ## Checkpoints and output
 
@@ -226,6 +278,7 @@ With the packages available in `.libPaths()`, run from the project root:
 
 ```sh
 Rscript script/sim/tests/test_slide_simulation.R
+Rscript script/sim/tests/test_slide_genotypes.R
 bash script/sim/tests/test_slide_launchers.sh
 ```
 
@@ -237,5 +290,9 @@ resumption through a generated R script; and validates plots and all ten
 paired method contrasts. The shell test checks batch boundaries, the four-stage
 continuation chain, duplicate prevention and failure propagation using fake
 Slurm commands and Rscript, without submitting anything to Slurm.
+The genotype test uses mock PLINK exports with real five-method fits to check
+direct GTEx loading, deterministic gene selection, cleanup, extraction failures,
+checkpoint resumption and cached-pool compatibility. It does not access RCC's
+protected GTEx data from the local machine.
 R fixtures and figure previews are written to `tmp/slide_prior_simulation_validation/run_*`; shell fixtures use `tmp/slide_simulation_validation`.
 These are small validation runs, not the full cluster simulation.
