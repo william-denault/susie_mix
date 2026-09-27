@@ -59,7 +59,7 @@ if (( batch > total || total == 0 )); then
     exit 1
 fi
 
-state_dir="${project_dir}/simulation results/slide_v1/launcher"
+state_dir="${project_dir}/simulation results/slide_prior_v1/launcher"
 log_dir="${project_dir}/job/logs"
 mkdir -p "$state_dir" "$log_dir"
 exec 9>"${state_dir}/.submit.lock"

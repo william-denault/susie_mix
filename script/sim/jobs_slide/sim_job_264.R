@@ -10,7 +10,7 @@ rm(.job_file, .job_files)
 
 job <- data.frame(
   job_id = 264L,
-  schema_version = 2L,
+  schema_version = 3L,
   name = "additive_dominant",
   K = 3L,
   L_add = 2L,
@@ -31,7 +31,7 @@ job <- data.frame(
   slide_min_obs = 5L,
   delta_prec = -0.5,
   delta_pdom = 0.5,
-  output_file = "simulation results/slide_v1/chunks/additive_dominant_add2_rec0_dom1_prec0_pdom0_n500_L10_pve0.3_seed1000000_reps400_chunk1.RData",
+  output_file = "simulation results/slide_prior_v1/chunks/additive_dominant_add2_rec0_dom1_prec0_pdom0_n500_L10_pve0.3_seed1000000_reps400_chunk1.RData",
   row.names = 264L, stringsAsFactors = FALSE)
 
 run_simulation_job(

@@ -4,7 +4,7 @@ source("script/sim/write_jobs.R")
 options(.writer_options)
 source("script/sim/run_job.R")
 root <- normalizePath(".", winslash = "/")
-validation <- file.path(root, "tmp/slide_simulation_validation")
+validation <- tempfile("run_", tmpdir = file.path(root, "tmp/slide_prior_simulation_validation"))
 dir.create(validation, recursive = TRUE, showWarnings = FALSE)
 
 expect_error <- function(expression, pattern) {
@@ -39,7 +39,12 @@ expect_error(sim_scenario_name(c(0, 0, 0, 0, 0)), "sum")
 manifest <- write_simulation_jobs(validation)
 stopifnot(nrow(manifest) == 1125L, sum(manifest$reps_per_chunk) == 450000,
           identical(sort(unique(manifest$pve)), c(.05, .1, .2, .3, .4)),
-          !anyDuplicated(manifest$output_file))
+          !anyDuplicated(manifest$output_file), all(manifest$schema_version == 3L),
+          all(startsWith(manifest$output_file, "simulation results/slide_prior_v1/chunks/")))
+# Both SuSiE APIs are supported, without changing the warm-start semantics.
+stopifnot(sim_initialization_argument(function(model_init) NULL) == "model_init",
+          sim_initialization_argument(function(s_init) NULL) == "s_init")
+expect_error(sim_initialization_argument(function(X, y) NULL), "initialization argument")
 # Every generated driver parses and embeds precisely its own manifest row.
 disk_manifest <- read.csv(file.path(validation, "script/sim/jobs_slide/manifest.csv"))
 for (i in seq_len(nrow(disk_manifest))) {
@@ -79,7 +84,7 @@ raw <- data.frame(FID = 1:650, IID = paste0("donor", 1:650), PAT = 0, MAT = 0,
                   SEX = 0, PHENOTYPE = -9, X)
 write.table(raw, file.path(genotypes, "fixture.raw"), row.names = FALSE, quote = FALSE, sep = "\t")
 
-# One real three-method fit for all 25 supports, plus an unequal K=5 triple
+# One real five-method fit for all 25 supports, plus an unequal K=5 triple
 # and a high-PVE repeat to check seed pairing and the noise scaling convention.
 selected <- which(!duplicated(conditions$name))
 selected <- c(selected, which(observed == "add0_rec2_dom0_prec1_pdom2"))
@@ -99,7 +104,8 @@ for (i in seq_len(nrow(smoke_manifest))) {
   args$seed <- 1000001
   args$temp_dir <- genotypes
   x <- suppressMessages(do.call(sim_mix, args))
-  stopifnot(identical(x$metrics$method, c("SuSiE", "SuSiE-mix", "SuSiE-slide")),
+  stopifnot(identical(x$metrics$method, c("SuSiE", "SuSiE-mix", "SuSiE-slide",
+                                       "SuSiE-slide-prior", "SuSiE-init-slide")),
             abs(x$genetic_variance - cell$pve) < 1e-12,
             length(unique(x$causal_snps)) == cell$K,
             identical(x$causal_delta, unname(sim_effect_delta[x$causal_coding])),
@@ -109,6 +115,15 @@ for (i in seq_len(nrow(smoke_manifest))) {
             length(x$susie_slide_pip) == length(x$susie_pip),
             all(x$susie_slide_pip >= 0 & x$susie_slide_pip <= 1),
             !any(c("y", "g", "noise") %in% names(x)))
+  stopifnot(identical(x$settings$slide_prior_grid, seq(-1, 1, length.out = 17)),
+            identical(x$settings$slide_prior_weights, rep(1 / 17, 17)),
+            all(is.finite(x$metrics$elbo)), all(is.finite(x$metrics$sigma2)),
+            identical(dim(x$susie_slide_prior_counts), c(10L, 17L)),
+            all(rowSums(x$susie_slide_prior_counts) <= 1 + 1e-10),
+            all(abs(x$susie_slide_prior_delta_causal) <= 1))
+  for (field in c("susie_slide_prior_pip", "susie_init_slide_pip"))
+    stopifnot(length(x[[field]]) == length(x$susie_pip),
+              all(is.finite(x[[field]])), all(x[[field]] >= 0 & x[[field]] <= 1))
   full_indices <- !is.na(x$true_pos_mix)
   stopifnot(identical(x$mix_to_add[x$true_pos_mix[full_indices]], x$true_pos[full_indices]))
   for (j in seq_along(x$susie_slide_cs$cs)) {
@@ -151,6 +166,29 @@ reference <- susieR::susie(G, y, L = 10, standardize = TRUE, estimate_prior_meth
 # variance optimizer amplifies that slightly. Check the resulting PIPs to 1e-7.
 stopifnot(max(abs(unname(reference$pip) - low$susie_pip)) < 1e-7)
 
+# Independently refit both new methods on the exact generated X/y. The warm
+# start must be the continuous slide fit, not the additive or finite-prior fit.
+data <- sim_mix(pve = .05, n = 500, L_rec = 2, L_prec = 1, L_pdom = 2,
+  seed = 1000001, temp_dir = genotypes, return_data = TRUE)
+args <- list(X = data$X, y = data$y, L = 10, standardize = TRUE,
+  estimate_prior_method = "optim", coverage = .95, min_abs_corr = .5, max_iter = 1000)
+slide <- do.call(susieSlide::susie, c(args, list(min_obs = 5)))
+warm_args <- args
+warm_args[[sim_initialization_argument()]] <- slide
+warm <- do.call(susieR::susie, warm_args)
+prior <- do.call(susieRSlidePrior::susie, c(args, list(min_obs = 5,
+  delta_grid = seq(-1, 1, length.out = 17), delta_prior = rep(1 / 17, 17))))
+stopifnot(isTRUE(all.equal(unname(warm$pip), low$susie_init_slide_pip, tolerance = 1e-10)),
+          isTRUE(all.equal(warm$sets, low$susie_init_slide_cs, tolerance = 1e-10)),
+          isTRUE(all.equal(unname(prior$pip), low$susie_slide_prior_pip, tolerance = 1e-10)),
+          isTRUE(all.equal(prior$delta_prior_counts, low$susie_slide_prior_counts)),
+          identical(prior$delta_prior, rep(1 / 17, 17)),
+          identical(warm_args[[sim_initialization_argument()]], slide))
+free <- which(!prior$delta_forced)
+counts <- apply(prior$alpha_delta[, free, , drop = FALSE], c(1, 3), sum)
+counts[prior$V == 0, ] <- 0
+stopifnot(isTRUE(all.equal(counts, low$susie_slide_prior_counts)))
+
 # Check actual save/resume through the shared runner, including refusal to reuse
 # an incompatible checkpoint. Use two reps only, in this isolated test project.
 runner_root <- file.path(validation, "runner")
@@ -192,6 +230,16 @@ save(list = c("results", "checkpoint_settings"), envir = saved, file = checkpoin
 expect_error(run_simulation_job(job_id, runner_root, genotypes), "Checkpoint design")
 saved$checkpoint_settings$design$delta_prec <- -.5
 save(list = c("results", "checkpoint_settings"), envir = saved, file = checkpoint)
+# A checkpoint missing a new method, or carrying the old schema, cannot resume.
+saved$results[[1]]$susie_slide_prior_pip <- NULL
+save(list = c("results", "checkpoint_settings"), envir = saved, file = checkpoint)
+expect_error(run_simulation_job(job_id, runner_root, genotypes), "Incomplete or incompatible")
+saved$results <- original
+saved$results[[1]]$settings$schema_version <- 2L
+save(list = c("results", "checkpoint_settings"), envir = saved, file = checkpoint)
+expect_error(run_simulation_job(job_id, runner_root, genotypes), "Incomplete or incompatible")
+saved$results <- original
+save(list = c("results", "checkpoint_settings"), envir = saved, file = checkpoint)
 
 # Read all 25 scenario families through the plotting pipeline. The figure smoke
 # exports one representative from each metric and all five scenario groups.
@@ -213,14 +261,20 @@ for (expression in script) {
   if (is.call(expression) && identical(expression[[1]], as.name("save_calibration_figures"))) next
   eval(expression, e)
 }
-stopifnot(sum(e$audit$included) == length(fitted), nrow(e$replicates) == 3L * length(fitted),
+stopifnot(sum(e$audit$included) == length(fitted), nrow(e$replicates) == 5L * length(fitted),
           length(unique(e$replicates$scenario)) == 25L,
-          nrow(e$metric_analysis$differences) == 12L * length(fitted))
+          nrow(e$metric_analysis$differences) == 40L * length(fitted),
+          setequal(e$calibration_table$method, sim_methods),
+          setequal(e$roc_table$method, sim_methods))
+reloaded <- e$collect_calibration(file.path(chunks, basename(smoke_manifest$output_file)),
+  e$replicates, sim_methods)
+stopifnot(isTRUE(all.equal(e$calibration_summary(reloaded), e$calibration_table)))
 for (group in names(e$scenario_groups))
   e$save_figure("coverage", e$scenario_groups[[group]], paste0("coverage_", group))
 for (metric in c("purity", "power", "cs_size", "roc", "power_fdr"))
   e$save_figure(metric, e$scenario_groups$triples_2, paste0(metric, "_triples_2"),
                 only_K = if (metric %in% c("roc", "power_fdr")) 5 else NULL)
+e$save_figure("pip_calibration", e$scenario_groups$triples_2, "calibration_five_methods")
 e$write_png <- TRUE
 e$save_figure("power", e$scenario_groups$triples_2, "review_power_triples")
 
@@ -250,4 +304,4 @@ p <- c(0, .1, .1, .9, 1)
 pc <- e$pip_counts(p, c(2, 5), t)
 stopifnot(all(pc[, "tp"] == sapply(c(t, Inf), function(cut) sum(p[c(2, 5)] >= cut))),
           all(pc[, "fp"] == sapply(c(t, Inf), function(cut) sum(p[-c(2, 5)] >= cut))))
-cat("PASS: complete grid, 27 three-method datasets, generating effects/PVE, resume, plots and paired metrics.\n")
+cat("PASS: complete grid, 27 five-method datasets, direct warm-start/prior fits, generating effects/PVE, resume, plots and paired metrics.\n")

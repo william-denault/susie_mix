@@ -2,7 +2,7 @@
 
 Run `source("script/sim/plot_simulations.R")` from R at the project root, or use the script's absolute path. Only base R is needed. Set `SUSIE_MIX_PROJECT_DIR` or edit `project_dir` if the project moves.
 
-The script reads `simulation results/slide_v1/chunks` and writes to `simulation results/slide_v1/figures`. It never refits models. See [README_simulations.md](README_simulations.md) for the generating design and cluster commands.
+The script reads `simulation results/slide_prior_v1/chunks` and writes to `simulation results/slide_prior_v1/figures`. It never refits models. See [README_simulations.md](README_simulations.md) for the generating design and cluster commands.
 
 To redraw an existing analysis after changing figure settings, use
 `source("script/sim/refresh_simulation_figures.R")`. This reuses the saved compact
@@ -15,7 +15,7 @@ settings, so all summaries use the new selection.
 
 ## Figures
 
-Blue is SuSiE, pink is SuSiE-mix, and green is SuSiE-slide. Columns are PVE **5%, 10%, 20%, 30%, 40%**. Figures contain at most five scenario rows:
+Blue is SuSiE, pink is SuSiE-mix, green is SuSiE-slide, orange is SuSiE-slide-prior, and purple is SuSiE-init-slide. Columns are PVE **5%, 10%, 20%, 30%, 40%**. Figures contain at most five scenario rows:
 
 | Suffix | Scenarios |
 |---|---|
@@ -28,12 +28,12 @@ Effect order is additive, recessive, dominant, partial recessive, partial domina
 Each figure is saved as PDF and PNG by default:
 
 - `coverage_<group>`, `purity_<group>`, `power_<group>`, `cs_size_<group>`: points and 95% analytic normal intervals against the number of causal SNPs.
-- `roc_<group>_L<K>` and `power_fdr_<group>_L<K>`: three method curves at a fixed true causal count.
+- `roc_<group>_L<K>` and `power_fdr_<group>_L<K>`: five method curves at a fixed true causal count.
 - `roc_<group>_all_L` and `power_fdr_<group>_all_L`: all applicable causal counts pooled into one curve per method. Set `write_roc_all_L <- FALSE` to omit.
 - Optional `roc_<group>_by_L.pdf` and `power_fdr_<group>_by_L.pdf`: multipage collections when `write_roc_pages <- TRUE`.
 - `pip_calibration_<group>_all_L_<method>`: mean PIP against the fraction of
   SNPs that are causal, with one method per figure and the same scenario/PVE
-  panels. Method suffixes are `susie`, `susie_mix`, and `susie_slide`, retaining
+  panels. Method suffixes are `susie`, `susie_mix`, `susie_slide`, `susie_slide_prior`, and `susie_init_slide`, retaining
   their original colors and symbols. Calibration exports only pooled all-L
   figures (15 PDFs and 15 PNGs by default), independently of the ROC settings.
   After successful export, the script removes the obsolete L-specific,
@@ -67,7 +67,7 @@ results". PNGs use the `cairo-png` device when available to preserve labels on W
 - **ROC:** pooled SNP-level PIP threshold counts, TPR = TP / causal SNPs and FPR = FP / noncausal SNPs. Tied PIPs enter together. The full threshold range is saved; the display defaults to FPR up to 0.25.
 - **Power–FDR:** pooled PIP-based TPR against FP / (TP + FP). This is pooled empirical FDP, labelled empirical FDR; it differs from FPR and the mean of replicate FDPs. No discoveries give (0, 0). Curves retain threshold order, including reversals, rather than a sorted or optimized envelope.
 
-SuSiE-mix SNP PIPs combine coding probabilities **within each single effect** before computing the union across active effects. Final coding PIPs are not summed. All three methods are evaluated at biological SNPs, including partial-effect scenarios without an exact generating predictor in SuSiE-mix. Slider PIPs and CSs condition on fitted deltas.
+SuSiE-mix SNP PIPs combine coding probabilities **within each single effect** before computing the union across active effects. Final coding PIPs are not summed. All five methods are evaluated at biological SNPs, including partial-effect scenarios without an exact generating predictor in SuSiE-mix. SuSiE-slide conditions on fitted deltas; SuSiE-slide-prior averages over its 17-point slider posterior and uses posterior-mean-coded genotypes for CS purity. SuSiE-init-slide reports additive PIPs and CSs after refitting from the continuous-slide initialization.
 
 Pooling sums counts before calculating ratios, including pooled-K curves. Larger loci contribute more noncausal SNPs, and allocations with more completed replicates contribute more observations. The analysis does not equally weight configuration averages; `configuration_counts.csv` exposes imbalance.
 
@@ -97,7 +97,7 @@ use the requested event-count formulas and do not adjust for shared seeds
 or dependence among credible sets. `proportion_ci_n = "denominator"` is the
 default; `"replicates"` is an optional alternative for the three bounded metrics.
 
-`method_comparison.csv` reports all three paired contrasts: SuSiE-mix minus SuSiE, SuSiE-slide minus SuSiE, and SuSiE-slide minus SuSiE-mix. The `method` and `reference` columns specify subtraction direction. Positive CS-size differences mean larger sets, not improved resolution. Overlapping marginal intervals are not a paired comparison.
+`method_comparison.csv` reports all ten paired contrasts between the five methods. The `method` and `reference` columns specify subtraction direction. Positive CS-size differences mean larger sets, not improved resolution. Overlapping marginal intervals are not a paired comparison.
 
 The separate paired contrasts use Gaussian delta-method intervals with seed
 blocks, retaining covariance between methods without resampling. For method
@@ -137,7 +137,7 @@ bars, not independent-SNP binomial intervals or posterior credible intervals.
 
 ## Checkpoints, audits and tables
 
-The reader checks all five causal counts, true effect labels/deltas, PVE, sample size, fitted L, QC settings and slider settings. It requires three-method saves by default. Partial effects are never coerced into endpoint truth categories. Paired all-additive controls need separate plots.
+The reader checks all five causal counts, true effect labels/deltas, PVE, sample size, fitted L, QC settings and slider settings. It requires five-method saves by default. Partial effects are never coerced into endpoint truth categories. Paired all-additive controls need separate plots.
 
 Larger advertised checkpoints are preferred; repeated configuration/seed pairs are removed. Successful saved replicates are included even when jobs are incomplete. Error records are audited and excluded from every method. By default, nonconverged fits remain in the comparison and are counted. Set `exclude_nonconverged <- TRUE` to exclude a replicate from every method whenever any fit did not converge. All-error input stops after writing the audit.
 
@@ -161,6 +161,18 @@ limits shared across each figure; this does not fit models.
 Run `Rscript script/sim/tests/test_metric_intervals.R` for hand-calculated
 normal/Gaussian interval checks, edge cases and analytic paired contrasts.
 
-For a small preview, set `max_reps_per_file <- 5`, use another output directory and optionally disable PNG output. Restore `Inf` for final figures. `tests/test_slide_simulation.R` validates all 25 families and exports representative figures to `tmp/slide_simulation_validation/figures`.
+For a small preview, set `max_reps_per_file <- 5`, use another output directory and optionally disable PNG output. Restore `Inf` for final figures. `tests/test_slide_simulation.R` validates all 25 families and exports representative figures to `tmp/slide_prior_simulation_validation/run_*/figures`.
 
-Legacy two-method saves remain in their original directory. To inspect them, explicitly set `chunk_dir` to `simulation results/chunks`, use a separate output directory, set `method_names <- c("SuSiE", "SuSiE-mix")`, and use the first two colors. The filename reader accepts the old format. Legacy saves cannot supply a three-method comparison. The exact-coding diagnostic scripts still target the original three-coding data; see README_simulations.md.
+Existing three-method results remain readable without refitting:
+
+```r
+options(susie.sim.results_dir = "simulation results/slide_v1",
+        susie.sim.methods = c("SuSiE", "SuSiE-mix", "SuSiE-slide"))
+source("script/sim/plot_simulations.R")
+options(susie.sim.results_dir = NULL, susie.sim.methods = NULL)
+```
+
+For legacy two-method saves, use `susie.sim.results_dir = "simulation results"`
+and `susie.sim.methods = c("SuSiE", "SuSiE-mix")`. The filename reader accepts
+the old format. Old saves cannot supply the two new methods. The exact-coding
+diagnostics still target the original three-coding data; see README_simulations.md.

@@ -128,5 +128,5 @@ if "$BASH" "$repo_dir/job/launch_simulation_slide" 2 > "$test_dir/out" 2>&1; the
     echo 'Expected continuation failure to be reported' >&2; exit 1
 fi
 grep -q 'sbatch job/launch_simulation_slide 3' "$test_dir/out"
-grep -Fxq '7004' "$SUSIE_MIX_PROJECT_DIR/simulation results/slide_v1/launcher/last_array_job_id.txt"
+grep -Fxq '7004' "$SUSIE_MIX_PROJECT_DIR/simulation results/slide_prior_v1/launcher/last_array_job_id.txt"
 echo 'PASS: batch boundaries, R failure propagation, four-stage chain, duplicate protection and submission failures (mock Slurm).'

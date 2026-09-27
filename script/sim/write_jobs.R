@@ -32,7 +32,7 @@ write_simulation_jobs <- function(project_dir = sim_project_dir,
           reps_per_chunk = reps_per_chunk, chunk = chunk,
           min_maf = .05, hwe_thresh = 1e-8, min_n_rec = 5L, slide_min_obs = 5L,
           delta_prec = -.5, delta_pdom = .5,
-          output_file = paste0("simulation results/slide_v1/chunks/",
+          output_file = file.path(sim_results_dir, "chunks",
             sim_checkpoint_name(condition, n, L, pve, seed_base, reps_per_chunk, chunk)))
       }
     }

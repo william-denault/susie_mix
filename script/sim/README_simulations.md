@@ -1,12 +1,23 @@
-# Five-effect simulations with SuSiE-slide
+# Full RCC simulations with five fitted methods
 
-The simulation compares `susieR::susie()` on additive genotypes (SuSiE),
-`susieR::susie()` on the existing additive/recessive/dominant predictor blocks
-(SuSiE-mix), and `susieSlide::susie()` on the original genotypes (SuSiE-slide).
+The full 1,125-job RCC simulation fits five methods to every dataset:
+
+1. **SuSiE:** `susieR::susie()` on additive genotypes.
+2. **SuSiE-mix:** `susieR::susie()` on the additive/recessive/dominant blocks.
+3. **SuSiE-slide:** `susieSlide::susie()` on the original genotypes.
+4. **SuSiE-slide-prior:** `susieRSlidePrior::susie()` with the fixed grid
+   `seq(-1, 1, length.out = 17)` and fixed probabilities `rep(1/17, 17)`.
+5. **SuSiE-init-slide:** additive `susieR::susie()` on the original X/y,
+   passing the full continuous SuSiE-slide fit as `model_init` (or `s_init`
+   on older SuSiE versions), as in the separate initialization experiment.
+
+The prior model integrates slider uncertainty; its probabilities are not
+learned in these simulations. The initialized fit is an additive model with
+a different starting point. It neither fixes nor optimizes the slide deltas.
 All methods fit the same phenotype and use fitted L = 10, 95% credible sets,
 minimum CS absolute correlation 0.5, `estimate_prior_method = "optim"`, and
-`max_iter = 1000`. Namespace-qualified calls prevent the packages' two `susie`
-functions from masking one another.
+`max_iter = 1000`. Namespace-qualified calls select the intended package's
+`susie` function.
 
 ## Design
 
@@ -28,7 +39,8 @@ There are 5, 15, 35, 65, and 105 allocations at K = 1, 2, 3, 4, and 5,
 respectively, for **225 configurations**. All 55 original configurations remain.
 
 Each configuration has n = 500, PVE = **0.05, 0.10, 0.20, 0.30, 0.40**, and
-400 replicates: **1,125 jobs, 450,000 datasets, and 1,350,000 fits**.
+400 replicates: **1,125 jobs, 450,000 datasets, and 2,250,000 fits**.
+The five-method extension leaves every generating configuration and seed unchanged.
 PVE is total genetic PVE. Causal predictors have equal individual contribution
 variances and random effect signs. The combined genetic signal is rescaled to
 `var(g) = pve`, accounting for LD; independent Gaussian errors have variance
@@ -38,20 +50,36 @@ The same seed is reused across conditions and PVE values, as in the original des
 Genotype filtering and the original scenarios' causal eligibility rules are
 preserved. When partial effects are present, candidate causal SNPs additionally
 require at least five observations in **each** genotype class after donor
-subsampling, so their intermediate shape is identifiable. SuSiE-slide uses
-`min_obs = 5`: at other candidate SNPs with a rare/absent genotype class it
-forces delta to zero. This status is saved rather than dropping those SNPs.
-The slider uses its native fixed additive-SD scaling; SuSiE-mix uses its native
+subsampling, so their intermediate shape is identifiable. Both slider models use
+`min_obs = 5`: at other candidate SNPs with a rare/absent genotype class they
+force delta to zero. This status is saved rather than dropping those SNPs.
+Both sliders use fixed additive-SD scaling; SuSiE-mix uses its native
 per-column standardization. Generating predictors are standardized separately.
 
 ## Prepare and run
 
-Install `susieR`, the implemented **susieSlide** package, `data.table`, and
+Install `susieR`, **susieSlide**, **susieRSlidePrior**, `data.table`, and
 `matrixStats` in the R library used by the cluster's `R/4.2.0` module.
 The local slider source is the root package in the `susieR` repository on the
 `susie_slide` branch; its package name is `susieSlide`, and its fitting entry
 point is `susieSlide::susie()`. The runner checks required packages before any
 replicates are started. Local installation does not install it on the cluster.
+
+Install the finite-prior package in R on RCC with:
+
+```r
+devtools::install_github("stephenslab/susieR", ref = "susie_slide_prior",
+  upgrade = "never", dependencies = NA, build_vignettes = FALSE)
+```
+
+For this update, sync `sim_workhorse.R`, `simulation_design.R`, `run_job.R`,
+`write_jobs.R`, `plot_simulations.R`, `simulation_plot_helpers.R`,
+`simulation_metric_helpers.R`, and
+`job/launch_simulation_slide` to their existing project locations. Then
+regenerate the numbered R jobs below. Old generated scripts carry schema 2;
+the updated runner rejects them. New outputs use schema 3 and the separate
+`simulation results/slide_prior_v1/` directory, preserving `slide_v1` results.
+Finish the previous simulation job chain before replacing its shared scripts.
 
 From R at the project root, source the writer. Sourcing **generates the files**;
 it does not fit models or submit jobs:
@@ -97,7 +125,7 @@ Completed compatible checkpoints are skipped. If only the continuation failed
 to submit, the log gives the next batch number to launch after the active array
 finishes. Active-job checks and a submission lock prevent duplicate launches
 through this global launcher. It records job IDs under
-`simulation results/slide_v1/launcher/` and prints a `scancel` command for stopping
+`simulation results/slide_prior_v1/launcher/` and prints a `scancel` command for stopping
 future batches while leaving the current array running.
 
 For manual submission instead, the same four launchers are available:
@@ -160,19 +188,24 @@ Rscript --vanilla script/sim/jobs_slide/sim_job_1.R
 
 ## Checkpoints and output
 
-New saves go to `simulation results/slide_v1/chunks`, leaving the original
-`simulation results/chunks` intact. Each filename encodes all five causal
+New saves go to `simulation results/slide_prior_v1/chunks`, leaving the original
+`simulation results/chunks` and `simulation results/slide_v1` intact. Each filename encodes all five causal
 counts, sample size, fitted L, PVE, seed base, replicate count, and chunk.
 Each checkpoint includes the design, genotype directory, and package versions.
-Resumption requires an exact match and valid three-method records. Changing
+Resumption requires an exact match and valid five-method records. Changing
 the design or packages requires a separate results directory; do not resume
-old two-method saves as if the slider had already been fitted.
+old two- or three-method saves as five-method results.
 
-Successful records contain SNP-level PIPs and CSs for all three methods,
+Successful records contain SNP-level PIPs and CSs for all five methods,
 convergence and discovery metrics, true effect labels and deltas, and slider
 CS deltas, component-by-causal-SNP deltas, and genotype-count fallback flags.
 Phenotypes, genotypes, and full fitted objects are not saved. `genetic_variance`
 records the achieved `var(g)` for a scaling check.
+The compact prior output also stores `susie_slide_prior_counts`, excluding
+forced-additive SNPs, and the exact fixed grid/probabilities. Metrics include
+the final ELBO, iteration count and residual variance for each fit. Compare
+ELBOs between the ordinary and slide-initialized additive fits to assess the
+starting point; the slider and mixed models have different likelihood/prior models.
 
 `true_pos` always identifies biological causal SNPs. `true_pos_mix` is **NA for
 partial effects**, because no exact partial predictor exists in the fitted
@@ -185,7 +218,7 @@ to these partial-effect scenarios.
 Simulation errors are saved with their seed and count toward the requested
 replicate total, as before. Nonconvergence is recorded separately. Plotting
 audits expose failures and incomplete cells; error records are not interpreted
-as null fits. See [README_plots.md](README_plots.md) for the three-method figures.
+as null fits. See [README_plots.md](README_plots.md) for the five-method figures.
 
 ## Local verification
 
@@ -200,9 +233,9 @@ The R test checks every generated job's settings and independently enumerates
 the grid; fits all 25 scenario families,
 an unequal five-SNP triple, and a high-PVE paired repeat; checks the generating
 effects and variance scaling; exercises interrupted and completed checkpoint
-resumption through a generated R script; and validates plots and all three
+resumption through a generated R script; and validates plots and all ten
 paired method contrasts. The shell test checks batch boundaries, the four-stage
 continuation chain, duplicate prevention and failure propagation using fake
 Slurm commands and Rscript, without submitting anything to Slurm.
-Fixtures and figure previews are written only to `tmp/slide_simulation_validation`.
+R fixtures and figure previews are written to `tmp/slide_prior_simulation_validation/run_*`; shell fixtures use `tmp/slide_simulation_validation`.
 These are small validation runs, not the full cluster simulation.

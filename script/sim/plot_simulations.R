@@ -10,8 +10,9 @@ project_dir <- Sys.getenv("SUSIE_MIX_PROJECT_DIR",
 source(file.path(project_dir, "script/sim/simulation_design.R"), local = TRUE)
 source(file.path(project_dir, "script/sim/simulation_plot_helpers.R"), local = TRUE)
 source(file.path(project_dir, "script/sim/simulation_metric_helpers.R"), local = TRUE)
-chunk_dir <- file.path(project_dir, "simulation results/slide_v1/chunks")
-output_dir <- file.path(project_dir, "simulation results/slide_v1/figures")
+results_dir <- getOption("susie.sim.results_dir", sim_results_dir)
+chunk_dir <- file.path(project_dir, results_dir, "chunks")
+output_dir <- file.path(project_dir, results_dir, "figures")
 reuse_saved_summaries <- isTRUE(getOption("susie.sim.reuse_saved_summaries", FALSE))
 
 pve_values <- c(0.05, 0.10, 0.20, 0.30, 0.40)
@@ -31,8 +32,11 @@ write_roc_all_L <- TRUE       # Also pool all causal counts into one curve per m
 write_roc_pages <- FALSE      # Optional extra PDFs collecting the per-L figures.
 write_png <- TRUE            # PDF is always written; PNG is useful for previews.
 
-method_names <- c("SuSiE", "SuSiE-mix", "SuSiE-slide")
-method_colors <- c("#2489FF", "#D81B60", "#009E73")
+method_names <- getOption("susie.sim.methods", sim_methods)
+stopifnot(length(method_names) > 0, !anyDuplicated(method_names), all(method_names %in% sim_methods))
+method_colors <- setNames(c("#2489FF", "#D81B60", "#009E73", "#E69F00", "#7B61A8"),
+                          sim_methods)[method_names]
+method_symbols <- setNames(c(16, 17, 15, 18, 8), sim_methods)[method_names]
 scenario_rows <- lapply(1:3, function(k) {
   vapply(combn(5L, k, simplify = FALSE), function(ids) {
     counts <- integer(5L)
@@ -201,14 +205,24 @@ for (f in seq_len(nrow(file_info))) {
                    as.integer(unlist(s[sim_count_columns]))))
       stop("Causal coding labels disagree with settings.")
     if ("SuSiE-slide" %in% method_names) {
-      if (!identical(s$schema_version, sim_schema_version) ||
+      if (!s$schema_version %in% c(2L, sim_schema_version) ||
           !isTRUE(all.equal(c(s$delta_prec, s$delta_pdom, s$slide_min_obs), c(-.5, .5, 5))))
-        stop("Missing or unexpected slider design. Use new three-method checkpoints.")
+        stop("Missing or unexpected slider design.")
       if (length(x$susie_slide_pip) != length(x$susie_pip))
         stop("Missing or incompatible slider SNP PIPs.")
       if (!identical(x$causal_delta, unname(sim_effect_delta[x$causal_coding])))
         stop("Saved causal delta values disagree with the design.")
     }
+    if (any(c("SuSiE-slide-prior", "SuSiE-init-slide") %in% method_names)) {
+      if (!identical(s$schema_version, sim_schema_version) ||
+          !identical(s$slide_prior_grid, sim_delta_grid) ||
+          !identical(s$slide_prior_weights, sim_delta_prior) ||
+          !s$init_argument %in% c("model_init", "s_init"))
+        stop("Missing or unexpected finite-prior/initialization design; use five-method checkpoints.")
+    }
+    if (any(vapply(sim_pip_fields[method_names], function(field)
+      length(x[[field]]) != length(x$susie_pip) || !length(x[[field]]), logical(1))))
+      stop("Missing or incompatible SNP PIPs for a requested method.")
     mt <- match(method_names, x$metrics$method)
     if (anyNA(mt)) stop("Missing method in the saved metrics.")
     converged <- x$metrics$converged[mt]
@@ -222,12 +236,10 @@ for (f in seq_len(nrow(file_info))) {
       }
     }
 
-    cs <- list(SuSiE = x$susie_cs$cs, `SuSiE-mix` = x$cs_mix_as_additive_indices,
-               `SuSiE-slide` = x$susie_slide_cs$cs)[method_names]
-    sets <- list(SuSiE = x$susie_cs, `SuSiE-mix` = x$susie_mix_cs,
-                 `SuSiE-slide` = x$susie_slide_cs)[method_names]
-    pips <- list(SuSiE = x$susie_pip, `SuSiE-mix` = x$susie_mix_pip_snp,
-                 `SuSiE-slide` = x$susie_slide_pip)[method_names]
+    sets <- lapply(sim_set_fields[method_names], function(field) x[[field]])
+    cs <- lapply(sets, function(sets) sets$cs)
+    if ("SuSiE-mix" %in% method_names) cs["SuSiE-mix"] <- list(x$cs_mix_as_additive_indices)
+    pips <- lapply(sim_pip_fields[method_names], function(field) x[[field]])
     file_seeds[o] <- x$seed
     for (m in seq_along(method_names)) {
       file_calibration[[m]][o, ] <- calibration_bin_totals(pips[[m]], x$true_pos)
@@ -240,6 +252,9 @@ for (f in seq_len(nrow(file_info))) {
       file_rows[[row_number]] <- data.frame(
         scenario = scenario, pve = info$pve, K = K, configuration = configuration,
         seed = x$seed, method = method_names[m], converged = converged[m],
+        elbo = if (is.null(x$metrics$elbo)) NA_real_ else x$metrics$elbo[mt[m]],
+        niter = if (is.null(x$metrics$niter)) NA_integer_ else x$metrics$niter[mt[m]],
+        sigma2 = if (is.null(x$metrics$sigma2)) NA_real_ else x$metrics$sigma2[mt[m]],
         as.list(summary), check.names = FALSE
       )
       group_key <- paste(scenario, info$pve, K, method_names[m], sep = "|")
@@ -403,7 +418,7 @@ draw_figure <- function(metric, scenarios, only_K = NULL, y_limits = NULL,
                                col = adjustcolor(method_colors[m], alpha.f = .6))
           shown <- is.finite(dm$mean_pip) & is.finite(dm$frequency)
           if (any(shown)) points(dm$mean_pip[shown], dm$frequency[shown],
-                                 pch = c(16, 17, 15)[m], cex = .75,
+                                 pch = method_symbols[m], cex = .75,
                                  col = method_colors[m], xpd = NA)
         } else if (is_curve) {
           # The all-L table already pools the underlying TP/FP counts.
@@ -467,7 +482,7 @@ draw_figure <- function(metric, scenarios, only_K = NULL, y_limits = NULL,
   plot.new()
   plot.window(xlim = c(0, 1), ylim = c(0, 1), xaxs = "i", yaxs = "i")
   legend(.5, .045, legend = methods, col = method_colors[method_ids],
-         pch = if (is_curve) NA else if (is_calibration) c(16, 17, 15)[method_ids] else 16, lty = if (is_curve) 1 else NA,
+         pch = if (is_curve) NA else if (is_calibration) method_symbols[method_ids] else 16, lty = if (is_curve) 1 else NA,
          lwd = 1.5, horiz = TRUE, xjust = .5, yjust = .5, bty = "n", cex = .95)
   if (is_calibration) {
     text(.5, .015, "Ten equal-width PIP bins; error bars: +/-2 empirical SE across seed blocks", cex = .85)

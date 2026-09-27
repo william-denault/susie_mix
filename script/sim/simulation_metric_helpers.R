@@ -45,6 +45,11 @@ summarize_metrics <- function(replicates, level = .95,
       if (anyDuplicated(keys)) stop("Duplicate configuration/seed within a method.")
       if (is.null(reference_keys)) reference_keys <- keys
       if (!identical(keys, reference_keys)) stop("Methods must use the same replicates for paired comparisons.")
+    }
+    # Validate pairing before aggregating: a missing seed in the first method
+    # would otherwise introduce NA rows before the other methods are checked.
+    for (method in methods) {
+      d <- cell[cell$method == method, , drop = FALSE]
       totals_by_seed <- rowsum(as.matrix(d[count_vars]), group = d$seed)
       totals <- totals_by_seed[match(as.character(seeds), rownames(totals_by_seed)), , drop = FALSE]
       point <- colSums(totals)

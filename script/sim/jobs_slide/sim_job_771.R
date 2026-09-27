@@ -10,7 +10,7 @@ rm(.job_file, .job_files)
 
 job <- data.frame(
   job_id = 771L,
-  schema_version = 2L,
+  schema_version = 3L,
   name = "recessive_partial_recessive_partial_dominant",
   K = 5L,
   L_add = 0L,
@@ -31,7 +31,7 @@ job <- data.frame(
   slide_min_obs = 5L,
   delta_prec = -0.5,
   delta_pdom = 0.5,
-  output_file = "simulation results/slide_v1/chunks/recessive_partial_recessive_partial_dominant_add0_rec2_dom0_prec1_pdom2_n500_L10_pve0.05_seed1000000_reps400_chunk1.RData",
+  output_file = "simulation results/slide_prior_v1/chunks/recessive_partial_recessive_partial_dominant_add0_rec2_dom0_prec1_pdom2_n500_L10_pve0.05_seed1000000_reps400_chunk1.RData",
   row.names = 771L, stringsAsFactors = FALSE)
 
 run_simulation_job(

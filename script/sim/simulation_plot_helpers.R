@@ -109,8 +109,7 @@ collect_calibration <- function(files, replicates, methods, cache_file = NULL) {
     if (!length(eligible)) next
     meta <- wanted[lookup[eligible[1]], c("scenario", "pve", "K"), drop = FALSE]
     for (method in methods) {
-      field <- c(SuSiE = "susie_pip", `SuSiE-mix` = "susie_mix_pip_snp",
-                 `SuSiE-slide` = "susie_slide_pip")[[method]]
+      field <- sim_pip_fields[[method]]
       values <- t(vapply(results[eligible], function(x) calibration_bin_totals(x[[field]], x$true_pos), numeric(31)))
       calibration_merge(state, cbind(meta, method = method), seeds[eligible], values)
     }

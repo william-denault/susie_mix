@@ -1,5 +1,22 @@
 # Shared design and checkpoint naming for the five-effect simulations.
-sim_schema_version <- 2L
+sim_schema_version <- 3L
+sim_results_dir <- "simulation results/slide_prior_v1"
+sim_methods <- c("SuSiE", "SuSiE-mix", "SuSiE-slide",
+                 "SuSiE-slide-prior", "SuSiE-init-slide")
+sim_delta_grid <- seq(-1, 1, length.out = 17L)
+sim_delta_prior <- rep(1 / 17, 17L)
+sim_pip_fields <- setNames(c("susie_pip", "susie_mix_pip_snp", "susie_slide_pip",
+                             "susie_slide_prior_pip", "susie_init_slide_pip"), sim_methods)
+sim_set_fields <- setNames(c("susie_cs", "susie_mix_cs", "susie_slide_cs",
+                             "susie_slide_prior_cs", "susie_init_slide_cs"), sim_methods)
+
+# The RCC installation can expose either the current or older SuSiE API.
+sim_initialization_argument <- function(fun = susieR::susie) {
+  args <- names(formals(fun))
+  if ("model_init" %in% args) return("model_init")
+  if ("s_init" %in% args) return("s_init")
+  stop("This susieR version has no fitted-model initialization argument.")
+}
 sim_count_columns <- c("L_add", "L_rec", "L_dom", "L_prec", "L_pdom")
 sim_effect_delta <- c(additive = 0, recessive = -1, dominant = 1,
                       partial_recessive = -0.5, partial_dominant = 0.5)

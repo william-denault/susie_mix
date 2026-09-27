@@ -29,18 +29,23 @@ run_simulation_job <- function(job_id, project_dir = sim_project_dir,
   if (!dir.exists(temp_dir) || !length(list.files(temp_dir, pattern = "\\.raw$")))
     stop("No genotype .raw files found in ", temp_dir)
   # Fail once on an installation problem instead of saving 400 error records.
-  packages <- c("susieR", "susieSlide", "data.table", "matrixStats")
+  packages <- c("susieR", "susieSlide", "susieRSlidePrior", "data.table", "matrixStats")
   for (package in packages) if (!requireNamespace(package, quietly = TRUE))
     stop("Install required package before running jobs: ", package)
   versions <- setNames(vapply(packages, function(p) as.character(utils::packageVersion(p)), ""), packages)
   if (!"min_obs" %in% names(formals(susieSlide::susie)))
     stop("The installed susieSlide package does not provide the genotype slider.")
+  if (!all(c("delta_grid", "delta_prior") %in% names(formals(susieRSlidePrior::susie))))
+    stop("Update susieRSlidePrior to the finite-prior implementation.")
+  init_argument <- sim_initialization_argument()
 
   argument_names <- c("pve", "n", "L", sim_count_columns, "all_additive",
                        "min_maf", "hwe_thresh", "min_n_rec", "slide_min_obs")
   args <- as.list(row[argument_names])
   args$temp_dir <- normalizePath(temp_dir, winslash = "/", mustWork = TRUE)
-  checkpoint_settings <- list(design = row, arguments = args, package_versions = versions)
+  checkpoint_settings <- list(design = row, arguments = args, package_versions = versions,
+    methods = sim_methods, delta_grid = sim_delta_grid, delta_prior = sim_delta_prior,
+    init_argument = init_argument)
   output <- file.path(project_dir, row$output_file)
   results <- list()
   if (file.exists(output)) {
@@ -57,7 +62,13 @@ run_simulation_job <- function(job_id, project_dir = sim_project_dir,
       if (!identical(as.numeric(x$seed), as.numeric(row$seed_base + expected_rep)) ||
           !identical(as.numeric(x$replication), as.numeric(expected_rep)) ||
           (is.null(x$error) && (!identical(x$settings$schema_version, sim_schema_version) ||
-            !identical(x$metrics$method, c("SuSiE", "SuSiE-mix", "SuSiE-slide")))))
+            !identical(x$metrics$method, sim_methods) ||
+            !identical(x$settings$slide_prior_grid, sim_delta_grid) ||
+            !identical(x$settings$slide_prior_weights, sim_delta_prior) ||
+            !identical(x$settings$init_argument, init_argument) ||
+            any(vapply(sim_pip_fields, function(field)
+              length(x[[field]]) != length(x$susie_pip) || !length(x[[field]]) ||
+                any(!is.finite(x[[field]])), logical(1))))))
         stop("Incomplete or incompatible result in checkpoint at replicate ", i)
     }
   }
