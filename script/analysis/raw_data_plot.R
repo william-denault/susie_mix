@@ -40,7 +40,7 @@ seed              = 1
 L                     = 10
 standardize           = FALSE
 estimate_prior_method = "EM"
-min_abs_corr          = 0.0
+min_abs_corr          = 0.5
 verbose               = FALSE
 
 # --- misc ---

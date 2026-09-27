@@ -24,6 +24,29 @@ stopifnot(nrow(empty$selected) == 0L, all(empty$summary$n_cs_selected == 0L))
 all_agreed <- select_tss_disagreement(fixture[5:6, ])
 stopifnot(nrow(all_agreed$selected) == 0L)
 
+# Validate density units and normalization against the Gaussian mixture itself,
+# including a lead outside the display window that must still contribute.
+kde_area <- function(x) sum(diff(x$distance_to_tss_kb) *
+                            (head(x$density, -1) + tail(x$density, -1)) / 2)
+distances <- data.frame(distance_to_tss_kb = c(-20, 0, 205, NA_real_))
+curve <- summarize_tss_kde(distances, "SuSiE", bandwidth_kb = 10)
+expected <- rowMeans(vapply(c(-20, 0, 205), function(mu) {
+  dnorm(curve$distance_to_tss_kb, mu, 10)
+}, numeric(nrow(curve))))
+stopifnot(max(abs(curve$density - expected)) < 2e-5,
+          unique(curve$n_cs_total) == 3L, unique(curve$n_cs_in_window) == 2L,
+          unique(curve$n_cs_missing_distance) == 1L,
+          any(curve$distance_to_tss_kb == 0), kde_area(curve) < .9)
+wide <- summarize_tss_kde(distances, "SuSiE", plot_limit_kb = 500)
+stopifnot(abs(kde_area(wide) - 1) < .001)
+replicated <- summarize_tss_kde(distances[rep(1:4, 3), , drop = FALSE], "SuSiE-mix")
+stopifnot(max(abs(replicated$density - curve$density)) < 1e-10,
+          identical(curve$bandwidth_kb, replicated$bandwidth_kb))
+single <- summarize_tss_kde(data.frame(distance_to_tss_kb = 0), "SuSiE")
+stopifnot(max(abs(single$density - dnorm(single$distance_to_tss_kb, 0, 10))) < 1e-12)
+missing <- summarize_tss_kde(data.frame(distance_to_tss_kb = c(NA_real_, Inf)), "SuSiE")
+stopifnot(all(is.na(missing$density)), all(missing$n_cs_total == 0L))
+
 if (requireNamespace("data.table", quietly = TRUE)) {
   source("script/analysis/generate_summary_results.R")
   source("script/analysis/descriptive_results_weighted.R")
@@ -62,10 +85,10 @@ if (requireNamespace("data.table", quietly = TRUE)) {
   weighted <- run_weighted_descriptive_results(file.path(root, "res_summary.RData"),
                                                file.path(root, "res_cs_summary.RData"),
                                                file.path(root, "weighted"), project_dir = root)
-  check <- function(histogram, audit) {
-    stopifnot(sum(histogram$count) == 6L, all(histogram$n_cs_total == 3L),
-              all(histogram$n_cs_in_window == 3L),
-              all(abs(tapply(histogram$proportion, histogram$model, sum) - 1) < 1e-10),
+  check <- function(kde, audit) {
+    stopifnot(all(kde$n_cs_total == 3L), all(kde$n_cs_in_window == 3L),
+              all(kde$bandwidth_kb == 10), all(is.finite(kde$density)),
+              all(abs(vapply(split(as.data.frame(kde), kde$model), kde_area, numeric(1)) - 1) < .001),
               sum(audit$tss_shared_lead) == 4L, sum(audit$tss_include) == 6L,
               sum(audit$tss_include[audit$gene == "Partial"]) == 2L,
               !any(audit$tss_include[audit$gene == "CodingOnly"]))
@@ -80,8 +103,8 @@ if (requireNamespace("data.table", quietly = TRUE)) {
   dev.off()
   if (is.na(saved_project)) Sys.unsetenv("SUSIE_MIX_PROJECT_DIR") else Sys.setenv(SUSIE_MIX_PROJECT_DIR = saved_project)
   check(old_env$tss_distance_summary, old_env$tss_selection$audit)
-  stopifnot(sum(old_env$tissue_tss_distance_summary$count) == 6L,
-            sum(weighted$weighted_tissue_tss_distance_distribution$count) == 6L,
+  stopifnot(all(old_env$tissue_tss_distance_summary$n_cs_total == 3L),
+            all(weighted$weighted_tissue_tss_distance_distribution$n_cs_total == 3L),
             nrow(old_env$cs_idx) == 10L,
             file.exists(file.path(root, "descriptive_results/tss_cs_agreement_audit.csv")))
   # All-agreed input must yield an explicitly empty plot rather than old curves.
@@ -92,8 +115,8 @@ if (requireNamespace("data.table", quietly = TRUE)) {
   all_shared <- run_weighted_descriptive_results(file.path(root, "res_summary.RData"),
                                                  file.path(root, "res_cs_summary.RData"),
                                                  file.path(root, "all_shared"), project_dir = root)
-  stopifnot(all(all_shared$weighted_tss_distance_distribution$count == 0L),
-            all(is.na(all_shared$weighted_tss_distance_distribution$proportion)))
+  stopifnot(all(all_shared$weighted_tss_distance_distribution$n_cs_total == 0L),
+            all(is.na(all_shared$weighted_tss_distance_distribution$density)))
   message("Descriptive integration output: ", root)
 } else message("SKIP descriptive integration: data.table is unavailable")
 cat("PASS: per-CS agreement, coding-only agreement, partial regions, one-model CSs,\n",

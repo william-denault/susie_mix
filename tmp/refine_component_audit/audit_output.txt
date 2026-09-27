@@ -1,0 +1,41 @@
+During startup - Warning messages:
+1: Setting LC_COLLATE=C.UTF-8 failed 
+2: Setting LC_CTYPE=C.UTF-8 failed 
+3: Setting LC_MONETARY=C.UTF-8 failed 
+4: Setting LC_TIME=C.UTF-8 failed 
+susieR version: 0.16.6 
+Entries recoded to 3 before capping: 1466 
+Recessive coding inconsistent with capped AD: 1466 
+WARNING: X contains 118 constant columns (first few cols: 2003, 2016, 2018, 2041, 2044, 2057, 2062, 2064, 2069, 2074).
+
+ USER FIT: defaults, purity=0 
+Converged TRUE iterations 7 ELBO -462.3865 CS 4 
+ component            V reported_CS      max_alpha           lbf        additive        dominant   recessive
+         1 4.0364633664        TRUE 1.000000000000 4662.17639287  1.00000000e+00  0.00000000e+00 0.000000000
+         2 0.6075507946        TRUE 0.200000000000  693.60097406 1.21284889e-176 5.87166348e-275 1.000000000
+         3 3.9956275032        TRUE 1.000000000000 4614.88903611  0.00000000e+00  1.00000000e+00 0.000000000
+         4 1.4289656969       FALSE 0.200000000000 1644.47991323  0.00000000e+00  0.00000000e+00 1.000000000
+         5 0.0034700143        TRUE 0.022231601812    0.76323159  4.24340741e-01  4.47698693e-01 0.127960565
+         6 0.0000000000       FALSE 0.000333000333    0.00000000  3.33333333e-01  3.33333333e-01 0.333333333
+         7 0.0000000000       FALSE 0.000333000333    0.00000000  3.33333333e-01  3.33333333e-01 0.333333333
+         8 0.0000000000       FALSE 0.000333000333    0.00000000  3.33333333e-01  3.33333333e-01 0.333333333
+         9 0.0000000000       FALSE 0.000333000333    0.00000000  3.33333333e-01  3.33333333e-01 0.333333333
+        10 0.0000000000       FALSE 0.000333000333    0.00000000  3.33333333e-01  3.33333333e-01 0.333333333
+   min.abs.corr mean.abs.corr median.abs.corr
+L1            1    1.00000000       1.0000000
+L3            1    1.00000000       1.0000000
+L2            1    1.00000000       1.0000000
+L5            0    0.06046287       0.0342084
+One-step coding update using V>0 (A,D,R): 0.2848681 0.2895397 0.4255921 
+Post-hoc purity>=0.5 components: 1 3 2 
+CS-only sensitivity (A,D,R): 0.3333333 0.3333333 0.3333333 
+WARNING: Neither X nor Xcorr was provided; purity filtering is skipped and min_abs_corr will have no effect. Pass X or Xcorr to enable the purity filter.
+Undeduplicated sets above variance threshold: L1 L2 L3 L4 L5 
+ component size duplicates_previous
+        L1    1               FALSE
+        L2    5               FALSE
+        L3    1               FALSE
+        L4    5                TRUE
+        L5 2063               FALSE
+WARNING: X contains 118 constant columns (first few cols: 2003, 2016, 2018, 2041, 2044, 2057, 2062, 2064, 2069, 2074).
+WARNING: IBSS algorithm did not converge in 1000 iterations!

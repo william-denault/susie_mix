@@ -84,9 +84,24 @@ audited and excluded. Coding and general summaries retain the full primary set.
 The original `descriptive results.R` and weighted/EM descriptive scripts already
 use this rule via `tss_disagreement_utils.R`. Rerun those scripts to replace
 previous all-CS plots. The slide analysis uses the same helper. Each model's
-TSS curve is normalized over its selected finite distances inside the existing
-window (10-kb bins centered at -200 through +200 kb). The agreement audit and
-selection-count CSVs report exclusions, missing distances, and out-of-window CSs.
+TSS curve is now a **Gaussian KDE**, using the same `tss_bandwidth_kb = 10`
+for both models and all tissues. Set this in `descriptive_results_slide.R`
+to change smoothing. KDE fitting uses every finite selected distance, and the
+plot zooms to +/-200 kb without truncating the input or renormalizing the
+visible curve. Legend n counts all finite selected leads. Density is per kb,
+with unit area over the full domain. Original and weighted/EM plots use the
+same estimator and defaults.
+
+The existing TSS distribution CSVs now export `distance_to_tss_kb`, `density`,
+`bandwidth_kb`, `kernel`, and normalization metadata instead of bin counts and
+proportions. `n_cs_total` counts finite distances used by the KDE;
+`n_cs_selected`, `n_cs_in_window`, `n_cs_missing_distance`, and
+`n_cs_outside_window` make its denominator explicit. The agreement audit and
+selection-count CSVs report exclusions and the exact +/-200 kb display window.
+Empty groups have NA densities; a single lead uses the same fixed bandwidth
+and is labeled n = 1. Overall and tissue figures keep their existing filenames.
+Sync `tss_disagreement_utils.R` and the updated slide descriptive scripts,
+then rerun `descriptive_results_slide.R` to regenerate them.
 
 The current workhorse does not save slide-to-TSS distances. The slide summary
 uses explicit saved gene metadata first, then the same GTF/first gene row as the

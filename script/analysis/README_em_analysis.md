@@ -113,13 +113,32 @@ reported by only one model remain eligible too. Other descriptive/coding
 statistics still use the full primary analysis set.
 
 Overall and tissue-specific TSS distributions use only those selected CSs.
-Each model is normalized by its number of selected, finite distances within
-the existing plotted window (10-kb bins centered from -200 to +200 kb).
+The original, weighted/EM, and slide descriptive scripts now plot Gaussian
+kernel density estimates of the raw signed distances, with one common
+`tss_bandwidth_kb = 10` for both models and all tissues. Change that setting
+to 5 or 20 to check sensitivity. The y-axis is density per kb.
+
+Each KDE uses **all finite selected distances**, including leads outside the
+displayed -200 to +200 kb window. Each model's density integrates to one over
+the full domain; the visible portion need not integrate to one. Legend `n`
+therefore includes all finite selected leads and can exceed the old in-window
+count. No observation is moved to zero or discarded to smooth the curve.
+
+The existing `*tss_distance_distribution.csv` filenames now contain
+`distance_to_tss_kb`, `density`, `bandwidth_kb`, `kernel`, `normalization`,
+`n_cs_selected`, `n_cs_total` (finite distances used), `n_cs_in_window`,
+`n_cs_missing_distance`, and `n_cs_outside_window`. The old histogram
+`count`, `proportion`, `percentage`, and bin-boundary columns are replaced.
+Empty groups have NA densities and zero usable observations. A single usable
+lead is displayed with the same fixed Gaussian bandwidth, with n = 1.
+
 `tss_cs_agreement_audit.csv` records inclusion for each CS, and
 `tss_cs_selection_summary.csv` counts shared leads excluded, selected CSs,
-missing distances, and distances outside the window. Weighted/EM outputs use
+missing distances, and distances outside the exact +/-200 kb display window
+(there are no outer half bins). Weighted/EM outputs use
 the same filenames prefixed with `weighted_`. TSS plot filenames are unchanged;
-rerun the descriptive script to replace the old all-CS distributions.
+rerun the descriptive script to replace the binned curves. Copy the updated
+`tss_disagreement_utils.R` along with the descriptive scripts to the cluster.
 
 Distances use biological SNP coordinates, retain unchanged leads and zero
 distances in the comparison table, and audit unavailable coordinates. The

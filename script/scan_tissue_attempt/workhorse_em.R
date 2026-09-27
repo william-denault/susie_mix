@@ -47,7 +47,7 @@ run_susie_gene <- function(
     L = 10,
     standardize = FALSE,
     estimate_prior_method = "EM",
-    min_abs_corr = 0.0,
+    min_abs_corr = 0.5,
     verbose = FALSE,
     max_iter = 1000,
     tol = 1e-5,
@@ -657,6 +657,8 @@ run_susie_gene <- function(
                          tolerance = 1e-12))) {
       em_stop_fit("SuSiE did not retain the newly estimated coding prior weights.")
     }
+
+    weighted_fit_mix <- em_attach_cs_eligibility(weighted_fit_mix, geno_mix, min_abs_corr)
 
     weighted_fit_mix_lead_snp_tss_distance <- (
       get_cs_lead_tss_distance(

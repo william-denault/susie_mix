@@ -1,5 +1,25 @@
 # Empirical Bayes estimation of SuSiE coding weights
 
+## Current update: purity-filtered component counts (2026-09-27)
+
+The current implementation is `susie_purity_component_alpha_v3`. It uses only
+positive-variance components whose own 95% CS passes minimum absolute
+correlation 0.5, calculated with `dedup=FALSE`. Duplicate and partially
+overlapping components contribute separately. A selected row contributes its
+entire coding-assignment distribution, including predictors outside its CS.
+Fits with no eligible components contribute zero counts; tissues with no
+eligible components retain the previous prior (uniform if none exists).
+The complete fitted objects remain intact for subsequent fitting.
+
+This selection changes the procedure to a **purity-filtered EB update**.
+The coding-count objective is optimized conditional on the selected rows;
+the full-data marginal-likelihood/ELBO monotonicity argument below does not
+apply to the filtered procedure. The following review records the earlier
+unfiltered v1/v2 methods and their derivation, rather than a proof for v3.
+See [README_em.md](README_em.md) for current diagnostics and rerun instructions.
+
+## Historical review of the unfiltered update
+
 Reviewed 2026-09-12 against Zhao et al., *Adjusting for genetic confounders
 in transcriptome-wide association studies improves discovery of risk genes
 of complex traits*, Nature Genetics 56, 336-347 (2024),

@@ -77,9 +77,16 @@ stopifnot(!any(audit$tss_include[audit$gene == "SameLead"]),
           sum(audit$tss_include[audit$gene == "PartialAgreement"]) == 2L,
           !any(audit$tss_include[audit$gene == "PartialAgreement" & audit$lead_snp == snps[1]]),
           all(audit$tss_include[audit$gene %in% c("NoAddCS", "NoSlideCS")]),
-          all(abs(tapply(tables$tss_distance_distribution$proportion,
-                         tables$tss_distance_distribution$model, sum) - 1) < 1e-10),
+          all(is.finite(tables$tss_distance_distribution$density)),
+          all(tables$tss_distance_distribution$density >= 0),
+          all(tables$tss_distance_distribution$bandwidth_kb == 10),
           all(tables$permutation_summary$n_pairs_with_both_permutations == 10L))
+for (model in c("SuSiE", "SuSiE-slide")) {
+  d <- tables$tss_distance_distribution[tables$tss_distance_distribution$model == model, ]
+  selected <- audit[audit$model == model & audit$tss_include & is.finite(audit$distance_to_tss_kb), ]
+  stopifnot(all(d$n_cs_total == nrow(selected)),
+            all(d$n_cs_in_window == sum(abs(selected$distance_to_tss_kb) <= 200)))
+}
 dom <- plot_one_cs_slide(project, "dominant", file.path(root, "results"), file.path(root, "summary"),
                          file.path(root, "dominant"))
 rec <- plot_one_cs_slide(project, "recessive", file.path(root, "results"), file.path(root, "summary"),
@@ -108,7 +115,7 @@ for (gene in c("SameLead", "NoCS")) {
   save(res_summary, file = file.path(d, "res_summary.RData"))
   save(res_cs_summary, file = file.path(d, "res_cs_summary.RData"))
   result <- run_slide_descriptive_results(project, d, file.path(d, "descriptive"))
-  stopifnot(all(result$tss_distance_distribution$count == 0L),
-            all(is.na(result$tss_distance_distribution$proportion)))
+  stopifnot(all(result$tss_distance_distribution$n_cs_total == 0L),
+            all(is.na(result$tss_distance_distribution$density)))
 }
 cat("PASS: slide summary, component-specific coding, permutations, TSS disagreement, distances, and empty plots.\n")

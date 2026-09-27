@@ -5,6 +5,7 @@
 
 
 source("/project2/mstephens/wdenault/susie_mix/script/scan_tissue_attempt/workhorse_utils.R")
+source("/project2/mstephens/wdenault/susie_mix/script/scan_tissue_attempt/em_utils.R")
 run_susie_gene <- function(
     target_gene = "GTF2H2",
 
@@ -49,7 +50,7 @@ run_susie_gene <- function(
     L = 10,
     standardize = FALSE,
     estimate_prior_method = "EM",
-    min_abs_corr = 0.0,
+    min_abs_corr = 0.5,
     verbose = FALSE,
     mix_coding_prior = c(
       additive = 0.80,
@@ -813,6 +814,11 @@ run_susie_gene <- function(
       min_abs_corr = min_abs_corr,
       verbose = verbose
     )
+
+    # Save independent component eligibility for the initial EB prior update.
+    # The full fits and their standard reported CSs remain available.
+    fit_mix <- em_attach_cs_eligibility(fit_mix, geno_mix, min_abs_corr)
+    weighted_fit_mix <- em_attach_cs_eligibility(weighted_fit_mix, geno_mix, min_abs_corr)
 
     fit_mix_perm <- susie(
       geno_mix,

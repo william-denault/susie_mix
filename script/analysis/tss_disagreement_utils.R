@@ -113,6 +113,10 @@ plot_tss_kde <- function(x, model_colors, plot_limit_kb = 200,
     mar = if (compact) c(3.8, 4.2, 3.2, 1) else c(5, 5, 4, 1),
     mgp = if (compact) c(2.4, .7, 0) else c(2.8, .8, 0)
   )
+  if (compact && !set_margins) {
+    old_mgp <- par(mgp = c(2.3, .6, 0))
+    on.exit(par(old_mgp), add = TRUE)
+  }
   plot(NA_real_, NA_real_, xlim = c(-plot_limit_kb, plot_limit_kb), ylim = c(0, ymax),
        xaxs = "i", yaxs = "i", xaxt = "n", bty = "l",
        xlab = "Distance to TSS (kb)", ylab = "Density (per kb)",
