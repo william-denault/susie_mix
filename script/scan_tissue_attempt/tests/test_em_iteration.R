@@ -41,6 +41,28 @@ make_tissue <- function(pip, coding = c("additive", "recessive", "dominant"),
 }
 
 run_tests <- function() {
+  # The RCC-sized gene universe is preserved exactly once, with balanced jobs,
+  # independently of its original 185-chunk layout. Extra metadata survives.
+  genes <- paste0("Gene", seq_len(18468))
+  old_manifest <- data.frame(chunk = ceiling(seq_along(genes)/100), gene = genes,
+                             annotation = seq_along(genes))
+  balanced <- em_rechunk_manifest(old_manifest)
+  equal(sort(unique(balanced$chunk)), 1:298)
+  stopifnot(identical(balanced$gene, genes), !anyDuplicated(balanced$gene),
+            identical(balanced$annotation, old_manifest$annotation),
+            sum(table(balanced$chunk) == 61L) == 8L,
+            sum(table(balanced$chunk) == 62L) == 290L,
+            identical(em_rechunk_manifest(balanced), balanced),
+            identical(formals(em_prepare_iteration)$n_chunks, 298L))
+  equal(em_rechunk_manifest(old_manifest[1:3, ])$chunk, 1:3)
+  equal(em_rechunk_manifest(old_manifest[1:6, ], 3L)$chunk, c(1, 1, 2, 2, 3, 3))
+  equal(em_rechunk_manifest(old_manifest[1, ])$chunk, 1L)
+  for (bad_count in list(0, -1, 2.5, NA_real_, Inf, "298", c(2L, 3L))) {
+    expect_error(em_rechunk_manifest(old_manifest, bad_count), "positive integer")
+  }
+  expect_error(em_rechunk_manifest(old_manifest[FALSE, ]), "invalid gene manifest")
+  expect_error(em_rechunk_manifest(old_manifest[c(1, 1), ]), "invalid gene manifest")
+
   dir.create("tmp", showWarnings = FALSE)
   test_base <- normalizePath("tmp", winslash = "/", mustWork = TRUE)
   project <- tempfile("em_test_", tmpdir = test_base)
@@ -303,6 +325,7 @@ run_tests <- function() {
             identical(readLines(file.path(first$iteration_dir, "manifest.csv")), first_manifest))
   p3 <- read.csv(file.path(third$iteration_dir, "priors.csv"))
   stopifnot(all(p3$source_iteration == 2L), all(p3$update_method == "susie_purity_component_alpha_v3"))
+  equal(em_prior_for_tissue(p3, "Brain"), c(.2, .3, .5))
   equal(read.csv(file.path(second$iteration_dir, "priors.csv")), p2_v1)
   migrated <- subset(read.csv(history_file), iteration == 2)
   equal(migrated[names(p2_v1)], p2_v1)

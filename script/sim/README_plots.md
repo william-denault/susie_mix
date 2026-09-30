@@ -1,5 +1,20 @@
 # Simulation figures
 
+For the slider-prior results, run the dedicated entry script from the project root:
+
+```r
+source("generate_sim_figures_slide_prior.R")
+```
+
+It explicitly selects `simulation results/slide_prior_v1/chunks` and all five
+methods, even if the R session still has options from an older analysis. It
+uses the same plotting code and style as `slide_v1`, and writes PDF/PNG figures
+and summary tables to `simulation results/slide_prior_v1/figures`. By default
+it reads all available saved replicates. After a successful full run, set
+`reuse_saved_summaries <- TRUE` in the entry script for a faster redraw; keep
+it `FALSE` after adding or replacing chunks. The script restores the previous
+R options when it finishes.
+
 Run `source("script/sim/plot_simulations.R")` from R at the project root, or use the script's absolute path. Only base R is needed. Set `SUSIE_MIX_PROJECT_DIR` or edit `project_dir` if the project moves.
 
 The script reads `simulation results/slide_prior_v1/chunks` and writes to `simulation results/slide_prior_v1/figures`. It never refits models. See [README_simulations.md](README_simulations.md) for the generating design and cluster commands.
@@ -35,7 +50,7 @@ Each figure is saved as PDF and PNG by default:
   SNPs that are causal, with one method per figure and the same scenario/PVE
   panels. Method suffixes are `susie`, `susie_mix`, `susie_slide`, `susie_slide_prior`, and `susie_init_slide`, retaining
   their original colors and symbols. Calibration exports only pooled all-L
-  figures (15 PDFs and 15 PNGs by default), independently of the ROC settings.
+  figures (25 PDFs and 25 PNGs with all five methods), independently of the ROC settings.
   After successful export, the script removes the obsolete L-specific,
   multipage and combined-method calibration PDF/PNG files from the output
   directory. Calibration CSV summaries and the RDS cache are retained.

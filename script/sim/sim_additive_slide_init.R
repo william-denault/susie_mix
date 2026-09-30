@@ -157,8 +157,15 @@ run_additive_initialization <- function(chunk = 1L, reps_per_chunk = 100L,
   results <- vector("list", reps_per_chunk)
   if (file.exists(output)) {
     old <- readRDS(output)
-    if (!identical(init_comparable_settings(old$settings), init_comparable_settings(settings)))
-      stop("Checkpoint settings, input files or packages changed; use a new output_dir.")
+    previous <- init_comparable_settings(old$settings)
+    current <- init_comparable_settings(settings)
+    if (!identical(previous, current)) {
+      fields <- union(names(previous), names(current))
+      changed <- fields[!vapply(fields, function(key) identical(previous[[key]], current[[key]]), logical(1))]
+      stop("Checkpoint settings, input files or packages changed: ", paste(changed, collapse = ", "),
+        ". Use a new output_dir for new fits. To analyze existing results without fitting, use ",
+        "summarize_additive_experiment() or diagnose_additive_initialization().", call. = FALSE)
+    }
     results <- old$results
     if (!is.list(results) || length(results) != reps_per_chunk) stop("Invalid checkpoint length.")
   }

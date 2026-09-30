@@ -194,6 +194,75 @@ roc <- plot_additive_init_roc(
 options(susie.init.roc.autorun = TRUE)
 ```
 
+## Diagnose the ROC difference without rerunning simulations
+
+For completed runs, do **not** call `run_additive_initialization_experiment()`
+again just to analyze results. That function checks the current fitting/input
+settings before resuming. A package update or changed input signature can
+therefore reject a resume even though all saved results remain readable.
+The error now lists the changed settings fields. Keep the checkpoints intact;
+do not bypass the compatibility check or change their saved settings.
+
+Upload `script/sim/diagnose_additive_init.R` into the same directory on RCC.
+It reuses the existing `plot_additive_init_roc.R` and
+`simulation_metric_helpers.R`; it needs only base R and the saved checkpoints.
+
+```r
+project_dir <- "/project2/mstephens/wdenault/susie_mix"
+Sys.setenv(SUSIE_MIX_PROJECT_DIR = project_dir)
+source(file.path(project_dir, "script/sim/diagnose_additive_init.R"))
+diagnostics <- diagnose_additive_initialization()
+```
+
+Outputs go to `simulation results/additive_slide_init_v3/diagnostics/`:
+
+- `overview.csv` and `per_dataset.csv`: the size of PIP changes, causal versus
+  null changes, exact within-dataset AUC/rank gains, and credible-set recovery
+  gains. Both slide and initialized additive SuSiE are compared with SuSiE.
+- `roc_influence.csv`: leave-one-dataset-out changes in the **pooled** ROC gap.
+  `roc_sensitivity.csv` and `roc_sensitivity_curves.csv` recompute the curves
+  after removing 1, 5 or 10 datasets ranked by their positive slide influence,
+  or by their largest absolute PIP change. The same datasets are removed from
+  all methods and the causal/noncausal denominators are recalculated.
+- `cs_summary.csv` and `cs_paired_differences.csv`: saved-CS power, empirical
+  coverage, CS size and paired differences. `cs_fdr = 1 - coverage`.
+- `examples.csv` and `examples.pdf`: selected CS wins with no additional false
+  CSs, ranking wins, influential datasets and ranking losses. Each example
+  gives the seed, gene, checkpoint and record slot, with PIPs, causal ranks
+  and CS recovery. `causal_snps.csv` includes causal IDs and effect coefficients.
+- `diagnostics.pdf`: PIP-change and ranking-gain distributions, ROC influence,
+  and the ROC before/after removing influential datasets. The original full
+  and zoomed ROC plots are also regenerated in this diagnostics folder.
+
+The influence measure is the slide-minus-SuSiE difference in partial ROC area
+over FPR 0-0.25, divided by 0.25 (mean TPR over the plotted interval). It uses
+the existing threshold-grid curve and trapezoidal interpolation. Change
+`max_fpr = 0.05` for a narrower range, preferably with a separate `output_dir`.
+Positive influence means removing that dataset reduces the slide advantage;
+influences are not additive contributions. Removal rankings use the full data.
+
+Within-dataset AUC counts all causal/noncausal pairs with half credit for ties.
+It tests ranking **within each region**, while the pooled ROC also compares
+PIPs across regions. Improvements in pooled ROC need not imply improvements
+in within-region ranking, calibrated PIPs, or 95% credible-set coverage.
+CS power is the fraction of distinct causal SNPs recovered in any reported CS;
+coverage is the fraction of reported CSs containing a causal SNP. Examine both
+power and coverage when evaluating CS performance.
+
+Examples are exploratory selections, not independent evidence of superiority.
+The default selects up to three per category/PVE, with duplicate PDF pages
+removed. Compact records do not contain X/y or component alpha, so a mechanistic
+LD/coding explanation may require a later targeted rerun of a selected seed.
+Successful nonconverged fits remain included and flagged, as in the original
+ROC script; `exclude_nonconverged = TRUE` excludes them from every method.
+
+For just the existing summary tables, the original script already supports:
+
+```r
+source(file.path(project_dir, "script/sim/sim_additive_slide_init.R"))
+results <- summarize_additive_experiment()
+```
+
 ## Optional Slurm execution
 
 ```sh

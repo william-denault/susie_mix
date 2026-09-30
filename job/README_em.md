@@ -12,9 +12,30 @@ sbatch em_susie_mix
 
 The preparation job loads `R/4.2.0`, estimates the tissue priors, saves them,
 and submits one Slurm array using the resource settings in `test1`
-(`broadwl`, 23 hours, 40 GB, one CPU per chunk). It discovers the existing
-`data/temp_index/chunk_*_genes.txt` lists: currently 185 chunks / 18,468 genes.
-The original generated `run_chunk_*.R` scripts are not changed or executed.
+(`broadwl`, 23 hours, 40 GB, one CPU per chunk). Every **new EM iteration uses
+298 chunks**, independently of the baseline chunk layout. For 18,468 genes,
+this gives 290 chunks of 62 genes and 8 chunks of 61 genes. The initial gene
+universe comes from `data/temp_index/chunk_*_genes.txt`; later iterations use
+the preceding iteration's gene manifest. Every gene is assigned exactly once,
+in the same order, and the assignment is saved in the new `manifest.csv`.
+Small test runs use at most one chunk per gene, without empty jobs. Baseline
+gene lists and generated `run_chunk_*.R` scripts are not changed or executed.
+
+Sync `em_utils.R` and `prepare_em_iteration.R` before preparing the next new
+iteration; the existing Slurm launcher reads the resulting chunk IDs. Even if
+the baseline used 185 chunks, EM will use 298. A resumed iteration retains its
+original saved assignments and completion markers; it is never repartitioned
+midway. The next new iteration uses the new layout.
+
+To request 20 consecutive iterations after the baseline finishes:
+
+```bash
+sbatch em_susie_mix 20
+```
+
+Smaller chunks reduce the gene count per job from about 100 to 62. The actual
+iteration time still depends on queue waits, available parallel slots, slow
+genes, and prior-aggregation time; this does not guarantee 20 iterations per week.
 
 With no argument, this runs one iteration. To run five consecutive iterations:
 
