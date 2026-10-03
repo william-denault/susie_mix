@@ -5,7 +5,6 @@ slide_one_cs_settings <- list(
   expected_coding = "recessive",
   coding_selection = "endpoints", # "direction" also includes partial recessive effects.
   association_threshold = 5e-8,
-  minimum_mean_reads = 100,
   both_one_cs = FALSE,
   top_n = 20L
 )

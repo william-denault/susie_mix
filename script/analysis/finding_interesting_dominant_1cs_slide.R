@@ -5,7 +5,6 @@ slide_one_cs_settings <- list(
   expected_coding = "dominant",
   coding_selection = "endpoints", # "direction" also includes partial dominant effects.
   association_threshold = 5e-8,
-  minimum_mean_reads = 100,
   both_one_cs = FALSE,            # TRUE also requires one additive CS.
   top_n = 20L
 )

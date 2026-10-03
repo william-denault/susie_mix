@@ -82,8 +82,11 @@ summary-only run without GTEx data, set this to `FALSE` or pass `--summary-only`
 The older `--expression-plots` flag remains accepted but is no longer needed.
 
 The descriptive analysis keeps the existing P < 1e-8 and mean reads >= 100
-thresholds. The one-CS analysis keeps the original P < 5e-8 and mean reads >= 100
-thresholds and requires one **EM** CS with a dominant or recessive lead, respectively. It does not require
+thresholds. The interesting one-CS plots use only P < 5e-8 for eligibility,
+with no sample-size or mean-read-count cutoff, and require one **EM** CS with
+a dominant or recessive lead, respectively. The original unweighted one-CS
+plots use the same eligibility rule. Expression reconstruction still checks
+that the data match the saved fit. The one-CS analysis does not require
 one additive CS by default. For multiple additive CSs it selects the highest-PIP
 CS lead; with no additive CS it uses the highest-PIP SNP and labels that fallback.
 Set `both_one_cs = TRUE` for strictly one CS in both models. Both overview plots

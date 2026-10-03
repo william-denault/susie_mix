@@ -1,10 +1,11 @@
 # Source slide_analysis_utils.R before this file.
 slide_one_cs_comparisons <- function(res, results_dir, expected_coding = "dominant",
-    association_threshold = 5e-8, minimum_mean_reads = 100, both_one_cs = FALSE,
+    association_threshold = 5e-8, both_one_cs = FALSE,
     coding_selection = c("endpoints", "direction"), delta_tolerance = 1e-6) {
   expected_coding <- match.arg(expected_coding, c("dominant", "recessive"))
   coding_selection <- match.arg(coding_selection)
-  cases <- slide_primary(res, association_threshold, minimum_mean_reads)
+  # P-value is the only quality screen; sample/read counts are metadata.
+  cases <- res[which(is.finite(res$min_pv) & res$min_pv < association_threshold), , drop = FALSE]
   count <- cases[[paste0("n_", expected_coding, "_slide")]]
   if (coding_selection == "direction") count <- count + cases[[paste0("n_partial_", expected_coding, "_slide")]]
   cases <- cases[which(cases$ncs_slide == 1L & count == 1L & (!both_one_cs | cases$ncs_susie == 1L)), , drop = FALSE]
@@ -75,13 +76,13 @@ slide_one_cs_comparisons <- function(res, results_dir, expected_coding = "domina
 plot_one_cs_slide <- function(project_dir, expected_coding = "dominant",
     results_dir = file.path(project_dir, "results"), summary_dir = file.path(project_dir, "results_slide/summary"),
     output_dir = file.path(project_dir, "results_slide/plot", paste0("one_cs_", expected_coding)),
-    association_threshold = 5e-8, minimum_mean_reads = 100, both_one_cs = FALSE,
+    association_threshold = 5e-8, both_one_cs = FALSE,
     coding_selection = "endpoints", top_n = 20L) {
   summaries <- slide_load_summary(summary_dir)
   tolerance <- unique(summaries$res$delta_tolerance)
   if (length(tolerance) != 1L) stop("Summary contains multiple delta tolerances.")
   comparisons <- slide_one_cs_comparisons(summaries$res, results_dir, expected_coding,
-    association_threshold, minimum_mean_reads, both_one_cs, coding_selection, tolerance)
+    association_threshold, both_one_cs, coding_selection, tolerance)
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
   write.csv(comparisons, file.path(output_dir, "lead_snp_comparisons.csv"), row.names = FALSE)
   completed <- comparisons[comparisons$status == "compared", , drop = FALSE]
@@ -95,7 +96,7 @@ plot_one_cs_slide <- function(project_dir, expected_coding = "dominant",
   write.csv(overview$top_cases, file.path(output_dir, "largest_lead_shifts.csv"), row.names = FALSE)
   distances <- completed$distance_kb[is.finite(completed$distance_kb)]
   stats <- data.frame(coding = expected_coding, coding_selection = coding_selection, delta_tolerance = tolerance,
-    association_threshold = association_threshold, minimum_mean_reads = minimum_mean_reads,
+    association_threshold = association_threshold,
     both_one_cs = both_one_cs, n_candidates = nrow(comparisons), n_compared = nrow(completed),
     n_errors = sum(comparisons$status == "error"), n_valid_distances = length(distances),
     n_changed_leads = overview$n_changed, n_over_100kb = sum(distances > 100),

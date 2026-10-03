@@ -18,12 +18,12 @@ em_one_cs_lead <- function(fit, predictor_map) {
 }
 
 em_one_cs_distances <- function(context, res, expected_coding = "dominant",
-                                association_threshold = 5e-8, minimum_mean_reads = 100,
+                                association_threshold = 5e-8,
                                 both_one_cs = FALSE) {
   expected_coding <- match.arg(expected_coding, c("dominant", "recessive"))
   count_column <- if (expected_coding == "dominant") "n_dom_weighted" else "n_rec_weighted"
+  # P-value is the only quality screen; sample/read counts are metadata.
   keep <- is.finite(res$min_pv) & res$min_pv < association_threshold &
-    is.finite(res$mean_count) & res$mean_count >= minimum_mean_reads &
     res$ncs_weighted_fit_mix == 1L & res[[count_column]] == 1L
   if (both_one_cs) keep <- keep & res$ncs_susie == 1L
   cases <- res[which(keep), , drop = FALSE]
@@ -82,7 +82,7 @@ em_one_cs_distances <- function(context, res, expected_coding = "dominant",
 }
 
 em_plot_one_cs <- function(project_dir, iteration = "latest", expected_coding = "dominant",
-                           association_threshold = 5e-8, minimum_mean_reads = 100,
+                           association_threshold = 5e-8,
                            both_one_cs = FALSE, expression_plots = TRUE,
                            datadir = "/project2/mstephens/gtex", top_n = 20L) {
   context <- em_analysis_context(project_dir, iteration)
@@ -97,7 +97,7 @@ em_plot_one_cs <- function(project_dir, iteration = "latest", expected_coding = 
   environment(compare) <- environment()
   summaries <- em_load_summary(context)
   comparisons <- compare(context, summaries$res, expected_coding,
-                         association_threshold, minimum_mean_reads, both_one_cs)
+                         association_threshold, both_one_cs)
   output_dir <- file.path(context$iteration_dir, "plot", paste0("one_cs_", expected_coding))
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
   write.csv(comparisons, file.path(output_dir, "lead_snp_comparisons.csv"), row.names = FALSE)
@@ -114,7 +114,7 @@ em_plot_one_cs <- function(project_dir, iteration = "latest", expected_coding = 
   distance <- completed$distance_bp[is.finite(completed$distance_bp)]
   stats <- data.frame(
     em_iteration = context$iteration, coding = expected_coding,
-    association_threshold = association_threshold, minimum_mean_reads = minimum_mean_reads,
+    association_threshold = association_threshold,
     both_one_cs = both_one_cs, n_candidates = nrow(comparisons), n_compared = nrow(completed),
     n_errors = sum(comparisons$status == "error"), n_valid_distances = length(distance),
     n_changed_leads = overview$n_changed, n_over_100kb = sum(distance > 1e5),

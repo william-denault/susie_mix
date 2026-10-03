@@ -29,7 +29,7 @@ if (!exists("res_summary")) {
 }
 
 association_threshold <- 5e-8
-minimum_mean_reads <- 100
+# Case eligibility uses association P-value only, with no sample/read-count cutoff.
 
 required_columns <- c(
   "gene",
@@ -59,8 +59,6 @@ res <- as.data.table(res_summary)
 dominant_cases <- res[
   is.finite(min_pv) &
     min_pv < association_threshold &
-    is.finite(mean_count) &
-    mean_count >= minimum_mean_reads &
     ncs_susie_mix == 1L &
     n_dom == 1L,
   .(

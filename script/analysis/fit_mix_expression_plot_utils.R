@@ -1269,7 +1269,7 @@ run_one_cs_fit_mix_plots <- function(
     hwe_thresh = 1e-8,
     min_n_rec = 5,
     cis_window = 5e5,
-    min_samples = 50,
+    min_samples = 0L, # No sample-size eligibility cutoff for one-CS plots.
     genotype_axis_ticks = FALSE,
     result_reader = NULL,
     mixed_fit_name = "susie_mix",

@@ -6,7 +6,6 @@ em_one_cs_settings <- list(
   iteration = "latest",
   expected_coding = "dominant",  # Also accepts "recessive".
   association_threshold = 5e-8,
-  minimum_mean_reads = 100,
   both_one_cs = FALSE,           # TRUE restricts additive SuSiE to one CS too.
   expression_plots = TRUE,       # FALSE requests only saved-fit summaries/overview.
   datadir = "/project2/mstephens/gtex",

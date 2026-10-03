@@ -103,7 +103,7 @@ stopifnot("PartialDominant" %in% direction$gene,
 strict <- slide_one_cs_comparisons(res, file.path(root, "results"), both_one_cs = TRUE)
 stopifnot(!any(strict$gene %in% c("MultipleAddCS", "NoAddCS")))
 empty <- plot_one_cs_slide(project, "recessive", file.path(root, "results"), file.path(root, "summary"),
-                           file.path(root, "empty"), minimum_mean_reads = 1000)
+                           file.path(root, "empty"), association_threshold = 0)
 stopifnot(empty$summary$n_candidates == 0L, empty$summary$n_compared == 0L)
 run_slide_descriptive_results(project, file.path(root, "summary"), file.path(root, "empty_descriptive"),
                                minimum_mean_reads = 1000)

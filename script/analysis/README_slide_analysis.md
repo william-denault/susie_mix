@@ -40,8 +40,9 @@ Outputs are isolated under `results_slide/`:
   `lead_snp_comparisons.csv`, `lead_distance_summary.csv`,
   `largest_lead_shifts.csv`, and `lead_snp_distance_overview.png`.
 
-The descriptive filter remains P < 1e-8 and mean reads >= 100; the one-CS
-filter remains P < 5e-8 and mean reads >= 100. Convergence flags are retained;
+The descriptive filter remains P < 1e-8 and mean reads >= 100; the interesting
+one-CS plots use only P < 5e-8 for eligibility, with no sample-size or
+mean-read-count cutoff. Convergence flags are retained;
 they are not an additional filter. Regenerate summaries after replacing RDS
 files. ELBO differences describe the fitted objectives, not a calibrated test.
 
