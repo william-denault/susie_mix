@@ -59,113 +59,100 @@ update calculated from that final fit.
 
 ## What each iteration uses
 
-- No `results_em/prior_history.csv`: pool `susie_mix$alpha` from **every gene
-  result in `results`**, separately by tissue and coding, to prepare iteration 1.
-- Existing history: read its latest iteration, verify all its chunks have
-  finished and all gene files exist, then pool `weighted_fit_mix$alpha` from that
-  iteration to prepare the next one.
-- The empirical Bayes update uses the expected coding assignments of components
-  with **`V > 0` whose own 95% CS passes `min_abs_corr = 0.5`**. Workers evaluate
-  these CSs with `susie_get_cs(..., dedup = FALSE)` while the genotype matrix is
-  available and save the eligible component indices in `fit$coding_prior_cs`.
-  Identical and partially overlapping CSs count separately: there is no merging,
-  overlap threshold, or selection of one representative. The ordinary reported
-  `fit$sets` is retained and is not used to reconstruct EB eligibility.
-- With all three codings present in every fit, each prior equals its summed
-  eligible `alpha` divided by the number of eligible components. All predictors
-  in each selected row contribute, including those outside that row's CS.
-  Positive variances below `1e-9` are tested too; exactly zero-variance rows are
-  excluded. A fit with no eligible components contributes **zero counts** and
-  remains a valid fit. Counts are pooled across the other genes in that tissue.
-  Marginal PIP sums remain full-fit diagnostics and do not determine the priors.
-- `workhorse_em.R` runs only the weighted mixed-coding fit. It retains the
-  original data processing and QC, but omits additive-only, unweighted, and
-  permutation fits and marginal association tests. Each fit starts from its
-  predecessor's posterior and variance estimates, with the NEW prior weights.
-  The inner fitting budget is `max_iter=1000`, `tol=1e-5`.
-- Priors are matched to the existing `SMTS` tissue names. A class's mass is
-  divided equally among its retained predictors; if a class is absent after
-  filtering, weights are renormalized across the remaining classes. In that
-  case the M-step optimizes the corresponding conditional-coding objective,
-  rather than incorrectly using a global normalized count.
+- Without `results_em/prior_history.csv`, pool `susie_mix$alpha` from every
+  gene result in `results`, separately by tissue and coding, for iteration 1.
+- With an existing history, verify the latest iteration is complete, then
+  pool `weighted_fit_mix$alpha` from its saved gene fits for the next update.
+- Every component with exactly `V > 0` contributes its entire alpha row,
+  including predictors outside any reported CS. Positive variances below
+  `1e-9` still count; exactly zero-variance assignments are integrated out.
+  CS purity, duplicate or overlapping CSs, association P-values, read counts,
+  and an additional sample-size threshold do not select EM components.
+- With all three coding classes present, normalize their summed active alpha
+  masses. Unequal block sizes are handled by dividing each coding prior mass
+  across its retained predictors. If a class is absent, optimize the
+  conditional-coding objective rather than using naive pooled proportions.
+- A fit with no active components contributes zero counts. If the whole
+  tissue has no active components, retain its previous prior (or initialize
+  uniformly if it has none). PIP sums remain descriptive diagnostics.
+- The worker fits only weighted mixed-coding SuSiE and initializes from the
+  preceding full posterior and variances using the new coding weights.
+  Existing data QC is unchanged. The inner budget is `max_iter=1000`,
+  `tol=1e-5`; `min_abs_corr=0.5` controls reported CSs only.
 
-This is a **purity-filtered empirical Bayes update** for the coding-mixture
-SuSiE model. It optimizes the coding objective for the selected component rows;
-it is not ordinary EM maximizing the full-data marginal likelihood. Eligibility
-can change between iterations, so the full-data ELBO need not increase. The
-earlier unfiltered derivation and the distinction from the cTWAS model are
-recorded in [EM_PRIOR_REVIEW.md](EM_PRIOR_REVIEW.md).
+New rows use `update_method=susie_active_component_alpha_v2`, matching the
+original unfiltered run. This restores the collapsed variational EM update
+in [EM_PRIOR_REVIEW.md](EM_PRIOR_REVIEW.md). No `coding_prior_cs` metadata is
+required or used. The former purity-filtered v3 update is no longer active.
 
 ```text
 results_em/
-  prior_history.csv
-  last_array_job_id.txt
-  last_continuation_job_id.txt  # Latest automatically queued preparation, if any
-  iteration_001/
-    priors.csv                 # Frozen priors used to fit this iteration
-    manifest.csv               # Frozen chunk/gene assignments
-    source_audit.csv            # Errors and nonconvergence in source results
-    component_counts.rds       # Eligible alpha sums by tissue and available coding classes
-    array_job_ids.txt
-    continuation_job_ids.txt   # Next preparation IDs, when a sequence continues
+  prior_history.csv             # Append-only iteration records
+  iteration_012/
+    priors.csv                 # Frozen weights used for iteration 12
+    manifest.csv
+    results/<gene>.rds          # Full fits for the next E/M transition
+    completed/chunk_001.done
+  iteration_013/
+    priors.csv                 # New weights calculated from iteration 12
+    manifest.csv               # New 298-chunk assignment
+    source_audit.csv
+    component_counts.rds
     results/<gene>.rds
-    completed/chunk_001.csv     # Per-gene status for this chunk
-    completed/chunk_001.done    # Every gene in this chunk was attempted/saved
-    logs/susie_mix_<job>_<task>.out
-    logs/susie_mix_<job>_<task>.err
-  iteration_002/
-    ...
+    completed/chunk_001.csv
+    completed/chunk_001.done
+    logs/
 ```
 
-History rows contain `iteration`, `source_iteration`, `tissue`, `pi_add`,
-`pi_rec`, `pi_dom`, eligible component `alpha` sums, descriptive PIP sums, fit/error
-counts, and a timestamp. `n_components` is the total number of component rows;
-`n_active_components` counts all `V > 0` rows, and `n_zero_variance_components`
-counts the zero-variance rows. **`n_eligible_components` counts the rows used**;
-`alpha_total` equals this count up to rounding.
-`n_fits` counts all valid fits, while `n_active_fits` counts fits with at least
-one positive-variance component. `n_eligible_fits` counts fits contributing to
-the update; `n_zero_cs_fits` counts fits without any eligible component.
-`cs_min_abs_corr=0.5` and `cs_dedup=FALSE` identify the selection settings.
-`mstep_q_gain` checks that the M-step increases its selected-count
-objective; `max_abs_prior_change` tracks movement of the three coding weights.
-`source_elbo_sum` records the summed source-fit ELBO over **all valid fits,
-including all-null fits**, only when all included
-fits supply a finite value (`n_source_elbo` gives the count). Compare these
-values only across iterations with the same gene/tissue fits and model settings.
-Thus iteration 1's row is estimated from the original scan and is the prior
-**used for** iteration 1. Iteration 2's row is estimated from iteration 1.
-Each gene RDS contains a list of successful tissues, with `weighted_fit_mix`,
-the predictor map, coding priors/weights, and the existing fit metadata. The
-full `alpha`, `V`, and posterior moments remain available for warm starts.
+`alpha_total` equals `n_active_components` up to rounding. History retains
+`n_components`, `n_zero_variance_components`, fit counts, source errors,
+`mstep_q_gain`, and `max_abs_prior_change`. `source_elbo_sum` includes all
+valid fits, including all-null fits, when every fit supplies a finite ELBO.
+Compare it only for the same data and model settings. Prior history records
+weights used for each iteration; iteration 12's row was calculated from
+iteration 11, not from the final iteration-12 fits.
 
-## Rerunning with purity filtering
+## Continue the original unfiltered run after iteration 12
 
-New history rows use `update_method=susie_purity_component_alpha_v3`. Preparation
-requires `coding_prior_cs` metadata on every valid source fit. Old fitted objects
-without it are rejected before an iteration or history row is written: even
-full `alpha` and `V` cannot establish genotype correlations without the original
-design matrix, and the reported CS list can have removed duplicate components.
+Keep the existing RCC `results/` and `results_em/` directories intact. There
+is no baseline rerun, no new results layout, and no need to repeat iterations
+1-12. The original complete history, iteration-12 manifest, completion
+markers, and full gene `.rds` files must remain on RCC. The partial local
+copy of `prior_history.csv` is not a replacement for the RCC history.
 
-For a fresh RCC rerun:
+Sync these code files, preserving their relative paths:
 
-1. Sync the updated `workhorse.R`, `workhorse_em.R`, and `em_utils.R`, together
-   with the current preparation and chunk-runner scripts. Finish or stop the
-   previous job sequence before replacing scripts used by running workers.
-2. Preserve the old `results` and `results_em` directories separately. Rerun the
-   baseline scan into a fresh `results` directory using the updated workhorse.
-   This regenerates the initial `susie_mix` source fits and also applies purity
-   0.5 to additive, mixed, Slide, and permutation fits. Baseline drivers write
-   the same gene filenames, so preserve the old outputs before rerunning.
-3. With a fresh `results_em` directory and no old `prior_history.csv`, launch
-   `sbatch em_susie_mix` (or supply an iteration count) from `job/`.
-4. Regenerate the EM and Slide summaries from these new results.
+- `script/scan_tissue_attempt/em_utils.R`
+- `script/scan_tissue_attempt/prepare_em_iteration.R`
+- `script/scan_tissue_attempt/run_em_chunk.R`
+- `script/scan_tissue_attempt/workhorse_em.R`
+- `script/scan_tissue_attempt/workhorse_utils.R`
+- `script/scan_tissue_attempt/get_gene_annotations.R`
+- `job/em_susie_mix`
+- `job/em_susie_mix_array`
 
-Setting `min_abs_corr=0.5` only in the EM workhorse does not retroactively filter
-the baseline source for iteration 1. A `resume` also keeps its frozen priors;
-it is not a restart with newly estimated priors. Historical numeric rows and
-frozen snapshots are never rewritten; legacy method tags remain distinguishable
-if histories are combined. Keep old and new runs separate for this full rerun.
+From the RCC project's `job/` directory, choose one continuation count:
+
+```bash
+sbatch em_susie_mix 5
+```
+
+This adds iterations **13-17**. Alternatively, `sbatch em_susie_mix 8` adds
+iterations **13-20**. Submit only one of these commands. Each new iteration
+uses 298 chunks. The existing launcher queues successive preparations after
+successful arrays; the count is additional iterations, not the target index.
+Do not use `resume` for a completed iteration 12: that option retries an
+unfinished iteration with its already frozen priors.
+
+The launcher checks previous completion and active jobs before preparing a
+new iteration. If full history, source fits, or completion markers are
+missing, reconcile the saved run; do not replace its history or bypass the
+checks. Preparation accepts old v2 fits without CS metadata and never
+changes their posteriors. Existing snapshots and old numeric history values
+are preserved; new diagnostics may be appended as additional columns.
+
+The requested count is a compute budget, not a convergence guarantee.
+Inspect prior changes, source-fit ELBOs, and fit errors after the sequence.
 
 ## Interrupted jobs and exceptional fits
 
@@ -219,15 +206,18 @@ Missing/unreadable gene files, mismatched predictor maps, invalid component
 posteriors, or failed warm-start/weight checks stop
 preparation. The initial results must match the full chunk gene list, so a
 partially finished original scan cannot initialize the priors. A tissue with
-eligible component posteriors retains its previous prior and is marked
-`carried_forward_no_eligible_components`. If no previous prior exists, it starts
-uniformly and is marked `initialized_uniform_no_eligible_components`; this is a
-fallback, not a learned estimate. Zero-CS fits are valid results, not failed
-genes. Full fits retain all L rows for subsequent fitting.
-All fitting workhorses use `min_abs_corr=0.5`; simulations already used this value.
-No association-P, read-count, or lead-PIP filter is added to the existing data QC.
-No pseudocount is added to the M-step. Disconnected coding groups retain their previous
-relative total mass because the data cannot identify it.
+no active component posteriors retains its previous prior and is marked
+`carried_forward_no_active_components`. Without a previous prior, it starts
+uniformly and is marked `initialized_uniform_no_active_components`; this is
+a fallback, not a learned estimate. A fit with zero reported CSs is valid
+and still contributes all of its positive-variance components. Full fits
+retain all L rows for subsequent fitting.
+
+All fitting workhorses use `min_abs_corr=0.5` for reporting only. No
+association-P, read-count, lead-PIP, or extra sample-size filter is added to
+the existing data QC. No pseudocount is added to the M-step. Disconnected
+coding groups retain their previous relative total mass because the data
+cannot identify it.
 
 ## Timing
 
@@ -259,7 +249,7 @@ is run by the local checks. Test the orchestration and prior calculations with:
 
 ```bash
 Rscript --vanilla script/scan_tissue_attempt/tests/test_em_iteration.R
-Rscript --vanilla script/scan_tissue_attempt/tests/test_em_purity.R
+Rscript --vanilla script/scan_tissue_attempt/tests/test_em_unfiltered_resume.R
 Rscript --vanilla script/scan_tissue_attempt/tests/test_em_marginal_likelihood.R
 Rscript --vanilla script/scan_tissue_attempt/tests/test_em_susie_smoke.R
 bash script/scan_tissue_attempt/tests/test_em_launcher.sh

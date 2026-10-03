@@ -61,7 +61,8 @@ sbatch() {
 export -f module flock squeue Rscript sbatch
 
 "$BASH" "$repo_dir/job/em_susie_mix" > "${test_dir}/out" 2>&1
-expected_chunks=$(seq -s, 1 298)
+printf -v expected_chunks '%s,' {1..298}
+expected_chunks=${expected_chunks%,}
 grep -Fxq -- "--array=$expected_chunks" "$EM_TEST_ARGS"
 grep -Fxq "${SUSIE_MIX_PROJECT_DIR}/job/em_susie_mix_array" "$EM_TEST_ARGS"
 grep -Fxq "${SUSIE_MIX_PROJECT_DIR}/results_em/iteration_001" "$EM_TEST_ARGS"

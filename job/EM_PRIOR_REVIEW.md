@@ -1,22 +1,24 @@
 # Empirical Bayes estimation of SuSiE coding weights
 
-## Current update: purity-filtered component counts (2026-09-27)
+## Current update: unfiltered active-component counts (2026-10-03)
 
-The current implementation is `susie_purity_component_alpha_v3`. It uses only
-positive-variance components whose own 95% CS passes minimum absolute
-correlation 0.5, calculated with `dedup=FALSE`. Duplicate and partially
-overlapping components contribute separately. A selected row contributes its
-entire coding-assignment distribution, including predictors outside its CS.
-Fits with no eligible components contribute zero counts; tissues with no
-eligible components retain the previous prior (uniform if none exists).
-The complete fitted objects remain intact for subsequent fitting.
+The current implementation again uses `susie_active_component_alpha_v2`,
+matching the original unfiltered iteration-12 run. Every component with
+exactly `V > 0` contributes its full alpha row. No CS-purity, association-P,
+read-count, lead-PIP, or additional sample-size screen selects EM counts.
+Exactly zero-variance assignments are integrated out. Existing data QC stays
+in place; `min_abs_corr=0.5` controls reported CSs only.
 
-This selection changes the procedure to a **purity-filtered EB update**.
-The coding-count objective is optimized conditional on the selected rows;
-the full-data marginal-likelihood/ELBO monotonicity argument below does not
-apply to the filtered procedure. The following review records the earlier
-unfiltered v1/v2 methods and their derivation, rather than a proof for v3.
-See [README_em.md](README_em.md) for current diagnostics and rerun instructions.
+Fits without `coding_prior_cs` metadata are accepted. Historical purity
+metadata, if present, is ignored. A tissue with no active components retains
+its previous prior, or receives a labelled uniform initialization if none
+exists. Full fits and warm starts retain every component row.
+
+The September 27 purity-filtered version (`susie_purity_component_alpha_v3`)
+is historical. Its selected-count objective was not the full-data EM
+objective. Saved history and results from any earlier method are never
+rewritten. The derivation below applies to the restored unfiltered update.
+See [README_em.md](README_em.md) for continuing a completed iteration 12.
 
 ## Historical review of the unfiltered update
 

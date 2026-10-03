@@ -13,8 +13,7 @@ expect_error <- function(expr, pattern) {
 }
 equal <- function(x, y) stopifnot(isTRUE(all.equal(x, y, check.attributes = FALSE)))
 
-# Synthetic metadata for aggregation/orchestration tests. The actual genotype
-# purity calculation is exercised in test_em_purity.R and the SuSiE smoke test.
+# Historical filtered-run metadata is deliberately ignored by unfiltered EM.
 set_eligibility <- function(fit, eligible = which(rep_len(fit$V, nrow(fit$alpha)) > 0)) {
   fit$coding_prior_cs <- list(schema_version = 1L, min_abs_corr = 0.5, coverage = .95,
     dedup = FALSE, n_components = nrow(fit$alpha), n_predictors = ncol(fit$alpha),
@@ -30,9 +29,9 @@ make_tissue <- function(pip, coding = c("additive", "recessive", "dominant"),
   make_fit <- function(p) {
     a <- matrix(if (sum(p) > 0) p / sum(p) else rep(1/length(p), length(p)), 1,
                 dimnames = list(NULL, predictor))
-    set_eligibility(structure(list(pip = setNames(p, predictor), converged = converged, alpha = a,
+    structure(list(pip = setNames(p, predictor), converged = converged, alpha = a,
                    V = as.numeric(sum(p) > 0), mu = a * 0, mu2 = a * 0 + .1,
-                   sigma2 = 1, pi = rep(1/length(p), length(p))), class = "susie"))
+                   sigma2 = 1, pi = rep(1/length(p), length(p))), class = "susie")
   }
   list(susie_mix = make_fit(pip), weighted_fit_mix = make_fit(weighted),
        mix_coding = coding,
@@ -91,12 +90,7 @@ run_tests <- function() {
   history_file <- file.path(project, "results_em/prior_history.csv")
   stopifnot(!file.exists(history_file))
   saveRDS(list(gene = "G3", error = "No SNPs after QC"), file.path(project, "results/G3.rds"))
-  legacy_g1 <- g1
-  legacy_g1$Brain$susie_mix$coding_prior_cs <- NULL
-  saveRDS(legacy_g1, file.path(project, "results/G1.rds"))
-  expect_error(prepare(), "Missing per-component EB purity metadata")
-  stopifnot(!file.exists(history_file))
-  saveRDS(g1, file.path(project, "results/G1.rds"))
+  # Old v2 source fits have no coding_prior_cs metadata and must work directly.
   first <- prepare()
   equal(first$chunks, 1:2)
   first_manifest <- readLines(file.path(first$iteration_dir, "manifest.csv"))
@@ -111,10 +105,9 @@ run_tests <- function() {
   equal(p1$n_source_gene_errors, c(1, 1))
   audit <- read.csv(file.path(first$iteration_dir, "source_audit.csv"))
   stopifnot(all(c("gene_error", "tissue_error") %in% audit$issue))
-  stopifnot(all(p1$update_method == "susie_purity_component_alpha_v3"),
+  stopifnot(all(p1$update_method == "susie_active_component_alpha_v2"),
             all(p1$n_active_components == p1$n_components),
-            all(p1$n_eligible_components == p1$n_active_components),
-            all(p1$alpha_total == p1$n_eligible_components),
+            all(p1$alpha_total == p1$n_active_components),
             all(p1$n_active_fits == p1$n_fits))
   # Simulate the schema of a pre-correction iteration. New preparation must
   # append tagged rows without rewriting its frozen snapshot or old values.
@@ -178,7 +171,7 @@ run_tests <- function() {
   equal(em_prior_for_tissue(p2, "Liver"), c(.4, .4, .2))
   equal(subset(history, iteration == 1)[names(p1)], p1)
   stopifnot(all(subset(history, iteration == 1)$update_method == "legacy_pip_share"),
-            all(p2$update_method == "susie_purity_component_alpha_v3"))
+            all(p2$update_method == "susie_active_component_alpha_v2"))
   stopifnot(dir.exists(file.path(second$iteration_dir, "results")))
   # Original scan and immutable first-iteration snapshot were preserved.
   stopifnot(identical(readRDS(file.path(project, "results/G1.rds")), g1))
@@ -201,13 +194,13 @@ run_tests <- function() {
   stopifnot(zero$n_zero_variance_components[zero$tissue == "Brain"] == 1L,
             all(zero$n_active_components == 0L), all(zero$n_active_fits == 0L),
             all(zero$alpha_total == 0), all(zero$mstep_q_gain == 0),
-            all(zero$prior_status == "carried_forward_no_eligible_components"))
+            all(zero$prior_status == "carried_forward_no_active_components"))
   initial_null <- em_estimate_coding_priors(fixture, "susie_mix")$priors
   equal(em_prior_for_tissue(initial_null, "Brain"), rep(1/3, 3))
-  stopifnot(initial_null$prior_status == "initialized_uniform_no_eligible_components")
+  stopifnot(initial_null$prior_status == "initialized_uniform_no_active_components")
 
-  # A signal fit plus an all-null fit uses only independently eligible rows.
-  # The reported CS list does not determine EB eligibility.
+  # A signal fit plus an all-null fit uses every positive-variance row.
+  # Reported CSs and historical purity metadata cannot change the counts.
   signal <- make_tissue(c(.7, .2, .1))
   signal$susie_mix$alpha <- rbind(signal$susie_mix$alpha, c(.1, .3, .6), c(.99, .005, .005))
   signal$susie_mix$V <- c(1, 1e-12, 0) # Tiny positive V is still included.
@@ -227,25 +220,22 @@ run_tests <- function() {
   equal(em_prior_for_tissue(active_only, "Brain"), c(.4, .25, .35))
   stopifnot(brain$n_fits == 2L, brain$n_active_fits == 1L,
             brain$n_components == 13L, brain$n_active_components == 2L,
-            brain$n_eligible_components == 2L, brain$n_zero_cs_fits == 1L,
             brain$n_zero_variance_components == 11L, brain$alpha_total == 2)
-  # Positive variance alone is insufficient. A failed-purity row supplies no
-  # counts, even in a fit with other eligible rows. Scalar V also broadcasts.
+  # All positive-variance rows count even if no CS survives and historical
+  # metadata selected only one row. Scalar V broadcasts to every row.
   signal$susie_mix$V <- 1
   signal$susie_mix$sets <- list(cs = NULL)
   signal$susie_mix <- set_eligibility(signal$susie_mix, 2L)
   saveRDS(list(Brain = signal), signal_file)
   selected <- em_estimate_coding_priors(signal_file, "susie_mix")$priors
-  equal(em_prior_for_tissue(selected, "Brain"), signal$susie_mix$alpha[2, ])
-  stopifnot(selected$n_active_components == 3L, selected$n_eligible_components == 1L)
-  # An entirely failed-purity tissue carries its previous nonuniform prior.
+  equal(em_prior_for_tissue(selected, "Brain"), colMeans(signal$susie_mix$alpha))
+  stopifnot(selected$n_active_components == 3L, selected$alpha_total == 3)
   signal$susie_mix <- set_eligibility(signal$susie_mix, integer())
   saveRDS(list(Brain = signal), signal_file)
   no_cs <- em_estimate_coding_priors(signal_file, "susie_mix", p1)$priors
-  equal(em_prior_for_tissue(no_cs, "Brain"), em_prior_for_tissue(p1, "Brain"))
-  stopifnot(all(no_cs$alpha_total == 0), all(no_cs$n_eligible_components == 0),
-            no_cs$n_active_components[no_cs$tissue == "Brain"] == 3L,
-            all(no_cs$prior_status == "carried_forward_no_eligible_components"))
+  equal(em_prior_for_tissue(no_cs, "Brain"), colMeans(signal$susie_mix$alpha))
+  stopifnot(no_cs$alpha_total[no_cs$tissue == "Brain"] == 3,
+            no_cs$n_active_components[no_cs$tissue == "Brain"] == 3L)
   for (invalid_v in list(c(1, NA, 0), c(1, -1, 0), c(1, Inf, 0), c(1, 0))) {
     signal$susie_mix$V <- invalid_v
     saveRDS(list(Brain = signal), signal_file)
@@ -324,7 +314,7 @@ run_tests <- function() {
   stopifnot(identical(readLines(file.path(second$iteration_dir, "manifest.csv")), second_manifest),
             identical(readLines(file.path(first$iteration_dir, "manifest.csv")), first_manifest))
   p3 <- read.csv(file.path(third$iteration_dir, "priors.csv"))
-  stopifnot(all(p3$source_iteration == 2L), all(p3$update_method == "susie_purity_component_alpha_v3"))
+  stopifnot(all(p3$source_iteration == 2L), all(p3$update_method == "susie_active_component_alpha_v2"))
   equal(em_prior_for_tissue(p3, "Brain"), c(.2, .3, .5))
   equal(read.csv(file.path(second$iteration_dir, "priors.csv")), p2_v1)
   migrated <- subset(read.csv(history_file), iteration == 2)
