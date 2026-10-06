@@ -1,0 +1,462 @@
+[2026-10-05 14:36:16] slider iteration 0, chunk 014: AP5Z1
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene AP5Z1 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_014/plink_AP5Z1_411331885fe8.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 7
+  --export A
+  --from-bp 4275615
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_014/plink_AP5Z1_411331885fe8
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 5275615
+
+Start time: Mon Oct  5 14:37:27 2026
+63722 MiB RAM detected, ~31957 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+64060212 excluded by --chr + --max-alleles + --snps-only, 3174321 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+27921 variants remaining after main filters.
+--export A pass 1/1: loading... 0%writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_014/plink_AP5Z1_411331885fe8.raw
+written.
+End time: Mon Oct  5 14:37:33 2026
+62 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr7_4322916_G_A_b38_G" "chr7_4329787_C_T_b38_C" "chr7_4330043_G_A_b38_G"
+ [4] "chr7_4348771_A_T_b38_A" "chr7_4348990_C_T_b38_C" "chr7_4351436_G_A_b38_G"
+ [7] "chr7_4409808_G_A_b38_G" "chr7_4416654_C_T_b38_C" "chr7_4416840_T_C_b38_T"
+[10] "chr7_4416905_T_C_b38_T" "chr7_4421736_G_A_b38_G" "chr7_4423086_G_A_b38_G"
+[13] "chr7_4482755_T_C_b38_T" "chr7_4484773_T_C_b38_T" "chr7_4548300_T_C_b38_T"
+[16] "chr7_4548396_G_C_b38_G" "chr7_4583226_G_T_b38_G" "chr7_4588712_T_G_b38_T"
+[19] "chr7_4588746_T_A_b38_T" "chr7_4588814_G_A_b38_G" "chr7_4609903_A_G_b38_A"
+[22] "chr7_4610864_A_G_b38_A" "chr7_4612829_T_C_b38_T" "chr7_4625267_T_C_b38_T"
+[25] "chr7_4670197_G_C_b38_G" "chr7_4692068_G_A_b38_G" "chr7_4692752_T_C_b38_T"
+[28] "chr7_4700990_A_G_b38_A" "chr7_4703091_T_C_b38_T" "chr7_4703743_C_A_b38_C"
+[31] "chr7_4706473_T_C_b38_T" "chr7_4706981_G_C_b38_G" "chr7_4708659_A_G_b38_A"
+[34] "chr7_4725257_G_A_b38_G" "chr7_4750258_T_C_b38_T" "chr7_4754989_C_G_b38_C"
+[37] "chr7_4756523_T_C_b38_T" "chr7_4765745_C_T_b38_C" "chr7_4766592_A_G_b38_A"
+[40] "chr7_4769322_C_G_b38_C" "chr7_4769372_A_G_b38_A" "chr7_4769592_A_C_b38_A"
+[43] "chr7_4769806_T_G_b38_T" "chr7_4770029_G_T_b38_G" "chr7_4771170_A_G_b38_A"
+[46] "chr7_4772138_A_G_b38_A" "chr7_4772628_A_G_b38_A" "chr7_4775231_A_G_b38_A"
+[49] "chr7_4775897_T_G_b38_T" "chr7_4775972_T_C_b38_T" "chr7_4785256_A_G_b38_A"
+[52] "chr7_4788532_T_C_b38_T" "chr7_4794008_A_C_b38_A" "chr7_4795755_T_G_b38_T"
+[55] "chr7_4823046_G_A_b38_G" "chr7_4833574_A_T_b38_A" "chr7_4871705_C_T_b38_C"
+[58] "chr7_4877248_T_G_b38_T" "chr7_4878971_G_A_b38_G" "chr7_4879266_T_C_b38_T"
+[61] "chr7_5121399_G_A_b38_G" "chr7_5156846_C_A_b38_C"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+
+=====================================
+Tissue: Blood 
+=====================================
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+
+=====================================
+Tissue: Brain 
+=====================================
+
+=====================================
+Tissue: Breast 
+=====================================
+
+=====================================
+Tissue: Colon 
+=====================================
+
+=====================================
+Tissue: Esophagus 
+=====================================
+
+=====================================
+Tissue: Heart 
+=====================================
+
+=====================================
+Tissue: Kidney 
+=====================================
+
+=====================================
+Tissue: Liver 
+=====================================
+
+=====================================
+Tissue: Lung 
+=====================================
+
+=====================================
+Tissue: Muscle 
+=====================================
+
+=====================================
+Tissue: Nerve 
+=====================================
+
+=====================================
+Tissue: Ovary 
+=====================================
+
+=====================================
+Tissue: Pancreas 
+=====================================
+
+=====================================
+Tissue: Pituitary 
+=====================================
+
+=====================================
+Tissue: Prostate 
+=====================================
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+
+=====================================
+Tissue: Skin 
+=====================================
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+
+=====================================
+Tissue: Spleen 
+=====================================
+
+=====================================
+Tissue: Stomach 
+=====================================
+
+=====================================
+Tissue: Testis 
+=====================================
+
+=====================================
+Tissue: Thyroid 
+=====================================
+
+=====================================
+Tissue: Uterus 
+=====================================
+
+=====================================
+Tissue: Vagina 
+=====================================
+[2026-10-05 16:28:17] slider iteration 0, chunk 014: APAF1
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene APAF1 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_014/plink_APAF1_4113dba774.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 12
+  --export A
+  --from-bp 98145290
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_014/plink_APAF1_4113dba774
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 99145290
+
+Start time: Mon Oct  5 16:29:32 2026
+63722 MiB RAM detected, ~21736 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+64641234 excluded by --chr + --max-alleles + --snps-only, 2593299 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+17153 variants remaining after main filters.
+--export A pass 1/1: loading... 0%2%writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_014/plink_APAF1_4113dba774.raw
+written.
+End time: Mon Oct  5 16:29:39 2026
+9 SNP(s) removed because HWE P < 1e-08 :
+[1] "chr12_98187308_T_C_b38_T" "chr12_98192170_G_C_b38_G"
+[3] "chr12_98960301_T_C_b38_T" "chr12_98963743_C_A_b38_C"
+[5] "chr12_98964063_A_G_b38_A" "chr12_98965682_G_A_b38_G"
+[7] "chr12_98966342_T_C_b38_T" "chr12_98974987_A_T_b38_A"
+[9] "chr12_98982292_C_T_b38_C"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+
+=====================================
+Tissue: Blood 
+=====================================
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+
+=====================================
+Tissue: Brain 
+=====================================
+
+=====================================
+Tissue: Breast 
+=====================================
+
+=====================================
+Tissue: Colon 
+=====================================
+
+=====================================
+Tissue: Esophagus 
+=====================================
+
+=====================================
+Tissue: Heart 
+=====================================
+
+=====================================
+Tissue: Kidney 
+=====================================
+
+=====================================
+Tissue: Liver 
+=====================================
+
+=====================================
+Tissue: Lung 
+=====================================
+
+=====================================
+Tissue: Muscle 
+=====================================
+
+=====================================
+Tissue: Nerve 
+=====================================
+
+=====================================
+Tissue: Ovary 
+=====================================
+
+=====================================
+Tissue: Pancreas 
+=====================================
+
+=====================================
+Tissue: Pituitary 
+=====================================
+
+=====================================
+Tissue: Prostate 
+=====================================
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+
+=====================================
+Tissue: Skin 
+=====================================
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+
+=====================================
+Tissue: Spleen 
+=====================================
+
+=====================================
+Tissue: Stomach 
+=====================================
+
+=====================================
+Tissue: Testis 
+=====================================
+
+=====================================
+Tissue: Thyroid 
+=====================================
+
+=====================================
+Tissue: Uterus 
+=====================================
+
+=====================================
+Tissue: Vagina 
+=====================================
+[2026-10-05 17:36:23] slider iteration 0, chunk 014: APBA1
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene APBA1 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_014/plink_APBA1_41132e3d9419.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 9
+  --export A
+  --from-bp 69172371
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_014/plink_APBA1_41132e3d9419
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 70172371
+
+Start time: Mon Oct  5 17:37:32 2026
+63722 MiB RAM detected, ~18805 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+64708045 excluded by --chr + --max-alleles + --snps-only, 2526488 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+17347 variants remaining after main filters.
+--export A pass 1/1: loading... 0%writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_014/plink_APBA1_41132e3d9419.raw
+written.
+End time: Mon Oct  5 17:37:39 2026
+21 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr9_69220859_G_A_b38_G" "chr9_69412236_G_C_b38_G"
+ [3] "chr9_69412725_T_G_b38_T" "chr9_69412790_T_C_b38_T"
+ [5] "chr9_69412980_T_C_b38_T" "chr9_69413217_A_C_b38_A"
+ [7] "chr9_69413314_T_C_b38_T" "chr9_69413692_T_A_b38_T"
+ [9] "chr9_69414045_A_G_b38_A" "chr9_69416325_A_G_b38_A"
+[11] "chr9_69419229_T_G_b38_T" "chr9_69419351_A_G_b38_A"
+[13] "chr9_69419742_T_C_b38_T" "chr9_69421086_T_G_b38_T"
+[15] "chr9_69477298_T_G_b38_T" "chr9_69477357_G_C_b38_G"
+[17] "chr9_69477409_G_A_b38_G" "chr9_69477426_C_G_b38_C"
+[19] "chr9_69477435_C_T_b38_C" "chr9_69508872_G_A_b38_G"
+[21] "chr9_69508911_C_T_b38_C"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+
+=====================================
+Tissue: Blood 
+=====================================
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+
+=====================================
+Tissue: Brain 
+=====================================
+
+=====================================
+Tissue: Breast 
+=====================================
+
+=====================================
+Tissue: Colon 
+=====================================
+
+=====================================
+Tissue: Esophagus 
+=====================================
+
+=====================================
+Tissue: Heart 
+=====================================
+
+=====================================
+Tissue: Kidney 
+=====================================
+
+=====================================
+Tissue: Liver 
+=====================================
+
+=====================================
+Tissue: Lung 
+=====================================
+
+=====================================
+Tissue: Muscle 
+=====================================
+
+=====================================
+Tissue: Nerve 
+=====================================
+
+=====================================
+Tissue: Ovary 
+=====================================
+
+=====================================
+Tissue: Pancreas 
+=====================================
+
+=====================================
+Tissue: Pituitary 
+=====================================

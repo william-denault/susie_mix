@@ -1,0 +1,172 @@
+[2026-10-05 08:21:05] slider iteration 0, chunk 270: TRNAU1AP
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene TRNAU1AP :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_270/plink_TRNAU1AP_44394b9b6253.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 1
+  --export A
+  --from-bp 28053085
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_270/plink_TRNAU1AP_44394b9b6253
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 29053085
+
+Start time: Mon Oct  5 08:22:07 2026
+63721 MiB RAM detected, ~32697 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+62424502 excluded by --chr + --max-alleles + --snps-only, 4810031 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+17530 variants remaining after main filters.
+--export A pass 1/1: loading... 0%writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_270/plink_TRNAU1AP_44394b9b6253.raw
+written.
+End time: Mon Oct  5 08:22:13 2026
+137 SNP(s) removed because HWE P < 1e-08 :
+  [1] "chr1_28384807_G_A_b38_G" "chr1_28385857_C_T_b38_C"
+  [3] "chr1_28391203_T_G_b38_T" "chr1_28399164_T_A_b38_T"
+  [5] "chr1_28409839_T_C_b38_T" "chr1_28411754_G_T_b38_G"
+  [7] "chr1_28421126_A_G_b38_A" "chr1_28428385_C_A_b38_C"
+  [9] "chr1_28430885_T_C_b38_T" "chr1_28431361_A_G_b38_A"
+ [11] "chr1_28431976_C_T_b38_C" "chr1_28435106_C_T_b38_C"
+ [13] "chr1_28437817_A_G_b38_A" "chr1_28441852_T_C_b38_T"
+ [15] "chr1_28444316_G_A_b38_G" "chr1_28444388_A_C_b38_A"
+ [17] "chr1_28444630_T_A_b38_T" "chr1_28444862_C_T_b38_C"
+ [19] "chr1_28445047_T_C_b38_T" "chr1_28445434_C_T_b38_C"
+ [21] "chr1_28446001_T_A_b38_T" "chr1_28446636_G_A_b38_G"
+ [23] "chr1_28448937_A_G_b38_A" "chr1_28449575_A_G_b38_A"
+ [25] "chr1_28449975_A_C_b38_A" "chr1_28450173_C_T_b38_C"
+ [27] "chr1_28450232_G_A_b38_G" "chr1_28450501_C_T_b38_C"
+ [29] "chr1_28450700_A_G_b38_A" "chr1_28451514_T_C_b38_T"
+ [31] "chr1_28451849_A_G_b38_A" "chr1_28452421_A_G_b38_A"
+ [33] "chr1_28454363_A_G_b38_A" "chr1_28454404_G_A_b38_G"
+ [35] "chr1_28455111_C_G_b38_C" "chr1_28455619_A_G_b38_A"
+ [37] "chr1_28457133_C_T_b38_C" "chr1_28458360_T_C_b38_T"
+ [39] "chr1_28458607_A_G_b38_A" "chr1_28460518_C_T_b38_C"
+ [41] "chr1_28460601_T_A_b38_T" "chr1_28461191_G_A_b38_G"
+ [43] "chr1_28462076_T_C_b38_T" "chr1_28462907_A_G_b38_A"
+ [45] "chr1_28463665_G_A_b38_G" "chr1_28463716_T_C_b38_T"
+ [47] "chr1_28463769_G_C_b38_G" "chr1_28464150_A_G_b38_A"
+ [49] "chr1_28466530_G_A_b38_G" "chr1_28467074_G_A_b38_G"
+ [51] "chr1_28467341_G_A_b38_G" "chr1_28467571_C_T_b38_C"
+ [53] "chr1_28468460_T_C_b38_T" "chr1_28468787_G_A_b38_G"
+ [55] "chr1_28469071_A_G_b38_A" "chr1_28470460_C_G_b38_C"
+ [57] "chr1_28470844_T_C_b38_T" "chr1_28471133_A_G_b38_A"
+ [59] "chr1_28471436_G_A_b38_G" "chr1_28471461_G_A_b38_G"
+ [61] "chr1_28471699_T_C_b38_T" "chr1_28471939_C_T_b38_C"
+ [63] "chr1_28472712_G_A_b38_G" "chr1_28472729_G_A_b38_G"
+ [65] "chr1_28473765_C_A_b38_C" "chr1_28474867_G_T_b38_G"
+ [67] "chr1_28475271_T_C_b38_T" "chr1_28475887_A_C_b38_A"
+ [69] "chr1_28476069_A_G_b38_A" "chr1_28477756_C_T_b38_C"
+ [71] "chr1_28477859_G_C_b38_G" "chr1_28477991_A_G_b38_A"
+ [73] "chr1_28478185_G_A_b38_G" "chr1_28478595_C_A_b38_C"
+ [75] "chr1_28479055_C_T_b38_C" "chr1_28479104_A_G_b38_A"
+ [77] "chr1_28479656_T_C_b38_T" "chr1_28479841_T_C_b38_T"
+ [79] "chr1_28480108_T_C_b38_T" "chr1_28480679_T_G_b38_T"
+ [81] "chr1_28482901_T_G_b38_T" "chr1_28483618_G_A_b38_G"
+ [83] "chr1_28483876_C_T_b38_C" "chr1_28484762_C_T_b38_C"
+ [85] "chr1_28484783_C_G_b38_C" "chr1_28485767_C_T_b38_C"
+ [87] "chr1_28485939_G_A_b38_G" "chr1_28486233_G_A_b38_G"
+ [89] "chr1_28486513_C_T_b38_C" "chr1_28487236_C_T_b38_C"
+ [91] "chr1_28488164_A_C_b38_A" "chr1_28488770_C_T_b38_C"
+ [93] "chr1_28490347_T_C_b38_T" "chr1_28490758_G_A_b38_G"
+ [95] "chr1_28491639_G_A_b38_G" "chr1_28491906_T_C_b38_T"
+ [97] "chr1_28492742_G_A_b38_G" "chr1_28492763_G_A_b38_G"
+ [99] "chr1_28493494_T_C_b38_T" "chr1_28494112_G_A_b38_G"
+[101] "chr1_28495613_A_T_b38_A" "chr1_28496181_C_A_b38_C"
+[103] "chr1_28496342_C_A_b38_C" "chr1_28497374_G_A_b38_G"
+[105] "chr1_28497553_C_T_b38_C" "chr1_28497745_C_T_b38_C"
+[107] "chr1_28498912_A_T_b38_A" "chr1_28500788_T_C_b38_T"
+[109] "chr1_28500934_C_T_b38_C" "chr1_28501051_G_A_b38_G"
+[111] "chr1_28501377_T_C_b38_T" "chr1_28501451_C_T_b38_C"
+[113] "chr1_28502381_C_T_b38_C" "chr1_28503645_T_A_b38_T"
+[115] "chr1_28503646_T_A_b38_T" "chr1_28503673_C_T_b38_C"
+[117] "chr1_28503769_A_C_b38_A" "chr1_28503812_C_T_b38_C"
+[119] "chr1_28503837_A_G_b38_A" "chr1_28504559_A_G_b38_A"
+[121] "chr1_28504564_T_C_b38_T" "chr1_28504574_G_C_b38_G"
+[123] "chr1_28505583_C_T_b38_C" "chr1_28506074_T_G_b38_T"
+[125] "chr1_28506175_A_G_b38_A" "chr1_28506185_G_A_b38_G"
+[127] "chr1_28506926_G_T_b38_G" "chr1_28507322_T_A_b38_T"
+[129] "chr1_28507816_A_G_b38_A" "chr1_28508529_G_A_b38_G"
+[131] "chr1_28510500_G_A_b38_G" "chr1_28512036_G_A_b38_G"
+[133] "chr1_28512282_G_A_b38_G" "chr1_28534342_G_A_b38_G"
+[135] "chr1_28548457_G_A_b38_G" "chr1_28549281_T_C_b38_T"
+[137] "chr1_28563544_C_T_b38_C"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+
+=====================================
+Tissue: Blood 
+=====================================
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+
+=====================================
+Tissue: Brain 
+=====================================
+
+=====================================
+Tissue: Breast 
+=====================================
+
+=====================================
+Tissue: Colon 
+=====================================
+
+=====================================
+Tissue: Esophagus 
+=====================================
+
+=====================================
+Tissue: Heart 
+=====================================
+
+=====================================
+Tissue: Kidney 
+=====================================
+
+=====================================
+Tissue: Liver 
+=====================================
+
+=====================================
+Tissue: Lung 
+=====================================
+
+=====================================
+Tissue: Muscle 
+=====================================
+
+=====================================
+Tissue: Nerve 
+=====================================

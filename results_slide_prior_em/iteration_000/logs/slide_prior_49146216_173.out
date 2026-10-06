@@ -1,0 +1,98 @@
+[2026-10-04 14:51:06] slider iteration 0, chunk 173: OR1D5
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene OR1D5 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_173/plink_OR1D5_c03a164712ed.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 17
+  --export A
+  --from-bp 2563607
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_173/plink_OR1D5_c03a164712ed
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 3563607
+
+Start time: Sun Oct  4 14:52:05 2026
+63721 MiB RAM detected, ~32964 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+65601655 excluded by --chr + --max-alleles + --snps-only, 1632878 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+22952 variants remaining after main filters.
+--export A pass 1/1: loading... 0%42% writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_173/plink_OR1D5_c03a164712ed.raw
+written.
+End time: Sun Oct  4 14:52:11 2026
+61 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr17_2652287_T_C_b38_T" "chr17_2725297_C_A_b38_C"
+ [3] "chr17_2725668_G_A_b38_G" "chr17_2726773_C_G_b38_C"
+ [5] "chr17_2726882_G_C_b38_G" "chr17_2728691_T_C_b38_T"
+ [7] "chr17_2730564_A_T_b38_A" "chr17_2751268_C_G_b38_C"
+ [9] "chr17_2752464_G_A_b38_G" "chr17_2755085_C_A_b38_C"
+[11] "chr17_2755162_T_C_b38_T" "chr17_2755182_G_A_b38_G"
+[13] "chr17_2781699_T_G_b38_T" "chr17_2911868_C_T_b38_C"
+[15] "chr17_2913341_T_C_b38_T" "chr17_2920066_G_A_b38_G"
+[17] "chr17_2949118_C_T_b38_C" "chr17_2950251_C_T_b38_C"
+[19] "chr17_2950340_A_G_b38_A" "chr17_2953053_G_A_b38_G"
+[21] "chr17_3057934_T_A_b38_T" "chr17_3058415_A_T_b38_A"
+[23] "chr17_3060750_C_T_b38_C" "chr17_3062561_C_T_b38_C"
+[25] "chr17_3062621_A_T_b38_A" "chr17_3062635_G_A_b38_G"
+[27] "chr17_3062651_C_T_b38_C" "chr17_3062684_A_G_b38_A"
+[29] "chr17_3062738_C_G_b38_C" "chr17_3062879_G_C_b38_G"
+[31] "chr17_3062897_G_A_b38_G" "chr17_3062979_G_A_b38_G"
+[33] "chr17_3063014_C_T_b38_C" "chr17_3070923_A_C_b38_A"
+[35] "chr17_3232439_T_C_b38_T" "chr17_3232689_G_A_b38_G"
+[37] "chr17_3232692_C_G_b38_C" "chr17_3232708_G_T_b38_G"
+[39] "chr17_3232716_T_C_b38_T" "chr17_3247442_A_C_b38_A"
+[41] "chr17_3250839_G_A_b38_G" "chr17_3251092_A_G_b38_A"
+[43] "chr17_3251227_T_C_b38_T" "chr17_3251236_G_A_b38_G"
+[45] "chr17_3251669_C_T_b38_C" "chr17_3251677_G_A_b38_G"
+[47] "chr17_3251700_T_C_b38_T" "chr17_3251701_G_A_b38_G"
+[49] "chr17_3251929_G_A_b38_G" "chr17_3320011_C_T_b38_C"
+[51] "chr17_3491624_T_C_b38_T" "chr17_3530592_C_G_b38_C"
+[53] "chr17_3530827_G_A_b38_G" "chr17_3535955_C_A_b38_C"
+[55] "chr17_3536935_G_T_b38_G" "chr17_3537137_T_C_b38_T"
+[57] "chr17_3537207_C_A_b38_C" "chr17_3538591_A_T_b38_A"
+[59] "chr17_3539039_G_A_b38_G" "chr17_3539756_C_T_b38_C"
+[61] "chr17_3543836_C_T_b38_C"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+
+=====================================
+Tissue: Blood 
+=====================================
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+
+=====================================
+Tissue: Brain 
+=====================================

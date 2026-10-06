@@ -1,0 +1,88 @@
+[2026-10-05 14:06:06] slider iteration 0, chunk 008: AGR2
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene AGR2 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_008/plink_AGR2_7d0e193a60d8.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 7
+  --export A
+  --from-bp 16333433
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_008/plink_AGR2_7d0e193a60d8
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 17333433
+
+Start time: Mon Oct  5 14:07:04 2026
+63721 MiB RAM detected, ~34563 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+64060212 excluded by --chr + --max-alleles + --snps-only, 3174321 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+20241 variants remaining after main filters.
+--export A pass 1/1: loading... 0%80% writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_008/plink_AGR2_7d0e193a60d8.raw
+written.
+End time: Mon Oct  5 14:07:09 2026
+41 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr7_16364990_T_C_b38_T" "chr7_16391969_C_T_b38_C"
+ [3] "chr7_16393063_G_C_b38_G" "chr7_16396513_C_G_b38_C"
+ [5] "chr7_16396809_T_C_b38_T" "chr7_16396816_T_C_b38_T"
+ [7] "chr7_16475066_C_G_b38_C" "chr7_16503440_A_G_b38_A"
+ [9] "chr7_16664966_A_G_b38_A" "chr7_16665298_T_C_b38_T"
+[11] "chr7_16674132_T_C_b38_T" "chr7_16682631_A_T_b38_A"
+[13] "chr7_16682745_G_A_b38_G" "chr7_16683175_A_G_b38_A"
+[15] "chr7_16686527_A_C_b38_A" "chr7_16789086_T_A_b38_T"
+[17] "chr7_16789115_C_T_b38_C" "chr7_16791913_G_T_b38_G"
+[19] "chr7_16796853_G_A_b38_G" "chr7_16797018_T_A_b38_T"
+[21] "chr7_16797221_C_G_b38_C" "chr7_16853506_G_T_b38_G"
+[23] "chr7_16856796_T_C_b38_T" "chr7_16863002_T_C_b38_T"
+[25] "chr7_16863005_G_C_b38_G" "chr7_16916778_A_G_b38_A"
+[27] "chr7_16917259_T_C_b38_T" "chr7_16919409_T_C_b38_T"
+[29] "chr7_16919540_A_G_b38_A" "chr7_16920061_C_T_b38_C"
+[31] "chr7_16920515_C_T_b38_C" "chr7_16920544_A_T_b38_A"
+[33] "chr7_16920588_C_T_b38_C" "chr7_16930414_G_C_b38_G"
+[35] "chr7_16931265_G_C_b38_G" "chr7_16931967_A_G_b38_A"
+[37] "chr7_16940871_T_C_b38_T" "chr7_16941640_T_C_b38_T"
+[39] "chr7_16942225_A_G_b38_A" "chr7_16942394_G_T_b38_G"
+[41] "chr7_16942697_T_C_b38_T"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+
+=====================================
+Tissue: Blood 
+=====================================
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+
+=====================================
+Tissue: Brain 
+=====================================

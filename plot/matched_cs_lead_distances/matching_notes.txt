@@ -1,0 +1,26 @@
+Equal-count SuSiE / unweighted SuSiE-mix lead distances
+Region summary: /project2/mstephens/wdenault/susie_mix/res_summary.RData 
+CS summary: /project2/mstephens/wdenault/susie_mix/res_cs_summary.RData
+Generated: 2026-09-10 12:17:16 UTC
+Plot tissue: All tissues
+Cohort: all input regions with equal positive CS counts; no association/read/convergence/coding filters.
+One row per matched CS pair. A k-CS region contributes k observations, including zero distances.
+Match objective: minimum total absolute physical distance; each CS is used once.
+Method: sort GRCh38 lead positions in each model, pair ranks. This is an exact optimum in one dimension.
+Tie rule: minimum sum of squared distances, then SNP identity / CS number. Does not maximize unchanged SNPs.
+minimum_total_has_tie flags a cost-neutral adjacent swap, i.e. a nonunique primary optimum.
+These positional pairs are not evidence of biological signal equivalence.
+Distance uses lead_snp coordinates, not distance to TSS. Incomplete or invalid regions are excluded in full and audited.
+same_lead_snp compares full SNP identifiers. zero_distance compares base-pair positions; these need not coincide.
+Y = mixed lead predictor PIP for its coding; neither CS alpha nor summed SNP PIP. Missing/invalid PIP affects scatter only.
+Left panel: marginal mixed-lead PIP density among zero-distance pairs with valid PIP, pooling all lead codings.
+Density uses Gaussian kernels reflected at 0 and 1, with nrd0 bandwidth (0.02 for constant/singleton samples),
+a 1/1023 bandwidth floor, and numerical unit-area normalization on [0,1]. It is a density, not a pair count.
+Right panel: one point per positive-distance CS pair with valid PIP; vertical guides at 10 and 100 kb.
+Title agreement counts compare exact SNP IDs, not just coordinates. Percentages use all matched pairs as denominator.
+Distance exceedance counts are strictly >10,000 bp and >100,000 bp, include missing-PIP rows, and are nested.
+Distance summaries include all matched pairs, including zeros and missing-PIP rows; quantiles use R type 7.
+Pairs are CS-weighted. region_weight = 1 / n_cs is supplied for a future equal-region-weighted comparison.
+Gene and tissue remain on each row. Pairs within a region and genes across tissues may be dependent.
+For a tissue-versus-background inferential comparison, define a nonoverlapping reference and account for clustering.
+matched_cs_pairs.csv contains all matched tissues, even when --tissue selects only the plot and summaries.

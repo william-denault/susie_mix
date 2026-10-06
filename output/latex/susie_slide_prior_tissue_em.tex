@@ -428,6 +428,281 @@ posterior-mean coding, not a correlation integrated over slider uncertainty.
 The credible-set probability calculation still uses the marginalized
 $\alpha$. Setting \texttt{coverage=NULL} skips set construction and purity.
 
+\subsection{Local false-discovery and false-sign probabilities}
+\label{sec:local-errors}
+Local error summaries analogous to those in adaptive shrinkage~\cite{ashr}
+can be calculated directly from the slider posterior. No second
+\texttt{ashr} fit to posterior means or CS members is needed. The null,
+the signed quantity and the conditioning event must be explicit.
+The resulting quantities are approximate empirical-Bayes posterior error
+probabilities under the fitted slider model.
+
+Suppress tissue and region indices and consider a retained component
+$\ell$ with $V_\ell>0$ and a biological SNP $j$ with $\alpha_{\ell j}>0$.
+Conditional on $J_\ell=j$, define
+\begin{equation}
+ p^-_{\ell j}=\sum_{d_k<0}\omega_{\ell jk},\qquad
+ p^0_{\ell j}=\omega_{\ell j8},\qquad
+ p^+_{\ell j}=\sum_{d_k>0}\omega_{\ell jk},\qquad
+ p^-_{\ell j}+p^0_{\ell j}+p^+_{\ell j}=1.
+ \label{eq:shape-probs}
+\end{equation}
+For the claim that this selected SNP's effect is nonadditive, the local
+null probability is
+\begin{equation}
+ \boxed{\operatorname{lfdr}^{\rm NA}_{\ell j\mid J=j}
+       =p^0_{\ell j}=\rho_{\ell j8}/\alpha_{\ell j}.}
+ \label{eq:shape-lfdr}
+\end{equation}
+The nonadditivity probability is its complement, not the local error
+probability itself. This null is additivity, rather than absence of
+association.
+
+For a sign claim about $\delta_\ell>0$ (dominant-like coding) versus
+$\delta_\ell<0$ (recessive-like coding), use
+\begin{align}
+ \operatorname{lfsr}^{\delta}_{\ell j\mid J=j}
+ &=\min\{\Pr_q(\delta_\ell\leq0\mid J_\ell=j),
+          \Pr_q(\delta_\ell\geq0\mid J_\ell=j)\}\nonumber\\
+ &=p^0_{\ell j}+\min(p^-_{\ell j},p^+_{\ell j})
+  =1-\max(p^-_{\ell j},p^+_{\ell j}).
+ \label{eq:shape-lfsr}
+\end{align}
+Declare the sign with the larger strictly positive or strictly negative
+probability, or report a tie. As in \texttt{ashr}, zero counts as an error
+for either strict sign claim. Omitting $p^0$ could falsely suggest confident
+nonadditivity. Thus $\operatorname{lfsr}^{\delta}\geq
+\operatorname{lfdr}^{\rm NA}$, and lfsr can exceed $1/2$ when there is
+substantial zero mass.
+
+These summaries condition on the SNP being selected by the component.
+For the joint claim that component $\ell$ actually selects SNP $j$ with a
+nonadditive effect, include assignment uncertainty:
+\begin{align}
+ \operatorname{lfdr}^{\rm NA,joint}_{\ell j}
+ &=1-\alpha_{\ell j}(1-p^0_{\ell j}),\nonumber\\
+ \operatorname{lfsr}^{\delta,\rm joint}_{\ell j}
+ &=1-\alpha_{\ell j}
+       \{1-\operatorname{lfsr}^{\delta}_{\ell j\mid J=j}\}.
+ \label{eq:snp-joint-errors}
+\end{align}
+These are component--SNP errors, not SNP-wide rates across all components.
+Report conditional shape probabilities together with $\alpha_{\ell j}$
+and the SNP-wide PIP. A well resolved shape need not imply a well resolved
+causal SNP. For a count-forced SNP, $p^0=1$ is imposed by the model;
+mark it as forced rather than interpret this as data-supported additivity.
+
+\subsection{Three different sign targets}
+\label{sec:sign-targets}
+The slider shape, expression effect and nonadditive deviation have different
+signs:
+\begin{equation}
+ \delta_\ell,\qquad \beta_\ell/s_j,\qquad
+ h_{\ell j}:=\beta_\ell\delta_\ell/s_j
+ \quad\text{conditional on }J_\ell=j.
+ \label{eq:sign-targets}
+\end{equation}
+The sign of $\delta$ describes coding relative to the counted allele.
+The sign of $\beta$ describes the genotype-0 to genotype-2 expression
+contrast, which equals $2\beta/s_j$. The nonadditive deviation satisfies
+\begin{equation}
+ h_{\ell j}
+ =\E(y\mid x_j=1,\text{this component})
+  -\frac{\E(y\mid x_j=0,\text{this component})
+          +\E(y\mid x_j=2,\text{this component})}{2}.
+ \label{eq:het-deviation}
+\end{equation}
+Other effects are held fixed in this contrast. It measures heterozygote
+expression above or below the midpoint of the homozygotes. Its sign is
+invariant to reversing the counted allele in the intercept-adjusted model,
+unlike the signs of $\beta$ and $\delta$. For a nonadditive effect-size
+claim, $h$ is therefore a useful signed target alongside $\delta$.
+
+For positive $V_\ell$ and $\sigma^2$, set
+\begin{equation}
+ a_{\ell jk}=\Phi(m_{\ell jk}/\sqrt{v_{\ell jk}})
+           =\Pr_q(\beta_\ell>0\mid J_\ell=j,C_\ell=k).
+\end{equation}
+The conditional coefficient-sign probabilities are
+\begin{equation}
+ b^+_{\ell j}=\sum_k\omega_{\ell jk}a_{\ell jk},\qquad
+ b^-_{\ell j}=1-b^+_{\ell j},\qquad b^0_{\ell j}=0,
+\end{equation}
+and
+$\operatorname{lfsr}^{\beta}_{\ell j\mid J=j}
+ =\min(b^-_{\ell j},b^+_{\ell j})$.
+There is no atom at $\beta=0$ under this positive-variance conditional
+Gaussian mixture. A conditional association lfdr for $\beta$ would be zero
+by construction; use $1-\operatorname{PIP}_j$ for biological SNP association
+across components.
+
+For the nonadditive deviation, its conditional probabilities are
+\begin{align}
+ h^+_{\ell j}
+ &=\sum_{d_k>0}\omega_{\ell jk}a_{\ell jk}
+   +\sum_{d_k<0}\omega_{\ell jk}(1-a_{\ell jk}),\nonumber\\
+ h^-_{\ell j}
+ &=\sum_{d_k>0}\omega_{\ell jk}(1-a_{\ell jk})
+   +\sum_{d_k<0}\omega_{\ell jk}a_{\ell jk},&
+ h^0_{\ell j}&=p^0_{\ell j}.
+ \label{eq:deviation-probs}
+\end{align}
+Hence
+\begin{equation}
+ \operatorname{lfdr}^{h}_{\ell j\mid J=j}=p^0_{\ell j},\qquad
+ \operatorname{lfsr}^{h}_{\ell j\mid J=j}
+    =p^0_{\ell j}+\min(h^-_{\ell j},h^+_{\ell j}).
+ \label{eq:deviation-lfsr}
+\end{equation}
+Shape and deviation share the exact-zero null but can have different sign
+uncertainty. Do not multiply marginal sign probabilities for $\beta$ and
+$\delta$: the grid-specific Gaussian probabilities retain their posterior
+dependence. The joint component--SNP sign error for $u=\beta$ or $h$ is
+$1-\alpha_{\ell j}(1-\operatorname{lfsr}^{u}_{\ell j\mid J=j})$.
+Zero-variance components require their point-mass conventions and should
+not be reported as active effects.
+
+\subsection{Credible-set local error summaries}
+\label{sec:cs-errors}
+Let $S_\ell$ be the biological SNPs in a reported component CS, excluding
+the explicit null candidate. Define
+\begin{equation}
+ A_{\ell S}=\sum_{j\in S_\ell}\alpha_{\ell j},\qquad
+ W_{\ell S,k}=\frac{\sum_{j\in S_\ell}\rho_{\ell jk}}{A_{\ell S}}
+            =\Pr_q(C_\ell=k\mid J_\ell\in S_\ell).
+ \label{eq:cs-shape-weights}
+\end{equation}
+Here $A_{\ell S}>0$ is the actual posterior assignment mass, not the nominal
+requested coverage or an empirical frequentist coverage estimate.
+The 17-vector $W_{\ell S}$ accounts for uncertainty about the causal member.
+The conditional CS shape summaries are
+\begin{align}
+ \operatorname{lfdr}^{\rm NA}_{\ell S\mid S}
+ &=W_{\ell S,8},\nonumber\\
+ \operatorname{lfsr}^{\delta}_{\ell S\mid S}
+ &=W_{\ell S,8}+
+   \min\left\{\sum_{d_k<0}W_{\ell S,k},\sum_{d_k>0}W_{\ell S,k}\right\}.
+ \label{eq:cs-conditional-errors}
+\end{align}
+For $u\in\{\beta,h\}$, pool its sign probabilities in the same way:
+\begin{equation}
+ P^a_{\ell S,u}
+ =\frac{\sum_{j\in S_\ell}\alpha_{\ell j}p^a_{\ell j,u}}{A_{\ell S}},
+ \quad a\in\{-,0,+\},\qquad
+ \operatorname{lfsr}^{u}_{\ell S\mid S}
+ =P^0_{\ell S,u}+\min(P^-_{\ell S,u},P^+_{\ell S,u}),
+ \label{eq:cs-effect-lfsr}
+\end{equation}
+where $p^a_{\ell j,\beta}=b^a_{\ell j}$ and
+$p^a_{\ell j,h}=h^a_{\ell j}$. Declare the sign with the larger pooled
+probability. A common $\beta$ or $\delta$ sign across candidate SNPs must
+be interpreted using the recorded allele convention.
+
+\textbf{Pool posterior probabilities before taking the sign decision;
+do not average SNP lfsrs.} If two equally likely CS members have certain
+but opposite slider signs, their individual conditional lfsrs are zero,
+whereas the common CS shape lfsr is $1/2$. A weighted average of SNP lfsrs
+evaluates a rule allowed to choose a different sign for each possible
+selected SNP.
+
+For the final discovery list, also report failure probabilities for the
+unconditional joint claims about this CS:
+\begin{align}
+ \boxed{\operatorname{lfdr}^{\rm NA,joint}_{\ell S}
+       =1-A_{\ell S}(1-W_{\ell S,8}),}\nonumber\\
+ \boxed{\operatorname{lfsr}^{u,\rm joint}_{\ell S}
+       =1-A_{\ell S}
+             \{1-\operatorname{lfsr}^{u}_{\ell S\mid S}\},
+       \quad u\in\{\delta,\beta,h\}.}
+ \label{eq:cs-joint-errors}
+\end{align}
+The first is the posterior failure probability for the claim that
+component $\ell$ has a nonadditive effect at a SNP in this CS.
+The second additionally requires the common declared sign to be correct.
+Both count assignment outside the CS, including to an explicit null,
+as failure. For example, $A_{\ell S}=0.96$ and conditional nonadditive
+lfdr $0.03$ give joint error $1-0.96(0.97)=0.0688$.
+These concern a specified component and its CS, not absence of every
+possible signal in the region.
+
+Without an explicit null, a component whose positive variance is treated
+as fixed has a nonzero effect with probability one under the model.
+A small conditional shape lfdr is therefore not an additional estimate of
+the probability that the component exists. Its interpretation depends on
+the model's effect-selection and calibration properties.
+
+\subsection{SNP-wide rates and the final reporting tables}
+\label{sec:reporting-errors}
+When several components can select the same SNP, distinguish their separate
+CS rows from SNP-wide summaries. Define the total nonadditive coefficient
+\begin{equation}
+ H_j=\sum_{\ell\in\mathcal L_{\rm active}}
+       \ind\{J_\ell=j\}\beta_\ell\delta_\ell/s_j.
+\end{equation}
+Under the variational factorization and nondegenerate Gaussian slabs,
+exact cancellation of nonzero contributions has probability zero, giving
+\begin{equation}
+ \operatorname{lfdr}^{\rm NA}_j=\Pr_q(H_j=0)
+ =\prod_{\ell\in\mathcal L_{\rm active}}
+     \left(1-\sum_{k\ne8}\rho_{\ell jk}\right).
+ \label{eq:snp-global-nonadd}
+\end{equation}
+The ordinary association null probability is $1-\operatorname{PIP}_j$.
+The total-deviation sign error is
+$\min\{\Pr_q(H_j\leq0),\Pr_q(H_j\geq0)\}$, obtained by convolution or
+joint posterior draws of the component contributions. Averaging component
+lfsrs or multiplying their sign probabilities does not give this quantity.
+Near cancellation remains relevant to effect sizes.
+
+For a declared list $\mathcal D$ of specified claims, let $e_i$ be each
+claim's posterior failure probability. Conditional on the observed data
+and selected list,
+\begin{equation}
+ \widehat{\operatorname{FDR}}_{\rm post}(\mathcal D)
+ =\E_q\{\operatorname{FDP}(\mathcal D)\mid\text{data}\}
+ =|\mathcal D|^{-1}\sum_{i\in\mathcal D}e_i,\qquad |\mathcal D|>0.
+ \label{eq:posterior-fdr}
+\end{equation}
+Use local null probabilities for nonadditive discoveries, or local sign
+errors for signed discoveries. Sorted cumulative means give q-value-like
+or s-value-like summaries, with ties handled consistently. The posterior
+expectation identity does not require independent claims, but requires
+a consistent discovery unit: one row per unique SNP for a SNP list, or
+one row per specified component CS for a CS list. Repeated appearances
+of a SNP in several CSs are not distinct unique-SNP discoveries.
+
+For unconditional final claims use joint CS errors, or SNP-wide errors,
+rather than conditional shape errors alone. These are fitted-model
+posterior estimates, not automatic frequentist FDR guarantees.
+Variational approximation, estimated tissue priors, model misspecification
+and component selection need calibration checks.
+
+A practical export consists of two linked tables:
+\begin{itemize}
+ \item \textbf{CS-member table:} tissue, region, CS/component ID, SNP,
+ counted allele, SNP PIP, component $\alpha$, \texttt{delta\_forced},
+ $p^-,p^0,p^+$, conditional nonadditive lfdr, and conditional lfsr for
+ $\delta$, $h$ and $\beta$ with their declared signs. If component--SNP
+ rows are used as discoveries, add their joint errors as separate columns.
+ \item \textbf{CS table:} tissue, region, CS/component ID, size, purity,
+ actual mass $A_{\ell S}$, posterior forced-SNP mass within the CS,
+ pooled 17-vector $W_{\ell S}$, conditional and joint nonadditive lfdr,
+ conditional and joint lfsr for each reported sign target, and list-level
+ q/s summaries for the declared reporting universe.
+\end{itemize}
+Required fit fields are \texttt{alpha}, \texttt{alpha\_delta},
+\texttt{mu\_grid}, \texttt{mu2\_grid}, \texttt{delta\_grid},
+\texttt{delta\_forced}, and the CS-to-component mapping.
+Recover $v=\texttt{mu2\_grid}-\texttt{mu\_grid}^2$, handling tiny rounding
+errors numerically. Tissue-level \texttt{delta\_prior\_counts} alone cannot
+recover per-SNP or CS-specific probabilities.
+
+These are proposed reporting definitions; the current
+\texttt{slider\_cs\_table} does not yet export all these fields.
+The existing \texttt{.slide\_prior\_lfsr} helper concerns coefficient signs
+and aggregates SNP-specific sign choices. It must not be relabelled as
+a shape lfsr or as the common-sign CS quantity derived here.
+
 \subsection{Zero effects, null candidates and numerical trimming}
 \label{sec:zero}
 At $V_\ell=0$, the coefficient is deterministically zero; use the limiting
@@ -1198,6 +1473,9 @@ replace convergence diagnostics for new datasets.
 A simple new approach to variable selection in regression, with
 application to genetic fine mapping. \emph{JRSS B}, 82, 1273--1300.
 \href{https://doi.org/10.1111/rssb.12388}{doi:10.1111/rssb.12388}.
+\bibitem{ashr} M. Stephens (2017).
+False discovery rates: a new deal. \emph{Biostatistics}, 18(2), 275--294.
+\href{https://doi.org/10.1093/biostatistics/kxw041}{doi:10.1093/biostatistics/kxw041}.
 \end{thebibliography}
 \end{document}
 
