@@ -17,8 +17,9 @@ trusted by recovery. No mixed-model files are modified.
 ## Upload and audit first
 
 Extract `output/slide_prior_recovery_rcc.zip` into the RCC project, preserving
-the paths. The archive contains code, documentation and tests, not data or
-fitted results. It includes updated guards for the historical slider launcher
+the paths. The archive contains code, documentation, tests and the 36-gene
+pilot list at `output/slide_prior_pilot_genes.txt`; it contains no input datasets
+or fitted results. It includes updated guards for the historical slider launcher
 and preparation script; upload these too.
 
 First verify the old slider array and continuation have stopped. Allow the
@@ -101,6 +102,22 @@ The previously synced pilot list also works: its X-chromosome gene is filtered
 out automatically after scope activation.
 
 ### Pilot
+
+For the supplied 36-gene diagnostic pilot, verify that the bundled list exists
+on RCC, then submit from the project's `job` directory:
+
+```bash
+test -s ../output/slide_prior_pilot_genes.txt && \
+SUSIE_SLIDE_PILOT=1 \
+SUSIE_SLIDE_PILOT_GENES=/project2/mstephens/wdenault/susie_mix/output/slide_prior_pilot_genes.txt \
+SUSIE_SLIDE_MAX_ITER=5000 \
+sbatch recover_slide_prior_em run 0 5
+```
+
+If the list is missing, extract the updated bundle or sync that file before
+submission. A controller that cannot read this list exits before planning or
+launching any gene workers. The 5000 setting raises the inner solver's iteration
+budget; it does not request 5000 EM updates.
 
 After the audit job ends, start a **single five-task pilot** (at most 50 genes):
 

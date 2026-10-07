@@ -1,9 +1,10 @@
-"""Build and verify the code-only recovery bundle with Linux line endings."""
+"""Build and verify recovery code and pilot configuration with Linux line endings."""
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED, ZipInfo
 
 ROOT = Path(__file__).resolve().parents[2]
 FILES = [
+    "output/slide_prior_pilot_genes.txt",
     "job/recover_slide_prior_em",
     "job/recover_slide_prior_em_array",
     "job/README_slide_prior_recovery.md",
@@ -46,7 +47,7 @@ def main():
         for name in FILES:
             assert b"\r" not in bundle.read(name), name
             assert bundle.read(name).decode("utf-8") == (ROOT / name).read_text(encoding="utf-8-sig")
-    print(f"Verified {len(FILES)} code/document/test files: {target} ({target.stat().st_size:,} bytes)")
+    print(f"Verified {len(FILES)} code/configuration/document/test files: {target} ({target.stat().st_size:,} bytes)")
 
 
 if __name__ == "__main__":
