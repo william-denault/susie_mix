@@ -313,7 +313,7 @@ run_slide_prior_gene <- function(
       paste(
         "%s --bfile %s --chr %s --from-bp %d --to-bp %d",
         "--snps-only --max-alleles 2 --rm-dup exclude-all",
-        "--threads 2 --memory 8000 --maf %g",
+        "--threads 1 --memory 8000 --maf %g",
         "--recode A --out %s"
       ),
       plink_exec,

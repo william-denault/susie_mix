@@ -1829,3 +1829,114 @@ Tissue: Small Intestine
 =====================================
 Tissue: Spleen 
 =====================================
+
+=====================================
+Tissue: Stomach 
+=====================================
+
+=====================================
+Tissue: Testis 
+=====================================
+
+=====================================
+Tissue: Thyroid 
+=====================================
+
+=====================================
+Tissue: Uterus 
+=====================================
+
+=====================================
+Tissue: Vagina 
+=====================================
+[2026-10-06 05:01:14] slider iteration 0, chunk 044: CEACAM21
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene CEACAM21 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_044/plink_CEACAM21_badc57188f94.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 19
+  --export A
+  --from-bp 41049518
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_044/plink_CEACAM21_badc57188f94
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 42049518
+
+Start time: Tue Oct  6 05:02:16 2026
+63721 MiB RAM detected, ~21370 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+65987829 excluded by --chr + --max-alleles + --snps-only, 1246704 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+18895 variants remaining after main filters.
+--export A pass 1/1: loading... 0%31% writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_044/plink_CEACAM21_badc57188f94.raw
+written.
+End time: Tue Oct  6 05:02:23 2026
+63 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr19_41121254_T_C_b38_T" "chr19_41128543_A_T_b38_A"
+ [3] "chr19_41373689_G_T_b38_G" "chr19_41373696_C_T_b38_C"
+ [5] "chr19_41373701_T_C_b38_T" "chr19_41373702_G_A_b38_G"
+ [7] "chr19_41502107_T_C_b38_T" "chr19_41565123_T_C_b38_T"
+ [9] "chr19_41590061_T_C_b38_T" "chr19_41597363_C_T_b38_C"
+[11] "chr19_41599127_T_C_b38_T" "chr19_41600852_T_G_b38_T"
+[13] "chr19_41887354_G_A_b38_G" "chr19_41888059_T_C_b38_T"
+[15] "chr19_41888239_C_T_b38_C" "chr19_41888370_T_C_b38_T"
+[17] "chr19_41889215_A_G_b38_A" "chr19_41890411_T_A_b38_T"
+[19] "chr19_41891244_C_G_b38_C" "chr19_41891336_G_A_b38_G"
+[21] "chr19_41891446_A_G_b38_A" "chr19_41891623_G_A_b38_G"
+[23] "chr19_41891899_G_A_b38_G" "chr19_41892195_G_A_b38_G"
+[25] "chr19_41894377_T_C_b38_T" "chr19_41895556_G_A_b38_G"
+[27] "chr19_41895561_C_T_b38_C" "chr19_41895868_C_G_b38_C"
+[29] "chr19_41899458_T_G_b38_T" "chr19_41899573_A_G_b38_A"
+[31] "chr19_41900853_T_C_b38_T" "chr19_41900860_C_G_b38_C"
+[33] "chr19_41901086_G_T_b38_G" "chr19_41904724_C_T_b38_C"
+[35] "chr19_41904887_T_C_b38_T" "chr19_41906179_G_A_b38_G"
+[37] "chr19_41906920_A_T_b38_A" "chr19_41908387_T_C_b38_T"
+[39] "chr19_41908432_G_A_b38_G" "chr19_41908498_C_T_b38_C"
+[41] "chr19_41908997_T_G_b38_T" "chr19_41910270_A_G_b38_A"
+[43] "chr19_41911202_A_G_b38_A" "chr19_41912089_A_C_b38_A"
+[45] "chr19_41913279_G_C_b38_G" "chr19_41914453_T_C_b38_T"
+[47] "chr19_41915485_C_T_b38_C" "chr19_41915932_A_G_b38_A"
+[49] "chr19_41916895_G_T_b38_G" "chr19_41916992_A_G_b38_A"
+[51] "chr19_41917695_G_A_b38_G" "chr19_41917937_T_C_b38_T"
+[53] "chr19_41918097_T_C_b38_T" "chr19_41918184_C_T_b38_C"
+[55] "chr19_41918197_T_C_b38_T" "chr19_41919020_G_A_b38_G"
+[57] "chr19_41919067_C_T_b38_C" "chr19_41919103_T_C_b38_T"
+[59] "chr19_41919153_A_T_b38_A" "chr19_41919323_G_C_b38_G"
+[61] "chr19_41919599_C_T_b38_C" "chr19_41919815_T_C_b38_T"
+[63] "chr19_41922093_C_T_b38_C"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+
+=====================================
+Tissue: Blood 
+=====================================

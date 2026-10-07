@@ -2211,3 +2211,155 @@ Tissue: Ovary
 =====================================
 Tissue: Pancreas 
 =====================================
+
+=====================================
+Tissue: Pituitary 
+=====================================
+
+=====================================
+Tissue: Prostate 
+=====================================
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+
+=====================================
+Tissue: Skin 
+=====================================
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+
+=====================================
+Tissue: Spleen 
+=====================================
+
+=====================================
+Tissue: Stomach 
+=====================================
+
+=====================================
+Tissue: Testis 
+=====================================
+
+=====================================
+Tissue: Thyroid 
+=====================================
+
+=====================================
+Tissue: Uterus 
+=====================================
+
+=====================================
+Tissue: Vagina 
+=====================================
+[2026-10-06 04:56:26] slider iteration 0, chunk 048: CHRNA4
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene CHRNA4 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_048/plink_CHRNA4_1602880db13.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 20
+  --export A
+  --from-bp 62878401
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_048/plink_CHRNA4_1602880db13
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 63878401
+
+Start time: Tue Oct  6 04:57:23 2026
+63721 MiB RAM detected, ~22919 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+65857659 excluded by --chr + --max-alleles + --snps-only, 1376874 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+24970 variants remaining after main filters.
+--export A pass 1/1: loading... 0%writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_048/plink_CHRNA4_1602880db13.raw
+written.
+End time: Tue Oct  6 04:57:30 2026
+105 SNP(s) removed because HWE P < 1e-08 :
+  [1] "chr20_63098574_A_C_b38_A" "chr20_63099248_C_T_b38_C"
+  [3] "chr20_63207473_A_C_b38_A" "chr20_63207480_T_C_b38_T"
+  [5] "chr20_63320718_A_T_b38_A" "chr20_63321872_G_C_b38_G"
+  [7] "chr20_63354402_G_A_b38_G" "chr20_63506110_G_A_b38_G"
+  [9] "chr20_63507672_C_T_b38_C" "chr20_63516771_A_T_b38_A"
+ [11] "chr20_63517823_C_G_b38_C" "chr20_63518705_C_T_b38_C"
+ [13] "chr20_63522320_T_G_b38_T" "chr20_63522433_G_A_b38_G"
+ [15] "chr20_63522475_A_G_b38_A" "chr20_63522500_G_T_b38_G"
+ [17] "chr20_63522502_C_G_b38_C" "chr20_63523038_G_T_b38_G"
+ [19] "chr20_63523241_A_G_b38_A" "chr20_63523571_G_A_b38_G"
+ [21] "chr20_63524129_G_T_b38_G" "chr20_63524824_G_A_b38_G"
+ [23] "chr20_63524897_G_A_b38_G" "chr20_63525131_T_C_b38_T"
+ [25] "chr20_63525244_G_A_b38_G" "chr20_63525298_G_T_b38_G"
+ [27] "chr20_63525894_A_G_b38_A" "chr20_63526192_G_A_b38_G"
+ [29] "chr20_63526427_A_T_b38_A" "chr20_63526605_C_T_b38_C"
+ [31] "chr20_63526640_T_G_b38_T" "chr20_63527654_C_T_b38_C"
+ [33] "chr20_63527820_T_C_b38_T" "chr20_63528115_C_T_b38_C"
+ [35] "chr20_63528151_T_C_b38_T" "chr20_63528219_C_T_b38_C"
+ [37] "chr20_63530065_G_C_b38_G" "chr20_63530068_G_A_b38_G"
+ [39] "chr20_63530360_C_T_b38_C" "chr20_63530987_T_C_b38_T"
+ [41] "chr20_63531195_A_G_b38_A" "chr20_63531601_T_C_b38_T"
+ [43] "chr20_63531827_C_T_b38_C" "chr20_63531914_G_T_b38_G"
+ [45] "chr20_63531970_T_C_b38_T" "chr20_63531980_C_T_b38_C"
+ [47] "chr20_63532095_G_A_b38_G" "chr20_63532149_A_G_b38_A"
+ [49] "chr20_63532177_C_G_b38_C" "chr20_63532351_G_C_b38_G"
+ [51] "chr20_63532355_C_G_b38_C" "chr20_63532440_T_C_b38_T"
+ [53] "chr20_63532840_C_T_b38_C" "chr20_63532889_G_A_b38_G"
+ [55] "chr20_63532910_G_A_b38_G" "chr20_63532951_A_G_b38_A"
+ [57] "chr20_63533154_G_T_b38_G" "chr20_63533170_C_T_b38_C"
+ [59] "chr20_63533215_A_G_b38_A" "chr20_63533258_T_C_b38_T"
+ [61] "chr20_63533317_T_C_b38_T" "chr20_63533321_T_C_b38_T"
+ [63] "chr20_63533342_A_G_b38_A" "chr20_63533360_C_A_b38_C"
+ [65] "chr20_63533361_C_T_b38_C" "chr20_63533434_G_A_b38_G"
+ [67] "chr20_63533437_T_C_b38_T" "chr20_63533442_G_A_b38_G"
+ [69] "chr20_63533456_T_G_b38_T" "chr20_63533681_A_G_b38_A"
+ [71] "chr20_63533712_A_G_b38_A" "chr20_63533782_G_A_b38_G"
+ [73] "chr20_63533849_G_C_b38_G" "chr20_63534468_C_T_b38_C"
+ [75] "chr20_63534842_T_C_b38_T" "chr20_63534960_C_T_b38_C"
+ [77] "chr20_63535220_C_G_b38_C" "chr20_63535283_G_A_b38_G"
+ [79] "chr20_63535362_T_G_b38_T" "chr20_63535396_T_C_b38_T"
+ [81] "chr20_63535422_A_G_b38_A" "chr20_63536388_G_A_b38_G"
+ [83] "chr20_63536881_G_A_b38_G" "chr20_63538211_C_T_b38_C"
+ [85] "chr20_63538674_C_G_b38_C" "chr20_63538738_G_A_b38_G"
+ [87] "chr20_63539945_G_T_b38_G" "chr20_63540068_G_C_b38_G"
+ [89] "chr20_63540916_C_A_b38_C" "chr20_63542208_C_G_b38_C"
+ [91] "chr20_63542388_G_A_b38_G" "chr20_63542572_T_G_b38_T"
+ [93] "chr20_63542982_C_T_b38_C" "chr20_63544780_A_G_b38_A"
+ [95] "chr20_63546752_A_C_b38_A" "chr20_63547072_C_T_b38_C"
+ [97] "chr20_63549647_G_C_b38_G" "chr20_63550155_A_G_b38_A"
+ [99] "chr20_63550223_T_C_b38_T" "chr20_63551402_G_A_b38_G"
+[101] "chr20_63551449_G_A_b38_G" "chr20_63567333_G_A_b38_G"
+[103] "chr20_63570431_T_C_b38_T" "chr20_63636704_A_G_b38_A"
+[105] "chr20_63636708_G_A_b38_G"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================

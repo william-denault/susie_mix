@@ -1,0 +1,130 @@
+#!/bin/bash
+# From job/: sbatch recover_slide_prior_em audit 0
+# Then: sbatch recover_slide_prior_em run 0 [MAX_TASKS_THIS_BATCH]
+# A run stops after the requested iteration; 'new' prepares exactly one new update.
+#SBATCH --job-name=slide_recover_control
+#SBATCH --output=slide_recover_control_%j.out
+#SBATCH --error=slide_recover_control_%j.err
+#SBATCH --time=23:00:00
+#SBATCH --partition=broadwl
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=40G
+set -euo pipefail
+mode=${1:-audit}
+iteration=${2:-0}
+batch_limit=${3:-298}
+if (( $# > 3 )) || [[ ! "$mode" =~ ^(audit|run|resume|verify|new|continue|exclude-sex-mt)$ ||
+    ! "$iteration" =~ ^(0|[1-9][0-9]*)$ || ${#iteration} -gt 8 ||
+    ! "$batch_limit" =~ ^[1-9][0-9]*$ || ${#batch_limit} -gt 3 ]] || (( batch_limit > 298 )); then
+    echo 'Usage: sbatch recover_slide_prior_em [audit|run|resume|verify|new|exclude-sex-mt] [ITERATION] [BATCH_LIMIT<=298]' >&2
+    exit 1
+fi
+[[ "${SLURM_JOB_ID:-}" =~ ^[0-9]+$ ]] || { echo 'Submit with sbatch.' >&2; exit 1; }
+project_dir="${SUSIE_MIX_PROJECT_DIR:-/project2/mstephens/wdenault/susie_mix}"
+project_dir=$(cd "$project_dir" && pwd -P)
+export SUSIE_MIX_PROJECT_DIR="$project_dir"
+root="${project_dir}/results_slide_prior_em"
+mkdir -p "$root"
+exec 9>"${root}/.prepare.lock"
+flock -n 9 || { echo 'Another slider coordinator holds the preparation lock.' >&2; exit 1; }
+module load R/4.2.0
+export SUSIE_SLIDE_AUTOMATIC=0
+[[ "$mode" == continue ]] && export SUSIE_SLIDE_AUTOMATIC=1
+cli="${project_dir}/script/scan_tissue_attempt/recover_slide_prior_em.R"
+
+# -r expands arrays: every pending/running array element consumes one job slot.
+# Include job names to detect a submission whose returned ID was never persisted.
+queue=$(squeue --noheader --array --user "$USER" --format='%i|%F|%j')
+other_jobs=0
+while IFS='|' read -r id array name; do
+    [[ -n "$id" ]] || continue
+    [[ "$id" == "$SLURM_JOB_ID" ]] && continue
+    other_jobs=$((other_jobs + 1))
+    for record in "$root/last_array_job_id.txt" "$root/last_continuation_job_id.txt"; do
+        [[ -f "$record" ]] || continue
+        read -r recorded < "$record"
+        if [[ "$id" == "$recorded" || "$array" == "$recorded" ]]; then
+            echo "Slider job $recorded is still queued/running. No competing recovery submitted." >&2; exit 1
+        fi
+    done
+    if [[ "$name" == slide_recover_* ]]; then
+        echo "Recovery job $id is already queued/running; inspect before retrying." >&2; exit 1
+    fi
+done <<< "$queue"
+
+if [[ "$mode" == exclude-sex-mt ]]; then
+    Rscript --vanilla "$cli" exclude-sex-mt "$project_dir" "$iteration"
+    echo 'X/Y/MT exclusions recorded. No fitting jobs submitted.'
+    exit 0
+elif [[ "$mode" == new ]]; then
+    iteration=$(Rscript --vanilla "$cli" new "$project_dir" "$iteration")
+    [[ "$iteration" =~ ^[0-9]+$ ]] || { echo 'Invalid new iteration response.' >&2; exit 1; }
+elif [[ "$mode" == audit ]]; then
+    Rscript --vanilla "$cli" audit "$project_dir" "$iteration"
+    echo "Audit complete. Inspect recovery/audit.csv before submitting run $iteration."
+    exit 0
+elif [[ "$mode" == verify ]]; then
+    Rscript --vanilla "$cli" verify "$project_dir" "$iteration"
+    exit 0
+fi
+
+# Reserve this controller and the next pending controller. Count other jobs too.
+capacity=$((300 - other_jobs - 2))
+(( capacity > batch_limit )) && capacity=$batch_limit
+if (( capacity < 1 )); then
+    echo "No submission capacity under the 300-job user budget. Retry: sbatch recover_slide_prior_em resume $iteration $batch_limit" >&2
+    exit 1
+fi
+launch=$(Rscript --vanilla "$cli" plan "$project_dir" "$iteration" "$capacity")
+mapfile -t info <<< "$launch"
+case "${info[0]}" in
+    verify)
+        Rscript --vanilla "$cli" verify "$project_dir" "$iteration"
+        exit 0 ;;
+    blocked)
+        echo 'Recovery needs inspection: retry limit or repeated resource failure. No new batch or EM update submitted.' >&2
+        exit 1 ;;
+    pilot_empty)
+        echo 'Selected pilot genes are already validated; no jobs submitted.'
+        exit 0 ;;
+    batch) ;;
+    *) echo 'Invalid recovery plan response.' >&2; exit 1 ;;
+esac
+if (( ${#info[@]} != 3 )) || [[ ! -d "${info[1]}" || ! "${info[2]}" =~ ^[1-9][0-9]*$ ]] ||
+    (( info[2] > capacity )); then echo 'Invalid batch response.' >&2; exit 1; fi
+batch=${info[1]}
+tasks=${info[2]}
+if ! response=$(sbatch --parsable --array="1-${tasks}" --export=ALL \
+    --output="${batch}/worker_%A_%a.out" --error="${batch}/worker_%A_%a.err" \
+    "$project_dir/job/recover_slide_prior_em_array" "$project_dir" "$iteration" "$batch"); then
+    echo "Array submission failed. Audit/results preserved; retry resume $iteration." >&2; exit 1
+fi
+array_id=${response%%;*}
+[[ "$array_id" =~ ^[0-9]+$ ]] || { echo 'Ambiguous sbatch response; inspect queue before retrying.' >&2; exit 1; }
+printf '%s\n' "$array_id" > "$root/last_array_job_id.txt"
+printf '%s\n' "$array_id" > "$batch/array_job_id.txt"
+printf '%s\n' "$batch" > "${batch%/batches/*}/last_batch.txt"
+echo "Submitted recovery array $array_id: $tasks tasks, at most 10 genes/task by default."
+
+# A pilot runs exactly one bounded batch. The user inspects it before resuming.
+if [[ "${SUSIE_SLIDE_PILOT:-0}" == 1 ]]; then
+    echo "Pilot submitted; no automatic continuation. After it ends: sbatch recover_slide_prior_em resume $iteration"
+    exit 0
+fi
+# Failure of a worker must not cancel the inspection/retry coordinator.
+if ! response=$(sbatch --parsable --dependency="afterany:${array_id}:${SLURM_JOB_ID}" \
+    --export=ALL --chdir="$project_dir/job" \
+    --output="$project_dir/job/slide_recover_control_%j.out" \
+    --error="$project_dir/job/slide_recover_control_%j.err" \
+    "$project_dir/job/recover_slide_prior_em" continue "$iteration" "$batch_limit"); then
+    echo "Array $array_id remains submitted; continuation failed. After it ends: sbatch recover_slide_prior_em resume $iteration" >&2
+    exit 1
+fi
+continuation=${response%%;*}
+[[ "$continuation" =~ ^[0-9]+$ ]] || { echo 'Ambiguous continuation response; inspect queue.' >&2; exit 1; }
+printf '%s\n' "$continuation" > "$root/last_continuation_job_id.txt"
+printf '%s\n' "$continuation" > "$batch/continuation_job_id.txt"
+echo "Queued coordinator $continuation for inspection after array $array_id ends."
+echo "Stop this recovery by cancelling coordinator $continuation first, then array $array_id."

@@ -1079,3 +1079,88 @@ Tissue: Stomach
 =====================================
 Tissue: Testis 
 =====================================
+
+=====================================
+Tissue: Thyroid 
+=====================================
+
+=====================================
+Tissue: Uterus 
+=====================================
+
+=====================================
+Tissue: Vagina 
+=====================================
+[2026-10-06 04:51:11] slider iteration 0, chunk 269: TRIM55
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene TRIM55 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_269/plink_TRIM55_982250cf2633.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 8
+  --export A
+  --from-bp 65626896
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_269/plink_TRIM55_982250cf2633
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 66626896
+
+Start time: Tue Oct  6 04:54:04 2026
+63727 MiB RAM detected, ~18381 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+64320131 excluded by --chr + --max-alleles + --snps-only, 2914402 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+16637 variants remaining after main filters.
+--export A pass 1/1: loading... 0%writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_269/plink_TRIM55_982250cf2633.raw
+written.
+End time: Tue Oct  6 04:54:18 2026
+43 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr8_65636787_T_A_b38_T" "chr8_66021385_G_A_b38_G"
+ [3] "chr8_66037614_C_T_b38_C" "chr8_66038270_G_C_b38_G"
+ [5] "chr8_66043602_G_A_b38_G" "chr8_66045620_A_G_b38_A"
+ [7] "chr8_66058220_A_T_b38_A" "chr8_66149402_A_G_b38_A"
+ [9] "chr8_66151143_T_A_b38_T" "chr8_66151294_A_G_b38_A"
+[11] "chr8_66152419_A_G_b38_A" "chr8_66153061_C_T_b38_C"
+[13] "chr8_66154545_C_G_b38_C" "chr8_66156427_T_G_b38_T"
+[15] "chr8_66157153_T_C_b38_T" "chr8_66157538_G_A_b38_G"
+[17] "chr8_66157662_T_C_b38_T" "chr8_66157743_C_T_b38_C"
+[19] "chr8_66161557_A_G_b38_A" "chr8_66162905_A_T_b38_A"
+[21] "chr8_66162920_A_G_b38_A" "chr8_66165856_C_G_b38_C"
+[23] "chr8_66170016_A_G_b38_A" "chr8_66173629_G_A_b38_G"
+[25] "chr8_66179144_A_G_b38_A" "chr8_66180813_A_G_b38_A"
+[27] "chr8_66181991_G_C_b38_G" "chr8_66182645_G_A_b38_G"
+[29] "chr8_66183392_C_A_b38_C" "chr8_66185227_T_C_b38_T"
+[31] "chr8_66185601_T_C_b38_T" "chr8_66185643_C_T_b38_C"
+[33] "chr8_66187393_G_C_b38_G" "chr8_66189034_C_T_b38_C"
+[35] "chr8_66195704_T_G_b38_T" "chr8_66196990_T_C_b38_T"
+[37] "chr8_66215324_C_T_b38_C" "chr8_66215853_G_A_b38_G"
+[39] "chr8_66321144_A_T_b38_A" "chr8_66321157_C_A_b38_C"
+[41] "chr8_66321160_T_C_b38_T" "chr8_66321164_A_T_b38_A"
+[43] "chr8_66321176_T_A_b38_T"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================

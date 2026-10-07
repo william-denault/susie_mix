@@ -2287,3 +2287,99 @@ Tissue: Testis
 =====================================
 Tissue: Thyroid 
 =====================================
+
+=====================================
+Tissue: Uterus 
+=====================================
+
+=====================================
+Tissue: Vagina 
+=====================================
+[2026-10-06 04:45:37] slider iteration 0, chunk 026: BPGM
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene BPGM :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_026/plink_BPGM_85c24efbef1b.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 7
+  --export A
+  --from-bp 134146811
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_026/plink_BPGM_85c24efbef1b
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 135146811
+
+Start time: Tue Oct  6 04:46:47 2026
+63721 MiB RAM detected, ~22079 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+64060212 excluded by --chr + --max-alleles + --snps-only, 3174321 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+16734 variants remaining after main filters.
+--export A pass 1/1: loading... 0%48% writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_026/plink_BPGM_85c24efbef1b.raw
+written.
+End time: Tue Oct  6 04:46:54 2026
+34 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr7_134241029_A_G_b38_A" "chr7_134255768_A_T_b38_A"
+ [3] "chr7_134266326_T_C_b38_T" "chr7_134266401_A_C_b38_A"
+ [5] "chr7_134267125_G_T_b38_G" "chr7_134267811_T_C_b38_T"
+ [7] "chr7_134268093_T_C_b38_T" "chr7_134270219_T_C_b38_T"
+ [9] "chr7_134270357_G_T_b38_G" "chr7_134271923_A_T_b38_A"
+[11] "chr7_134272200_G_A_b38_G" "chr7_134272756_T_G_b38_T"
+[13] "chr7_134273544_G_A_b38_G" "chr7_134275399_T_A_b38_T"
+[15] "chr7_134276626_A_G_b38_A" "chr7_134277334_A_G_b38_A"
+[17] "chr7_134279513_A_G_b38_A" "chr7_134282419_A_G_b38_A"
+[19] "chr7_134285364_C_A_b38_C" "chr7_134285624_C_G_b38_C"
+[21] "chr7_134286233_G_A_b38_G" "chr7_134317716_C_G_b38_C"
+[23] "chr7_134318076_C_T_b38_C" "chr7_134318411_A_G_b38_A"
+[25] "chr7_134318434_A_T_b38_A" "chr7_134319528_C_T_b38_C"
+[27] "chr7_134324123_A_G_b38_A" "chr7_134328712_G_A_b38_G"
+[29] "chr7_134329660_A_C_b38_A" "chr7_134331241_C_A_b38_C"
+[31] "chr7_134333008_A_C_b38_A" "chr7_134333160_A_G_b38_A"
+[33] "chr7_134466539_G_T_b38_G" "chr7_134829016_T_C_b38_T"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+
+=====================================
+Tissue: Blood 
+=====================================
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+
+=====================================
+Tissue: Brain 
+=====================================
+
+=====================================
+Tissue: Breast 
+=====================================

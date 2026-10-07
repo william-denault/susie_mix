@@ -1,0 +1,46 @@
+#!/bin/bash
+# Each task runs at most ten genes by default, each in a separate R process.
+#SBATCH --job-name=slide_recover_worker
+#SBATCH --time=23:00:00
+#SBATCH --partition=broadwl
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=40G
+set -euo pipefail
+module load R/4.2.0
+project_dir=$1
+iteration=$2
+batch=$3
+export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+cli="${project_dir}/script/scan_tissue_attempt/recover_slide_prior_em.R"
+# Command substitution propagates R errors; process substitution would hide them.
+gene_text=$(Rscript --vanilla "$cli" genes "$project_dir" "$iteration" "$batch" "$SLURM_ARRAY_TASK_ID")
+mapfile -t genes <<< "$gene_text"
+if (( ${#genes[@]} < 1 || ${#genes[@]} > 15 )); then
+    echo 'Invalid gene count for isolated task.' >&2; exit 1
+fi
+printf -v iteration_name 'iteration_%03d' "$iteration"
+recovery="${project_dir}/results_slide_prior_em/${iteration_name}/recovery"
+mkdir -p "$recovery/gene_locks" "$batch/gene_logs"
+failed=0
+for gene in "${genes[@]}"; do
+    if [[ ! "$gene" =~ ^[A-Za-z0-9_.-]+$ || "$gene" == . || "$gene" == .. ]]; then
+        echo 'Invalid gene name.' >&2; exit 1
+    fi
+    # Prevent concurrent fitting/overwriting of one gene, including manual retries.
+    exec 8>"${recovery}/gene_locks/${gene}.lock"
+    if ! flock -n 8; then
+        echo "Gene $gene is already locked." >&2; failed=1; continue
+    fi
+    echo "[$(date -u '+%Y-%m-%d %H:%M:%S UTC')] Starting isolated gene $gene"
+    if ! Rscript --vanilla "$cli" gene "$project_dir" "$iteration" "$batch" "$SLURM_ARRAY_TASK_ID" "$gene" \
+        >"${batch}/gene_logs/${gene}_${SLURM_JOB_ID}.out" \
+        2>"${batch}/gene_logs/${gene}_${SLURM_JOB_ID}.err"; then
+        failed=1
+        echo "Gene $gene needs recovery; see ${batch}/gene_logs." >&2
+    fi
+    flock -u 8
+    exec 8>&-
+done
+exit "$failed"

@@ -65,3 +65,49 @@ for (tissue in names(out)) {
 }
 stopifnot(!length(list.files(args$temp_dir)))
 cat("PASS: synthetic GTEx import, donor alignment, QC, association metadata, real discrete fitting and warm-start refit.\n")
+
+# Integrate the recovery wrapper with real fits at the frozen L=10 setting.
+# The package clips L to p=4 here, which the recovery validator must accept.
+for (file in c("slide_prior_recovery.R", "prepare_slide_prior_em_iteration.R"))
+  source(file.path("script/scan_tissue_attempt", file))
+project <- file.path(root, "r")
+d <- file.path(project, "results_slide_prior_em/iteration_000")
+dir.create(d, recursive = TRUE)
+scripts <- file.path(project, "script/scan_tissue_attempt")
+dir.create(scripts, recursive = TRUE)
+invisible(file.copy("script/scan_tissue_attempt/slide_prior_recovery.R", scripts))
+frozen <- data.frame(iteration = 0L, source_iteration = -1L, tissue = c("Brain", "Liver"), w,
+                     n_fits = 0L, n_active = 0L, free_mass = 0, prior_max_change = 0,
+                     m_step_q_gain = 0, source_elbo = NA_real_,
+                     update_method = "slider_prior_active_counts_v1", created_at = "fixture")
+em_atomic_write(frozen, file.path(d, "priors.csv"), csv = TRUE)
+em_atomic_write(frozen, file.path(project, "results_slide_prior_em/prior_history.csv"), csv = TRUE)
+em_atomic_write(data.frame(chunk = 1L, gene = "GENE"), file.path(d, "manifest.csv"), csv = TRUE)
+em_atomic_write(data.frame(delta = spe_grid()), file.path(d, "grid.csv"), csv = TRUE)
+em_atomic_write(c(spe_settings(), list(package_version = spe_check_packages())), file.path(d, "settings.rds"))
+run_real <- function(...) {
+  supplied <- list(...)
+  paths <- args[c("datadir", "gene_annot_fun", "subject_pheno_file", "sample_attr_file", "expr_file")]
+  supplied[names(paths)] <- paths
+  supplied$project_dir <- normalizePath(".", winslash = "/")
+  do.call(worker_env$run_slide_prior_gene, supplied)
+}
+ctx <- sre_context(project, d, check_package = TRUE)
+sre_audit(ctx)
+# Exercise the real GTF reader used to freeze chromosome scope on RCC.
+invisible(file.copy("script/scan_tissue_attempt/get_gene_annotations.R", scripts))
+scope_gtf <- file.path(root, "scope.gtf")
+writeLines(c("# fixture GTF", paste("chr1", "ensembl", "gene", 1000, 2000, ".", "+", ".",
+  'gene_id "E1"; gene_type "protein_coding"; gene_name "GENE";', sep = "\t")), scope_gtf)
+ctx <- sre_exclude_sex_mt(ctx, gtf_file = scope_gtf)
+stopifnot(!length(ctx$scope$excluded), identical(unname(ctx$scope$chromosomes), "1"))
+sre_run_gene(ctx, "GENE", run_real)
+sre_verify(ctx)
+launch <- spe_prepare_iteration(project, "new")
+ctx1 <- sre_context(project, launch$iteration_dir, check_package = TRUE)
+sre_audit(ctx1)
+sre_run_gene(ctx1, "GENE", run_real)
+sre_verify(ctx1)
+saved <- readRDS(sre_result(ctx1, "GENE"))
+stopifnot(all(vapply(saved, function(x) isTRUE(x$em_warm_started), logical(1))))
+cat("PASS: recovery wrapper, actual L clipping, completed-iteration gate, original M-step and real warm-start recovery.\n")

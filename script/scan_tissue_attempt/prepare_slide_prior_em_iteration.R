@@ -29,13 +29,20 @@ spe_prepare_iteration <- function(project_dir, mode = "new", n_chunks = 298L,
     if (!identical(settings, saved_settings[names(settings)]))
       stop("Slider fitting settings/package version changed; inspect before continuing this run.")
     manifest <- read.csv(file.path(previous_dir, "manifest.csv"), stringsAsFactors = FALSE)
-    pending <- em_pending_chunks(previous_dir, manifest)
+    recovery <- file.exists(file.path(previous_dir, "recovery", "state.rds"))
+    if (recovery) {
+      if (mode == "resume") stop("Use recover_slide_prior_em resume for this recovery-managed iteration.")
+      source(file.path(project_dir, "script/scan_tissue_attempt/slide_prior_recovery.R"))
+      sre_require_complete(project_dir, previous_dir)
+      pending <- integer()
+    } else pending <- em_pending_chunks(previous_dir, manifest)
     if (mode == "resume") {
       if (!length(pending)) stop("Latest iteration is complete; use new to continue.")
       return(list(iteration_dir = previous_dir, chunks = pending))
     }
     if (length(pending)) stop("Slider iteration ", latest, " is unfinished. Wait or use resume.")
-    files <- em_check_result_files(file.path(previous_dir, "results"), manifest)
+    files <- if (recovery) sre_pool_files(sre_context(project_dir, previous_dir)) else
+      em_check_result_files(file.path(previous_dir, "results"), manifest)
     message("Pooling slider counts from ", length(files), " gene files.")
     pooled <- spe_pool(files, previous)
     priors <- pooled$priors

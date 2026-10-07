@@ -34,6 +34,15 @@ mkdir -p "${project_dir}/results_slide_prior_em"
 project_dir=$(cd "$project_dir" && pwd -P)
 export SUSIE_MIX_PROJECT_DIR="$project_dir"
 
+# Recovery has its own bounded scheduler and completion certificates. Never
+# fall back to the historical 61-62-gene worker after recovery is adopted.
+for recovery_state in "${project_dir}"/results_slide_prior_em/iteration_*/recovery/state.rds; do
+    if [[ -f "$recovery_state" ]]; then
+        echo "This run uses recovery scheduling. Use recover_slide_prior_em resume or new; see README_slide_prior_recovery.md." >&2
+        exit 1
+    fi
+done
+
 # Serialize prior-history updates and submissions. The lock is released on exit.
 exec 9>"${project_dir}/results_slide_prior_em/.prepare.lock"
 if ! flock -n 9; then

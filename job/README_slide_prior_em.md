@@ -1,5 +1,11 @@
 # Tissue-specific slider-prior EM
 
+For the interrupted October initialization and subsequent bounded scheduling,
+use [the recovery workflow](README_slide_prior_recovery.md). It preserves
+saved fits, audits errors hidden behind old completion markers, and processes
+10 genes per task in isolated R processes under a 300-job submission budget.
+The historical launcher described below refuses recovery-managed runs.
+
 This workflow learns 17 slider probabilities separately for each tissue using
 `susieRSlidePrior::susie`. The existing `results_slide` scan used the continuous
 slider and cannot supply the discrete joint posteriors needed here. A new run

@@ -3586,3 +3586,197 @@ Tissue: Pancreas
 =====================================
 Tissue: Pituitary 
 =====================================
+
+=====================================
+Tissue: Prostate 
+=====================================
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+
+=====================================
+Tissue: Skin 
+=====================================
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+
+=====================================
+Tissue: Spleen 
+=====================================
+
+=====================================
+Tissue: Stomach 
+=====================================
+
+=====================================
+Tissue: Testis 
+=====================================
+
+=====================================
+Tissue: Thyroid 
+=====================================
+
+=====================================
+Tissue: Uterus 
+=====================================
+
+=====================================
+Tissue: Vagina 
+=====================================
+[2026-10-06 04:56:59] slider iteration 0, chunk 243: SPOCK2
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene SPOCK2 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_243/plink_SPOCK2_bba5db9db78.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 10
+  --export A
+  --from-bp 71589032
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_243/plink_SPOCK2_bba5db9db78
+  --rm-dup exclude-all
+  --snps-only
+  --threads 2
+  --to-bp 72589032
+
+Start time: Tue Oct  6 04:58:00 2026
+63727 MiB RAM detected, ~22471 available; reserving 8000 MiB for main
+workspace.
+Using up to 2 compute threads.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+64498607 excluded by --chr + --max-alleles + --snps-only, 2735926 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+18759 variants remaining after main filters.
+--export A pass 1/1: loading... 0%writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/chunk_243/plink_SPOCK2_bba5db9db78.raw
+written.
+End time: Tue Oct  6 04:58:06 2026
+166 SNP(s) removed because HWE P < 1e-08 :
+  [1] "chr10_71632211_A_G_b38_A" "chr10_71658960_G_A_b38_G"
+  [3] "chr10_71720144_A_G_b38_A" "chr10_71721086_A_G_b38_A"
+  [5] "chr10_71722015_C_T_b38_C" "chr10_71724219_T_C_b38_T"
+  [7] "chr10_71761821_G_A_b38_G" "chr10_71762073_C_T_b38_C"
+  [9] "chr10_71970233_C_G_b38_C" "chr10_71970234_G_T_b38_G"
+ [11] "chr10_71989843_G_A_b38_G" "chr10_71989988_G_A_b38_G"
+ [13] "chr10_71999386_G_A_b38_G" "chr10_72000890_G_A_b38_G"
+ [15] "chr10_72039958_C_T_b38_C" "chr10_72040281_T_C_b38_T"
+ [17] "chr10_72040640_G_A_b38_G" "chr10_72040947_G_A_b38_G"
+ [19] "chr10_72059288_T_C_b38_T" "chr10_72060796_G_T_b38_G"
+ [21] "chr10_72061153_A_G_b38_A" "chr10_72062503_C_T_b38_C"
+ [23] "chr10_72062585_T_C_b38_T" "chr10_72066194_G_A_b38_G"
+ [25] "chr10_72066559_G_A_b38_G" "chr10_72091983_T_A_b38_T"
+ [27] "chr10_72093618_C_A_b38_C" "chr10_72113587_A_T_b38_A"
+ [29] "chr10_72115384_A_G_b38_A" "chr10_72115634_A_G_b38_A"
+ [31] "chr10_72115803_T_C_b38_T" "chr10_72118074_C_A_b38_C"
+ [33] "chr10_72118700_T_A_b38_T" "chr10_72119732_C_A_b38_C"
+ [35] "chr10_72120181_C_T_b38_C" "chr10_72122206_A_G_b38_A"
+ [37] "chr10_72128636_G_A_b38_G" "chr10_72130406_A_G_b38_A"
+ [39] "chr10_72137466_C_T_b38_C" "chr10_72145104_C_T_b38_C"
+ [41] "chr10_72147442_A_G_b38_A" "chr10_72148450_A_G_b38_A"
+ [43] "chr10_72149003_A_G_b38_A" "chr10_72151752_C_A_b38_C"
+ [45] "chr10_72154228_A_G_b38_A" "chr10_72158132_G_A_b38_G"
+ [47] "chr10_72161036_T_C_b38_T" "chr10_72161404_G_A_b38_G"
+ [49] "chr10_72161837_A_G_b38_A" "chr10_72161994_T_C_b38_T"
+ [51] "chr10_72162288_C_T_b38_C" "chr10_72162573_G_A_b38_G"
+ [53] "chr10_72163462_C_T_b38_C" "chr10_72163814_A_G_b38_A"
+ [55] "chr10_72164239_T_G_b38_T" "chr10_72164654_G_C_b38_G"
+ [57] "chr10_72164853_T_C_b38_T" "chr10_72165408_G_A_b38_G"
+ [59] "chr10_72166049_G_A_b38_G" "chr10_72166964_C_T_b38_C"
+ [61] "chr10_72167524_C_T_b38_C" "chr10_72176543_C_T_b38_C"
+ [63] "chr10_72180733_A_G_b38_A" "chr10_72181517_T_C_b38_T"
+ [65] "chr10_72181814_T_C_b38_T" "chr10_72182853_T_C_b38_T"
+ [67] "chr10_72184131_C_G_b38_C" "chr10_72184400_T_C_b38_T"
+ [69] "chr10_72184685_C_A_b38_C" "chr10_72186680_C_T_b38_C"
+ [71] "chr10_72186748_A_T_b38_A" "chr10_72186830_A_G_b38_A"
+ [73] "chr10_72186856_C_T_b38_C" "chr10_72187057_T_C_b38_T"
+ [75] "chr10_72187065_T_C_b38_T" "chr10_72187410_C_T_b38_C"
+ [77] "chr10_72187590_A_G_b38_A" "chr10_72187890_C_T_b38_C"
+ [79] "chr10_72188255_T_A_b38_T" "chr10_72188552_T_G_b38_T"
+ [81] "chr10_72188916_C_A_b38_C" "chr10_72189205_T_C_b38_T"
+ [83] "chr10_72189324_C_T_b38_C" "chr10_72189768_T_C_b38_T"
+ [85] "chr10_72189950_C_T_b38_C" "chr10_72190631_G_C_b38_G"
+ [87] "chr10_72190703_C_A_b38_C" "chr10_72190760_A_G_b38_A"
+ [89] "chr10_72190800_A_G_b38_A" "chr10_72191453_T_G_b38_T"
+ [91] "chr10_72191534_G_C_b38_G" "chr10_72191601_C_T_b38_C"
+ [93] "chr10_72193503_C_A_b38_C" "chr10_72194171_C_A_b38_C"
+ [95] "chr10_72194635_A_T_b38_A" "chr10_72194806_G_A_b38_G"
+ [97] "chr10_72194930_C_T_b38_C" "chr10_72195503_G_A_b38_G"
+ [99] "chr10_72195617_A_G_b38_A" "chr10_72195738_A_G_b38_A"
+[101] "chr10_72195739_T_C_b38_T" "chr10_72195775_A_G_b38_A"
+[103] "chr10_72195788_C_A_b38_C" "chr10_72195944_C_A_b38_C"
+[105] "chr10_72196061_T_C_b38_T" "chr10_72196795_C_T_b38_C"
+[107] "chr10_72197423_G_A_b38_G" "chr10_72198770_C_T_b38_C"
+[109] "chr10_72198837_A_G_b38_A" "chr10_72198999_G_T_b38_G"
+[111] "chr10_72199780_A_C_b38_A" "chr10_72200260_T_C_b38_T"
+[113] "chr10_72200466_T_C_b38_T" "chr10_72200552_G_A_b38_G"
+[115] "chr10_72200809_C_T_b38_C" "chr10_72201050_C_T_b38_C"
+[117] "chr10_72201054_G_T_b38_G" "chr10_72201559_G_A_b38_G"
+[119] "chr10_72201586_C_T_b38_C" "chr10_72201597_T_G_b38_T"
+[121] "chr10_72201877_A_G_b38_A" "chr10_72202034_C_G_b38_C"
+[123] "chr10_72202036_A_G_b38_A" "chr10_72204028_T_C_b38_T"
+[125] "chr10_72204831_T_C_b38_T" "chr10_72205420_G_C_b38_G"
+[127] "chr10_72205740_A_G_b38_A" "chr10_72205986_G_C_b38_G"
+[129] "chr10_72206202_G_C_b38_G" "chr10_72206908_A_G_b38_A"
+[131] "chr10_72207083_A_G_b38_A" "chr10_72207274_T_C_b38_T"
+[133] "chr10_72207405_A_G_b38_A" "chr10_72207644_T_C_b38_T"
+[135] "chr10_72207930_A_G_b38_A" "chr10_72208004_G_T_b38_G"
+[137] "chr10_72208935_G_A_b38_G" "chr10_72209576_T_G_b38_T"
+[139] "chr10_72210235_C_A_b38_C" "chr10_72211155_A_G_b38_A"
+[141] "chr10_72211640_A_G_b38_A" "chr10_72218350_G_T_b38_G"
+[143] "chr10_72232794_T_C_b38_T" "chr10_72233302_G_A_b38_G"
+[145] "chr10_72236776_A_C_b38_A" "chr10_72242400_A_G_b38_A"
+[147] "chr10_72242533_G_A_b38_G" "chr10_72242611_G_A_b38_G"
+[149] "chr10_72242806_G_A_b38_G" "chr10_72243021_T_C_b38_T"
+[151] "chr10_72243219_C_A_b38_C" "chr10_72243964_A_C_b38_A"
+[153] "chr10_72246624_C_G_b38_C" "chr10_72247188_G_T_b38_G"
+[155] "chr10_72247890_T_C_b38_T" "chr10_72253393_T_G_b38_T"
+[157] "chr10_72254609_C_T_b38_C" "chr10_72255108_C_T_b38_C"
+[159] "chr10_72334299_T_C_b38_T" "chr10_72335295_G_A_b38_G"
+[161] "chr10_72352428_A_G_b38_A" "chr10_72353099_G_A_b38_G"
+[163] "chr10_72355704_T_C_b38_T" "chr10_72374170_T_G_b38_T"
+[165] "chr10_72424120_A_C_b38_A" "chr10_72517796_T_A_b38_T"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+
+=====================================
+Tissue: Blood 
+=====================================
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+
+=====================================
+Tissue: Brain 
+=====================================
+
+=====================================
+Tissue: Breast 
+=====================================
