@@ -7,6 +7,12 @@ for (file in c("em_utils.R", "slide_prior_em_utils.R", "slide_prior_recovery.R")
 iteration <- sre_int(args[3], "iteration", 0L)
 iteration_dir <- file.path(project, "results_slide_prior_em", sprintf("iteration_%03d", iteration))
 if (mode == "new") {
+  target <- Sys.getenv("SUSIE_SLIDE_TARGET_ITERATION", "")
+  if (nzchar(target)) {
+    target <- sre_int(target, "target iteration", 0L)
+    history <- read.csv(file.path(project, "results_slide_prior_em/prior_history.csv"))
+    if (max(history$iteration) >= target) stop("Target iteration already prepared; resume it instead of creating another.")
+  }
   source(file.path(project, "script/scan_tissue_attempt/prepare_slide_prior_em_iteration.R"))
   launch <- spe_prepare_iteration(project, "new")
   ctx <- sre_context(project, launch$iteration_dir, check_package = TRUE)

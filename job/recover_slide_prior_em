@@ -1,7 +1,7 @@
 #!/bin/bash
 # From job/: sbatch recover_slide_prior_em audit 0
 # Then: sbatch recover_slide_prior_em run 0 [MAX_TASKS_THIS_BATCH]
-# A run stops after the requested iteration; 'new' prepares exactly one new update.
+# By default stop after one iteration; SUSIE_SLIDE_TARGET_ITERATION enables a chain.
 #SBATCH --job-name=slide_recover_control
 #SBATCH --output=slide_recover_control_%j.out
 #SBATCH --error=slide_recover_control_%j.err
@@ -16,6 +16,7 @@ mode=${1:-audit}
 iteration=${2:-0}
 batch_limit=${3:-298}
 genes_per_task=${SUSIE_SLIDE_GENES_PER_TASK:-4}
+target_iteration=${SUSIE_SLIDE_TARGET_ITERATION:-}
 if (( $# > 3 )) || [[ ! "$mode" =~ ^(audit|run|resume|verify|new|continue|exclude-sex-mt)$ ||
     ! "$iteration" =~ ^(0|[1-9][0-9]*)$ || ${#iteration} -gt 8 ||
     ! "$batch_limit" =~ ^[1-9][0-9]*$ || ${#batch_limit} -gt 3 ]] || (( batch_limit > 298 )); then
@@ -28,6 +29,14 @@ if [[ ! "$genes_per_task" =~ ^[1-9][0-9]?$ ]] || (( genes_per_task > 15 )); then
 fi
 # Propagate the selected execution cap to every automatic continuation.
 export SUSIE_SLIDE_GENES_PER_TASK="$genes_per_task"
+if [[ -n "$target_iteration" ]]; then
+    if [[ ! "$target_iteration" =~ ^(0|[1-9][0-9]*)$ || ${#target_iteration} -gt 8 ]] ||
+        (( target_iteration < iteration )); then
+        echo 'SUSIE_SLIDE_TARGET_ITERATION must be an integer at least the requested iteration.' >&2
+        exit 1
+    fi
+    export SUSIE_SLIDE_TARGET_ITERATION="$target_iteration"
+fi
 [[ "${SLURM_JOB_ID:-}" =~ ^[0-9]+$ ]] || { echo 'Submit with sbatch.' >&2; exit 1; }
 project_dir="${SUSIE_MIX_PROJECT_DIR:-/project2/mstephens/wdenault/susie_mix}"
 project_dir=$(cd "$project_dir" && pwd -P)
@@ -89,6 +98,23 @@ mapfile -t info <<< "$launch"
 case "${info[0]}" in
     verify)
         Rscript --vanilla "$cli" verify "$project_dir" "$iteration"
+        if [[ -n "$target_iteration" && "${SUSIE_SLIDE_PILOT:-0}" != 1 ]] &&
+            (( iteration < target_iteration )); then
+            # Queue only the next controller, after this one has exited and
+            # released its preparation lock. No future worker arrays are queued.
+            if ! response=$(sbatch --parsable --dependency="afterok:${SLURM_JOB_ID}" \
+                --export=ALL --chdir="$project_dir/job" \
+                --output="$project_dir/job/slide_recover_control_%j.out" \
+                --error="$project_dir/job/slide_recover_control_%j.err" \
+                "$project_dir/job/recover_slide_prior_em" new "$((iteration + 1))" "$batch_limit"); then
+                echo "Iteration $iteration verified; next-iteration submission failed. Resume this iteration to retry." >&2
+                exit 1
+            fi
+            continuation=${response%%;*}
+            [[ "$continuation" =~ ^[0-9]+$ ]] || { echo 'Ambiguous next-iteration submission; inspect queue.' >&2; exit 1; }
+            printf '%s\n' "$continuation" > "$root/last_continuation_job_id.txt"
+            echo "Iteration $iteration objective recorded; queued controller $continuation for the next update (target $target_iteration)."
+        fi
         exit 0 ;;
     blocked)
         echo 'Recovery needs inspection: retry limit or repeated resource failure. No new batch or EM update submitted.' >&2

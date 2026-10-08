@@ -462,10 +462,15 @@ sre_verify <- function(ctx) {
   audit <- sre_audit(ctx, loaded$state$genes_per_task, loaded$state$max_attempts)
   if (any(!sre_ready(audit$status))) stop("Iteration has unresolved genes; no completion certificate written.")
   if (!sum(audit$n_fits)) stop("No successful tissue fits; cannot complete iteration.")
+  # The same pooling pass supplies the objective and the next prior update.
+  # Recording it here also covers the final iteration of a stopped run.
+  pooled <- spe_pool(sre_pool_files(ctx), ctx$priors)
+  spe_record_objective(ctx$project, ctx$dir, pooled)
   em_atomic_write(list(frozen = ctx$frozen, scope_md5 = ctx$scope$md5,
                        audit_md5 = unname(tools::md5sum(file.path(ctx$root, "audit.csv"))),
                        completed_at = format(Sys.time(), tz = "UTC", usetz = TRUE)), file.path(ctx$root, "COMPLETE.rds"))
   message("Recovery complete: all genes validated or explicitly audited; no new EM update submitted.")
+  invisible(pooled)
 }
 
 sre_require_complete <- function(project, iteration_dir) {
@@ -476,6 +481,5 @@ sre_require_complete <- function(project, iteration_dir) {
       !identical(certificate$audit_md5, unname(tools::md5sum(file.path(ctx$root, "audit.csv")))))
     stop("Recovery is unfinished or its audit changed; finish with recover_slide_prior_em before advancing.")
   # Revalidate all results immediately before allowing the existing scientific M-step.
-  sre_verify(ctx)
-  invisible(TRUE)
+  invisible(sre_verify(ctx))
 }

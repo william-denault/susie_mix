@@ -14,6 +14,9 @@ datasets <- lapply(1:4, function(i) {
 prior <- rep(1 / 17, 17)
 fits <- vector("list", length(datasets))
 objectives <- numeric()
+repo <- normalizePath(".", winslash = "/")
+dir.create(file.path(repo, "tmp"), showWarnings = FALSE)
+project <- tempfile("slide_objective_smoke_", tmpdir = file.path(repo, "tmp")); dir.create(project)
 for (iteration in 0:5) {
   fits <- lapply(seq_along(datasets), function(i) {
     d <- datasets[[i]]
@@ -32,6 +35,15 @@ for (iteration in 0:5) {
     stopifnot(isTRUE(all.equal(unname(direct), unname(spe_fit_counts(f, prior)), tolerance = 1e-8)))
   }
   objectives <- c(objectives, sum(vapply(fits, function(f) tail(f$elbo, 1), numeric(1))))
+  d <- file.path(project, "results_slide_prior_em", sprintf("iteration_%03d", iteration))
+  dir.create(file.path(d, "results"), recursive = TRUE)
+  table <- data.frame(iteration = iteration, tissue = "Fixture", as.list(setNames(prior, spe_columns())))
+  write.csv(table, file.path(d, "priors.csv"), row.names = FALSE)
+  for (i in seq_along(fits)) saveRDS(list(Fixture = list(fit_slide_prior = fits[[i]])),
+                                    file.path(d, "results", paste0("G", i, ".rds")))
+  pooled <- spe_pool(list.files(file.path(d, "results"), full.names = TRUE), table)
+  recorded <- spe_record_objective(project, d, pooled)
+  stopifnot(abs(recorded$elbo[1] - tail(objectives, 1)) < 1e-8)
   totals <- Reduce(`+`, lapply(fits, function(f) colSums(spe_fit_counts(f, prior))))
   next_prior <- spe_update_weights(totals, prior)
   used <- totals > 0
@@ -40,4 +52,8 @@ for (iteration in 0:5) {
 }
 stopifnot(all(diff(objectives) >= -1e-5), max(abs(prior - 1 / 17)) > .001)
 print(data.frame(iteration = 0:5, elbo = objectives))
-cat("PASS: real 17-point slider fits, forced SNPs, full warm starts and five EM updates with nondecreasing ELBO.\n")
+history <- read.csv(file.path(project, "results_slide_prior_em/objective_history.csv"))
+stopifnot(nrow(history) == 12L, identical(history$iteration[history$level == "overall"], 0:5),
+          identical(dirname(normalizePath(project, winslash = "/")), paste0(repo, "/tmp")))
+unlink(project, recursive = TRUE)
+cat("PASS: real 17-point slider fits, forced SNPs, full warm starts, recorded objectives and five EM updates with nondecreasing ELBO.\n")

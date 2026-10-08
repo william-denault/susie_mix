@@ -139,6 +139,84 @@ spe_pool <- function(files, previous) {
        audit = audit, counts = data.frame(tissue = previous$tissue, totals))
 }
 
+# Diagnostics for the fits at iteration k, before applying the k -> k+1 M-step.
+# The total is a sum of per-gene/tissue variational objectives (a composite
+# objective for overlapping genes/tissues), not the exact joint log evidence.
+spe_record_objective <- function(project, iteration_dir, pooled) {
+  root <- file.path(project, "results_slide_prior_em")
+  priors <- read.csv(file.path(iteration_dir, "priors.csv"), stringsAsFactors = FALSE)
+  iteration <- unique(priors$iteration)
+  if (length(iteration) != 1L || !is.finite(iteration) || iteration < 0)
+    stop("Invalid objective iteration.")
+  fit_rows <- function(audit) {
+    x <- audit[audit$issue == "fit", c("gene", "tissue", "elbo"), drop = FALSE]
+    if (!nrow(x) || anyNA(x) || anyDuplicated(x[c("gene", "tissue")]) ||
+        any(!is.finite(x$elbo))) stop("Invalid objective fit audit.")
+    x[order(x$gene, x$tissue, method = "radix"), , drop = FALSE]
+  }
+  fits <- fit_rows(pooled$audit)
+  previous_fits <- previous_priors <- NULL
+  if (iteration > 0L) {
+    previous_dir <- file.path(root, sprintf("iteration_%03d", iteration - 1L))
+    previous_file <- file.path(previous_dir, "objective_fit_audit.csv")
+    if (!file.exists(previous_file))
+      stop("Verify iteration ", iteration - 1L, " first to record its objective baseline.")
+    previous_fits <- fit_rows(read.csv(previous_file, stringsAsFactors = FALSE))
+    if (!identical(unname(as.matrix(fits[c("gene", "tissue")])),
+                   unname(as.matrix(previous_fits[c("gene", "tissue")]))))
+      stop("Objective gene/tissue cohort changed; iteration totals are not comparable.")
+    previous_priors <- read.csv(file.path(previous_dir, "priors.csv"), stringsAsFactors = FALSE)
+    if (!setequal(previous_priors$tissue, priors$tissue)) stop("Objective tissue universe changed.")
+  }
+  changes <- vapply(priors$tissue, function(tissue) {
+    if (is.null(previous_priors)) return(NA_real_)
+    max(abs(spe_prior(priors, tissue) - spe_prior(previous_priors, tissue)))
+  }, numeric(1))
+  summarize <- function(tissue = NULL) {
+    rows <- if (is.null(tissue)) rep(TRUE, nrow(fits)) else fits$tissue == tissue
+    dx <- if (is.null(tissue)) seq_len(nrow(pooled$priors)) else match(tissue, pooled$priors$tissue)
+    nf <- sum(rows)
+    value <- sum(fits$elbo[rows])
+    previous <- if (is.null(previous_fits)) NA_real_ else sum(previous_fits$elbo[rows])
+    change <- value - previous
+    # This is a floating-point warning threshold, not a convergence criterion.
+    roundoff <- if (is.na(previous)) NA_real_ else max(1e-6, 100 * .Machine$double.eps * abs(previous))
+    data.frame(iteration = iteration, level = if (is.null(tissue)) "overall" else "tissue",
+      tissue = if (is.null(tissue)) "" else tissue, n_genes = length(unique(fits$gene[rows])),
+      n_fits = nf, elbo = value, delta_elbo = change,
+      relative_delta_elbo = change / max(1, abs(previous)),
+      delta_elbo_per_fit = if (nf) change / nf else NA_real_,
+      prior_max_change = if (is.null(tissue)) max(changes) else unname(changes[tissue]),
+      next_m_step_q_gain = sum(pooled$priors$m_step_q_gain[dx]),
+      next_prior_max_change = max(pooled$priors$prior_max_change[dx]),
+      elbo_decreased = if (is.na(change)) NA else change < -roundoff,
+      recorded_at = format(Sys.time(), tz = "UTC", usetz = TRUE))
+  }
+  current <- do.call(rbind, c(list(summarize()), lapply(priors$tissue, summarize)))
+  history_file <- file.path(root, "objective_history.csv")
+  history <- if (file.exists(history_file)) read.csv(history_file, stringsAsFactors = FALSE) else NULL
+  if (!is.null(history) && any(history$iteration > iteration)) {
+    old <- history[history$iteration == iteration, , drop = FALSE]
+    cols <- setdiff(names(current), "recorded_at")
+    old <- old[order(old$level, old$tissue), cols, drop = FALSE]
+    check <- current[order(current$level, current$tissue), cols, drop = FALSE]
+    if (!isTRUE(all.equal(old, check, check.attributes = FALSE, tolerance = 1e-12)))
+      stop("Cannot change an earlier objective after later iterations were recorded.")
+  }
+  if (!is.null(history)) history <- history[history$iteration != iteration, , drop = FALSE]
+  history <- rbind(history, current)
+  history <- history[order(history$iteration, history$level, history$tissue), , drop = FALSE]
+  # Reverification replaces an iteration's rows, so restarts never double-count.
+  em_atomic_write(pooled$audit, file.path(iteration_dir, "objective_fit_audit.csv"), csv = TRUE)
+  em_atomic_write(current, file.path(iteration_dir, "objective_summary.csv"), csv = TRUE)
+  em_atomic_write(history, history_file, csv = TRUE)
+  if (any(current$elbo_decreased %in% TRUE))
+    warning("ELBO decreased for iteration ", iteration, "; inspect objective_history.csv.", call. = FALSE)
+  message("Recorded iteration ", iteration, " objective: ", format(current$elbo[1], digits = 15),
+          " across ", current$n_fits[1], " fits.")
+  invisible(current)
+}
+
 spe_check_packages <- function() {
   for (package in c("susieRSlidePrior", "data.table", "matrixStats"))
     if (!requireNamespace(package, quietly = TRUE)) stop("Required package is missing: ", package)

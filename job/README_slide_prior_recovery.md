@@ -220,13 +220,15 @@ When all genes appear resolved, the coordinator rereads **every full result**
 and writes `recovery/COMPLETE.rds` only if validation succeeds and at least one
 tissue fit exists. The completion certificate is tied to the frozen files and
 audit. A prior update revalidates all results again before calling the original
-pooling/M-step. Original chunk markers are neither rewritten nor reused for
+pooling/M-step. Verification also records the completed iteration's objective
+using that same pooling function. When preparing the next iteration, its
+revalidation returns the pooled counts directly to preparation, avoiding a
+duplicate pooling pass. Original chunk markers are neither rewritten nor reused for
 this decision. Later iterations must preserve the validated initialization
 cohort, including reviewed exclusions.
 
-**The recovery stops after finishing the requested iteration.** It does not
-automatically launch 20 updates. Once initialization is complete and reviewed,
-prepare and fit exactly one new update with:
+**By default, recovery stops after finishing the requested iteration.**
+Once initialization is complete, prepare and fit exactly one new update with:
 
 ```bash
 sbatch recover_slide_prior_em new
@@ -237,6 +239,98 @@ the new iteration using the same configurable execution cap. The original
 `em_susie_slide_prior` launcher refuses to run once recovery is adopted, to
 prevent an accidental return to 61-62-gene jobs. Use the new launcher for
 subsequent updates and resumes.
+
+### Record and interpret convergence
+
+Each completed iteration, including the final requested iteration, writes:
+
+```text
+results_slide_prior_em/objective_history.csv
+results_slide_prior_em/iteration_NNN/objective_summary.csv
+results_slide_prior_em/iteration_NNN/objective_fit_audit.csv
+```
+
+The history has one `level=overall` row and one row per tissue for each
+completed iteration. `elbo` is the sum of the **final saved ELBO of every
+validated gene/tissue fit under that iteration's frozen prior**. Fits without
+credible sets or active components still contribute. X/Y/MT and frozen input
+exclusions are outside this objective, consistently across iterations. A
+changed gene/tissue cohort or a missing/nonfinite ELBO prevents recording.
+Repeating verification replaces the iteration's rows without duplication.
+
+The [SuSiE objective is a variational evidence lower bound](https://stephenslab.github.io/susieR/reference/susie.html),
+not the exact marginal likelihood. The sum here is the composite variational
+objective of the fitted gene/tissue models; overlapping genes and tissues do
+not define an independent joint likelihood for the whole dataset.
+
+Columns to inspect:
+
+| Column | Interpretation |
+|---|---|
+| `iteration` | The iteration actually fitted; iteration 0 is the uniform-prior baseline |
+| `elbo` | Completed-fit objective, overall or for one tissue |
+| `delta_elbo` | Current minus previous completed objective; positive means improvement |
+| `relative_delta_elbo` | `delta_elbo / max(1, abs(previous_elbo))` |
+| `delta_elbo_per_fit` | Objective change divided by the number of gene/tissue fits |
+| `prior_max_change` | Largest absolute weight change from the previous frozen prior |
+| `next_prior_max_change` | Largest weight change proposed by pooling the current fits |
+| `next_m_step_q_gain` | Expected slider log-prior improvement proposed for the next M-step |
+| `elbo_decreased` | A decrease beyond a small floating-point tolerance; also logged as a warning |
+| `n_fits`, `n_genes` | Cohort sizes supporting the objective |
+
+The `next_*` diagnostics describe a proposed update; they do not modify the
+frozen prior or launch another iteration. In particular, Q gain is not the
+observed between-iteration ELBO gain. The existing `prior_history.csv`
+`source_elbo` describes the source fits for the *next* prior, so use the new
+objective history for an unambiguous iteration-aligned convergence curve.
+
+Monitor the overall and per-tissue changes, together with prior movement over
+several iterations. A large negative baseline can make a relative change look
+small, so also inspect change per fit and `next_prior_max_change`. A plateau
+is evidence of numerical stabilization, not proof of a global optimum. No
+automatic convergence threshold or early stopping rule is imposed. ELBO
+decreases are recorded and warned about; unresolved fits and cohort changes
+still stop the normal completion gate.
+
+For example, in R:
+
+```r
+h <- read.csv("/project2/mstephens/wdenault/susie_mix/results_slide_prior_em/objective_history.csv")
+overall <- h[h$level == "overall", ]
+overall[, c("iteration", "n_fits", "elbo", "delta_elbo",
+            "delta_elbo_per_fit", "next_prior_max_change", "elbo_decreased")]
+plot(overall$iteration, overall$elbo, type = "b",
+     xlab = "Completed EM iteration", ylab = "Sum of final fit ELBOs")
+```
+
+### Continue through 20 learned-prior updates
+
+After the pilot ends, extract the updated bundle into the RCC project and run:
+
+```bash
+cd /project2/mstephens/wdenault/susie_mix/job
+SUSIE_SLIDE_PILOT=0 \
+SUSIE_SLIDE_GENES_PER_TASK=4 \
+SUSIE_SLIDE_MAX_ITER=5000 \
+SUSIE_SLIDE_TARGET_ITERATION=20 \
+sbatch recover_slide_prior_em resume 0
+```
+
+This completes/reuses initialization 000, then runs learned-prior iterations
+001 through 020, recording all 21 completed objectives. The target is an
+absolute iteration index, not an additional-iteration count. It stops after
+020; increase the target later if convergence needs more updates. The target,
+gene cap and inner-solver budget propagate to subsequent controllers. Only
+the next controller is queued after successful verification; there is no
+advance submission of 20 arrays. Pilot mode never chains iterations.
+
+Existing job-capacity and retry checks still apply. If the account has no
+submission capacity, or recovery stops on unresolved errors, fix the cause
+and repeat the command with `resume K` for the current prepared iteration.
+An interrupted verification/objective write is rerunnable. To backfill a
+previously completed iteration's objective, use `sbatch recover_slide_prior_em
+verify K`; this does not launch another iteration. Later objective rows require
+the preceding iteration's recorded fit audit for cohort comparison.
 
 ## Inspect or stop a recovery
 
@@ -262,6 +356,8 @@ belong to an older, completed job. Do not launch competing workers manually.
 Rscript --vanilla script/scan_tissue_attempt/tests/test_slide_prior_recovery.R
 bash script/scan_tissue_attempt/tests/test_slide_prior_recovery_launcher.sh
 Rscript --vanilla script/scan_tissue_attempt/tests/test_slide_prior_em.R
+Rscript --vanilla script/scan_tissue_attempt/tests/test_slide_prior_objective.R
+Rscript --vanilla script/scan_tissue_attempt/tests/test_slide_prior_em_smoke.R
 Rscript --vanilla script/scan_tissue_attempt/tests/test_slide_prior_em_worker.R
 bash script/scan_tissue_attempt/tests/test_slide_prior_em_launcher.sh
 ```

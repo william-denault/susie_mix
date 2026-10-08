@@ -23,6 +23,8 @@ FILES = [
     "script/scan_tissue_attempt/tests/test_slide_prior_recovery.R",
     "script/scan_tissue_attempt/tests/test_slide_prior_recovery_launcher.sh",
     "script/scan_tissue_attempt/tests/test_slide_prior_em.R",
+    "script/scan_tissue_attempt/tests/test_slide_prior_objective.R",
+    "script/scan_tissue_attempt/tests/test_slide_prior_em_smoke.R",
     "script/scan_tissue_attempt/tests/test_slide_prior_em_worker.R",
     "script/scan_tissue_attempt/tests/test_slide_prior_em_launcher.sh",
     "script/scan_tissue_attempt/build_slide_prior_recovery_bundle.py",

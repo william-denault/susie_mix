@@ -33,7 +33,7 @@ spe_prepare_iteration <- function(project_dir, mode = "new", n_chunks = 298L,
     if (recovery) {
       if (mode == "resume") stop("Use recover_slide_prior_em resume for this recovery-managed iteration.")
       source(file.path(project_dir, "script/scan_tissue_attempt/slide_prior_recovery.R"))
-      sre_require_complete(project_dir, previous_dir)
+      pooled <- sre_require_complete(project_dir, previous_dir)
       pending <- integer()
     } else pending <- em_pending_chunks(previous_dir, manifest)
     if (mode == "resume") {
@@ -41,10 +41,12 @@ spe_prepare_iteration <- function(project_dir, mode = "new", n_chunks = 298L,
       return(list(iteration_dir = previous_dir, chunks = pending))
     }
     if (length(pending)) stop("Slider iteration ", latest, " is unfinished. Wait or use resume.")
-    files <- if (recovery) sre_pool_files(sre_context(project_dir, previous_dir)) else
-      em_check_result_files(file.path(previous_dir, "results"), manifest)
-    message("Pooling slider counts from ", length(files), " gene files.")
-    pooled <- spe_pool(files, previous)
+    if (!recovery) {
+      files <- em_check_result_files(file.path(previous_dir, "results"), manifest)
+      message("Pooling slider counts from ", length(files), " gene files.")
+      pooled <- spe_pool(files, previous)
+      spe_record_objective(project_dir, previous_dir, pooled)
+    }
     priors <- pooled$priors
   } else {
     # Reuse only the existing scan's gene universe and tissue labels. Mix

@@ -15,7 +15,8 @@ export REC_TEST="$fixture" SLURM_JOB_ID=9000 USER="${USER:-test_user}"
 export REC_OTHERS=0 REC_ACTIVE=0 REC_ACTIVE_NAME=0 REC_STATUS=batch REC_LOCK=0
 export REC_FAIL_ARRAY=0 REC_FAIL_NEXT=0 REC_FAIL_GENES=0 REC_FAIL_GENE=0 REC_GENES_COUNT=2
 export REC_PLAN_CALLS=0
-unset SUSIE_SLIDE_GENES_PER_TASK
+export REC_FAIL_VERIFY=0
+unset SUSIE_SLIDE_GENES_PER_TASK SUSIE_SLIDE_TARGET_ITERATION SUSIE_SLIDE_PILOT
 mkdir -p "$SUSIE_MIX_PROJECT_DIR/results_slide_prior_em"
 controller="$repo/job/recover_slide_prior_em"
 worker="$repo/job/recover_slide_prior_em_array"
@@ -33,7 +34,8 @@ Rscript() {
     local mode=$3
     printf '%s\n' "$mode" >> "$REC_TEST/r_calls"
     case "$mode" in
-        audit|verify|exclude-sex-mt) return 0 ;;
+        audit|exclude-sex-mt) return 0 ;;
+        verify) [[ "$REC_FAIL_VERIFY" == 0 ]] ;;
         new) printf '1\n' ;;
         plan)
             printf '%s\n' "$6" > "$REC_TEST/capacity"
@@ -62,6 +64,7 @@ sbatch() {
     else
         printf '%s\n' "$@" > "$REC_TEST/next_args"
         printf '%s\n' "$SUSIE_SLIDE_GENES_PER_TASK" > "$REC_TEST/next_gene_cap"
+        printf '%s\n' "${SUSIE_SLIDE_TARGET_ITERATION:-}" > "$REC_TEST/next_target"
         [[ "$REC_FAIL_NEXT" == 0 ]] || return 1
         printf '9101;cluster\n'
     fi
@@ -139,6 +142,58 @@ reset_calls
 "$BASH" "$controller" resume 0 > "$REC_TEST/output" 2>&1
 grep -Fxq verify "$REC_TEST/r_calls"
 [[ ! -s "$REC_TEST/array_args" && ! -s "$REC_TEST/next_args" ]]
+# A verified iteration queues exactly one next controller up to the target.
+export SUSIE_SLIDE_TARGET_ITERATION=20
+reset_calls
+"$BASH" "$controller" resume 0 > "$REC_TEST/output" 2>&1
+grep -Fxq verify "$REC_TEST/r_calls"
+grep -Fxq -- '--dependency=afterok:9000' "$REC_TEST/next_args"
+grep -Fxq new "$REC_TEST/next_args"
+grep -Fxq 1 "$REC_TEST/next_args"
+grep -Fxq 20 "$REC_TEST/next_target"
+[[ ! -s "$REC_TEST/array_args" ]]
+reset_calls
+"$BASH" "$controller" continue 20 > "$REC_TEST/output" 2>&1
+[[ ! -s "$REC_TEST/array_args" && ! -s "$REC_TEST/next_args" ]]
+export REC_FAIL_VERIFY=1
+reset_calls
+expect_fail "$BASH" "$controller" continue 19
+[[ ! -s "$REC_TEST/next_args" ]]
+export REC_FAIL_VERIFY=0 SUSIE_SLIDE_PILOT=1
+reset_calls
+"$BASH" "$controller" resume 0 > "$REC_TEST/output" 2>&1
+[[ ! -s "$REC_TEST/next_args" ]]
+unset SUSIE_SLIDE_PILOT
+export REC_FAIL_NEXT=1
+reset_calls
+expect_fail "$BASH" "$controller" continue 19
+grep -q 'next-iteration submission failed' "$REC_TEST/output"
+export REC_FAIL_NEXT=0
+for target in -1 01 bad 1.5 999999999; do
+    reset_calls
+    expect_fail env SUSIE_SLIDE_TARGET_ITERATION="$target" "$BASH" "$controller" resume 0
+    [[ ! -s "$REC_TEST/r_calls" && ! -s "$REC_TEST/next_args" ]]
+done
+expect_fail env SUSIE_SLIDE_TARGET_ITERATION=19 "$BASH" "$controller" continue 20
+# Exercise every completed boundary: 000 -> 001 through 019 -> 020, then stop.
+for ((i=0; i<=20; i++)); do
+    reset_calls
+    "$BASH" "$controller" continue "$i" > "$REC_TEST/output" 2>&1
+    [[ ! -s "$REC_TEST/array_args" ]]
+    if (( i < 20 )); then
+        grep -Fxq new "$REC_TEST/next_args"
+        grep -Fxq "$((i + 1))" "$REC_TEST/next_args"
+    else
+        [[ ! -s "$REC_TEST/next_args" ]]
+    fi
+done
+export REC_STATUS=batch
+reset_calls
+"$BASH" "$controller" continue 7 > "$REC_TEST/output" 2>&1
+grep -Fxq continue "$REC_TEST/next_args"
+grep -Fxq 20 "$REC_TEST/next_target"
+grep -Fxq 4 "$REC_TEST/next_gene_cap"
+unset SUSIE_SLIDE_TARGET_ITERATION
 export REC_STATUS=batch
 
 export REC_FAIL_ARRAY=1
@@ -174,4 +229,4 @@ reset_calls
 touch "$SUSIE_MIX_PROJECT_DIR/results_slide_prior_em/iteration_000/recovery/state.rds"
 expect_fail "$BASH" "$repo/job/em_susie_slide_prior" resume
 [[ ! -s "$REC_TEST/array_args" && ! -s "$REC_TEST/r_calls" ]]
-echo 'PASS: account capacity, configurable gene caps and propagation, array bounds, duplicate protection, afterany inspection, pilot, submission failures and isolated gene commands.'
+echo 'PASS: account capacity, gene caps, verified 20-update chain and terminal stop, target propagation, duplicate protection, pilot, submission failures and isolated gene commands.'

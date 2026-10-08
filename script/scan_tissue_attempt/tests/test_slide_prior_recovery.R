@@ -101,6 +101,7 @@ saveRDS(bounded_settings, file.path(bounded$path, "settings.rds"))
 fails(sre_audit(ctx, 16L), "genes_per_task")
 fails(sre_audit(ctx, 15L), "settings differ")
 fails(sre_verify(ctx), "unresolved")
+stopifnot(!file.exists(file.path(root, "results_slide_prior_em/objective_history.csv")))
 fails(sre_require_complete(root, d), "unfinished")
 fails(spe_prepare_iteration(root, "resume", package_version = "fixture"), "recovery-managed")
 
@@ -239,6 +240,10 @@ fails(sre_context(root, d), "Chromosome scope changed")
 invisible(file.copy(scope_backup, scope_file, overwrite = TRUE))
 sre_verify(ctx)
 sre_require_complete(root, d)
+objective <- read.csv(file.path(root, "results_slide_prior_em/objective_history.csv"))
+stopifnot(nrow(objective) == 3L, objective$iteration[1] == 0L,
+          objective$n_fits[objective$level == "overall"] == 14L,
+          objective$elbo[objective$level == "overall"] == -1400)
 stopifnot(file.exists(file.path(ctx$root, "COMPLETE.rds")), all(sre_ready(sre_refresh(ctx)$status)))
 # Refresh changes audit columns; recertification is required before a new update.
 sre_verify(ctx)
