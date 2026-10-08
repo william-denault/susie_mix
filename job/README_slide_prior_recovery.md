@@ -3,11 +3,16 @@
 This scheduler changes execution and recovery, not the statistical model. It
 keeps the frozen grid, priors, fitting settings, package version, input QC,
 warm starts and `spe_pool()` M-step. PLINK uses one thread to match the one-CPU
-allocation. Each task handles at most **10 genes**, each in a **fresh Rscript
-process**, and saves each gene before starting the next. The R planning API
-also supports smaller task sizes and a hard maximum of 15; the supplied CLI
-uses 10. A complete 18,468-gene pass has 1,847 scheduling tasks, submitted in
-separate arrays whose local indices never exceed 298.
+allocation. New tasks handle at most **4 genes by default**, each in a **fresh
+Rscript process**, and save each gene before starting the next. Set
+`SUSIE_SLIDE_GENES_PER_TASK=5` for a five-gene cap; values from 1 to 15 are
+supported. The coordinator exports this setting to its continuations.
+
+The original audit manifest retains its 1,847 groups of at most 10 genes.
+Planning subdivides each group's unresolved genes into smaller execution tasks
+before applying the available job capacity. Existing manifests, batches, fits
+and retry counts are preserved. Changing this execution cap needs no new audit
+and does not alter already-submitted tasks. Each new array has at most 298 tasks.
 
 The first recovery target is the existing `iteration_000`. Do not delete or
 replace `results_slide_prior_em`, its gene results, or its original manifest.
@@ -104,14 +109,16 @@ out automatically after scope activation.
 ### Pilot
 
 For the supplied 36-gene diagnostic pilot, verify that the bundled list exists
-on RCC, then submit from the project's `job` directory:
+on RCC, then submit from the project's `job` directory. With a four-gene cap,
+these candidates occupy at most 12 tasks across their original audit groups:
 
 ```bash
 test -s ../output/slide_prior_pilot_genes.txt && \
 SUSIE_SLIDE_PILOT=1 \
 SUSIE_SLIDE_PILOT_GENES=/project2/mstephens/wdenault/susie_mix/output/slide_prior_pilot_genes.txt \
+SUSIE_SLIDE_GENES_PER_TASK=4 \
 SUSIE_SLIDE_MAX_ITER=5000 \
-sbatch recover_slide_prior_em run 0 5
+sbatch recover_slide_prior_em run 0 12
 ```
 
 If the list is missing, extract the updated bundle or sync that file before
@@ -119,7 +126,8 @@ submission. A controller that cannot read this list exits before planning or
 launching any gene workers. The 5000 setting raises the inner solver's iteration
 budget; it does not request 5000 EM updates.
 
-After the audit job ends, start a **single five-task pilot** (at most 50 genes):
+Alternatively, after the audit job ends, start a **single five-task pilot**
+(at most 20 genes at the default cap):
 
 ```bash
 SUSIE_SLIDE_PILOT=1 sbatch recover_slide_prior_em run 0 5
@@ -134,8 +142,8 @@ SUSIE_SLIDE_PILOT_GENES=/absolute/path/pilot_genes.txt \
 sbatch recover_slide_prior_em run 0 5
 ```
 
-Only unresolved listed genes are scheduled; at most five of their scheduling
-tasks are selected. Include prior memory-failure and slow cases, not only
+Only unresolved listed genes are scheduled; the final command argument caps
+the number of execution tasks, not genes. Include prior memory-failure and slow cases, not only
 easy genes. Already validated genes are reused without refitting. The pilot
 does not schedule a continuation or change any priors. Inspect its per-gene
 logs, Slurm elapsed times and peak memory before scaling up. Fresh processes
@@ -145,8 +153,17 @@ gene fits in 40 GB or 23 hours.
 Then, after the pilot is no longer active:
 
 ```bash
+SUSIE_SLIDE_PILOT=0 SUSIE_SLIDE_GENES_PER_TASK=4 SUSIE_SLIDE_MAX_ITER=5000 \
 sbatch recover_slide_prior_em resume 0
 ```
+
+This retains the pilot's increased inner-solver budget. Use a five-gene cap
+instead by changing only `SUSIE_SLIDE_GENES_PER_TASK=5`. Do not edit
+`recovery/manifest.csv` or rerun the audit with a different manifest size.
+The October 8 pilot snapshot had 35 validated genes (945 tissue fits) and one
+unfinished gene, ACSL1. The slow task spent 16.3 hours on five preceding genes;
+its first four alone took 14.3 hours. A smaller cap reduces accumulated runtime
+but cannot guarantee that every future task will fit within 23 hours.
 
 The default batch has at most 298 worker tasks. The coordinator subtracts
 other submitted jobs and reserves two slots for the current and next control
@@ -216,7 +233,7 @@ sbatch recover_slide_prior_em new
 ```
 
 This invokes the existing prior-estimation function, then audits and schedules
-the new iteration using the same 10-gene execution plan. The original
+the new iteration using the same configurable execution cap. The original
 `em_susie_slide_prior` launcher refuses to run once recovery is adopted, to
 prevent an accidental return to 61-62-gene jobs. Use the new launcher for
 subsequent updates and resumes.

@@ -1,5 +1,6 @@
 #!/bin/bash
-# Each task runs at most ten genes by default, each in a separate R process.
+# New batches default to four genes/task, each in a separate R process.
+# The CLI enforces the cap saved in each batch; old batches retain their limits.
 #SBATCH --job-name=slide_recover_worker
 #SBATCH --time=23:00:00
 #SBATCH --partition=broadwl

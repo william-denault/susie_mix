@@ -1,0 +1,198 @@
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene ACSBG1 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/recovery/ACSBG1/plink_ACSBG1_77d917375114.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 15
+  --export A
+  --from-bp 77745688
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/recovery/ACSBG1/plink_ACSBG1_77d917375114
+  --rm-dup exclude-all
+  --snps-only
+  --threads 1
+  --to-bp 78745688
+
+Start time: Wed Oct  7 09:19:31 2026
+63721 MiB RAM detected, ~29552 available; reserving 8000 MiB for main
+workspace.
+Using 1 compute thread.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+65613623 excluded by --chr + --max-alleles + --snps-only, 1620910 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+19890 variants remaining after main filters.
+--export A pass 1/1: loading... 0%writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/recovery/ACSBG1/plink_ACSBG1_77d917375114.raw
+written.
+End time: Wed Oct  7 09:19:44 2026
+87 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr15_77818814_T_C_b38_T" "chr15_77861154_C_G_b38_C"
+ [3] "chr15_77862813_C_T_b38_C" "chr15_77862843_T_C_b38_T"
+ [5] "chr15_77864131_G_A_b38_G" "chr15_77864186_A_G_b38_A"
+ [7] "chr15_77866551_C_T_b38_C" "chr15_77868020_T_C_b38_T"
+ [9] "chr15_77868249_C_T_b38_C" "chr15_77869032_T_C_b38_T"
+[11] "chr15_77869088_G_A_b38_G" "chr15_77869297_G_A_b38_G"
+[13] "chr15_77869572_A_G_b38_A" "chr15_77869638_T_C_b38_T"
+[15] "chr15_77869647_G_A_b38_G" "chr15_77869691_A_G_b38_A"
+[17] "chr15_77871689_G_C_b38_G" "chr15_77877093_T_C_b38_T"
+[19] "chr15_77888228_G_A_b38_G" "chr15_77892023_A_G_b38_A"
+[21] "chr15_77895063_T_C_b38_T" "chr15_77900427_A_G_b38_A"
+[23] "chr15_77920633_A_G_b38_A" "chr15_77949005_C_G_b38_C"
+[25] "chr15_77950461_C_G_b38_C" "chr15_77950600_C_T_b38_C"
+[27] "chr15_77950656_A_G_b38_A" "chr15_77951237_A_G_b38_A"
+[29] "chr15_77951364_G_A_b38_G" "chr15_77951509_T_C_b38_T"
+[31] "chr15_77951606_C_T_b38_C" "chr15_77951945_C_A_b38_C"
+[33] "chr15_77953331_T_C_b38_T" "chr15_77953512_A_G_b38_A"
+[35] "chr15_77953513_C_T_b38_C" "chr15_77953555_C_T_b38_C"
+[37] "chr15_77979828_A_G_b38_A" "chr15_77979976_C_G_b38_C"
+[39] "chr15_77996057_C_T_b38_C" "chr15_77996148_G_A_b38_G"
+[41] "chr15_77996193_G_A_b38_G" "chr15_77996195_G_A_b38_G"
+[43] "chr15_77996209_A_T_b38_A" "chr15_78132326_G_C_b38_G"
+[45] "chr15_78132331_A_G_b38_A" "chr15_78418816_G_A_b38_G"
+[47] "chr15_78427859_C_G_b38_C" "chr15_78430740_C_T_b38_C"
+[49] "chr15_78635247_G_T_b38_G" "chr15_78645147_G_A_b38_G"
+[51] "chr15_78656508_G_A_b38_G" "chr15_78662783_A_C_b38_A"
+[53] "chr15_78662805_G_C_b38_G" "chr15_78662825_T_C_b38_T"
+[55] "chr15_78662826_A_G_b38_A" "chr15_78662827_T_C_b38_T"
+[57] "chr15_78662834_G_C_b38_G" "chr15_78662838_T_C_b38_T"
+[59] "chr15_78662845_A_C_b38_A" "chr15_78662851_C_G_b38_C"
+[61] "chr15_78662870_T_C_b38_T" "chr15_78662899_G_A_b38_G"
+[63] "chr15_78662962_G_A_b38_G" "chr15_78662963_T_C_b38_T"
+[65] "chr15_78663305_A_C_b38_A" "chr15_78663307_C_T_b38_C"
+[67] "chr15_78663309_G_A_b38_G" "chr15_78663321_A_G_b38_A"
+[69] "chr15_78683672_G_C_b38_G" "chr15_78684988_A_T_b38_A"
+[71] "chr15_78685976_T_G_b38_T" "chr15_78686354_C_T_b38_C"
+[73] "chr15_78688389_A_G_b38_A" "chr15_78689416_T_C_b38_T"
+[75] "chr15_78690179_G_A_b38_G" "chr15_78690184_T_C_b38_T"
+[77] "chr15_78692927_G_A_b38_G" "chr15_78692928_A_C_b38_A"
+[79] "chr15_78692929_G_A_b38_G" "chr15_78693000_C_A_b38_C"
+[81] "chr15_78693759_T_A_b38_T" "chr15_78694887_C_T_b38_C"
+[83] "chr15_78705220_A_C_b38_A" "chr15_78732424_A_T_b38_A"
+[85] "chr15_78737600_C_T_b38_C" "chr15_78737611_G_A_b38_G"
+[87] "chr15_78740683_G_C_b38_G"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+
+=====================================
+Tissue: Blood 
+=====================================
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+
+=====================================
+Tissue: Brain 
+=====================================
+
+=====================================
+Tissue: Breast 
+=====================================
+
+=====================================
+Tissue: Colon 
+=====================================
+
+=====================================
+Tissue: Esophagus 
+=====================================
+
+=====================================
+Tissue: Heart 
+=====================================
+
+=====================================
+Tissue: Kidney 
+=====================================
+
+=====================================
+Tissue: Liver 
+=====================================
+
+=====================================
+Tissue: Lung 
+=====================================
+
+=====================================
+Tissue: Muscle 
+=====================================
+
+=====================================
+Tissue: Nerve 
+=====================================
+
+=====================================
+Tissue: Ovary 
+=====================================
+
+=====================================
+Tissue: Pancreas 
+=====================================
+
+=====================================
+Tissue: Pituitary 
+=====================================
+
+=====================================
+Tissue: Prostate 
+=====================================
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+
+=====================================
+Tissue: Skin 
+=====================================
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+
+=====================================
+Tissue: Spleen 
+=====================================
+
+=====================================
+Tissue: Stomach 
+=====================================
+
+=====================================
+Tissue: Testis 
+=====================================
+
+=====================================
+Tissue: Thyroid 
+=====================================
+
+=====================================
+Tissue: Uterus 
+=====================================
+
+=====================================
+Tissue: Vagina 
+=====================================

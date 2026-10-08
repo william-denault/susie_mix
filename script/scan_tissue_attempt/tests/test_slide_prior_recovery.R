@@ -64,10 +64,40 @@ plan <- sre_load(ctx)$plan
 stopifnot(identical(plan$gene, genes), identical(as.integer(table(plan$task)), c(10L, 10L, 3L)))
 full_plan <- data.frame(task = ceiling(seq_len(18468)/10), gene = seq_len(18468))
 stopifnot(length(unique(full_plan$task)) == 1847L, max(table(full_plan$task)) == 10L)
-batch <- sre_plan_batch(ctx, 1L)
+batch <- sre_plan_batch(ctx, 1L, genes_per_task = 10L)
 selected <- sre_task_genes(ctx, batch$path, 1L)
 stopifnot(length(selected) == 8L, "G002" %in% selected, !"G001" %in% selected)
 fails(sre_task_genes(ctx, batch$path, 2L), "Invalid batch")
+# Simulate the old on-disk format: changing the cap must not invalidate it.
+old_settings <- readRDS(file.path(batch$path, "settings.rds"))
+old_settings$genes_per_task <- NULL
+saveRDS(old_settings, file.path(batch$path, "settings.rds"))
+preserved <- c(file.path(ctx$root, c("state.rds", "manifest.csv")),
+               file.path(batch$path, c("manifest.csv", "settings.rds")))
+preserved_hash <- tools::md5sum(preserved)
+needed <- audit$gene[!sre_ready(audit$status)]
+for (cap in c(4L, 5L)) {
+  smaller <- sre_plan_batch(ctx, 298L, genes_per_task = cap)
+  work <- read.csv(file.path(smaller$path, "manifest.csv"))
+  stopifnot(setequal(work$gene, needed), !anyDuplicated(work$gene),
+            max(table(work$array_task)) <= cap,
+            identical(sort(unique(work$array_task)), seq_len(smaller$tasks)))
+  for (task in seq_len(smaller$tasks))
+    stopifnot(identical(sre_task_genes(ctx, smaller$path, task), work$gene[work$array_task == task]))
+}
+bounded <- sre_plan_batch(ctx, 2L) # Four genes by default; capacity applies after splitting.
+work <- read.csv(file.path(bounded$path, "manifest.csv"))
+stopifnot(bounded$tasks == 2L, nrow(work) == 8L, max(table(work$array_task)) == 4L,
+          identical(preserved_hash, tools::md5sum(preserved)),
+          identical(sre_task_genes(ctx, batch$path, 1L), selected))
+fails(sre_plan_batch(ctx, 1L, genes_per_task = 0), "genes_per_task")
+fails(sre_plan_batch(ctx, 1L, genes_per_task = 16), "genes_per_task")
+# Workers enforce the cap frozen in their batch, not a later environment setting.
+bounded_settings <- readRDS(file.path(bounded$path, "settings.rds"))
+bad_cap <- bounded_settings; bad_cap$genes_per_task <- 3L
+saveRDS(bad_cap, file.path(bounded$path, "settings.rds"))
+fails(sre_task_genes(ctx, bounded$path, 1L), "Invalid batch gene assignment")
+saveRDS(bounded_settings, file.path(bounded$path, "settings.rds"))
 fails(sre_audit(ctx, 16L), "genes_per_task")
 fails(sre_audit(ctx, 15L), "settings differ")
 fails(sre_verify(ctx), "unresolved")
@@ -136,7 +166,26 @@ write.csv(data.frame(gene = "G005", result_md5 = unname(tools::md5sum(sre_result
           file.path(ctx$root, "reviewed_exclusions.csv"), row.names = FALSE)
 audit <- sre_refresh(ctx)
 stopifnot(audit$status[audit$gene == "G005"] == "reviewed_exclusion")
-for (g in genes) if (!sre_ready(sre_inspect(ctx, g)$status)) sre_run_gene(ctx, g, fake)
+# Several small waves cover every unresolved gene once, with successful receipts
+# and retry budgets carried forward when changing from four to five genes/task.
+remaining <- audit$gene[!sre_ready(audit$status)]
+scheduled <- character()
+wave <- 0L
+repeat {
+  wave <- wave + 1L
+  cap <- if (wave %% 2L) 4L else 5L
+  small <- sre_plan_batch(ctx, 1L, genes_per_task = cap)
+  if (small$status == "verify") break
+  stopifnot(small$status == "batch", small$tasks == 1L)
+  next_genes <- sre_task_genes(ctx, small$path, 1L)
+  stopifnot(length(next_genes) <= cap, !any(next_genes %in% scheduled))
+  for (g in next_genes) sre_run_gene(ctx, g, fake)
+  scheduled <- c(scheduled, next_genes)
+  stopifnot(wave <= length(genes))
+}
+stopifnot(setequal(scheduled, remaining),
+          readRDS(sre_attempt_file(ctx, "G002"))$attempt == 2L,
+          identical(preserved_hash, tools::md5sum(preserved)))
 stopifnot(identical(hashes, tools::md5sum(frozen_files)))
 sre_verify(ctx)
 # Scope is based on annotation, not failed-job text: it excludes missing genes,
@@ -212,6 +261,6 @@ fails(sre_require_complete(root, d), "unresolved")
 # Neither re-audit nor a worker is allowed to silently bless manifest tampering.
 write.csv(data.frame(task = 1, gene = "G001"), file.path(ctx$root, "manifest.csv"), row.names = FALSE)
 fails(sre_audit(ctx), "manifest.*changed")
-cat("PASS: recovery audit, batching, retries, frozen chromosome scope, excluded missing/successful/failed genes, pooling, warm-start cohort and completion gates.\n")
+cat("PASS: recovery audit, configurable batch caps, legacy batches, multi-wave recovery, retries, frozen chromosome scope, excluded missing/successful/failed genes, pooling, warm-start cohort and completion gates.\n")
 stopifnot(identical(dirname(normalizePath(root, winslash = "/")), paste0(repo, "/tmp")))
 unlink(root, recursive = TRUE)

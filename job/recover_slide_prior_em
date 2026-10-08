@@ -15,12 +15,19 @@ set -euo pipefail
 mode=${1:-audit}
 iteration=${2:-0}
 batch_limit=${3:-298}
+genes_per_task=${SUSIE_SLIDE_GENES_PER_TASK:-4}
 if (( $# > 3 )) || [[ ! "$mode" =~ ^(audit|run|resume|verify|new|continue|exclude-sex-mt)$ ||
     ! "$iteration" =~ ^(0|[1-9][0-9]*)$ || ${#iteration} -gt 8 ||
     ! "$batch_limit" =~ ^[1-9][0-9]*$ || ${#batch_limit} -gt 3 ]] || (( batch_limit > 298 )); then
     echo 'Usage: sbatch recover_slide_prior_em [audit|run|resume|verify|new|exclude-sex-mt] [ITERATION] [BATCH_LIMIT<=298]' >&2
     exit 1
 fi
+if [[ ! "$genes_per_task" =~ ^[1-9][0-9]?$ ]] || (( genes_per_task > 15 )); then
+    echo 'SUSIE_SLIDE_GENES_PER_TASK must be an integer from 1 to 15 (default: 4).' >&2
+    exit 1
+fi
+# Propagate the selected execution cap to every automatic continuation.
+export SUSIE_SLIDE_GENES_PER_TASK="$genes_per_task"
 [[ "${SLURM_JOB_ID:-}" =~ ^[0-9]+$ ]] || { echo 'Submit with sbatch.' >&2; exit 1; }
 project_dir="${SUSIE_MIX_PROJECT_DIR:-/project2/mstephens/wdenault/susie_mix}"
 project_dir=$(cd "$project_dir" && pwd -P)
@@ -106,7 +113,7 @@ array_id=${response%%;*}
 printf '%s\n' "$array_id" > "$root/last_array_job_id.txt"
 printf '%s\n' "$array_id" > "$batch/array_job_id.txt"
 printf '%s\n' "$batch" > "${batch%/batches/*}/last_batch.txt"
-echo "Submitted recovery array $array_id: $tasks tasks, at most 10 genes/task by default."
+echo "Submitted recovery array $array_id: $tasks tasks, at most $genes_per_task genes/task."
 
 # A pilot runs exactly one bounded batch. The user inspects it before resuming.
 if [[ "${SUSIE_SLIDE_PILOT:-0}" == 1 ]]; then

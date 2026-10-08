@@ -15,6 +15,7 @@ export REC_TEST="$fixture" SLURM_JOB_ID=9000 USER="${USER:-test_user}"
 export REC_OTHERS=0 REC_ACTIVE=0 REC_ACTIVE_NAME=0 REC_STATUS=batch REC_LOCK=0
 export REC_FAIL_ARRAY=0 REC_FAIL_NEXT=0 REC_FAIL_GENES=0 REC_FAIL_GENE=0 REC_GENES_COUNT=2
 export REC_PLAN_CALLS=0
+unset SUSIE_SLIDE_GENES_PER_TASK
 mkdir -p "$SUSIE_MIX_PROJECT_DIR/results_slide_prior_em"
 controller="$repo/job/recover_slide_prior_em"
 worker="$repo/job/recover_slide_prior_em_array"
@@ -36,6 +37,7 @@ Rscript() {
         new) printf '1\n' ;;
         plan)
             printf '%s\n' "$6" > "$REC_TEST/capacity"
+            printf '%s\n' "$SUSIE_SLIDE_GENES_PER_TASK" > "$REC_TEST/gene_cap"
             printf '%s\n' "$SUSIE_SLIDE_AUTOMATIC" > "$REC_TEST/automatic"
             if [[ "$REC_STATUS" != batch ]]; then printf '%s\n' "$REC_STATUS"; return; fi
             local batch="$SUSIE_MIX_PROJECT_DIR/results_slide_prior_em/iteration_000/recovery/batches/batch_test"
@@ -54,10 +56,12 @@ Rscript() {
 sbatch() {
     if [[ "$*" == *--array=* ]]; then
         printf '%s\n' "$@" > "$REC_TEST/array_args"
+        printf '%s\n' "$SUSIE_SLIDE_GENES_PER_TASK" > "$REC_TEST/array_gene_cap"
         [[ "$REC_FAIL_ARRAY" == 0 ]] || return 1
         printf '9100;cluster\n'
     else
         printf '%s\n' "$@" > "$REC_TEST/next_args"
+        printf '%s\n' "$SUSIE_SLIDE_GENES_PER_TASK" > "$REC_TEST/next_gene_cap"
         [[ "$REC_FAIL_NEXT" == 0 ]] || return 1
         printf '9101;cluster\n'
     fi
@@ -81,8 +85,24 @@ grep -Fxq -- '--dependency=afterany:9100:9000' "$REC_TEST/next_args"
 grep -Fxq continue "$REC_TEST/next_args"
 grep -Fxq '9100' "$SUSIE_MIX_PROJECT_DIR/results_slide_prior_em/last_array_job_id.txt"
 grep -Fxq 0 "$REC_TEST/automatic"
+grep -Fxq 4 "$REC_TEST/gene_cap"
+grep -Fxq 4 "$REC_TEST/array_gene_cap"
+grep -Fxq 4 "$REC_TEST/next_gene_cap"
 "$BASH" "$controller" continue 0 > "$REC_TEST/output" 2>&1
 grep -Fxq 1 "$REC_TEST/automatic"
+# The optional five-gene cap reaches both workers and subsequent coordinators.
+export SUSIE_SLIDE_GENES_PER_TASK=5
+"$BASH" "$controller" resume 0 > "$REC_TEST/output" 2>&1
+grep -Fxq 5 "$REC_TEST/gene_cap"
+grep -Fxq 5 "$REC_TEST/array_gene_cap"
+grep -Fxq 5 "$REC_TEST/next_gene_cap"
+grep -Fq 'at most 5 genes/task' "$REC_TEST/output"
+for cap in 0 16 4.5 -1 bad 04; do
+    reset_calls
+    expect_fail env SUSIE_SLIDE_GENES_PER_TASK="$cap" "$BASH" "$controller" resume 0
+    [[ ! -s "$REC_TEST/array_args" && ! -s "$REC_TEST/r_calls" ]]
+done
+unset SUSIE_SLIDE_GENES_PER_TASK
 
 # Count every other submitted array element, plus this and the next controller.
 export REC_OTHERS=295
@@ -154,4 +174,4 @@ reset_calls
 touch "$SUSIE_MIX_PROJECT_DIR/results_slide_prior_em/iteration_000/recovery/state.rds"
 expect_fail "$BASH" "$repo/job/em_susie_slide_prior" resume
 [[ ! -s "$REC_TEST/array_args" && ! -s "$REC_TEST/r_calls" ]]
-echo 'PASS: account capacity, array bounds, duplicate protection, afterany inspection, pilot, submission failures and isolated gene commands.'
+echo 'PASS: account capacity, configurable gene caps and propagation, array bounds, duplicate protection, afterany inspection, pilot, submission failures and isolated gene commands.'

@@ -26,7 +26,8 @@ if (mode == "new") {
     if (Sys.getenv("SUSIE_SLIDE_PILOT") == "1" && nzchar(Sys.getenv("SUSIE_SLIDE_PILOT_GENES")))
       pilot <- trimws(readLines(Sys.getenv("SUSIE_SLIDE_PILOT_GENES"), warn = FALSE))
     batch <- sre_plan_batch(ctx, args[4], pilot,
-                            automatic = Sys.getenv("SUSIE_SLIDE_AUTOMATIC") == "1")
+                            automatic = Sys.getenv("SUSIE_SLIDE_AUTOMATIC") == "1",
+                            genes_per_task = Sys.getenv("SUSIE_SLIDE_GENES_PER_TASK", "4"))
     cat(batch$status, "\n", sep = "")
     if (batch$status == "batch") cat(batch$path, "\n", batch$tasks, "\n", sep = "")
   } else if (mode == "genes") {

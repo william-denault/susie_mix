@@ -312,8 +312,10 @@ sre_refresh <- function(ctx) {
   audit
 }
 
-sre_plan_batch <- function(ctx, capacity, pilot_genes = NULL, automatic = FALSE) {
+sre_plan_batch <- function(ctx, capacity, pilot_genes = NULL, automatic = FALSE,
+                           genes_per_task = 4L) {
   capacity <- sre_int(capacity, "capacity", 1L, 298L)
+  genes_per_task <- sre_int(genes_per_task, "genes_per_task", 1L, 15L)
   loaded <- sre_load(ctx)
   audit <- sre_refresh(ctx)
   pending <- which(!sre_ready(audit$status))
@@ -351,13 +353,19 @@ sre_plan_batch <- function(ctx, capacity, pilot_genes = NULL, automatic = FALSE)
     pending <- pending[audit$gene[pending] %in% pilot_genes]
     if (!length(pending)) return(list(status = "pilot_empty"))
   }
-  tasks <- loaded$plan$task[pending]
-  attempts <- tapply(audit$attempts[pending], tasks, min)
+  # Subdivide only the new batch. The audited plan, previous batch assignments
+  # and per-gene receipts remain immutable when the execution cap changes.
+  work <- loaded$plan[pending, , drop = FALSE]
+  work$attempts_before <- audit$attempts[pending]
+  part <- ave(seq_len(nrow(work)), work$task,
+              FUN = function(i) ceiling(seq_along(i) / genes_per_task))
+  key <- paste(work$task, part, sep = "/")
+  groups <- match(key, unique(key))
+  attempts <- tapply(work$attempts_before, groups, min)
   selected <- as.integer(names(attempts)[order(attempts, as.integer(names(attempts)))])
   selected <- head(selected, capacity)
-  work <- loaded$plan[loaded$plan$gene %in% audit$gene[pending] & loaded$plan$task %in% selected, ]
-  work$array_task <- match(work$task, selected)
-  work$attempts_before <- audit$attempts[match(work$gene, audit$gene)]
+  work$array_task <- match(groups, selected)
+  work <- work[!is.na(work$array_task), , drop = FALSE]
   # Local array IDs always stay below 299, independent of MaxArraySize for the full pass.
   batch_root <- file.path(ctx$root, "batches")
   dir.create(batch_root, recursive = TRUE, showWarnings = FALSE)
@@ -365,6 +373,7 @@ sre_plan_batch <- function(ctx, capacity, pilot_genes = NULL, automatic = FALSE)
   dir.create(batch)
   em_atomic_write(work, file.path(batch, "manifest.csv"), csv = TRUE)
   em_atomic_write(list(frozen = ctx$frozen, scope_md5 = ctx$scope$md5,
+                       genes_per_task = genes_per_task,
                        manifest_md5 = unname(tools::md5sum(file.path(batch, "manifest.csv")))),
                   file.path(batch, "settings.rds"))
   list(status = "batch", path = normalizePath(batch, winslash = "/"), tasks = length(selected))
@@ -379,8 +388,11 @@ sre_task_genes <- function(ctx, batch, task) {
       !identical(saved$manifest_md5, unname(tools::md5sum(file.path(batch, "manifest.csv")))))
     stop("Batch manifest changed.")
   work <- read.csv(file.path(batch, "manifest.csv"), stringsAsFactors = FALSE)
+  # Older batches predate the configurable cap and remain readable as saved.
+  cap <- if (is.null(saved$genes_per_task)) 15L else
+    sre_int(saved$genes_per_task, "batch genes_per_task", 1L, 15L)
   genes <- work$gene[work$array_task == sre_int(task, "array task", 1L, 298L)]
-  if (!length(genes) || length(genes) > 15L || anyDuplicated(work$gene) ||
+  if (!length(genes) || any(table(work$array_task) > cap) || anyDuplicated(work$gene) ||
       any(!work$gene %in% ctx$manifest$gene)) stop("Invalid batch gene assignment.")
   genes
 }

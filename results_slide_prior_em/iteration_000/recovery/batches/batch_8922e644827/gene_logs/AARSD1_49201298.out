@@ -1,0 +1,203 @@
+Importing covariate data.
+Importing gene expression data.
+Found 27 tissues for gene AARSD1 :
+ [1] "Adipose Tissue"  "Adrenal Gland"   "Blood"           "Blood Vessel"   
+ [5] "Brain"           "Breast"          "Colon"           "Esophagus"      
+ [9] "Heart"           "Kidney"          "Liver"           "Lung"           
+[13] "Muscle"          "Nerve"           "Ovary"           "Pancreas"       
+[17] "Pituitary"       "Prostate"        "Salivary Gland"  "Skin"           
+[21] "Small Intestine" "Spleen"          "Stomach"         "Testis"         
+[25] "Thyroid"         "Uterus"          "Vagina"         
+Extracting genotype data from PLINK file.
+PLINK v2.0.0-a.7LM 64-bit Intel (11 Mar 2026)       cog-genomics.org/plink/2.0/
+(C) 2005-2026 Shaun Purcell, Christopher Chang    GNU General Public License v3
+Logging to /project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/recovery/AARSD1/plink_AARSD1_d02a2ea815bd.log.
+Options in effect:
+  --bfile /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv
+  --chr 17
+  --export A
+  --from-bp 42464498
+  --maf 0
+  --max-alleles 2
+  --memory 8000
+  --out /project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/recovery/AARSD1/plink_AARSD1_d02a2ea815bd
+  --rm-dup exclude-all
+  --snps-only
+  --threads 1
+  --to-bp 43464498
+
+Start time: Wed Oct  7 07:14:44 2026
+63721 MiB RAM detected, ~32947 available; reserving 8000 MiB for main
+workspace.
+Using 1 compute thread.
+866 samples (0 females, 0 males, 866 ambiguous; 866 founders) loaded from
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.fam.
+67234533 variants in
+/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim;
+65601655 excluded by --chr + --max-alleles + --snps-only, 1632878 remaining.
+Note: No phenotype data present.
+Note: Skipping --rm-dup since no duplicate IDs are present.
+16143 variants remaining after main filters.
+--export A pass 1/1: loading... 0%11% writing... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+--export A:
+/project2/mstephens/wdenault/susie_mix/results_slide_prior_em/iteration_000/temp_plink/recovery/AARSD1/plink_AARSD1_d02a2ea815bd.raw
+written.
+End time: Wed Oct  7 07:14:50 2026
+98 SNP(s) removed because HWE P < 1e-08 :
+ [1] "chr17_42556160_C_T_b38_C" "chr17_42556317_G_T_b38_G"
+ [3] "chr17_42556461_T_C_b38_T" "chr17_42742128_C_T_b38_C"
+ [5] "chr17_42752474_A_G_b38_A" "chr17_42778077_A_G_b38_A"
+ [7] "chr17_42874506_A_G_b38_A" "chr17_42888012_G_A_b38_G"
+ [9] "chr17_42904228_A_G_b38_A" "chr17_42930147_A_C_b38_A"
+[11] "chr17_42932593_A_C_b38_A" "chr17_42934702_C_T_b38_C"
+[13] "chr17_42972338_T_C_b38_T" "chr17_43038566_G_A_b38_G"
+[15] "chr17_43053704_G_A_b38_G" "chr17_43054835_T_C_b38_T"
+[17] "chr17_43058399_T_C_b38_T" "chr17_43079681_G_C_b38_G"
+[19] "chr17_43113938_G_A_b38_G" "chr17_43126708_C_G_b38_C"
+[21] "chr17_43135134_C_G_b38_C" "chr17_43142259_C_T_b38_C"
+[23] "chr17_43154829_T_C_b38_T" "chr17_43159815_G_C_b38_G"
+[25] "chr17_43165953_C_G_b38_C" "chr17_43166119_C_T_b38_C"
+[27] "chr17_43166140_G_C_b38_G" "chr17_43227781_G_A_b38_G"
+[29] "chr17_43227906_T_C_b38_T" "chr17_43231738_T_G_b38_T"
+[31] "chr17_43231801_G_A_b38_G" "chr17_43231858_T_C_b38_T"
+[33] "chr17_43232507_G_C_b38_G" "chr17_43232616_T_C_b38_T"
+[35] "chr17_43322527_T_C_b38_T" "chr17_43322653_G_C_b38_G"
+[37] "chr17_43359210_A_G_b38_A" "chr17_43359284_T_C_b38_T"
+[39] "chr17_43359312_C_T_b38_C" "chr17_43359350_C_T_b38_C"
+[41] "chr17_43359357_T_C_b38_T" "chr17_43359358_A_G_b38_A"
+[43] "chr17_43359396_C_A_b38_C" "chr17_43359485_C_T_b38_C"
+[45] "chr17_43359564_C_T_b38_C" "chr17_43359579_T_G_b38_T"
+[47] "chr17_43359617_G_A_b38_G" "chr17_43359626_G_A_b38_G"
+[49] "chr17_43359649_G_A_b38_G" "chr17_43359652_G_C_b38_G"
+[51] "chr17_43359678_T_C_b38_T" "chr17_43359809_T_C_b38_T"
+[53] "chr17_43359811_C_A_b38_C" "chr17_43359870_T_C_b38_T"
+[55] "chr17_43359878_A_G_b38_A" "chr17_43359881_A_G_b38_A"
+[57] "chr17_43360036_G_A_b38_G" "chr17_43360062_T_C_b38_T"
+[59] "chr17_43360097_C_T_b38_C" "chr17_43360117_T_C_b38_T"
+[61] "chr17_43360163_C_T_b38_C" "chr17_43360299_A_G_b38_A"
+[63] "chr17_43360345_T_C_b38_T" "chr17_43360385_G_A_b38_G"
+[65] "chr17_43360529_G_A_b38_G" "chr17_43360545_C_T_b38_C"
+[67] "chr17_43360555_G_C_b38_G" "chr17_43360580_G_A_b38_G"
+[69] "chr17_43360583_G_C_b38_G" "chr17_43360595_A_C_b38_A"
+[71] "chr17_43360621_C_A_b38_C" "chr17_43360649_C_G_b38_C"
+[73] "chr17_43360657_C_G_b38_C" "chr17_43360677_T_G_b38_T"
+[75] "chr17_43362868_C_G_b38_C" "chr17_43363075_A_G_b38_A"
+[77] "chr17_43363081_A_C_b38_A" "chr17_43363084_T_A_b38_T"
+[79] "chr17_43363096_C_G_b38_C" "chr17_43363109_G_T_b38_G"
+[81] "chr17_43363113_C_T_b38_C" "chr17_43363264_G_A_b38_G"
+[83] "chr17_43363265_A_G_b38_A" "chr17_43365021_G_C_b38_G"
+[85] "chr17_43365037_T_C_b38_T" "chr17_43365042_G_T_b38_G"
+[87] "chr17_43365043_G_C_b38_G" "chr17_43365070_T_C_b38_T"
+[89] "chr17_43365078_G_T_b38_G" "chr17_43365083_T_C_b38_T"
+[91] "chr17_43365084_G_A_b38_G" "chr17_43365095_G_A_b38_G"
+[93] "chr17_43365107_A_G_b38_A" "chr17_43365108_G_C_b38_G"
+[95] "chr17_43365120_T_C_b38_T" "chr17_43365147_C_T_b38_C"
+[97] "chr17_43365196_T_C_b38_T" "chr17_43365207_T_C_b38_T"
+
+=====================================
+Tissue: Adipose Tissue 
+=====================================
+
+=====================================
+Tissue: Adrenal Gland 
+=====================================
+
+=====================================
+Tissue: Blood 
+=====================================
+
+=====================================
+Tissue: Blood Vessel 
+=====================================
+
+=====================================
+Tissue: Brain 
+=====================================
+
+=====================================
+Tissue: Breast 
+=====================================
+
+=====================================
+Tissue: Colon 
+=====================================
+
+=====================================
+Tissue: Esophagus 
+=====================================
+
+=====================================
+Tissue: Heart 
+=====================================
+
+=====================================
+Tissue: Kidney 
+=====================================
+
+=====================================
+Tissue: Liver 
+=====================================
+
+=====================================
+Tissue: Lung 
+=====================================
+
+=====================================
+Tissue: Muscle 
+=====================================
+
+=====================================
+Tissue: Nerve 
+=====================================
+
+=====================================
+Tissue: Ovary 
+=====================================
+
+=====================================
+Tissue: Pancreas 
+=====================================
+
+=====================================
+Tissue: Pituitary 
+=====================================
+
+=====================================
+Tissue: Prostate 
+=====================================
+
+=====================================
+Tissue: Salivary Gland 
+=====================================
+
+=====================================
+Tissue: Skin 
+=====================================
+
+=====================================
+Tissue: Small Intestine 
+=====================================
+
+=====================================
+Tissue: Spleen 
+=====================================
+
+=====================================
+Tissue: Stomach 
+=====================================
+
+=====================================
+Tissue: Testis 
+=====================================
+
+=====================================
+Tissue: Thyroid 
+=====================================
+
+=====================================
+Tissue: Uterus 
+=====================================
+
+=====================================
+Tissue: Vagina 
+=====================================
