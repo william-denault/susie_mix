@@ -117,7 +117,8 @@ em_plot_one_cs <- function(project_dir, iteration = "latest", expected_coding = 
     association_threshold = association_threshold,
     both_one_cs = both_one_cs, n_candidates = nrow(comparisons), n_compared = nrow(completed),
     n_errors = sum(comparisons$status == "error"), n_valid_distances = length(distance),
-    n_changed_leads = overview$n_changed, n_over_100kb = sum(distance > 1e5),
+    n_changed_leads = overview$n_changed, n_over_10kb = overview$n_over_10kb,
+    n_over_100kb = sum(distance > 1e5),
     median_distance_kb = if (length(distance)) median(distance) / 1000 else NA_real_,
     max_distance_kb = if (length(distance)) max(distance) / 1000 else NA_real_)
   write.csv(stats, file.path(output_dir, "lead_distance_summary.csv"), row.names = FALSE)

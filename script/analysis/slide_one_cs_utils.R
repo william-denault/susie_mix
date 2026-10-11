@@ -99,7 +99,8 @@ plot_one_cs_slide <- function(project_dir, expected_coding = "dominant",
     association_threshold = association_threshold,
     both_one_cs = both_one_cs, n_candidates = nrow(comparisons), n_compared = nrow(completed),
     n_errors = sum(comparisons$status == "error"), n_valid_distances = length(distances),
-    n_changed_leads = overview$n_changed, n_over_100kb = sum(distances > 100),
+    n_changed_leads = overview$n_changed, n_over_10kb = overview$n_over_10kb,
+    n_over_100kb = sum(distances > 100),
     median_distance_kb = if (length(distances)) median(distances) else NA_real_,
     max_distance_kb = if (length(distances)) max(distances) else NA_real_)
   write.csv(stats, file.path(output_dir, "lead_distance_summary.csv"), row.names = FALSE)

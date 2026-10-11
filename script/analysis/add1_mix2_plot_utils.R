@@ -195,10 +195,13 @@ select_add1_mix2_cases <- function(
   missing <- setdiff(required, names(res))
   if (length(missing)) stop("res_summary is missing: ", paste(missing, collapse = ", "), ".")
   keep <- is.finite(res$min_pv) & res$min_pv < association_threshold &
-    is.finite(res$mean_count) & res$mean_count >= minimum_mean_reads &
     !is.na(res$ncs_susie) & res$ncs_susie == 1L &
     !is.na(res[[mixed_count_column]]) & res[[mixed_count_column]] == 2L &
     !is.na(res[[overlap_column]])
+  # NULL disables the read-count screen, including for missing read metadata.
+  if (!is.null(minimum_mean_reads)) {
+    keep <- keep & is.finite(res$mean_count) & res$mean_count >= minimum_mean_reads
+  }
   columns <- unique(c(required, intersect("em_iteration", names(res))))
   cases <- unique(res[which(keep), ..columns], by = c("gene", "tissue"))
   setorder(cases, gene, tissue)

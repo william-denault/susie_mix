@@ -1,0 +1,558 @@
+During startup - Warning messages:
+1: Setting LC_COLLATE=C.UTF-8 failed 
+2: Setting LC_CTYPE=C.UTF-8 failed 
+3: Setting LC_MONETARY=C.UTF-8 failed 
+4: Setting LC_TIME=C.UTF-8 failed 
+[1] TRUE
+ [1] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+[16] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+[31] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+Using completed EM iteration 12: C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results_em/iteration_012
+Using completed EM iteration 12: C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results_em/iteration_012
+Found 3 result files.
+Processed 3 of 3 files; 2 tissue results; 5 credible sets; 3 original-summary errors; 0 CS-summary errors.
+
+Summary complete.
+Successful genes: 2 
+Successful gene-tissue analyses: 2 
+Credible-set summary rows: 5 
+Gene-tissue analyses with weighted_fit_mix: 2 
+Gene-tissue analyses missing weighted_fit_mix: 0 
+Weighted fits with zero credible sets: 1 
+Weighted credible-set summary rows: 1 
+CS rows with a TSS distance: 0 
+Files or tissues with errors: 3 
+CS-summary errors: 0 
+Genes to inspect or rerun: 3 
+Saved: C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results_em/iteration_012/summary/res_summary.RData 
+Saved: C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results_em/iteration_012/summary/res_summary.csv 
+Saved: C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results_em/iteration_012/summary/res_cs_summary.RData 
+Saved: C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results_em/iteration_012/summary/res_cs_summary.csv 
+Saved: C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results_em/iteration_012/summary/res_cs_errors.csv 
+Saved: C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results_em/iteration_012/summary/res_errors.csv 
+Saved: C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results_em/iteration_012/summary/failed_genes.txt 
+$res
+  gene tissue result_file n_ind n_SNP n_mix_predictor n_add_rm n_rec_rm
+1  DOM Tissue     DOM.rds   100     2               6        0        0
+2 ZERO Tissue    ZERO.rds   100     2               6        0        0
+  n_dom_rm mean_count median_count min_pv dif_elbo dif_elbo_perm log_lik_add
+1        0        200          150  1e-10        0             0          -8
+2        0        200          150  1e-10        0             0          -8
+  log_lik_mix log_lik_add_perm log_lik_mix_perm ncs_susie ncs_susie_mix
+1          -8               -8               -8         1             1
+2          -8               -8               -8         1             1
+  perm_cs_susie perm_cs_susie_mix n_add_cs_snps n_mix_cs_snps overlap_snp
+1             0                 0             1             1           1
+2             0                 0             1             1           1
+  pct_add_cs_snps_retained n_add_cs_snps_not_retained
+1                      100                          0
+2                      100                          0
+  pct_add_cs_snps_not_retained overlap overlap_cs_pairs overlap_pairwise_sum
+1                            0       1                1                    1
+2                            0       1                1                    1
+  overlap_coding pct_add_cs_snps_retained_additive_coding
+1              1                                      100
+2              1                                      100
+  n_add_cs_snps_other_coding_only pct_add_cs_snps_other_coding_only
+1                               0                                 0
+2                               0                                 0
+  pct_shared_snps_other_coding_only n_shared_snps_preferred_additive
+1                                 0                                1
+2                                 0                                1
+  n_shared_snps_preferred_dominant n_shared_snps_preferred_recessive
+1                                0                                 0
+2                                0                                 0
+  n_shared_snps_preferred_nonadditive n_shared_snps_preference_ambiguous
+1                                   0                                  0
+2                                   0                                  0
+  pct_shared_snps_preferred_nonadditive n_add_cs_snps_perm n_mix_cs_snps_perm
+1                                     0                  0                  0
+2                                     0                  0                  0
+  overlap_snp_perm overlap_perm pct_add_cs_snps_retained_perm
+1                0            0                            NA
+2                0            0                            NA
+  n_add_cs_snps_not_retained_perm pct_add_cs_snps_not_retained_perm
+1                               0                                NA
+2                               0                                NA
+  overlap_cs_pairs_perm overlap_pairwise_sum_perm overlap_coding_perm
+1                     0                         0                   0
+2                     0                         0                   0
+  pct_add_cs_snps_retained_additive_coding_perm
+1                                            NA
+2                                            NA
+  n_add_cs_snps_other_coding_only_perm pct_add_cs_snps_other_coding_only_perm
+1                                    0                                     NA
+2                                    0                                     NA
+  n_shared_snps_preferred_additive_perm n_shared_snps_preferred_dominant_perm
+1                                     0                                     0
+2                                     0                                     0
+  n_shared_snps_preferred_recessive_perm
+1                                      0
+2                                      0
+  n_shared_snps_preferred_nonadditive_perm
+1                                        0
+2                                        0
+  n_shared_snps_preference_ambiguous_perm
+1                                       0
+2                                       0
+  pct_shared_snps_preferred_nonadditive_perm n_add n_rec n_dom n_add_perm
+1                                         NA     1     0     0          0
+2                                         NA     1     0     0          0
+  n_rec_perm n_dom_perm converged_add converged_mix converged_add_perm
+1          0          0          TRUE          TRUE               TRUE
+2          0          0          TRUE          TRUE               TRUE
+  converged_mix_perm has_weighted_fit_mix ncs_weighted_fit_mix
+1               TRUE                 TRUE                    1
+2               TRUE                 TRUE                    0
+  elbo_weighted_mix dif_elbo_weighted_vs_add dif_elbo_weighted_vs_mix
+1               -10                        0                        0
+2               -10                        0                        0
+  log_lik_weighted_mix converged_weighted_fit_mix n_add_weighted n_dom_weighted
+1                   -8                       TRUE              0              1
+2                   -8                       TRUE              0              0
+  n_rec_weighted weighted_prior_target_additive weighted_prior_target_dominant
+1              0                            0.8                           0.15
+2              0                            0.8                           0.15
+  weighted_prior_target_recessive weighted_prior_realized_additive
+1                            0.05                              0.8
+2                            0.05                              0.8
+  weighted_prior_realized_dominant weighted_prior_realized_recessive
+1                             0.15                              0.05
+2                             0.15                              0.05
+  n_weighted_mix_cs_snps overlap_snp_add_weighted
+1                      1                        0
+2                      0                        0
+  pct_add_cs_snps_retained_weighted overlap_coding_add_weighted
+1                                 0                           0
+2                                 0                           0
+  overlap_cs_pairs_add_weighted mix_weighted_overlap_snp mix_weighted_union_snp
+1                             0                        0                      2
+2                             0                        0                      1
+  mix_weighted_jaccard_snp pct_mix_cs_snps_retained_weighted
+1                        0                                 0
+2                        0                                 0
+  pct_weighted_cs_snps_retained_mix mix_weighted_overlap_cs_pairs
+1                                 0                             0
+2                                NA                             0
+  mix_weighted_overlap_pairwise_sum mix_weighted_same_cs_count
+1                                 0                       TRUE
+2                                 0                      FALSE
+  mix_weighted_same_cs_snp_sets mix_weighted_same_cs_predictor_sets
+1                         FALSE                               FALSE
+2                         FALSE                               FALSE
+  mix_weighted_same_lead_snp_set mix_weighted_same_lead_predictor_set
+1                          FALSE                                FALSE
+2                             NA                                   NA
+  em_iteration
+1           12
+2           12
+
+$cs
+  gene tissue result_file              model        model_key cs_number cs_name
+1  DOM Tissue     DOM.rds              SuSiE        susie_add         1      L1
+2  DOM Tissue     DOM.rds          SuSiE-mix        susie_mix         1      L1
+3  DOM Tissue     DOM.rds Weighted SuSiE-mix weighted_fit_mix         1      L1
+4 ZERO Tissue    ZERO.rds              SuSiE        susie_add         1      L1
+5 ZERO Tissue    ZERO.rds          SuSiE-mix        susie_mix         1      L1
+                          cs_id component cs_size_predictors cs_size_snps
+1        DOM|Tissue|susie_add|1         1                  1            1
+2        DOM|Tissue|susie_mix|1         1                  1            1
+3 DOM|Tissue|weighted_fit_mix|1         1                  1            1
+4       ZERO|Tissue|susie_add|1         1                  1            1
+5       ZERO|Tissue|susie_mix|1         1                  1            1
+  cs_predictor_indices                   cs_predictors               cs_snps
+1                    1           chr1_100000_A_G_b38_A chr1_100000_A_G_b38_A
+2                    1 chr1_100000_A_G_b38_A__additive chr1_100000_A_G_b38_A
+3                    6 chr1_350000_C_T_b38_C__dominant chr1_350000_C_T_b38_C
+4                    1           chr1_100000_A_G_b38_A chr1_100000_A_G_b38_A
+5                    1 chr1_100000_A_G_b38_A__additive chr1_100000_A_G_b38_A
+  cs_coding_types cs_has_multiple_codings n_additive_predictors
+1        additive                   FALSE                     1
+2        additive                   FALSE                     1
+3        dominant                   FALSE                     0
+4        additive                   FALSE                     1
+5        additive                   FALSE                     1
+  n_recessive_predictors n_dominant_predictors cs_coverage cs_min_abs_corr
+1                      0                     0          NA              NA
+2                      0                     0          NA              NA
+3                      0                     1          NA              NA
+4                      0                     0          NA              NA
+5                      0                     0          NA              NA
+  cs_mean_abs_corr cs_median_abs_corr lead_predictor_index
+1               NA                 NA                    1
+2               NA                 NA                    1
+3               NA                 NA                    6
+4               NA                 NA                    1
+5               NA                 NA                    1
+                   lead_predictor              lead_snp workhorse_lead_snp
+1           chr1_100000_A_G_b38_A chr1_100000_A_G_b38_A               <NA>
+2 chr1_100000_A_G_b38_A__additive chr1_100000_A_G_b38_A               <NA>
+3 chr1_350000_C_T_b38_C__dominant chr1_350000_C_T_b38_C               <NA>
+4           chr1_100000_A_G_b38_A chr1_100000_A_G_b38_A               <NA>
+5 chr1_100000_A_G_b38_A__additive chr1_100000_A_G_b38_A               <NA>
+           tss_lead_snp lead_coding lead_alpha lead_pip lead_chromosome
+1 chr1_100000_A_G_b38_A    additive       0.98     0.98            chr1
+2 chr1_100000_A_G_b38_A    additive       0.98     0.98            chr1
+3 chr1_350000_C_T_b38_C    dominant       0.98     0.98            chr1
+4 chr1_100000_A_G_b38_A    additive       0.98     0.98            chr1
+5 chr1_100000_A_G_b38_A    additive       0.98     0.98            chr1
+  lead_position lead_position_source gene_chromosome tss_position gene_strand
+1        100000      parsed_from_snp            <NA>           NA        <NA>
+2        100000      parsed_from_snp            <NA>           NA        <NA>
+3        350000      parsed_from_snp            <NA>           NA        <NA>
+4        100000      parsed_from_snp            <NA>           NA        <NA>
+5        100000      parsed_from_snp            <NA>           NA        <NA>
+  tss_source chromosome_matches_tss genomic_offset_from_tss_bp
+1       <NA>                     NA                         NA
+2       <NA>                     NA                         NA
+3       <NA>                     NA                         NA
+4       <NA>                     NA                         NA
+5       <NA>                     NA                         NA
+  distance_to_tss_bp distance_to_tss_kb absolute_distance_to_tss_bp
+1                 NA                 NA                          NA
+2                 NA                 NA                          NA
+3                 NA                 NA                          NA
+4                 NA                 NA                          NA
+5                 NA                 NA                          NA
+  distance_orientation                          distance_source
+1   genomic_coordinate reconstructed_from_lead_position_and_tss
+2   genomic_coordinate reconstructed_from_lead_position_and_tss
+3   genomic_coordinate reconstructed_from_lead_position_and_tss
+4   genomic_coordinate reconstructed_from_lead_position_and_tss
+5   genomic_coordinate reconstructed_from_lead_position_and_tss
+  workhorse_distance_to_tss_bp workhorse_distance_source
+1                           NA                      <NA>
+2                           NA                      <NA>
+3                           NA                      <NA>
+4                           NA                      <NA>
+5                           NA                      <NA>
+  nearest_cs_snp_abs_distance_to_tss_bp min_cs_snp_distance_to_tss_bp
+1                                    NA                            NA
+2                                    NA                            NA
+3                                    NA                            NA
+4                                    NA                            NA
+5                                    NA                            NA
+  max_cs_snp_distance_to_tss_bp n_ind n_SNP n_mix_predictor n_add_rm n_rec_rm
+1                            NA   100     2               6        0        0
+2                            NA   100     2               6        0        0
+3                            NA   100     2               6        0        0
+4                            NA   100     2               6        0        0
+5                            NA   100     2               6        0        0
+  n_dom_rm mean_count median_count min_pv dif_elbo dif_elbo_perm log_lik_add
+1        0        200          150  1e-10        0             0          -8
+2        0        200          150  1e-10        0             0          -8
+3        0        200          150  1e-10        0             0          -8
+4        0        200          150  1e-10        0             0          -8
+5        0        200          150  1e-10        0             0          -8
+  log_lik_mix log_lik_add_perm log_lik_mix_perm ncs_susie ncs_susie_mix
+1          -8               -8               -8         1             1
+2          -8               -8               -8         1             1
+3          -8               -8               -8         1             1
+4          -8               -8               -8         1             1
+5          -8               -8               -8         1             1
+  perm_cs_susie perm_cs_susie_mix n_add_cs_snps n_mix_cs_snps overlap_snp
+1             0                 0             1             1           1
+2             0                 0             1             1           1
+3             0                 0             1             1           1
+4             0                 0             1             1           1
+5             0                 0             1             1           1
+  pct_add_cs_snps_retained n_add_cs_snps_not_retained
+1                      100                          0
+2                      100                          0
+3                      100                          0
+4                      100                          0
+5                      100                          0
+  pct_add_cs_snps_not_retained overlap overlap_cs_pairs overlap_pairwise_sum
+1                            0       1                1                    1
+2                            0       1                1                    1
+3                            0       1                1                    1
+4                            0       1                1                    1
+5                            0       1                1                    1
+  overlap_coding pct_add_cs_snps_retained_additive_coding
+1              1                                      100
+2              1                                      100
+3              1                                      100
+4              1                                      100
+5              1                                      100
+  n_add_cs_snps_other_coding_only pct_add_cs_snps_other_coding_only
+1                               0                                 0
+2                               0                                 0
+3                               0                                 0
+4                               0                                 0
+5                               0                                 0
+  pct_shared_snps_other_coding_only n_shared_snps_preferred_additive
+1                                 0                                1
+2                                 0                                1
+3                                 0                                1
+4                                 0                                1
+5                                 0                                1
+  n_shared_snps_preferred_dominant n_shared_snps_preferred_recessive
+1                                0                                 0
+2                                0                                 0
+3                                0                                 0
+4                                0                                 0
+5                                0                                 0
+  n_shared_snps_preferred_nonadditive n_shared_snps_preference_ambiguous
+1                                   0                                  0
+2                                   0                                  0
+3                                   0                                  0
+4                                   0                                  0
+5                                   0                                  0
+  pct_shared_snps_preferred_nonadditive n_add_cs_snps_perm n_mix_cs_snps_perm
+1                                     0                  0                  0
+2                                     0                  0                  0
+3                                     0                  0                  0
+4                                     0                  0                  0
+5                                     0                  0                  0
+  overlap_snp_perm overlap_perm pct_add_cs_snps_retained_perm
+1                0            0                            NA
+2                0            0                            NA
+3                0            0                            NA
+4                0            0                            NA
+5                0            0                            NA
+  n_add_cs_snps_not_retained_perm pct_add_cs_snps_not_retained_perm
+1                               0                                NA
+2                               0                                NA
+3                               0                                NA
+4                               0                                NA
+5                               0                                NA
+  overlap_cs_pairs_perm overlap_pairwise_sum_perm overlap_coding_perm
+1                     0                         0                   0
+2                     0                         0                   0
+3                     0                         0                   0
+4                     0                         0                   0
+5                     0                         0                   0
+  pct_add_cs_snps_retained_additive_coding_perm
+1                                            NA
+2                                            NA
+3                                            NA
+4                                            NA
+5                                            NA
+  n_add_cs_snps_other_coding_only_perm pct_add_cs_snps_other_coding_only_perm
+1                                    0                                     NA
+2                                    0                                     NA
+3                                    0                                     NA
+4                                    0                                     NA
+5                                    0                                     NA
+  n_shared_snps_preferred_additive_perm n_shared_snps_preferred_dominant_perm
+1                                     0                                     0
+2                                     0                                     0
+3                                     0                                     0
+4                                     0                                     0
+5                                     0                                     0
+  n_shared_snps_preferred_recessive_perm
+1                                      0
+2                                      0
+3                                      0
+4                                      0
+5                                      0
+  n_shared_snps_preferred_nonadditive_perm
+1                                        0
+2                                        0
+3                                        0
+4                                        0
+5                                        0
+  n_shared_snps_preference_ambiguous_perm
+1                                       0
+2                                       0
+3                                       0
+4                                       0
+5                                       0
+  pct_shared_snps_preferred_nonadditive_perm n_add n_rec n_dom n_add_perm
+1                                         NA     1     0     0          0
+2                                         NA     1     0     0          0
+3                                         NA     1     0     0          0
+4                                         NA     1     0     0          0
+5                                         NA     1     0     0          0
+  n_rec_perm n_dom_perm converged_add converged_mix converged_add_perm
+1          0          0          TRUE          TRUE               TRUE
+2          0          0          TRUE          TRUE               TRUE
+3          0          0          TRUE          TRUE               TRUE
+4          0          0          TRUE          TRUE               TRUE
+5          0          0          TRUE          TRUE               TRUE
+  converged_mix_perm has_weighted_fit_mix ncs_weighted_fit_mix
+1               TRUE                 TRUE                    1
+2               TRUE                 TRUE                    1
+3               TRUE                 TRUE                    1
+4               TRUE                 TRUE                    0
+5               TRUE                 TRUE                    0
+  elbo_weighted_mix dif_elbo_weighted_vs_add dif_elbo_weighted_vs_mix
+1               -10                        0                        0
+2               -10                        0                        0
+3               -10                        0                        0
+4               -10                        0                        0
+5               -10                        0                        0
+  log_lik_weighted_mix converged_weighted_fit_mix n_add_weighted n_dom_weighted
+1                   -8                       TRUE              0              1
+2                   -8                       TRUE              0              1
+3                   -8                       TRUE              0              1
+4                   -8                       TRUE              0              0
+5                   -8                       TRUE              0              0
+  n_rec_weighted weighted_prior_target_additive weighted_prior_target_dominant
+1              0                            0.8                           0.15
+2              0                            0.8                           0.15
+3              0                            0.8                           0.15
+4              0                            0.8                           0.15
+5              0                            0.8                           0.15
+  weighted_prior_target_recessive weighted_prior_realized_additive
+1                            0.05                              0.8
+2                            0.05                              0.8
+3                            0.05                              0.8
+4                            0.05                              0.8
+5                            0.05                              0.8
+  weighted_prior_realized_dominant weighted_prior_realized_recessive
+1                             0.15                              0.05
+2                             0.15                              0.05
+3                             0.15                              0.05
+4                             0.15                              0.05
+5                             0.15                              0.05
+  n_weighted_mix_cs_snps overlap_snp_add_weighted
+1                      1                        0
+2                      1                        0
+3                      1                        0
+4                      0                        0
+5                      0                        0
+  pct_add_cs_snps_retained_weighted overlap_coding_add_weighted
+1                                 0                           0
+2                                 0                           0
+3                                 0                           0
+4                                 0                           0
+5                                 0                           0
+  overlap_cs_pairs_add_weighted mix_weighted_overlap_snp mix_weighted_union_snp
+1                             0                        0                      2
+2                             0                        0                      2
+3                             0                        0                      2
+4                             0                        0                      1
+5                             0                        0                      1
+  mix_weighted_jaccard_snp pct_mix_cs_snps_retained_weighted
+1                        0                                 0
+2                        0                                 0
+3                        0                                 0
+4                        0                                 0
+5                        0                                 0
+  pct_weighted_cs_snps_retained_mix mix_weighted_overlap_cs_pairs
+1                                 0                             0
+2                                 0                             0
+3                                 0                             0
+4                                NA                             0
+5                                NA                             0
+  mix_weighted_overlap_pairwise_sum mix_weighted_same_cs_count
+1                                 0                       TRUE
+2                                 0                       TRUE
+3                                 0                       TRUE
+4                                 0                      FALSE
+5                                 0                      FALSE
+  mix_weighted_same_cs_snp_sets mix_weighted_same_cs_predictor_sets
+1                         FALSE                               FALSE
+2                         FALSE                               FALSE
+3                         FALSE                               FALSE
+4                         FALSE                               FALSE
+5                         FALSE                               FALSE
+  mix_weighted_same_lead_snp_set mix_weighted_same_lead_predictor_set
+1                          FALSE                                FALSE
+2                          FALSE                                FALSE
+3                          FALSE                                FALSE
+4                             NA                                   NA
+5                             NA                                   NA
+  em_iteration
+1           12
+2           12
+3           12
+4           12
+5           12
+
+$metadata
+$metadata$iteration
+[1] 12
+
+$metadata$iteration_dir
+[1] "C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results_em/iteration_012"
+
+$metadata$baseline_dir
+[1] "C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results"
+
+$metadata$priors
+  iteration tissue pi_add pi_rec pi_dom
+1        12 Tissue    0.8   0.05   0.15
+
+$metadata$n_files
+[1] 3
+
+$metadata$generated_at
+[1] "2026-10-11 17:05:06 UTC"
+
+
+Warning message:
+Selected EM summary contains omissions; see its res_errors.csv and res_cs_errors.csv. 
+Using completed EM iteration 12: C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results_em/iteration_012
+Lead-SNP distance overview: C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results_em/iteration_012/plot/one_cs_dominant/lead_snp_distance_overview.png
+  em_iteration   coding association_threshold both_one_cs n_candidates
+1           12 dominant                 5e-08       FALSE            1
+  n_compared n_errors n_valid_distances n_changed_leads n_over_10kb
+1          1        0                 1               1           1
+  n_over_100kb median_distance_kb max_distance_kb
+1            1                250             250
+Individual SNP/PIP and expression plots skipped (expression_plots = FALSE).
+Warning message:
+Selected EM summary contains omissions; see its res_errors.csv and res_cs_errors.csv. 
+Using completed EM iteration 12: C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results_em/iteration_012
+Lead-SNP distance overview: C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results_em/iteration_012/plot/one_cs_recessive/lead_snp_distance_overview.png
+  em_iteration    coding association_threshold both_one_cs n_candidates
+1           12 recessive                 5e-08       FALSE            0
+  n_compared n_errors n_valid_distances n_changed_leads n_over_10kb
+1          0        0                 0               0           0
+  n_over_100kb median_distance_kb max_distance_kb
+1            0                 NA              NA
+Individual SNP/PIP and expression plots skipped (expression_plots = FALSE).
+Warning message:
+Selected EM summary contains omissions; see its res_errors.csv and res_cs_errors.csv. 
+
+Attaching package: 'data.table'
+
+The following object is masked from 'package:base':
+
+    %notin%
+
+
+Weighted descriptive analysis complete.
+Primary gene-tissue analyses: 2 
+Weighted credible sets: 1 
+Additive: 0 
+Recessive: 0 
+Dominant: 1 
+Same CS count as additive model: 50.0% 
+Outputs saved in: C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results_em/iteration_012/descriptive_results 
+Using completed EM iteration 12: C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results_em/iteration_012
+Found 3 result files.
+Processed 3 of 3 files; 2 tissue results; 5 credible sets; 3 original-summary errors; 0 CS-summary errors.
+
+Summary complete.
+Successful genes: 2 
+Successful gene-tissue analyses: 2 
+Credible-set summary rows: 5 
+Gene-tissue analyses with weighted_fit_mix: 2 
+Gene-tissue analyses missing weighted_fit_mix: 0 
+Weighted fits with zero credible sets: 1 
+Weighted credible-set summary rows: 1 
+CS rows with a TSS distance: 0 
+Files or tissues with errors: 3 
+CS-summary errors: 0 
+Genes to inspect or rerun: 3 
+Saved: C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results_em/iteration_012/summary/res_summary.RData 
+Saved: C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results_em/iteration_012/summary/res_summary.csv 
+Saved: C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results_em/iteration_012/summary/res_cs_summary.RData 
+Saved: C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results_em/iteration_012/summary/res_cs_summary.csv 
+Saved: C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results_em/iteration_012/summary/res_cs_errors.csv 
+Saved: C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results_em/iteration_012/summary/res_errors.csv 
+Saved: C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results_em/iteration_012/summary/failed_genes.txt 
+Using completed EM iteration 12: C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results_em/iteration_012
+Lead-SNP distance overview: C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results_em/iteration_012/plot/one_cs_recessive/lead_snp_distance_overview.png
+  em_iteration    coding association_threshold both_one_cs n_candidates
+1           12 recessive                 5e-08       FALSE            1
+  n_compared n_errors n_valid_distances n_changed_leads n_over_10kb
+1          1        0                 1               1           1
+  n_over_100kb median_distance_kb max_distance_kb
+1            1                250             250
+Generating individual SNP/PIP and expression plots for 1 gene-tissue pairs in: C:/Users/willi/AppData/Local/Packages/sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}/AC/Temp/RtmpaKjnBw/em-analysis-766473bc633e/results_em/iteration_012/plot/one_cs_recessive/expression
+PASS: latest complete iteration, EM/baseline joining, audit records, zero-CS fits, provenance,
+250-kb lead shift, empty selection, and downstream outputs. Fixtures: C:\Users\willi\AppData\Local\Packages\sandbox.{ddf98404-8086-4335-bddf-b55bfc57e48c}\AC\Temp\RtmpaKjnBw\em-analysis-766473bc633e

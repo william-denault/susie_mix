@@ -92,9 +92,12 @@ CS lead; with no additive CS it uses the highest-PIP SNP and labels that fallbac
 Set `both_one_cs = TRUE` for strictly one CS in both models. Both overview plots
 show the 20 largest physical shifts beside a distance-versus-PIP scatter. The
 six largest shifts with usable PIPs are labeled using the current EM results.
+The overview subtitle counts shifts strictly greater than 10 kb and 100 kb.
+These counts also appear as `n_over_10kb` and `n_over_100kb` in
+`lead_distance_summary.csv`, using all comparable lead pairs in the selection.
 
-`plot_additive_1cs_vs_mix_2cs_em.R` keeps the original comparison's P < 1e-8
-and mean reads >= 100 thresholds. It selects **one original additive CS and
+`plot_additive_1cs_vs_mix_2cs_em.R` uses P < 5e-8 with no mean-read-count or
+sample-size cutoff, matching the one-CS EM scripts. It selects **one original additive CS and
 two final EM CSs**, across all coding combinations, using
 `ncs_weighted_fit_mix` and `overlap_snp_add_weighted` from the selected EM
 summary. The original `ncs_susie_mix` count is not used for EM selection.

@@ -28,6 +28,7 @@ result <- plot_one_cs_lead_distance_overview(
 stopifnot(
   result$n_completed == 26L, result$n_changed == 25L,
   result$n_scatter == 25L, result$n_invalid == 0L,
+  result$n_over_10kb == 15L, result$n_over_100kb == 0L,
   identical(result$top_cases$gene, sprintf("Gene%02d", 25:6)),
   identical(result$distance_data$distance_bp, as.numeric((25:1) * 1000)),
   !"distance_bp" %in% names(input),
@@ -46,13 +47,14 @@ stopifnot(nrow(small$top_cases) == 2L)
 zero <- fixture[1, ]
 zero$gene <- "Same position"
 zero$lead_snp <- "chr1_1000000_C_T_b38_C"
-missing_pip <- fixture[2, ]
+missing_pip <- fixture[12, ]
 missing_pip$lead_pip <- NA_real_
 edge <- plot_one_cs_lead_distance_overview(
   rbind(zero, missing_pip), "dominant", file.path(output_dir, "zero_missing_pip.png")
 )
 stopifnot(nrow(edge$top_cases) == 2L, edge$n_changed == 2L,
-          edge$n_scatter == 0L, identical(edge$distance_data$distance_bp, c(2000, 0)))
+          edge$n_scatter == 0L, edge$n_over_10kb == 1L,
+          identical(edge$distance_data$distance_bp, c(12000, 0)))
 
 # Do not compute inter-chromosome, mixed-build or malformed-ID distances.
 invalid <- fixture[1:3, ]
@@ -63,6 +65,7 @@ bad <- withCallingHandlers(
   warning = function(e) { warnings <<- c(warnings, conditionMessage(e)); invokeRestart("muffleWarning") }
 )
 stopifnot(bad$n_invalid == 3L, nrow(bad$top_cases) == 0L,
+          bad$n_over_10kb == 0L,
           length(warnings) == 1L, grepl("comparable GRCh38", warnings))
 
 # Empty and all-failed runs have only audit columns in the runner's output.
@@ -71,6 +74,7 @@ for (status in list(character(), "error")) {
     data.frame(status = status), "recessive", file.path(output_dir, "empty.png")
   )
   stopifnot(empty$n_completed == 0L, empty$n_changed == 0L,
+            empty$n_over_10kb == 0L, empty$n_over_100kb == 0L,
             nrow(empty$top_cases) == 0L, file.info(empty$output_file)$size > 10000)
 }
 unchanged <- plot_one_cs_lead_distance_overview(

@@ -41,12 +41,13 @@ old_two <- make_fit(3L * p, c(7L, 10L), c(3L, 1L))
 em_two <- make_fit(3L * p, c(p + 2L, 2L * p + 40L), c(3L, 1L))
 em_two$elbo <- c(-110, -90)
 prior <- c(additive = .8, recessive = .05, dominant = .15)
-genes <- c("EM_TWO", "OLD_TWO", "LOW_READ")
+genes <- c("EM_TWO", "OLD_TWO", "LOW_READ", "MISSING_READ", "RELAXED_P",
+           "BOUNDARY_P", "TWO_ADD")
 baseline <- list(susie_add = fit_add, susie_add_perm = fit_add,
                  susie_mix = old_one, susie_mix_perm = old_one,
                  weighted_fit_mix = old_two, add_predictor_map = add_map,
                  mix_predictor_map = mix_map, min_pv = 1e-10,
-                 mean_read = 200, median_read = 150, n_ind = 180,
+                 mean_read = 200, median_read = 150, n_ind = 40,
                  n_SNP = p, n_mix_predictor = 3L * p,
                  n_add_rm = 0, n_rec_rm = 0, n_dom_rm = 0)
 iteration_dir <- file.path(root, "results_em/iteration_012")
@@ -56,16 +57,20 @@ priors <- data.frame(iteration = 12L, tissue = "Test tissue", pi_add = .8, pi_re
 write.csv(priors, file.path(iteration_dir, "priors.csv"), row.names = FALSE)
 write.csv(priors, file.path(root, "results_em/prior_history.csv"), row.names = FALSE)
 write.csv(data.frame(chunk = 1L, gene = genes), file.path(iteration_dir, "manifest.csv"), row.names = FALSE)
-saveRDS(list(iteration = 12L, chunk = 1L, n_genes = 3L), file.path(iteration_dir, "completed/chunk_001.done"))
+saveRDS(list(iteration = 12L, chunk = 1L, n_genes = length(genes)), file.path(iteration_dir, "completed/chunk_001.done"))
 for (gene in genes) {
   old <- baseline
   if (gene == "OLD_TWO") old$susie_mix <- old_two
   if (gene == "LOW_READ") old$mean_read <- 99
+  if (gene == "MISSING_READ") old$mean_read <- NA_real_
+  if (gene == "RELAXED_P") old$min_pv <- 3e-8
+  if (gene == "BOUNDARY_P") old$min_pv <- 5e-8
+  if (gene == "TWO_ADD") old$susie_add <- make_fit(p, c(2L, 40L), c(3L, 1L))
   saveRDS(list(`Test tissue` = old), file.path(root, "results", paste0(gene, ".rds")))
   current <- list(weighted_fit_mix = if (gene == "OLD_TWO") old_one else em_two,
                    mix_predictor_map = mix_map, mix_coding_prior = prior,
                    weighted_mix_prior_weights = unname(prior[codings] / p),
-                   mean_read = old$mean_read, median_read = 150, n_ind = 180)
+                   mean_read = old$mean_read, median_read = 150, n_ind = 40)
   out <- list(`Test tissue` = current)
   attr(out, "em_iteration") <- 12L
   saveRDS(out, file.path(iteration_dir, "results", paste0(gene, ".rds")))
@@ -75,11 +80,16 @@ selected <- select_add1_mix2_cases(summaries$res_summary,
   mixed_count_column = "ncs_weighted_fit_mix", overlap_column = "overlap_snp_add_weighted")
 stopifnot(identical(selected$gene, "EM_TWO"),
           identical(select_add1_mix2_cases(summaries$res_summary)$gene, "OLD_TWO"))
+expected_genes <- c("EM_TWO", "LOW_READ", "MISSING_READ", "RELAXED_P")
+unfiltered <- select_add1_mix2_cases(summaries$res_summary,
+  association_threshold = 5e-8, minimum_mean_reads = NULL,
+  mixed_count_column = "ncs_weighted_fit_mix", overlap_column = "overlap_snp_add_weighted")
+stopifnot(identical(unfiltered$gene, expected_genes))
 
 # Stub only the external inputs; assert reconstruction receives the EM fit.
 set.seed(92)
-geno <- matrix(rbinom(180L * p, 2, .35), ncol = p, dimnames = list(NULL, snps))
-y <- as.numeric(scale(2 * (geno[, 2] == 2) + 1.6 * (geno[, 40] >= 1) + rnorm(180, sd = .5)))
+geno <- matrix(rbinom(40L * p, 2, .35), ncol = p, dimnames = list(NULL, snps))
+y <- as.numeric(scale(2 * (geno[, 2] == 2) + 1.6 * (geno[, 40] >= 1) + rnorm(40, sd = .5)))
 saveRDS(list(geno = geno, y = y, predictor_map = mix_map), file.path(root, "synthetic_inputs.rds"))
 cat('\nload_fit_mix_expression_inputs <- function(gene_annotation_function, ...) {
   project <- dirname(dirname(dirname(gene_annotation_function)))
@@ -89,9 +99,10 @@ prepare_fit_mix_gene_data <- function(gene_name, shared_inputs, results_dir, ...
   list(gene_results = readRDS(file.path(results_dir, paste0(gene_name, ".rds"))),
        synthetic = shared_inputs)
 }
-prepare_fit_mix_tissue_data <- function(gene_data, tissue_result, ...) {
+prepare_fit_mix_tissue_data <- function(gene_data, tissue_result, min_samples, ...) {
   stopifnot(identical(tissue_result$susie_mix, tissue_result$weighted_fit_mix))
   x <- gene_data$synthetic
+  stopifnot(min_samples == 0L, nrow(x$geno) == tissue_result$n_ind, nrow(x$geno) < 50L)
   list(y = x$y, geno_for_counts = x$geno, geno_mix = recode_fit_mix_predictors(x$geno),
        predictor_map = x$predictor_map)
 }
@@ -112,7 +123,8 @@ if (is.na(old_project)) Sys.unsetenv("SUSIE_MIX_PROJECT_DIR") else Sys.setenv(SU
 out <- entry_env$em_add1_mix2_results
 audit <- out$plot_summary
 plot_dir <- file.path(iteration_dir, "plot/additive_1cs_vs_mix_2cs")
-stopifnot(out$context$iteration == 12L, nrow(audit) == 1L,
+stopifnot(out$context$iteration == 12L, nrow(audit) == length(expected_genes),
+          identical(out$cases$gene, expected_genes),
           audit$status == "plotted", audit$em_iteration == 12L,
           audit$mixed_fit_name == "weighted_fit_mix",
           audit$additive_lead_snp == snps[2], audit$cs1_lead_snp == snps[2],
@@ -126,7 +138,7 @@ stopifnot(out$context$iteration == 12L, nrow(audit) == 1L,
           !dir.exists(file.path(root, "plot")))
 saved_audit <- fread(file.path(plot_dir, "additive_1cs_vs_mix_2cs_plot_summary.csv"))
 stopifnot(saved_audit$em_iteration == 12L, saved_audit$cs2_lead_snp == snps[40],
-          fread(file.path(plot_dir, "selected_cases.csv"))$gene == "EM_TWO")
+          identical(fread(file.path(plot_dir, "selected_cases.csv"))$gene, expected_genes))
 rendered <- readRDS(file.path(plot_dir, "render_inputs.rds"))
 x1 <- as.numeric(geno[, 2] == 2)
 x2 <- as.numeric(geno[, 40] >= 1)
@@ -138,10 +150,10 @@ stopifnot(identical(rendered$fit_mix, em_two), rendered$mixed_label == "EM 12 Su
 preview_dir <- file.path("tmp", "em_add1_mix2_plot_validation")
 dir.create(preview_dir, recursive = TRUE, showWarnings = FALSE)
 preview_file <- file.path(preview_dir, "synthetic_em_four_panel.png")
-stopifnot(file.copy(audit$output_file, preview_file, overwrite = TRUE))
+stopifnot(file.copy(audit$output_file[1], preview_file, overwrite = TRUE))
 
 # No selected cases should write an empty audit without needing GTEx input.
-empty <- entry_env$em_plot_add1_mix2(root, minimum_mean_reads = 1000)
+empty <- entry_env$em_plot_add1_mix2(root, association_threshold = 0)
 stopifnot(nrow(empty$plot_summary) == 0L,
           nrow(fread(file.path(plot_dir, "selected_cases.csv"))) == 0L,
           nrow(fread(file.path(plot_dir, "additive_1cs_vs_mix_2cs_plot_summary.csv"))) == 0L)

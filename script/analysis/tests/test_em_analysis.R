@@ -91,9 +91,11 @@ plots <- em_plot_one_cs(root, 12, expression_plots = FALSE)
 stopifnot(nrow(plots$comparisons) == 1L, plots$comparisons$distance_bp == 250000,
           plots$comparisons$lead_snp == snps[2], plots$comparisons$selected_cs_overlap_snps == 0,
           plots$summary$max_distance_kb == 250,
+          plots$summary$n_over_10kb == 1L, plots$summary$n_over_100kb == 1L,
           file.info(plots$overview$output_file)$size > 10000)
 empty <- em_plot_one_cs(root, 12, expected_coding = "recessive", expression_plots = FALSE)
-stopifnot(nrow(empty$comparisons) == 0L, empty$summary$n_compared == 0L)
+stopifnot(nrow(empty$comparisons) == 0L, empty$summary$n_compared == 0L,
+          empty$summary$n_over_10kb == 0L)
 # Cover the additive no-CS fallback.
 no_cs <- baseline$susie_add
 no_cs$sets <- NULL

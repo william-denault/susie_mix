@@ -208,9 +208,11 @@ plot_one_cs_lead_distance_overview <- function(
   mtext(paste0(title_prefix, coding_title, " one-CS examples: lead shifts and posterior support"),
         outer = TRUE, side = 3, line = 2.4, cex = 1.45, font = 2)
   count_text <- function(x) format(x, big.mark = ",", trim = TRUE)
-  mtext(sprintf("%s examples   |   %s changed leads   |   %s shifts > 100 kb",
+  n_over_10kb <- sum(d$distance_bp > 10000)
+  n_over_100kb <- sum(d$distance_bp > 100000)
+  mtext(sprintf("%s examples   |   %s changed leads   |   %s shifts > 10 kb   |   %s shifts > 100 kb",
                 count_text(n_completed), count_text(sum(changed)),
-                count_text(sum(d$distance_bp > 100000))),
+                count_text(n_over_10kb), count_text(n_over_100kb)),
         outer = TRUE, side = 3, line = .6, cex = 1.1, col = "#444444")
   omissions <- character()
   if (n_invalid > 0L) omissions <- c(omissions, paste(n_invalid, "pairs with unavailable distance"))
@@ -226,6 +228,7 @@ plot_one_cs_lead_distance_overview <- function(
   message("Lead-SNP distance overview: ", output_file)
   invisible(list(distance_data = d, top_cases = top, n_completed = n_completed,
                  n_changed = sum(changed), n_invalid = n_invalid,
+                 n_over_10kb = n_over_10kb, n_over_100kb = n_over_100kb,
                  n_scatter = nrow(scatter), annotated_cases = annotated_cases,
                  output_file = output_file))
 }
