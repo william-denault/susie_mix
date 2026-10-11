@@ -1,0 +1,33 @@
+trait_id,trait,consortium,priority,source_url,study_accession,selection_note
+ad,Alzheimer disease and related dementias,EADB-IGAP-PGC-ALZ,1,https://www.nature.com/articles/s41588-026-02583-1,GCST90704646,2026 main analysis; no-proxy GCST90704647 and no-biobank GCST90704648 are sensitivity analyses of the same trait
+schizophrenia,Schizophrenia,PGC,1,https://pgc.unc.edu/for-researchers/download-results/,,Freeze ancestry-specific full summary release; respect source data terms
+bipolar,Bipolar disorder,PGC,2,https://pgc.unc.edu/for-researchers/download-results/,,Freeze ancestry-specific release and ascertainment definition before screening
+depression,Major depression,PGC,2,https://pgc.unc.edu/for-researchers/download-results/,,Record clinical versus broad phenotype and excluded commercial cohorts
+birth_weight_fetal,Birth weight - direct fetal effect,EGG,1,https://egg-consortium.org/,,Use fetal effect adjusted for maternal genotype where available; do not mix maternal and fetal effects
+birth_length,Birth length,EGG,2,https://egg-consortium.org/,,Check regional SNP coverage and genome build in the full release
+child_bmi,Childhood BMI,EGG,1,https://egg-consortium.org/,,Freeze age range and full ancestry-specific release; adult GTEx is an age-mismatched follow-up
+child_obesity,Childhood obesity,EGG,2,https://egg-consortium.org/,,Specify childhood obesity case definition; correlated with childhood BMI
+head_circumference,Head circumference,EGG,2,https://egg-consortium.org/,,Freeze measurement age and cohort release; adult GTEx cannot establish developmental mediation
+pubertal_growth,Total pubertal height growth from age 8 to adulthood,EGG,2,https://egg-consortium.org/pubertal-growth_2024.html,,2024 PG_II combined-sex phenotype; published download is trans-ancestry and needs compatible fine-mapping LD
+adiposity_rebound_age,Age at adiposity rebound,EGG,2,https://egg-consortium.org/longitudinal_growth.html,,2024 EGG_AR_age; European GWAS; source positions are GRCh37 and require harmonization
+adult_height,Adult height,GIANT,1,https://giant-consortium.web.broadinstitute.org/GIANT_consortium_data_files,,Select dense genome-wide summary data and record ancestry; avoid exome-only downloads
+adult_bmi,Adult BMI,GIANT,1,https://giant-consortium.web.broadinstitute.org/GIANT_consortium_data_files,,Select unstratified dense genome-wide release and document UK Biobank overlap
+whr_bmi,Waist-to-hip ratio adjusted for BMI,GIANT,2,https://giant-consortium.web.broadinstitute.org/GIANT_consortium_data_files,,Use combined-sex dense GWAS; adjusted phenotype has a different interpretation from unadjusted WHR
+ldl,LDL cholesterol,GLGC,1,https://csg.sph.umich.edu/willer/public/glgc-lipids2021/,,Ancestry-specific dense GWAS available; freeze analysis and medication adjustment
+hdl,HDL cholesterol,GLGC,1,https://csg.sph.umich.edu/willer/public/glgc-lipids2021/,,Ancestry-specific dense GWAS available; lipid traits are correlated outcomes
+triglycerides,Triglycerides,GLGC,1,https://csg.sph.umich.edu/willer/public/glgc-lipids2021/,,Ancestry-specific dense GWAS available; retain transformation metadata
+total_cholesterol,Total cholesterol,GLGC,2,https://csg.sph.umich.edu/willer/public/glgc-lipids2021/,,Ancestry-specific dense GWAS available; not independent replication of LDL or HDL
+fasting_glucose,Fasting glucose,MAGIC,2,https://magicinvestigators.org/downloads/index.html,,Freeze BMI adjustment; some recent downloads are partial-region statistics; verify locus completeness
+fasting_insulin,Fasting insulin,MAGIC,2,https://magicinvestigators.org/downloads/index.html,,Freeze BMI adjustment and transformation; verify full locus coverage
+hba1c,HbA1c,MAGIC,2,https://magicinvestigators.org/downloads/index.html,,Distinguish glycemic from erythrocyte-related mechanisms during interpretation
+glucose_2h,Two-hour glucose after glucose challenge,MAGIC,2,https://magicinvestigators.org/downloads/index.html,,Specify BMI adjustment and challenge definition; verify full locus coverage
+t2d,Type 2 diabetes,DIAMANTE-T2DGGI,1,https://diagram-consortium.org/downloads.html,,2024 ancestry-specific releases available; use BMI-unadjusted primary analysis where available
+cad,Coronary artery disease,CARDIoGRAMplusC4D,1,https://cardiogramplusc4d.org/data-downloads/,,Consortium directs to GWAS Catalog and Common Metabolic Diseases portal; freeze one full summary study
+egfr_creatinine,Creatinine-based eGFR,CKDGen,1,https://ckdgen.imbi.uni-freiburg.de/,,Record ancestry and transformation; creatinine metabolism can affect phenotype independently of renal function
+uacr,Urinary albumin-to-creatinine ratio,CKDGen,2,https://ckdgen.imbi.uni-freiburg.de/,,Specify general population versus diabetes subset and transformation
+ckd,Chronic kidney disease,CKDGen,2,https://ckdgen.imbi.uni-freiburg.de/,,Freeze disease threshold and ancestry-specific full summary release
+ibd,Inflammatory bowel disease,IIBDGC,1,https://www.ibdgc.org/research/resources,,Select a published dense GWAS release; do not substitute exome burden or Immunochip-only results
+crohn,Crohn disease,IIBDGC,1,https://www.ibdgc.org/research/resources,,Select published dense GWAS; correlated with the combined IBD phenotype
+ulcerative_colitis,Ulcerative colitis,IIBDGC,1,https://www.ibdgc.org/research/resources,,Select published dense GWAS; correlated with the combined IBD phenotype
+breast_cancer,Breast cancer,BCAC,2,https://www.ccge.medschl.cam.ac.uk/breast-cancer-association-consortium-bcac/data-data-access,,Select full summary study via consortium or Catalog; overall disease primary and ER subtypes as sensitivity analyses
+prostate_cancer,Prostate cancer,PRACTICAL,2,https://www.icr.ac.uk/research-and-discoveries/icr-divisions/genetics-and-epidemiology/oncogenetics/practical,,Select full summary study via consortium or Catalog; overall disease primary and aggressive disease as sensitivity analysis

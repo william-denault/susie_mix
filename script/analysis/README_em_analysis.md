@@ -1,5 +1,11 @@
 # Analyze the last completed EM iteration
 
+For the separate first-stage GWAS colocalization screen, Source
+`screen_em_coloc_candidates.R` or run it with Rscript. It uses `latest` completed
+fits, P < 5e-8, shifts >10 kb from every vanilla CS lead, LD/CS-overlap diagnostics,
+and SNP-level log-BF exports. It does not require pre-generated summaries.
+See [the screening guide](README_em_coloc_screen.md) and [32-trait shortlist](coloc_trait_panel.csv).
+
 Run from the project root, in this order:
 
 ```bash
