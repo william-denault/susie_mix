@@ -10,7 +10,10 @@ gwas_download_settings <- list(
   chain_grch37 = NULL, # Optional local hg19ToHg38.over.chain.gz; otherwise downloads from UCSC.
   chain_grch36 = NULL, # Optional local hg18ToHg38.over.chain.gz, needed for birth length.
   python = "python3",
-  traits = NULL     # NULL -> all 32; or c("ad", "ldl") for a first run.
+  include_biomarkers = TRUE, # Thyroid, liver, blood-cell and metabolite panel.
+  include_eqtl = TRUE,       # Same gene in prespecified external tissue datasets.
+  include_pqtl = TRUE,       # Same encoded protein; needs synapseclient + Synapse login.
+  traits = NULL     # NULL -> all frozen sources; or c("tsh", "alt") for a first run.
 )
 if (sys.nframe() == 0L) {
   args <- commandArgs(trailingOnly = TRUE)
@@ -23,8 +26,17 @@ local({
   source(file.path(s$project_dir, "script/analysis/em_analysis_utils.R"))
   source(file.path(s$project_dir, "script/analysis/em_gwas_coloc_utils.R"))
   job <- s$job_dir
-  if (is.null(job)) job <- prepare_em_gwas_coloc(s$project_dir, s$iteration, s$screen_dir)
   if (is.null(s$cache_dir)) s$cache_dir <- file.path(s$project_dir, "gwas_cache")
+  if (is.null(job)) {
+    job <- prepare_em_gwas_coloc(s$project_dir, s$iteration, s$screen_dir,
+                                include_biomarkers = s$include_biomarkers)
+    if (s$include_eqtl || s$include_pqtl) {
+      prepared <- system2(s$python, c(shQuote(file.path(s$project_dir, "script/analysis/prepare_coloc_molecular.py")),
+        "--job-dir", shQuote(job), "--cache", shQuote(s$cache_dir),
+        if (!s$include_eqtl) "--no-eqtl", if (!s$include_pqtl) "--no-pqtl"))
+      if (prepared != 0L) warning("Some molecular sources could not be prepared. Inspect molecular_selection.json; other sources will continue.")
+    }
+  }
   options <- c(shQuote(file.path(s$project_dir, "script/analysis/download_coloc_gwas.py")),
     "--job-dir", shQuote(job), "--sources", shQuote(file.path(job, "sources.json")),
     "--cache", shQuote(s$cache_dir),

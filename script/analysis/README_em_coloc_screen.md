@@ -59,6 +59,13 @@ signals. A 100-kb shift can have r-squared = 1. Rank cases using distance, overl
 LD, posterior uncertainty, and genotype support together. LD here describes the
 eQTL sample; it is not the ancestry-matched LD required to fine-map a GWAS.
 
+The entry script also defaults to `unshifted_control_fraction = .01`: a reproducible
+1% sample of otherwise eligible gene–tissue pairs whose EM leads are all unshifted.
+The hash-based selection is independent of external associations/H4. Controls get
+BF and LD exports, with `selection_group = "unshifted_control"` in the BF manifest,
+and do not enter `candidates.csv`. Set 0 to disable or 1 to export every eligible
+unshifted pair. Compare groups separately; these are not power/MAF-matched controls.
+
 The default LD reader needs GTEx files, PLINK2, and the packages used by the
 existing expression plotting helper. `compute_ld = FALSE` explicitly skips LD.
 Missing genotypes/packages or reconstruction failures leave LD as NA with an
@@ -175,15 +182,17 @@ The BF export was tested against installed `susieR`; actual GWAS coloc is a
 separate stage. This implementation only handles EM mix. The same variant-level
 interface can later accept slider BFs that properly marginalize its coding prior.
 
-## A proposed 32-trait panel
+## Trait panel
 
-`coloc_trait_panel.csv` contains 32 serious disease, growth and physiological
-traits, source links, and analysis notes. It is a **shortlist**, not a claim that
-every row is the newest/largest accessible study. Entries without an accession
-still need a fixed study/release, ancestry, phenotype definition, build, exact
-file and checksum before analysis. Source pages were reviewed on 2026-10-11;
-downloads and permissions have not been tested. Prefer dense, compatible
-summary statistics to a larger study with inadequate regional coverage.
+`coloc_trait_panel.csv` contains the original 32 disease, growth and physiological
+traits plus 18 biomarkers, with source links and analysis notes. Exact releases,
+schemas and checksums are pinned in `coloc_gwas_sources.json` and
+`coloc_biomarker_sources.json`; these registries govern downloads. The panel is
+not a claim that every row is the newest/largest accessible study. Public headers
+were checked on 2026-10-11/12; complete RCC downloads have not been run locally.
+Prefer dense, compatible summary statistics to a larger study with inadequate
+regional coverage. Gene-specific protein/eQTL sources are selected separately
+when preparing a new job, before examining external associations.
 
 The panel includes AD; schizophrenia, bipolar disorder and depression; seven
 early-growth traits; adult height, BMI and waist-to-hip ratio; four lipid traits;
@@ -231,7 +240,8 @@ causal variant; it does not on its own establish expression-mediated causality.
 ## Validation
 
 The next stage is implemented in [README_em_gwas_coloc.md](README_em_gwas_coloc.md):
-pinned downloads for the 32-trait panel and paired EM/vanilla H0–H4 comparisons,
+pinned downloads for the original panel plus 18 biomarkers, gene-matched protein
+and external eQTL comparisons, and paired EM/vanilla H0–H4 comparisons,
 with gains, losses, shared-SNP locations and explicit unassessed cases.
 
 ```bash

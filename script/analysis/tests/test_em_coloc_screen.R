@@ -143,5 +143,17 @@ if (requireNamespace("susieR", quietly = TRUE)) {
   real_bf <- em_screen_bfs(real_fit, mix_map, weights)
   stopifnot(nrow(real_bf$lbf) == 2L, all(is.finite(real_bf$lbf)))
 } else message("SKIP installed-SuSiE smoke test: susieR is unavailable")
+# Replace one synthetic saved fit by an unshifted fit, then exercise both endpoints
+# of control sampling. A control must never be added to the shifted-candidate CSV.
+control_fit <- current
+control_fit$weighted_fit_mix <- make_fit(mix_map, weights, c(1,5), list(1L,5L))
+control_saved <- list(Tissue=control_fit);attr(control_saved,"em_iteration")<-1L
+saveRDS(control_saved,file.path(root,"results_em/iteration_001/results/GOOD.rds"))
+without_controls <- suppressWarnings(em_screen_coloc(root,compute_ld=FALSE,unshifted_control_fraction=0))
+with_controls <- suppressWarnings(em_screen_coloc(root,compute_ld=FALSE,unshifted_control_fraction=1))
+stopifnot(!"GOOD" %in% without_controls$bf_manifest$gene,
+          !"GOOD" %in% with_controls$candidates$gene,
+          subset(with_controls$bf_manifest,gene=="GOOD")$selection_group=="unshifted_control",
+          with_controls$counts$n_exported_unshifted_controls==1)
 cat("PASS: latest-complete selection, strict P/distance boundaries, all vanilla leads,\n",
     "CS overlap, tissue LD, BF marginalization, failures, no-CS cases, Source entry and empty output.\n", sep = "")

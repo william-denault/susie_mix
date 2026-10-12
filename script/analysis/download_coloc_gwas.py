@@ -53,6 +53,16 @@ def download(source, cache):
             raise ValueError('Cached file disagrees with pinned source MD5')
         return dest, old
     tmp = pathlib.Path(str(dest) + '.part')
+    if source['url'].startswith('synapse://'):
+        from prepare_coloc_molecular import synapse_client
+        syn = synapse_client()
+        entity = syn.get(source['synapse_id'], version=source['synapse_version'], downloadLocation=str(cache))
+        import shutil
+        shutil.copyfile(entity.path, tmp)
+        info = dict(url=source['url'], bytes=tmp.stat().st_size, sha256=checksum(tmp), md5=checksum(tmp, 'md5'))
+        tmp.replace(dest)
+        atomic_json(receipt, info)
+        return dest, info
     request = urllib.request.Request(source['url'],
         data=source['post'].encode() if source.get('post') else None,
         headers={'User-Agent': 'susie-mix-coloc/1.0'})
@@ -159,6 +169,11 @@ class ChainMap:
 
 @contextlib.contextmanager
 def text_file(path, source):
+    if source.get('format') == 'ukb_ppp_tar':
+        from coloc_molecular_io import ukb_ppp_lines
+        with ukb_ppp_lines(path) as lines:
+            yield lines
+        return
     with contextlib.ExitStack() as stack:
         f = stack.enter_context(open(path, 'rb'))
         magic = f.read(2)
@@ -199,6 +214,9 @@ def normalize(source, path, output, regions, mapper=None):
                 counts['malformed_rows'] += 1
                 continue
             row = {key: fields[index] for key, index in indexes.items()}
+            if source.get('split_coordinate'):
+                bits = row['chromosome'].split(':')
+                row['chromosome'], row['position'] = bits[0], bits[1]
             chrom = row['chromosome'].removeprefix('chr')
             pos = number(row['position'])
             if chrom not in map(str, range(1, 23)) or not math.isfinite(pos) or pos < 1 or pos != int(pos):
@@ -243,7 +261,7 @@ def main(argv=None):
     ap.add_argument('--job-dir', required=True)
     ap.add_argument('--sources', default=str(pathlib.Path(__file__).with_name('coloc_gwas_sources.json')))
     ap.add_argument('--cache', required=True)
-    ap.add_argument('--traits', help='Comma-separated trait IDs; default all 32')
+    ap.add_argument('--traits', help='Comma-separated trait IDs; default all frozen sources')
     ap.add_argument('--chain-grch37', help='Optional local hg19ToHg38.over.chain.gz')
     ap.add_argument('--chain-grch36', help='Optional local hg18ToHg38.over.chain.gz')
     args = ap.parse_args(argv)
@@ -252,6 +270,11 @@ def main(argv=None):
     with region_path.open(encoding='utf8') as f:
         regions = Regions(list(csv.DictReader(f)))
     registry = json.loads(pathlib.Path(args.sources).read_text())
+    selection_path = job/'molecular_selection.json'
+    if selection_path.exists():
+        frozen = json.loads(selection_path.read_text())
+        if frozen['sources_sha256'] != checksum(args.sources) or frozen['cases_sha256'] != checksum(job/'cases.csv'):
+            raise ValueError('Frozen molecular selection changed; prepare a new job')
     sources = registry['sources']
     if args.traits:
         selected = set(args.traits.split(','))
@@ -262,7 +285,40 @@ def main(argv=None):
     dest.mkdir(exist_ok=True)
     chain_maps = {}
     statuses = []
+    # One full-file scan per molecular dataset, not one download/scan per gene.
+    molecular = collections.defaultdict(list)
     for source in sources:
+        if source.get('format') == 'eqtl_catalogue_susie':
+            molecular[(source['url'], source['cs_url'])].append(source)
+    for (url, cs_url), group in molecular.items():
+        from coloc_molecular_io import normalize_eqtl_batch
+        try:
+            pending = []
+            for source in group:
+                trait = source['trait_id']; receipt_path = dest/(trait+'.json'); output = dest/(trait+'.tsv.gz')
+                if receipt_path.exists():
+                    old = json.loads(receipt_path.read_text())
+                    if old['source'] != source or not output.exists() or old['output_sha256'] != checksum(output):
+                        raise ValueError('Frozen molecular output changed; prepare a new job')
+                    statuses.append(dict(trait_id=trait,status='cached',message=''))
+                else:
+                    pending.append(source)
+            if pending:
+                raw, receipt = download(dict(url=url), cache)
+                cs, cs_receipt = download(dict(url=cs_url), cache)
+                counts = normalize_eqtl_batch(pending, raw, cs, dest)
+                for source in pending:
+                    trait=source['trait_id']; output=dest/(trait+'.tsv.gz')
+                    atomic_json(dest/(trait+'.json'),dict(source=source,download=receipt,credible_sets=cs_receipt,
+                        output_sha256=checksum(output),counts=counts[trait],build='GRCh38'))
+                    statuses.append(dict(trait_id=trait,status='ready',message=str(counts[trait])))
+        except Exception as error:
+            for source in group:
+                statuses.append(dict(trait_id=source['trait_id'],status='error',message=str(error)))
+        atomic_json(dest/'download_status.json', statuses)
+    for source in sources:
+        if source.get('format') == 'eqtl_catalogue_susie':
+            continue
         trait = source['trait_id']
         print('Preparing ' + trait, flush=True)
         receipt_path = dest / (trait + '.json')

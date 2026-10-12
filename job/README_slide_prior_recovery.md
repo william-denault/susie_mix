@@ -8,6 +8,21 @@ Rscript process**, and save each gene before starting the next. Set
 `SUSIE_SLIDE_GENES_PER_TASK=5` for a five-gene cap; values from 1 to 15 are
 supported. The coordinator exports this setting to its continuations.
 
+New recovery workers request **48G per array task** on `broadwl` (increased
+from 40G on October 12, 2026). Genes within a task run sequentially. The memory
+request is in `job/recover_slide_prior_em_array`; changing only the controller's
+`sbatch --mem` does not change that worker directive. The coordinator retains
+its 40G request. The increase provides headroom; it is not an established cure
+for the documented CCDC62 node failures, so retain the diagnosed node exclusion.
+
+RCC lists 64 GB physical RAM for Broadwell nodes, while its
+[SU accounting](https://rcc.uchicago.edu/accounts-allocations/calculations-service-units)
+uses 56 GB per Broadwell node. Actual request limits depend on the live Slurm
+configuration and account/QoS. Verify those before requesting the full physical
+capacity. Higher-memory nodes require a different partition and should be
+considered for individual genes with measured memory needs. Memory-based SU
+charges for a 48G request are 20% above a 40G request at equal runtime.
+
 The original audit manifest retains its 1,847 groups of at most 10 genes.
 Planning subdivides each group's unresolved genes into smaller execution tasks
 before applying the available job capacity. Existing manifests, batches, fits
@@ -148,7 +163,7 @@ easy genes. Already validated genes are reused without refitting. The pilot
 does not schedule a continuation or change any priors. Inspect its per-gene
 logs, Slurm elapsed times and peak memory before scaling up. Fresh processes
 limit cross-gene memory retention; they do not guarantee that a single large
-gene fits in 40 GB or 23 hours.
+gene fits in the requested memory or 23 hours.
 
 Then, after the pilot is no longer active:
 

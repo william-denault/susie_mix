@@ -19,7 +19,8 @@ cg_write <- function(rows, file) {
 }
 
 prepare_em_gwas_coloc <- function(project_dir, iteration = "latest", screen_dir = NULL,
-                                  output_dir = NULL, padding_bp = 100000) {
+                                  output_dir = NULL, padding_bp = 100000,
+                                  include_biomarkers = TRUE) {
   cg_need(c("jsonlite", "digest", "data.table"))
   context <- em_analysis_context(project_dir, iteration)
   if (is.null(screen_dir)) {
@@ -60,12 +61,48 @@ prepare_em_gwas_coloc <- function(project_dir, iteration = "latest", screen_dir 
   }
   write.csv(manifest, file.path(output_dir, "cases.csv"), row.names = FALSE)
   write.csv(do.call(rbind, regions), file.path(output_dir, "regions.csv"), row.names = FALSE)
-  file.copy(file.path(project_dir, "script/analysis/coloc_gwas_sources.json"), file.path(output_dir, "sources.json"))
+  registry <- jsonlite::fromJSON(file.path(project_dir, "script/analysis/coloc_gwas_sources.json"), simplifyVector = FALSE)
+  extra <- file.path(project_dir, "script/analysis/coloc_biomarker_sources.json")
+  if (include_biomarkers && file.exists(extra))
+    registry$sources <- c(registry$sources, jsonlite::fromJSON(extra, simplifyVector = FALSE)$sources)
+  jsonlite::write_json(registry, file.path(output_dir, "sources.json"), auto_unbox = TRUE, pretty = TRUE)
   saveRDS(list(schema_version = 1L, iteration = context$iteration, screen_dir = screen_dir,
     screen_metadata = screen_meta, padding_bp = padding_bp,
     prepared_at = format(Sys.time(), tz = "UTC", usetz = TRUE)), file.path(output_dir, "job_metadata.rds"))
   message("Frozen GWAS job: ", normalizePath(output_dir))
   normalizePath(output_dir)
+}
+
+# Match molecular outcomes by identity, never by the nearest annotated gene or H4.
+cg_case_scope <- function(source, case) {
+  if (!is.null(source$target_gene) && !identical(source$target_gene, as.character(case$gene)))
+    return("different_target_gene")
+  if (!is.null(source$case_tissues) && !case$tissue %in% unlist(source$case_tissues))
+    return("outside_prespecified_tissues")
+  if (identical(source$trait_group, "eqtl_replication") &&
+      (!isTRUE(source$sample_overlap %in% c("none_documented", "distinct_cohort_design")) ||
+       grepl("GTEx", paste(source$study, source$dataset_id), ignore.case = TRUE)))
+    return("replication_independence_not_established")
+  NULL
+}
+
+cg_published_susie <- function(g, source) {
+  if (!identical(source$bf_scale, "natural_log_absolute") ||
+      !identical(source$snp_coverage, "full_finemapped_region"))
+    stop("Published BFs require absolute natural logs over the full fine-mapped region")
+  required <- c("component", "chromosome", "position", "effect_allele", "other_allele", "log_bf")
+  if (!all(required %in% names(g)) || !nrow(g)) stop("No complete published SuSiE signals")
+  g$key <- cg_key(g$chromosome, g$position, g$effect_allele, g$other_allele)
+  if (anyDuplicated(paste(g$component, g$key)) || any(!is.finite(g$log_bf)))
+    stop("Duplicate SNP/component or invalid published log BF")
+  components <- unique(g$component); keys <- unique(g$key)
+  bf <- matrix(NA_real_, length(components), length(keys), dimnames = list(components, keys))
+  bf[cbind(match(g$component, components), match(g$key, keys))] <- g$log_bf
+  if (anyNA(bf)) stop("Published components do not cover the same complete SNP set")
+  variants <- g[match(keys, g$key), , drop = FALSE]
+  list(lbf = bf, alpha = exp(bf - apply(bf, 1, cg_lse)), components = components,
+       variants = variants, analysis = "external_published_SuSiE",
+       posterior_basis = "uniform_SNP_prior_from_absolute_logBF")
 }
 
 cg_clean_gwas <- function(g, min_info = .8) {
@@ -201,6 +238,12 @@ cg_bundle_keys <- function(x) {
 cg_pair <- function(bundle, gw, priors, min_mass = .9, min_snps = 100L) {
   eq <- lapply(bundle[c("em", "vanilla")], cg_bundle_keys)
   common <- Reduce(intersect, list(colnames(eq$em$lbf), colnames(eq$vanilla$lbf), colnames(gw$lbf)))
+  # Keep excluded SNPs in the original BF matrices for the coverage denominator.
+  alleles <- strsplit(common, ":", fixed = TRUE)
+  safe <- vapply(alleles, function(a) length(a) == 4L &&
+    all(a[3:4] %in% c("A", "C", "G", "T")) && a[3] != a[4] &&
+    !paste0(a[3:4], collapse="") %in% c("AT", "CG"), logical(1))
+  common <- common[safe]
   if (length(common) < min_snps) stop("Insufficient three-way SNP overlap: ", length(common))
   # Coverage is measured BEFORE intersection, both with native QTL alpha and with
   # the uniform SNP prior used for coloc (native SNP priors can differ).
@@ -311,12 +354,22 @@ run_em_gwas_coloc <- function(job_dir, modes = c("abf", "susie"), traits = NULL,
   cases <- read.csv(file.path(job_dir, "cases.csv"), stringsAsFactors = FALSE)
   regions <- read.csv(file.path(job_dir, "regions.csv"), stringsAsFactors = FALSE)
   sources <- jsonlite::fromJSON(file.path(job_dir, "sources.json"), simplifyVector = FALSE)$sources
+  molecular_selection <- NULL
+  selection_file <- file.path(job_dir, "molecular_selection.json")
+  if (file.exists(selection_file)) {
+    molecular_selection <- jsonlite::fromJSON(selection_file, simplifyVector = FALSE)
+    if (molecular_selection$sources_sha256 != digest::digest(file=file.path(job_dir,"sources.json"),algo="sha256") ||
+        molecular_selection$cases_sha256 != digest::digest(file=file.path(job_dir,"cases.csv"),algo="sha256"))
+      stop("Frozen molecular selection changed; prepare a new job")
+  }
   if (!is.null(traits)) {
     if (any(!traits %in% vapply(sources, `[[`, "", "trait_id"))) stop("Unknown trait ID")
     sources <- Filter(function(s) s$trait_id %in% traits, sources)
   }
   out <- tempfile(paste0("analysis_", format(Sys.time(), "%Y%m%d_%H%M%S"), "_"), tmpdir = job_dir)
   dir.create(out)
+  if (!is.null(molecular_selection))
+    cg_write(molecular_selection$selection_audit, file.path(out, "molecular_selection_audit.csv"))
   settings <- as.list(environment()); settings <- settings[setdiff(names(formals(sys.function())), c("job_dir"))]
   saveRDS(list(settings = settings, job = job, session = sessionInfo()), file.path(out, "analysis_metadata.rds"))
   ld <- NULL; ld_problem <- "LD not configured; set ancestry, GRCh38 PLINK prefix and donor subset"
@@ -343,19 +396,34 @@ run_em_gwas_coloc <- function(job_dir, modes = c("abf", "susie"), traits = NULL,
     }, error = identity)
     for (i in seq_len(nrow(cases))) {
       case <- cases$case_id[i]
-      prefix <- list(trait_id = trait, case_id = case, gene = cases$gene[i], tissue = cases$tissue[i], em_iteration = job$iteration)
+      scope <- cg_case_scope(s, cases[i, , drop = FALSE])
+      source_modes <- if (identical(s$format, "eqtl_catalogue_susie")) "published" else modes
+      prefix <- list(trait_id = trait, case_id = case, gene = cases$gene[i], tissue = cases$tissue[i], em_iteration = job$iteration,
+        trait_group = if (is.null(s$trait_group)) "clinical_gwas" else s$trait_group,
+        external_study = if (is.null(s$study)) s$consortium else s$study,
+        external_tissue = if (is.null(s$external_tissue)) NA_character_ else s$external_tissue,
+        tissue_match = if (is.null(s$tissue_match)) NA_character_ else s$tissue_match,
+        sample_overlap = if (is.null(s$sample_overlap)) "not_assessed" else s$sample_overlap,
+        selection_group = if ("selection_group" %in% names(cases)) cases$selection_group[i] else "legacy_shift_screen")
+      # Older source registries can omit consortium.
+      if (is.null(prefix$external_study)) prefix$external_study <- NA_character_
+      if (!is.null(scope)) {
+        for (mode in source_modes) record(trait, case, mode, "not_in_scope", scope)
+        next
+      }
       if (inherits(input, "error")) {
-        for (mode in modes) record(trait, case, mode, "missing_or_invalid_gwas", conditionMessage(input))
+        for (mode in source_modes) record(trait, case, mode, "missing_or_invalid_gwas", conditionMessage(input))
         next
       }
       region <- regions[match(case, regions$case_id), ]
-      raw <- input[input$chromosome == region$chromosome & input$position >= region$start & input$position <= region$end, , drop = FALSE]
-      cleaned <- cg_clean_gwas(raw, min_info)
+      raw <- if (identical(s$format, "eqtl_catalogue_susie")) input else
+        input[input$chromosome == region$chromosome & input$position >= region$start & input$position <= region$end, , drop = FALSE]
+      cleaned <- if (identical(s$format, "eqtl_catalogue_susie")) list(data=raw, counts=c(input=nrow(raw))) else cg_clean_gwas(raw, min_info)
       g <- cleaned$data
       bundle_path <- file.path(job_dir, cases$bundle[i])
       if (unname(tools::md5sum(bundle_path)) != cases$md5[i]) stop("Frozen BF bundle checksum mismatch")
       bundle <- readRDS(bundle_path)
-      for (mode in modes) {
+      for (mode in source_modes) {
         if (mode == "susie" && (is.null(ld) || !identical(s$ancestry, ld_ancestry))) {
           record(trait, case, mode, "pending_ld", if (is.null(ld)) ld_problem else "GWAS and reference ancestry disagree")
           next
@@ -364,7 +432,7 @@ run_em_gwas_coloc <- function(job_dir, modes = c("abf", "susie"), traits = NULL,
         dir.create(dir, recursive = TRUE, showWarnings = FALSE)
         result <- tryCatch({
           if (nrow(g) < min_snps) stop("Insufficient regional GWAS SNPs after allele/INFO QC")
-          gw <- if (mode == "abf") cg_abf(g, s, effect_prior_sd[[trait]]) else
+          gw <- if (mode == "published") cg_published_susie(g, s) else if (mode == "abf") cg_abf(g, s, effect_prior_sd[[trait]]) else
             cg_susie(g, s, ld, dir, L, max_rss_s, min_ld_fraction)
           saveRDS(gw, file.path(dir, "gwas_bfs.rds"))
           paired <- cg_pair(bundle, gw, priors, min_mass, min_snps)
@@ -391,7 +459,7 @@ run_em_gwas_coloc <- function(job_dir, modes = c("abf", "susie"), traits = NULL,
   cg_write(all_pairs, file.path(out, "all_signal_pairs.csv"))
   cg_write(audit, file.path(out, "audit.csv"))
   if (nrow(ch)) {
-    counts <- ch[, .N, by = .(trait_id, analysis, p1, p2, p12, classification)]
+    counts <- ch[, .N, by = .(trait_group, trait_id, selection_group, analysis, p1, p2, p12, classification)]
     data.table::fwrite(counts, file.path(out, "change_counts.csv"))
   }
   writeLines(format(Sys.time(), tz = "UTC", usetz = TRUE), file.path(out, "completed.txt"))

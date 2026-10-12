@@ -8,6 +8,7 @@ em_coloc_settings <- list(
   association_threshold = 5e-8,
   shift_bp = 10000,
   compute_ld = TRUE,
+  unshifted_control_fraction = .01, # Reproducible 1% of eligible unshifted gene-tissue pairs.
   export_tsv = TRUE
 )
 if (sys.nframe() == 0L) {

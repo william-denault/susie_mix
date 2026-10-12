@@ -1,15 +1,19 @@
 # GWAS follow-up: EM mix versus vanilla
 
 This follows `screen_em_coloc_candidates.R`. It freezes the latest **completed**
-EM iteration and its most recent completed screen, downloads a fixed panel of 32
-full-summary GWAS releases, and compares the saved expression log BFs with GWAS
+EM iteration and its most recent completed screen, downloads a fixed panel of 50
+full-summary GWAS releases (the original 32 plus 18 biomarkers), and compares the saved expression log BFs with GWAS
 log BFs. It does not refit the expression models or change screening thresholds.
 The screened gene–tissue P < 5e-8 is the baseline marginal additive association
 test, not a test for a specific CS or for nonadditivity.
 
+The download entry now also prepares same-gene UKB-PPP protein comparisons and
+external expression-QTL comparisons in prespecified tissues. These use the same
+paired EM/vanilla H0–H4 and gain/loss calculations. See the molecular section below.
+
 ## Run on RCC
 
-Requirements: Python >=3.9 (standard library only), R packages `data.table`,
+Requirements: Python >=3.9 (standard library for GWAS/eQTL; `synapseclient` for UKB-PPP), R packages `data.table`,
 `jsonlite`, `digest`, `R.utils`, `coloc` (tested with 5.2.3), and `susieR` for the
 GWAS multi-signal analysis. PLINK 2 is required when using reference genotypes.
 Full GWAS downloads require substantial disk space; use a cluster filesystem.
@@ -17,7 +21,7 @@ Full GWAS downloads require substantial disk space; use a cluster filesystem.
 1. Source `script/analysis/download_em_coloc_gwas.R`. Defaults select the latest
    completed iteration and latest completed screening run for that iteration.
    Run the screening script first if there is no such screen. `traits = NULL`
-   requests all 32; `c("ad", "ldl")` is a useful initial subset. No GWAS P-value
+   requests every frozen source; `c("tsh", "alt")` is a useful initial subset. No GWAS P-value
    threshold is applied to the extracted regions.
 2. The script prints a **frozen job directory** and sets `em_gwas_job_dir` in
    RStudio. To resume a download, set `job_dir` to that path in the download script.
@@ -217,6 +221,119 @@ enumeration, gain/loss symmetry, null evidence, SNP order, causal-SNP loss, abse
 CSs, effect-scale invariance, actual SuSiE RSS, and frozen-job disk I/O. Real RCC
 colocalizations require the screening bundles, full downloads and a suitable LD
 reference; local tests do not establish biological findings.
+
+## Biomarkers, proteins and external eQTLs (2026-10-12 extension)
+
+**Use a new job (`job_dir = NULL`) to include the extension.** Resuming an old job
+preserves its original source registry. To include unshifted controls, first rerun
+`screen_em_coloc_candidates.R`: its entry now defaults to
+`unshifted_control_fraction = .01`. This exports a reproducible 1% sample of
+eligible unshifted gene–tissue pairs, selected by a hash of gene/tissue before
+external associations are examined. Set 0 for the original shifted-only exports
+or 1 to export all eligible unshifted pairs. Controls still require P < 5e-8 and
+valid saved CSs; this is not an unselected genome-wide benchmark or a matched
+control set. `selection_group` separates shifted, unshifted and no-vanilla-CS
+cases in reports. Old screening bundles remain usable but have no new controls.
+
+After syncing the analysis scripts and JSON registries to RCC:
+
+```r
+project_dir <- "/project2/mstephens/wdenault/susie_mix"
+source(file.path(project_dir, "script/analysis/screen_em_coloc_candidates.R"))
+# In the download script leave job_dir=NULL, traits=NULL and the three include_*=TRUE.
+source(file.path(project_dir, "script/analysis/download_em_coloc_gwas.R"))
+source(file.path(project_dir, "script/analysis/run_em_gwas_coloc.R"))
+```
+
+The added fixed sources are pinned in `coloc_biomarker_sources.json`. Headers and
+initial records were checked against public releases; build and sample-size
+metadata were checked too. Existing 32 source definitions are unchanged.
+
+| Group | New trait IDs | Release |
+|---|---|---|
+| Thyroid | `tsh`, `ft4`, `ft3` | ThyroidOmics, Sterenborg 2024; GRCh37, per-SNP N |
+| Liver | `alt`, `alp`, `ggt` | Pazoki 2021, UKB discovery; GCST90013405–407 |
+| Blood cells | `neutrophil_count`, `monocyte_count`, `lymphocyte_count`, `eosinophil_count`, `platelet_count`, `mean_platelet_volume` | Vuckovic 2020 **UKB subset**, 408,112 participants, not the full consortium meta-analysis |
+| Metabolites | `met_alanine`, `met_glycine`, `met_glutamine`, `met_leucine`, `met_glutamine_alanine_ratio`, `met_glycine_serine_ratio` | Chen 2023 CLSA, European ancestry releases |
+
+These quantitative traits are selected before H4 and tested across screened cases.
+Tissue plausibility should inform interpretation: thyroid/pituitary for thyroid
+function; liver for enzymes; blood and relevant immune cells for counts; the
+gene's metabolic pathway for metabolites. The six metabolites/ratios form a small
+prespecified exploratory panel, not a claim that they are appropriate for every
+gene. Correlated ratios and multiple tissues are not independent replications.
+Catalog-only N is a study-level approximation; quantitative ABF scale estimation
+and RSS LD diagnostics retain the existing checks. Blood traits can reflect cell
+composition, not just regulation within a cell type.
+
+### Same-gene proteins
+
+`include_pqtl = TRUE` selects exact gene-symbol matches in the European discovery
+release of [UKB-PPP](https://www.synapse.org/Synapse:syn51365303). Separate assays
+for the same protein remain separate sources. Synapse file IDs and version numbers
+are frozen. Python requires `synapseclient`; configure a Synapse login on RCC or
+the `SYNAPSE_AUTH_TOKEN` environment variable there. Do not put tokens in scripts.
+The pipeline neither creates accounts nor accepts source access terms for you.
+If access is unavailable, other sources continue and `molecular_selection.json`
+records the failure. After configuring access, create a new job to add proteins.
+
+Full chromosome REGENIE files are streamed from per-protein tar archives, keeping
+the additive association test and all regional SNPs, irrespective of P. ALLELE1
+is the effect allele. Per-SNP N is used: the discovery cohort is smaller than the
+total UKB-PPP sample. Protein and expression genes must match; trans-pQTLs at
+unrelated genes are not substituted. Protein-altering variants can affect assay
+binding, so interesting results warrant checks across assays/platforms.
+
+### External expression replication
+
+`include_eqtl = TRUE` uses `coloc_eqtl_datasets.json`, a fixed selection from the
+[eQTL Catalogue](https://www.ebi.ac.uk/eqtl/Data_access/): Lepik blood, FUSION muscle
+and adipose, TwinsUK skin, BrainSeq DLPFC, GEUVADIS lymphoblastoid cells and GENCORD
+fibroblasts. Exact supported GTEx tissue labels are listed in that file. The
+project's broad `Brain` group is labelled a broad tissue match, not an exact brain
+subregion match. GENCORD's developmental context differs from adult GTEx.
+No matching external tissue or an unmapped gene is recorded in the selection audit.
+
+HGNC approved symbols map genes to Ensembl IDs; ambiguous aliases are not guessed.
+Mapping-file checksums and dataset metadata are frozen before any H4 calculation.
+GTEx is excluded as a replication source. The label `distinct_cohort_design` means
+separate named cohorts, not a participant-level proof of zero overlap. Check donor
+overlap and cohort context before claiming independent replication; do not count
+correlated tissues or related cohorts as independent findings.
+
+Catalogue credible sets identify components (minimum within-CS r² >=.25);
+**every SNP BF in the original fine-mapped region** is retained for those components,
+including non-CS variants. The code uses absolute natural `lbf_variable` values,
+never CS-level log10 BFs or PIPs as BFs. Unsupported/ambiguous variants remain in
+the coverage denominator. Data are scanned once per external dataset for all
+selected genes. Only a bounded number of gene output streams are kept open.
+Missing external CSs remain unassessed, not H0 or a loss.
+
+Published SuSiE inputs automatically use mode `published`, without a new LD
+reference or refit. Other new GWAS/protein inputs retain the ABF sensitivity and
+LD-dependent GWAS SuSiE modes. The existing LD configuration is still needed for
+those primary analyses.
+
+All outputs retain H0–H4, gains/losses and shared-SNP distributions. Added fields
+include `trait_group`, `external_study`, `external_tissue`, `tissue_match`,
+`sample_overlap`, and `selection_group`. Existing `gwas_component`/H2 column names
+also refer to the external protein/eQTL signal when those are the comparison.
+`molecular_selection_audit.csv` records unmatched genes/tissues and preparation
+failures alongside the existing per-comparison `audit.csv`.
+Interpret H4 as shared variation, not demonstrated expression-mediated causality
+or a nonadditive effect in the external trait.
+
+Additional validation:
+
+```bash
+python3 -m unittest discover -s script/analysis/tests -p 'test*coloc*.py'
+Rscript --vanilla script/analysis/tests/test_em_molecular_coloc.R
+```
+
+Local tests cover all 50 pinned schemas, synthetic UKB tar streaming, Catalogue
+component/full-region BFs, identity/tissue checks, frozen molecular selection,
+coverage loss, H0–H4 gain/loss symmetry, and unshifted controls. They do not replace
+a full real-data run or validate Synapse access on RCC.
 
 On this Windows installation Python could not validate UCSC's certificate chain,
 while Windows curl verified it successfully. If the RCC Python has the same CA

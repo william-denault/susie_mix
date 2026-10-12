@@ -4,10 +4,13 @@ For the separate first-stage GWAS colocalization screen, Source
 `screen_em_coloc_candidates.R` or run it with Rscript. It uses `latest` completed
 fits, P < 5e-8, shifts >10 kb from every vanilla CS lead, LD/CS-overlap diagnostics,
 and SNP-level log-BF exports. It does not require pre-generated summaries.
-See [the screening guide](README_em_coloc_screen.md) and [32-trait shortlist](coloc_trait_panel.csv).
+See [the screening guide](README_em_coloc_screen.md) and [trait shortlist](coloc_trait_panel.csv).
 
 For the next stage, see [GWAS downloads and paired EM/vanilla colocalization](README_em_gwas_coloc.md).
 Source `download_em_coloc_gwas.R`, then `run_em_gwas_coloc.R` with the printed frozen job path.
+New jobs include 50 fixed GWAS/biomarker traits plus gene-matched UKB-PPP proteins
+and external eQTL Catalogue signals. The screen can also export unshifted controls;
+see the coloc guide for Synapse access and the prespecified tissue matches.
 
 Run from the project root, in this order:
 

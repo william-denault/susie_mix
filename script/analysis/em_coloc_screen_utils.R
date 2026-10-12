@@ -197,7 +197,11 @@ em_screen_bind <- function(rows, columns) {
 em_screen_coloc <- function(project_dir, iteration = "latest", datadir = "/project2/mstephens/gtex",
                             association_threshold = 5e-8, shift_bp = 10000,
                             compute_ld = TRUE, genotype_reader = NULL, export_tsv = TRUE,
-                            output_dir = NULL) {
+                            output_dir = NULL, unshifted_control_fraction = 0) {
+  if (length(unshifted_control_fraction) != 1L || !is.finite(unshifted_control_fraction) ||
+      unshifted_control_fraction < 0 || unshifted_control_fraction > 1)
+    stop("unshifted_control_fraction must be between 0 and 1")
+  if (unshifted_control_fraction > 0 && !requireNamespace("digest", quietly = TRUE)) stop("Install digest for control sampling")
   if (length(association_threshold) != 1L || !is.finite(association_threshold) ||
       association_threshold <= 0 || association_threshold > 1 || length(shift_bp) != 1L ||
       !is.finite(shift_bp) || shift_bp < 0) stop("Invalid screening thresholds.")
@@ -220,6 +224,8 @@ em_screen_coloc <- function(project_dir, iteration = "latest", datadir = "/proje
   metadata <- list(iteration = context$iteration, iteration_dir = context$iteration_dir,
     baseline_dir = context$baseline_dir, priors = context$priors,
     association_threshold = association_threshold, shift_bp = shift_bp, compute_ld = compute_ld,
+    unshifted_control_fraction = unshifted_control_fraction,
+    control_selection = "SHA256(gene|tissue|coloc_control_v1), independent of external associations",
     p_value_definition = "Saved minimum marginal additive cis-SNP P value (min_pv); gene-tissue screen",
     lead_definition = "Highest component alpha predictor within each saved credible set",
     ld_definition = "Squared Pearson correlation of raw additive dosages in reconstructed tissue samples",
@@ -313,12 +319,19 @@ em_screen_coloc <- function(project_dir, iteration = "latest", datadir = "/proje
       }
       s <- do.call(rbind, local_screen)
       pr <- if (length(local_pairs)) do.call(rbind, local_pairs) else NULL
-      export_case <- any(s$shifted) || !length(vanilla)
+      control <- FALSE
+      if (unshifted_control_fraction > 0 && all(s$classification == "not_shifted")) {
+        hash <- digest::digest(paste(gene, tissue, "coloc_control_v1", sep="|"), algo="sha256", serialize=FALSE)
+        control <- strtoi(substr(hash, 1, 7), base=16) / 16^7 < unshifted_control_fraction
+      }
+      selection_group <- if (any(s$shifted)) "shifted" else if (!length(vanilla)) "no_vanilla_cs" else "unshifted_control"
+      export_case <- any(s$shifted) || !length(vanilla) || control
       if (export_case) {
         id <- sprintf("case_%06d", length(exports) + 1L)
         relative <- paste0("bf/", id, ".rds")
         bundle <- tryCatch(em_screen_bundle(x, em, vanilla,
-          c(metadata[c("iteration", "association_threshold", "shift_bp")], list(gene = gene, tissue = tissue, min_pv = p))), error = identity)
+          c(metadata[c("iteration", "association_threshold", "shift_bp")], list(gene = gene, tissue = tissue, min_pv = p,
+            selection_group = selection_group))), error = identity)
         if (inherits(bundle, "error")) {
           s$bf_status <- "error"
           record_audit(gene, tissue, "bf_export", conditionMessage(bundle))
@@ -329,6 +342,7 @@ em_screen_coloc <- function(project_dir, iteration = "latest", datadir = "/proje
           s$bundle <- relative
         }
         exports[[length(exports) + 1L]] <- data.frame(gene, tissue, bundle = s$bundle[1],
+          selection_group = selection_group,
           bf_status = s$bf_status[1], n_em_cs = length(em), n_vanilla_cs = length(vanilla),
           n_common_snps = if (inherits(bundle, "error")) NA_integer_ else length(bundle$paired$snp),
           min_em_retained_mass = if (inherits(bundle, "error")) NA_real_ else min(bundle$paired$em_retained_mass),
@@ -371,6 +385,7 @@ em_screen_coloc <- function(project_dir, iteration = "latest", datadir = "/proje
     cs_pair_comparisons = pr, audit = a, bf_manifest = ex)
   for (nm in names(outputs)) write.csv(outputs[[nm]], file.path(output_dir, paste0(nm, ".csv")), row.names = FALSE)
   stats <- c(as.list(counts), list(n_em_cs = nrow(s), n_shifted_cs = nrow(outputs$candidates),
+    n_exported_unshifted_controls = sum(ex$selection_group == "unshifted_control" & grepl("^exported", ex$bf_status)),
     n_no_vanilla_cs = nrow(outputs$no_vanilla_cs), n_exported_gene_tissues = sum(grepl("^exported", ex$bf_status)),
     n_audit_records = nrow(a)))
   write.csv(as.data.frame(stats), file.path(output_dir, "screen_counts.csv"), row.names = FALSE)
