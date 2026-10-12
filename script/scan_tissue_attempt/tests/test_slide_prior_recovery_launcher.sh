@@ -16,7 +16,8 @@ export REC_OTHERS=0 REC_ACTIVE=0 REC_ACTIVE_NAME=0 REC_STATUS=batch REC_LOCK=0
 export REC_FAIL_ARRAY=0 REC_FAIL_NEXT=0 REC_FAIL_GENES=0 REC_FAIL_GENE=0 REC_GENES_COUNT=2
 export REC_PLAN_CALLS=0
 export REC_FAIL_VERIFY=0
-unset SUSIE_SLIDE_GENES_PER_TASK SUSIE_SLIDE_TARGET_ITERATION SUSIE_SLIDE_PILOT
+export REC_FAIL_GRANT=0
+unset SUSIE_SLIDE_GENES_PER_TASK SUSIE_SLIDE_TARGET_ITERATION SUSIE_SLIDE_PILOT SUSIE_SLIDE_EXCLUDE_NODES SLURM_RESTART_COUNT
 mkdir -p "$SUSIE_MIX_PROJECT_DIR/results_slide_prior_em"
 controller="$repo/job/recover_slide_prior_em"
 worker="$repo/job/recover_slide_prior_em_array"
@@ -35,6 +36,9 @@ Rscript() {
     printf '%s\n' "$mode" >> "$REC_TEST/r_calls"
     case "$mode" in
         audit|exclude-sex-mt) return 0 ;;
+        grant-retry)
+            printf '%s\n' "$6" "$7" "$8" > "$REC_TEST/grant_args"
+            [[ "$REC_FAIL_GRANT" == 0 ]] ;;
         verify) [[ "$REC_FAIL_VERIFY" == 0 ]] ;;
         new) printf '1\n' ;;
         plan)
@@ -51,6 +55,7 @@ Rscript() {
             for ((i=1; i<=REC_GENES_COUNT; i++)); do printf 'G%03d\n' "$i"; done ;;
         gene)
             printf '%s\n' "$8" >> "$REC_TEST/gene_calls"
+            printf 'fixture gene output\n'
             [[ "$REC_FAIL_GENE" == 0 || "$8" != G001 ]] ;;
         *) return 1 ;;
     esac
@@ -107,6 +112,29 @@ for cap in 0 16 4.5 -1 bad 04; do
 done
 unset SUSIE_SLIDE_GENES_PER_TASK
 
+# Reviewed retries run under the same lock/queue guards, before planning.
+export SUSIE_SLIDE_EXCLUDE_NODES=midway2-0003
+reset_calls
+"$BASH" "$controller" retry 0 G001 3 'Three reviewed NODE_FAIL records' > "$REC_TEST/output" 2>&1
+[[ "$(cat "$REC_TEST/r_calls")" == $'grant-retry\nplan' ]]
+[[ "$(cat "$REC_TEST/grant_args")" == $'G001\n3\nThree reviewed NODE_FAIL records' ]]
+grep -Fxq -- '--exclude=midway2-0003' "$REC_TEST/array_args"
+grep -Fxq -- '--exclude=midway2-0003' "$REC_TEST/next_args"
+export REC_FAIL_GRANT=1
+reset_calls
+expect_fail "$BASH" "$controller" retry 0 G001 3 'Three reviewed NODE_FAIL records'
+[[ "$(cat "$REC_TEST/r_calls")" == grant-retry && ! -s "$REC_TEST/array_args" ]]
+export REC_FAIL_GRANT=0 REC_ACTIVE_NAME=1
+reset_calls
+expect_fail "$BASH" "$controller" retry 0 G001 3 'Three reviewed NODE_FAIL records'
+[[ ! -s "$REC_TEST/r_calls" && ! -s "$REC_TEST/array_args" ]]
+export REC_ACTIVE_NAME=0
+for args in 'retry 0' 'retry 0 G001 3' 'retry 0 G001 bad reason'; do
+    expect_fail "$BASH" "$controller" $args
+done
+expect_fail env SUSIE_SLIDE_EXCLUDE_NODES='node one' "$BASH" "$controller" resume 0
+unset SUSIE_SLIDE_EXCLUDE_NODES
+
 # Count every other submitted array element, plus this and the next controller.
 export REC_OTHERS=295
 "$BASH" "$controller" resume 0 > "$REC_TEST/output" 2>&1
@@ -144,10 +172,12 @@ grep -Fxq verify "$REC_TEST/r_calls"
 [[ ! -s "$REC_TEST/array_args" && ! -s "$REC_TEST/next_args" ]]
 # A verified iteration queues exactly one next controller up to the target.
 export SUSIE_SLIDE_TARGET_ITERATION=20
+export SUSIE_SLIDE_EXCLUDE_NODES=midway2-0003
 reset_calls
 "$BASH" "$controller" resume 0 > "$REC_TEST/output" 2>&1
 grep -Fxq verify "$REC_TEST/r_calls"
 grep -Fxq -- '--dependency=afterok:9000' "$REC_TEST/next_args"
+grep -Fxq -- '--exclude=midway2-0003' "$REC_TEST/next_args"
 grep -Fxq new "$REC_TEST/next_args"
 grep -Fxq 1 "$REC_TEST/next_args"
 grep -Fxq 20 "$REC_TEST/next_target"
@@ -194,6 +224,7 @@ grep -Fxq continue "$REC_TEST/next_args"
 grep -Fxq 20 "$REC_TEST/next_target"
 grep -Fxq 4 "$REC_TEST/next_gene_cap"
 unset SUSIE_SLIDE_TARGET_ITERATION
+unset SUSIE_SLIDE_EXCLUDE_NODES
 export REC_STATUS=batch
 
 export REC_FAIL_ARRAY=1
@@ -217,6 +248,18 @@ export SLURM_ARRAY_TASK_ID=1 REC_FAIL_GENE=1
 batch="$SUSIE_MIX_PROJECT_DIR/results_slide_prior_em/iteration_000/recovery/batches/batch_test"
 expect_fail "$BASH" "$worker" "$SUSIE_MIX_PROJECT_DIR" 0 "$batch"
 [[ "$(cat "$REC_TEST/gene_calls")" == $'G001\nG002' ]]
+# A requeue must retain the previous gene logs, including when run repeatedly.
+log="$batch/gene_logs/G001_9000_restart_0.out"
+[[ "$(cat "$log")" == 'fixture gene output' ]]
+export SLURM_RESTART_COUNT=1 REC_FAIL_GENE=0
+"$BASH" "$worker" "$SUSIE_MIX_PROJECT_DIR" 0 "$batch" > "$REC_TEST/output" 2>&1
+[[ "$(cat "$log")" == 'fixture gene output' ]]
+[[ "$(cat "$batch/gene_logs/G001_9000_restart_1.out")" == 'fixture gene output' ]]
+"$BASH" "$worker" "$SUSIE_MIX_PROJECT_DIR" 0 "$batch" > "$REC_TEST/output" 2>&1
+[[ "$(cat "$batch/gene_logs/G001_9000_restart_1.out")" == $'fixture gene output\nfixture gene output' ]]
+grep -Fxq '#SBATCH --open-mode=append' "$worker"
+grep -Fxq '#SBATCH --open-mode=append' "$controller"
+unset SLURM_RESTART_COUNT
 export REC_FAIL_GENE=0 REC_FAIL_GENES=1
 : > "$REC_TEST/gene_calls"
 expect_fail "$BASH" "$worker" "$SUSIE_MIX_PROJECT_DIR" 0 "$batch"
@@ -229,4 +272,4 @@ reset_calls
 touch "$SUSIE_MIX_PROJECT_DIR/results_slide_prior_em/iteration_000/recovery/state.rds"
 expect_fail "$BASH" "$repo/job/em_susie_slide_prior" resume
 [[ ! -s "$REC_TEST/array_args" && ! -s "$REC_TEST/r_calls" ]]
-echo 'PASS: account capacity, gene caps, verified 20-update chain and terminal stop, target propagation, duplicate protection, pilot, submission failures and isolated gene commands.'
+echo 'PASS: reviewed retry guards, node exclusion propagation, restart log preservation, capacity, gene caps, 20-update chain, duplicate protection, pilot and submission failures.'

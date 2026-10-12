@@ -214,6 +214,62 @@ exclusions. Re-run `audit` after adding reviews, then `resume`.
 iteration limit, as in the original workflow. Raising it does not cure a
 wall-clock limit or memory failure and does not reset the retry counter.
 
+### Reviewed node failure: preserve the count and allow one more attempt
+
+The October 12 investigation found that CCDC62's three attempts were interrupted
+by `NODE_FAIL` on `midway2-0003`. Slurm restarted array task `49219819_1`
+three times. Its final execution on `midway2-0079` refused CCDC62 because the
+budget was already exhausted, then processed the other three genes. The final
+`FAILED` record therefore does not describe the earlier node failures. Use
+`sacct --duplicates -j 49219819_1` to see all executions; the cancelled batch
+steps beneath the `NODE_FAIL` allocations do not establish a manual cancellation.
+
+After uploading the updated bundle and confirming there are no active slider
+jobs, this command records the reviewed interruption and resumes initialization:
+
+```bash
+cd /project2/mstephens/wdenault/susie_mix/job
+SUSIE_SLIDE_PILOT=0 SUSIE_SLIDE_GENES_PER_TASK=4 SUSIE_SLIDE_MAX_ITER=5000 \
+SUSIE_SLIDE_EXCLUDE_NODES=midway2-0003 \
+sbatch --exclude=midway2-0003 recover_slide_prior_em retry 0 CCDC62 3 \
+  "Reviewed sacct --duplicates: 49219819_1 had three NODE_FAIL executions on midway2-0003; third attempt started 2026-10-11 05:49:58 UTC"
+```
+
+The new `retry ITERATION GENE EXPECTED_ATTEMPTS "REVIEW_REASON"` mode runs
+under the normal coordinator lock and active-job guards. It accepts only a
+currently unresolved gene whose exact expected count equals the original retry
+limit and whose last receipt says `Interrupted before receipt`, without a
+finished timestamp. This message alone is not evidence of node failure: inspect
+the accounting/logs and state that evidence in the reason before using `retry`.
+
+It writes `recovery/retry_allowances/CCDC62.rds` containing the original receipt,
+frozen-file and chromosome-scope identities, review reason and time, and a total
+limit of four attempts. The existing receipt/count, original retry policy,
+manifest, priors and saved gene results are left in place. Both planner and
+worker enforce the same per-gene allowance; other genes retain their original
+limits. Repeating the same review is idempotent and cannot authorize a fifth
+attempt. A further interruption or fitting error stops again for inspection.
+This is an execution retry, not an input exclusion or a completed fit.
+
+The command resumes all remaining genes, reusing validated checkpoints and
+retaining the usual priority of unattempted genes ahead of retries. It stops
+after initialization unless `SUSIE_SLIDE_TARGET_ITERATION` is explicitly set
+as described below. A previously written `blocked.csv` is a historical stop
+record; consult the refreshed `audit.csv` and controller log for current status.
+
+`SUSIE_SLIDE_EXCLUDE_NODES` accepts comma-separated node names and is explicitly
+passed to every worker array and continuation, including later iterations.
+The initial `sbatch --exclude` keeps the first controller off the node too.
+This exclusion applies only to the submitted recovery chain; it does not change
+cluster configuration. Omit it from a future manual launch once the node is
+known to be repaired.
+
+Worker and coordinator stdout/stderr use Slurm append mode. Gene logs now have
+names such as `CCDC62_JOBID_restart_0.err`; a requeue gets a different restart
+suffix, and repeated invocations append rather than discard earlier output.
+New attempt receipts also record the Slurm job, array task, restart count and
+node. Existing overwritten logs cannot be reconstructed by this update.
+
 ## Completion and the next EM update
 
 When all genes appear resolved, the coordinator rereads **every full result**

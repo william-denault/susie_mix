@@ -76,6 +76,68 @@ sre_result <- function(ctx, gene) file.path(ctx$dir, "results", paste0(gene, ".r
 sre_attempt_file <- function(ctx, gene) file.path(ctx$root, "attempts", paste0(gene, ".rds"))
 sre_ready <- function(status) status %in% c("valid", "qc_excluded", "reviewed_exclusion", "scope_excluded")
 
+# A reviewed infrastructure interruption may receive one additional attempt.
+# Keep the original receipt and count; this is never a biological exclusion.
+sre_retry_allowance <- function(ctx, gene, state) {
+  file <- file.path(ctx$root, "retry_allowances", paste0(gene, ".rds"))
+  if (!file.exists(file)) return(NULL)
+  x <- sre_read(file)
+  if (!is.list(x) || !identical(x$schema, 1L) || !identical(x$gene, gene) ||
+      !identical(x$frozen, ctx$frozen) || !identical(x$scope_md5, ctx$scope$md5) ||
+      !is.list(x$previous_receipt) || !identical(x$previous_receipt$gene, gene) ||
+      !identical(x$previous_receipt$frozen, ctx$frozen) ||
+      !identical(x$previous_receipt$error, "Interrupted before receipt") ||
+      !is.null(x$previous_receipt$finished_at) ||
+      !is.character(x$reason) || length(x$reason) != 1L || is.na(x$reason) ||
+      !nzchar(trimws(x$reason))) stop("Invalid reviewed retry allowance: ", gene)
+  if (sre_int(x$previous_receipt$attempt, "reviewed attempt") != state$max_attempts ||
+      sre_int(x$max_attempts, "reviewed retry limit") != state$max_attempts + 1L)
+    stop("Invalid reviewed retry limit: ", gene)
+  x
+}
+
+sre_attempt_limits <- function(ctx, state, genes) {
+  limits <- setNames(rep.int(as.integer(state$max_attempts), length(genes)), genes)
+  reviewed <- sub("\\.rds$", "", list.files(file.path(ctx$root, "retry_allowances"), "\\.rds$"))
+  for (gene in intersect(genes, reviewed)) {
+    x <- sre_retry_allowance(ctx, gene, state)
+    if (is.null(x)) stop("Retry allowance disappeared while reading: ", gene)
+    limits[gene] <- as.integer(x$max_attempts)
+  }
+  limits
+}
+
+sre_grant_interrupted_retry <- function(ctx, gene, expected_attempt, reason) {
+  state <- sre_load(ctx)$state
+  if (length(gene) != 1L || !gene %in% ctx$manifest$gene || gene %in% ctx$scope$excluded)
+    stop("Retry gene must be in the active manifest.")
+  expected_attempt <- sre_int(expected_attempt, "expected attempt")
+  if (expected_attempt != state$max_attempts)
+    stop("Only one additional attempt beyond the original retry limit is supported.")
+  if (!is.character(reason) || length(reason) != 1L || is.na(reason) || !nzchar(trimws(reason)))
+    stop("Supply the reviewed infrastructure failure and its accounting evidence.")
+  existing <- sre_retry_allowance(ctx, gene, state)
+  if (!is.null(existing)) {
+    if (!identical(existing$reason, reason)) stop("A different retry review is already recorded.")
+    message("Existing allowance retained for ", gene, "; no extra attempt added.")
+    return(invisible(existing))
+  }
+  if (sre_ready(sre_inspect(ctx, gene)$status)) stop("Gene is already resolved; use resume.")
+  receipt <- sre_read(sre_attempt_file(ctx, gene))
+  if (!is.list(receipt) || !identical(receipt$gene, gene) ||
+      !identical(receipt$frozen, ctx$frozen) ||
+      !identical(receipt$error, "Interrupted before receipt") || !is.null(receipt$finished_at))
+    stop("Expected an interrupted attempt receipt; inspect it before granting a retry.")
+  if (sre_int(receipt$attempt, "receipt attempt") != expected_attempt)
+    stop("Attempt count changed since review; no retry allowance written.")
+  allowance <- list(schema = 1L, gene = gene, frozen = ctx$frozen, scope_md5 = ctx$scope$md5,
+                    previous_receipt = receipt, max_attempts = expected_attempt + 1L,
+                    reason = reason, reviewed_at = format(Sys.time(), tz = "UTC", usetz = TRUE))
+  em_atomic_write(allowance, file.path(ctx$root, "retry_allowances", paste0(gene, ".rds")))
+  message("Recorded one additional attempt for ", gene, "; prior receipt/count preserved.")
+  invisible(allowance)
+}
+
 # Explicit scope selection before the first learned-prior update. Keep the
 # original manifests/results; the policy governs scheduling AND pooling.
 sre_exclude_sex_mt <- function(ctx, annotations = NULL,
@@ -335,7 +397,8 @@ sre_plan_batch <- function(ctx, capacity, pilot_genes = NULL, automatic = FALSE,
       return(list(status = "blocked"))
     }
   }
-  blocked <- pending[audit$attempts[pending] >= loaded$state$max_attempts]
+  limits <- sre_attempt_limits(ctx, loaded$state, audit$gene[pending])
+  blocked <- pending[audit$attempts[pending] >= limits]
   if (length(blocked)) {
     em_atomic_write(audit[blocked, ], file.path(ctx$root, "blocked.csv"), csv = TRUE)
     return(list(status = "blocked"))
@@ -410,9 +473,14 @@ sre_run_gene <- function(ctx, gene, run_gene = run_slide_prior_gene) {
     sre_int(a$attempt, "attempt receipt count")
   }
   attempt <- if (is.null(a)) 1L else a$attempt + 1L
-  if (attempt > loaded$state$max_attempts) stop("Gene retry budget exhausted: ", gene)
+  if (attempt > sre_attempt_limits(ctx, loaded$state, gene)) stop("Gene retry budget exhausted: ", gene)
   record <- list(gene = gene, attempt = attempt, frozen = ctx$frozen,
-                 started_at = format(Sys.time(), tz = "UTC", usetz = TRUE), error = "Interrupted before receipt")
+                 started_at = format(Sys.time(), tz = "UTC", usetz = TRUE), error = "Interrupted before receipt",
+                 slurm_job_id = Sys.getenv("SLURM_JOB_ID"),
+                 slurm_array_job_id = Sys.getenv("SLURM_ARRAY_JOB_ID"),
+                 slurm_array_task_id = Sys.getenv("SLURM_ARRAY_TASK_ID"),
+                 slurm_restart_count = Sys.getenv("SLURM_RESTART_COUNT", "0"),
+                 slurm_node = Sys.getenv("SLURMD_NODENAME"))
   em_atomic_write(record, sre_attempt_file(ctx, gene))
   warnings <- character()
   tryCatch(withCallingHandlers({

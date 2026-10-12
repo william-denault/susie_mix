@@ -21,7 +21,10 @@ if (mode == "new") {
 } else {
   ctx <- sre_context(project, iteration_dir, check_package = mode %in% c("plan", "gene"),
                       allow_scope_adoption = mode == "exclude-sex-mt")
-  if (mode == "exclude-sex-mt") {
+  if (mode == "grant-retry") {
+    if (length(args) != 6L) stop("grant-retry requires gene, expected attempt count and review reason")
+    sre_grant_interrupted_retry(ctx, args[4], args[5], args[6])
+  } else if (mode == "exclude-sex-mt") {
     sre_exclude_sex_mt(ctx)
   } else if (mode == "audit") {
     sre_audit(ctx, if (length(args) >= 4L) args[4] else 10L,

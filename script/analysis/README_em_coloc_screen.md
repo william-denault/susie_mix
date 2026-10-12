@@ -230,6 +230,10 @@ causal variant; it does not on its own establish expression-mediated causality.
 
 ## Validation
 
+The next stage is implemented in [README_em_gwas_coloc.md](README_em_gwas_coloc.md):
+pinned downloads for the 32-trait panel and paired EM/vanilla H0–H4 comparisons,
+with gains, losses, shared-SNP locations and explicit unassessed cases.
+
 ```bash
 Rscript --vanilla script/analysis/tests/test_em_coloc_screen.R
 ```

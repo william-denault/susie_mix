@@ -117,6 +117,57 @@ stopifnot(sre_plan_batch(ctx, 5L, automatic = TRUE)$status == "blocked",
           sre_plan_batch(ctx, 5L)$status == "batch")
 unlink(file.path(ctx$root, "last_batch.txt"))
 
+# Node failures/requeues consume attempts. A reviewed allowance preserves that
+# history and permits exactly one further attempt, for exactly one gene.
+interrupted <- list(gene = "G023", attempt = 3L, frozen = ctx$frozen,
+                    started_at = "2026-10-11 05:49:58 UTC", error = "Interrupted before receipt")
+em_atomic_write(interrupted, sre_attempt_file(ctx, "G023"))
+stopifnot(sre_plan_batch(ctx, 298)$status == "blocked")
+fails(sre_grant_interrupted_retry(ctx, "UNKNOWN", 3L, "Node failure"), "active manifest")
+fails(sre_grant_interrupted_retry(ctx, "G023", 2L, "Node failure"), "original retry limit")
+fails(sre_grant_interrupted_retry(ctx, "G023", 3L, ""), "accounting evidence")
+changed <- interrupted; changed$attempt <- 2L
+saveRDS(changed, sre_attempt_file(ctx, "G023"))
+fails(sre_grant_interrupted_retry(ctx, "G023", 3L, "Node failure"), "count changed")
+changed <- interrupted; changed$error <- "Unconverged fit"; changed$finished_at <- "fixture"
+saveRDS(changed, sre_attempt_file(ctx, "G023"))
+fails(sre_grant_interrupted_retry(ctx, "G023", 3L, "Node failure"), "interrupted attempt")
+saveRDS(interrupted, sre_attempt_file(ctx, "G023"))
+allowance <- sre_grant_interrupted_retry(ctx, "G023", 3L, "Reviewed three NODE_FAIL records")
+allowance_file <- file.path(ctx$root, "retry_allowances/G023.rds")
+allowance_hash <- tools::md5sum(allowance_file)
+stopifnot(identical(readRDS(sre_attempt_file(ctx, "G023")), interrupted),
+          identical(allowance$previous_receipt, interrupted),
+          identical(unname(sre_attempt_limits(ctx, sre_load(ctx)$state, c("G023", "G022"))), c(4L, 3L)),
+          identical(preserved_hash, tools::md5sum(preserved)))
+sre_grant_interrupted_retry(ctx, "G023", 3L, "Reviewed three NODE_FAIL records")
+stopifnot(identical(allowance_hash, tools::md5sum(allowance_file)))
+fails(sre_grant_interrupted_retry(ctx, "G023", 3L, "Different review"), "different retry review")
+bad_allowance <- allowance; bad_allowance$frozen <- "different"
+saveRDS(bad_allowance, allowance_file)
+fails(sre_plan_batch(ctx, 298), "Invalid reviewed retry allowance")
+saveRDS(allowance, allowance_file)
+retry_batch <- sre_plan_batch(ctx, 1L, pilot_genes = "G023")
+stopifnot(identical(sre_task_genes(ctx, retry_batch$path, 1L), "G023"),
+          sre_plan_batch(ctx, 298)$status == "batch")
+fails(sre_run_gene(ctx, "G023", function(...) stop("Fixture failed retry")), "Fixture failed retry")
+stopifnot(readRDS(sre_attempt_file(ctx, "G023"))$attempt == 4L,
+          sre_plan_batch(ctx, 298)$status == "blocked")
+# Repeating the repair command must not authorize a fifth attempt.
+sre_grant_interrupted_retry(ctx, "G023", 3L, "Reviewed three NODE_FAIL records")
+fails(sre_run_gene(ctx, "G023", function(...) stop("Must not run")), "budget exhausted")
+fails(sre_grant_interrupted_retry(ctx, "G023", 4L, "Another failure"), "original retry limit")
+save_gene("G023", make_out())
+stopifnot(sre_refresh(ctx)$status[23] == "valid",
+          identical(hashes, tools::md5sum(frozen_files)))
+# Successful fourth attempts are reused without a fifth fit or cohort change.
+interrupted$gene <- "G022"
+saveRDS(interrupted, sre_attempt_file(ctx, "G022"))
+sre_grant_interrupted_retry(ctx, "G022", 3L, "Reviewed node failure")
+sre_run_gene(ctx, "G022", function(...) make_out())
+sre_run_gene(ctx, "G022", function(...) stop("Completed result must be reused"))
+stopifnot(readRDS(sre_attempt_file(ctx, "G022"))$attempt == 4L)
+
 # A reviewed error cannot conceal a malformed successful tissue posterior.
 invalid <- partial; invalid$Brain$fit_slide_prior$alpha_delta[1, 1, 1] <- -1
 save_gene("G004", invalid)

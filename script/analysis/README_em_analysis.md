@@ -6,6 +6,9 @@ fits, P < 5e-8, shifts >10 kb from every vanilla CS lead, LD/CS-overlap diagnost
 and SNP-level log-BF exports. It does not require pre-generated summaries.
 See [the screening guide](README_em_coloc_screen.md) and [32-trait shortlist](coloc_trait_panel.csv).
 
+For the next stage, see [GWAS downloads and paired EM/vanilla colocalization](README_em_gwas_coloc.md).
+Source `download_em_coloc_gwas.R`, then `run_em_gwas_coloc.R` with the printed frozen job path.
+
 Run from the project root, in this order:
 
 ```bash

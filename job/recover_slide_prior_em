@@ -1,10 +1,12 @@
 #!/bin/bash
 # From job/: sbatch recover_slide_prior_em audit 0
 # Then: sbatch recover_slide_prior_em run 0 [MAX_TASKS_THIS_BATCH]
+# Reviewed interruption: sbatch recover_slide_prior_em retry 0 GENE 3 "REVIEW_REASON"
 # By default stop after one iteration; SUSIE_SLIDE_TARGET_ITERATION enables a chain.
 #SBATCH --job-name=slide_recover_control
 #SBATCH --output=slide_recover_control_%j.out
 #SBATCH --error=slide_recover_control_%j.err
+#SBATCH --open-mode=append
 #SBATCH --time=23:00:00
 #SBATCH --partition=broadwl
 #SBATCH --nodes=1
@@ -15,12 +17,23 @@ set -euo pipefail
 mode=${1:-audit}
 iteration=${2:-0}
 batch_limit=${3:-298}
+retry_gene= retry_attempt= retry_reason=
+if [[ "$mode" == retry ]]; then
+    if (( $# != 5 )) || [[ ! "$3" =~ ^[A-Za-z0-9_.-]+$ ||
+        ! "$4" =~ ^[1-9][0-9]*$ || -z "$5" ]]; then
+        echo 'Usage: sbatch recover_slide_prior_em retry ITERATION GENE EXPECTED_ATTEMPTS "REVIEW_REASON"' >&2
+        exit 1
+    fi
+    retry_gene=$3; retry_attempt=$4; retry_reason=$5
+    batch_limit=298
+    set -- "$mode" "$iteration" "$batch_limit"
+fi
 genes_per_task=${SUSIE_SLIDE_GENES_PER_TASK:-4}
 target_iteration=${SUSIE_SLIDE_TARGET_ITERATION:-}
-if (( $# > 3 )) || [[ ! "$mode" =~ ^(audit|run|resume|verify|new|continue|exclude-sex-mt)$ ||
+if (( $# > 3 )) || [[ ! "$mode" =~ ^(audit|run|resume|verify|new|continue|exclude-sex-mt|retry)$ ||
     ! "$iteration" =~ ^(0|[1-9][0-9]*)$ || ${#iteration} -gt 8 ||
     ! "$batch_limit" =~ ^[1-9][0-9]*$ || ${#batch_limit} -gt 3 ]] || (( batch_limit > 298 )); then
-    echo 'Usage: sbatch recover_slide_prior_em [audit|run|resume|verify|new|exclude-sex-mt] [ITERATION] [BATCH_LIMIT<=298]' >&2
+    echo 'Usage: sbatch recover_slide_prior_em [audit|run|resume|verify|new|exclude-sex-mt] [ITERATION] [BATCH_LIMIT<=298]; or retry ITERATION GENE EXPECTED_ATTEMPTS "REVIEW_REASON"' >&2
     exit 1
 fi
 if [[ ! "$genes_per_task" =~ ^[1-9][0-9]?$ ]] || (( genes_per_task > 15 )); then
@@ -29,6 +42,17 @@ if [[ ! "$genes_per_task" =~ ^[1-9][0-9]?$ ]] || (( genes_per_task > 15 )); then
 fi
 # Propagate the selected execution cap to every automatic continuation.
 export SUSIE_SLIDE_GENES_PER_TASK="$genes_per_task"
+# Explicitly pass exclusions to every child submission; a flag on the first
+# controller alone does not specify the worker arrays' allocation.
+scheduler_args=()
+if [[ -n "${SUSIE_SLIDE_EXCLUDE_NODES:-}" ]]; then
+    if [[ ! "$SUSIE_SLIDE_EXCLUDE_NODES" =~ ^[A-Za-z0-9_.-]+(,[A-Za-z0-9_.-]+)*$ ]]; then
+        echo 'SUSIE_SLIDE_EXCLUDE_NODES must be a comma-separated list of node names.' >&2
+        exit 1
+    fi
+    export SUSIE_SLIDE_EXCLUDE_NODES
+    scheduler_args+=(--exclude="$SUSIE_SLIDE_EXCLUDE_NODES")
+fi
 if [[ -n "$target_iteration" ]]; then
     if [[ ! "$target_iteration" =~ ^(0|[1-9][0-9]*)$ || ${#target_iteration} -gt 8 ]] ||
         (( target_iteration < iteration )); then
@@ -70,7 +94,12 @@ while IFS='|' read -r id array name; do
     fi
 done <<< "$queue"
 
-if [[ "$mode" == exclude-sex-mt ]]; then
+if [[ "$mode" == retry ]]; then
+    # Shared coordinator lock and active-job checks above also protect this
+    # one-time review. Repeating the same command cannot grow the allowance.
+    Rscript --vanilla "$cli" grant-retry "$project_dir" "$iteration" \
+        "$retry_gene" "$retry_attempt" "$retry_reason"
+elif [[ "$mode" == exclude-sex-mt ]]; then
     Rscript --vanilla "$cli" exclude-sex-mt "$project_dir" "$iteration"
     echo 'X/Y/MT exclusions recorded. No fitting jobs submitted.'
     exit 0
@@ -102,7 +131,7 @@ case "${info[0]}" in
             (( iteration < target_iteration )); then
             # Queue only the next controller, after this one has exited and
             # released its preparation lock. No future worker arrays are queued.
-            if ! response=$(sbatch --parsable --dependency="afterok:${SLURM_JOB_ID}" \
+            if ! response=$(sbatch --parsable "${scheduler_args[@]}" --dependency="afterok:${SLURM_JOB_ID}" \
                 --export=ALL --chdir="$project_dir/job" \
                 --output="$project_dir/job/slide_recover_control_%j.out" \
                 --error="$project_dir/job/slide_recover_control_%j.err" \
@@ -129,7 +158,7 @@ if (( ${#info[@]} != 3 )) || [[ ! -d "${info[1]}" || ! "${info[2]}" =~ ^[1-9][0-
     (( info[2] > capacity )); then echo 'Invalid batch response.' >&2; exit 1; fi
 batch=${info[1]}
 tasks=${info[2]}
-if ! response=$(sbatch --parsable --array="1-${tasks}" --export=ALL \
+if ! response=$(sbatch --parsable "${scheduler_args[@]}" --array="1-${tasks}" --export=ALL \
     --output="${batch}/worker_%A_%a.out" --error="${batch}/worker_%A_%a.err" \
     "$project_dir/job/recover_slide_prior_em_array" "$project_dir" "$iteration" "$batch"); then
     echo "Array submission failed. Audit/results preserved; retry resume $iteration." >&2; exit 1
@@ -147,7 +176,7 @@ if [[ "${SUSIE_SLIDE_PILOT:-0}" == 1 ]]; then
     exit 0
 fi
 # Failure of a worker must not cancel the inspection/retry coordinator.
-if ! response=$(sbatch --parsable --dependency="afterany:${array_id}:${SLURM_JOB_ID}" \
+if ! response=$(sbatch --parsable "${scheduler_args[@]}" --dependency="afterany:${array_id}:${SLURM_JOB_ID}" \
     --export=ALL --chdir="$project_dir/job" \
     --output="$project_dir/job/slide_recover_control_%j.out" \
     --error="$project_dir/job/slide_recover_control_%j.err" \
