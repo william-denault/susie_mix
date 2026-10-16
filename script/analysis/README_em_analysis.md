@@ -202,8 +202,8 @@ Outputs go to `results_em/iteration_018/descriptive_results/cs_agreement/`
 - **A: four tissue CS-count tables.** Rows are additive SuSiE CS counts,
   columns are EM CS counts, and cells are numbers of gene/tissue regions.
   Green diagonal cells have equal counts; orange off-diagonal cells differ.
-  Select two tissues with the lowest and two with the highest equal-count
-  rate, using distinct tissues. Ties use larger sample size, then tissue name.
+  Select the four tissues with the lowest equal-count rate (highest
+  disagreement). Ties use larger sample size, then tissue name.
   `minimum_tissue_regions = 100` avoids ranking very small cohorts; edit the
   setting as needed. With fewer than four qualifying tissues, the script warns
   and displays the available tissues without duplication.
@@ -214,17 +214,24 @@ Outputs go to `results_em/iteration_018/descriptive_results/cs_agreement/`
   is `log10(1 + distance_bp)`, with physical-distance tick labels and zero
   retained. Identical paired leads are counted separately. Extra CSs in
   regions with no other-model CS have no distance and are counted separately.
-- **C: lead retention by CS-count group.** For equal counts, more EM CSs, or
-  more SuSiE CSs, report the fraction of regions retaining all, some, or none
-  of the smaller model's lead SNPs. Regions with no CS in the other model are
-  a separate category. For equal counts, full retention means identical lead
-  multisets; it does not mean identical CS membership.
-- **D: extra EM CS coding and lead PIP.** Boxplots and individual points show
-  additive, recessive, and dominant lead coding among unpaired EM CSs,
-  including regions with no additive CS. PIP is coding-specific. Labels show
-  valid-PIP counts over total CS counts; missing/invalid PIPs remain in audits.
+- **C: extra-lead TSS-distance empirical cumulative distributions.** Use the
+  exact extra EM and extra SuSiE CS groups in B, with matching colors and line
+  styles. Each distance is from that extra CS's lead SNP to its own gene's TSS,
+  using `abs(distance_to_tss_kb) * 1000` and the same logarithmic spacing as B.
+  Zero distances are retained. Model-only regions remain excluded in both
+  panels; missing TSS distances are counted separately. Legend counts show
+  the number with TSS information over the corresponding group size in B.
+- **D: recessive and dominant EM coding priors by tissue.** Separate points
+  show `pi_rec` and `pi_dom` from the selected iteration's validated
+  `priors.csv`; tissues are sorted by `pi_rec + pi_dom`. These probabilities
+  retain additive prior mass in the denominator and are not renormalized
+  within nonadditive codings. They summarize the full EM fitting cohort,
+  independently of the A-C filters, and are not lead PIPs or significance
+  tests. The caption gives the source iteration when available (e.g., priors
+  used in iteration 18 were estimated from iteration 17 fits). All prior-table
+  tissues are shown, including any without regions passing the A-C filters.
 
-The default cohort matches `descriptive_results_em.R`: P < 1e-8 and mean reads
+The default cohort for A-C matches `descriptive_results_em.R`: P < 1e-8 and mean reads
 >= 100, then at least one CS in either model. Zero/zero regions are excluded
 from tissue ranking and retained in `region_audit.csv`. One-sided zero-CS
 regions count as disagreement. CS size is unrestricted. Each tissue's rate
@@ -242,8 +249,8 @@ deterministic under input reordering. It is positional and does not establish
 shared signals, causality, CS equivalence, or low LD.
 
 Incomplete CS summaries and invalid coordinates are audited. Valid count
-comparisons remain in panel A; valid lead identities remain in panel C even
-when coordinates cannot be used in B/D. Invalid regions are never partially
+comparisons remain in panel A; valid lead identities remain in the exported
+retention summary even when coordinates cannot be used in B/C. Invalid regions are never partially
 matched or treated as evidence of extra CSs. Both summaries must have a single
 matching EM iteration, and the entry script checks saved summary provenance.
 
@@ -251,8 +258,13 @@ The script prints the selected contingency tables using R's table display and
 leaves `em_agreement_results` in the RStudio session. It also saves:
 `tissue_ranking.csv`, `selected_tissues.csv`, `tissue_cs_count_tables.csv`,
 `matched_cs_pairs.csv`, `unpaired_cs.csv`, `lead_distance_summary.csv`,
+`tss_distance_summary.csv`, `tissue_coding_priors.csv`,
 `lead_retention_summary.csv`, `extra_em_coding_summary.csv`,
 `region_audit.csv`, `orphan_cs_rows.csv`, and `analysis_settings.csv`.
+`unpaired_cs.csv` includes signed and absolute TSS distances and the panel-C
+inclusion/exclusion status. The prior export retains estimation metadata and
+adds the number of regions passing the A-C filters. The former panels C/D
+remain available as retention and extra-CS coding CSV summaries.
 Sync `plot_cs_agreement_em.R` and `em_cs_agreement_utils.R` along with the
 existing `em_analysis_utils.R` when updating the cluster.
 

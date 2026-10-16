@@ -1,5 +1,7 @@
 # RStudio: edit settings and Source. Compares SuSiE with the selected final EM
-# fit, using both EM summary tables. Does not refit models or load GTEx data.
+# fit, using both EM summary tables and the selected iteration's coding priors.
+# Panels: four high-disagreement tissues, lead distances, extra-lead TSS
+# distances, and recessive/dominant priors by tissue. No refitting or GTEx load.
 # CLI: Rscript --vanilla script/analysis/plot_cs_agreement_em.R [PROJECT_DIR] [latest|ITERATION]
 em_agreement_settings <- list(
   project_dir = Sys.getenv("SUSIE_MIX_PROJECT_DIR", if (dir.exists("script/analysis")) getwd() else
@@ -25,7 +27,8 @@ em_agreement_results <- summarize_em_cs_agreement(
   em_agreement_summaries$res, em_agreement_summaries$cs,
   association_threshold = em_agreement_settings$association_threshold,
   minimum_mean_reads = em_agreement_settings$minimum_mean_reads,
-  minimum_tissue_regions = em_agreement_settings$minimum_tissue_regions)
+  minimum_tissue_regions = em_agreement_settings$minimum_tissue_regions,
+  em_priors = em_agreement_context$priors)
 em_agreement_output_dir <- em_agreement_settings$output_dir
 if (is.null(em_agreement_output_dir)) em_agreement_output_dir <- file.path(
   em_agreement_context$iteration_dir, "descriptive_results", "cs_agreement")

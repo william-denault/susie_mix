@@ -78,8 +78,33 @@ em_pair_cs_leads <- function(add, em) {
   pairs
 }
 
+# These are the coding mixture probabilities used by the selected EM fit,
+# estimated across its fitting cohort, not PIPs for the selected CS leads.
+em_agreement_coding_priors <- function(priors, iteration, tissues) {
+  p <- as.data.frame(priors, stringsAsFactors = FALSE)
+  cols <- c("pi_add", "pi_rec", "pi_dom")
+  em_agreement_require(p, c("iteration", "tissue", cols), "EM coding priors")
+  p$tissue <- as.character(p$tissue)
+  if (!nrow(p) || anyNA(p$tissue) || any(!nzchar(p$tissue)) || anyDuplicated(p$tissue) ||
+      !is.numeric(p$iteration) || anyNA(p$iteration) || any(p$iteration != iteration))
+    stop("EM coding priors must have unique tissues and match the summary iteration.")
+  if (!all(vapply(p[cols], is.numeric, logical(1)))) stop("EM coding priors must be numeric.")
+  values <- as.matrix(p[cols])
+  if (any(!is.finite(values)) || any(values < 0 | values > 1) ||
+      any(abs(rowSums(values) - 1) > 1e-8))
+    stop("EM coding priors must be finite probabilities summing to one per tissue.")
+  if (length(setdiff(tissues$tissue, p$tissue))) stop("EM coding priors are missing summary tissues.")
+  p$pi_nonadditive <- p$pi_rec + p$pi_dom
+  p$n_selected_regions <- tissues$n_regions[match(p$tissue, tissues$tissue)]
+  p$n_selected_regions[is.na(p$n_selected_regions)] <- 0L
+  p <- p[order(-p$pi_nonadditive, p$tissue), , drop = FALSE]
+  rownames(p) <- NULL
+  p
+}
+
 summarize_em_cs_agreement <- function(res_summary, res_cs_summary,
-    association_threshold = 1e-8, minimum_mean_reads = 100, minimum_tissue_regions = 100L) {
+    association_threshold = 1e-8, minimum_mean_reads = 100, minimum_tissue_regions = 100L,
+    em_priors) {
   if (length(association_threshold) != 1L || !is.finite(association_threshold) || association_threshold <= 0 ||
       length(minimum_mean_reads) != 1L || !is.finite(minimum_mean_reads) || minimum_mean_reads < 0 ||
       length(minimum_tissue_regions) != 1L || !is.finite(minimum_tissue_regions) ||
@@ -90,14 +115,15 @@ summarize_em_cs_agreement <- function(res_summary, res_cs_summary,
   em_agreement_require(r, c("gene", "tissue", "min_pv", "mean_count", "ncs_susie",
     "ncs_weighted_fit_mix", "has_weighted_fit_mix", "em_iteration"), "EM region summary")
   em_agreement_require(cs, c("gene", "tissue", "model_key", "cs_number", "lead_snp",
-    "lead_coding", "lead_pip", "em_iteration"), "EM CS summary")
+    "lead_coding", "lead_pip", "distance_to_tss_kb", "em_iteration"), "EM CS summary")
+  if (!is.numeric(cs$distance_to_tss_kb)) stop("CS distance_to_tss_kb must be numeric.")
   # Avoid copying large CS-membership strings and unrelated summary metrics
   # into the audit tables. Counts here have their own, explicit meanings.
   r <- r[c("gene", "tissue", "min_pv", "mean_count", "ncs_susie", "ncs_weighted_fit_mix",
     "has_weighted_fit_mix", "em_iteration", intersect(c("result_file", "n_ind",
     "converged_add", "converged_weighted_fit_mix"), names(r)))]
   cs <- cs[c("gene", "tissue", "model_key", "cs_number", "lead_snp", "lead_coding", "lead_pip",
-    "em_iteration", intersect(c("component", "cs_size_snps"), names(cs)))]
+    "distance_to_tss_kb", "em_iteration", intersect(c("component", "cs_size_snps"), names(cs)))]
   iteration <- unique(r$em_iteration)
   if (length(iteration) != 1L || !is.finite(iteration) ||
       anyNA(cs$em_iteration) || any(cs$em_iteration != iteration)) stop("Expected one EM iteration in both summaries.")
@@ -182,7 +208,8 @@ summarize_em_cs_agreement <- function(res_summary, res_cs_summary,
       extra_rows[[length(extra_rows) + 1L]] <- data.frame(region_id = r$region_id[i], gene = r$gene[i],
         tissue = r$tissue[i], model = model, n_add = nrow(add), n_em = nrow(em),
         cs_id = extra$cs_id, lead_snp = extra$lead_snp, lead_coding = extra$lead_coding,
-        lead_pip = extra$lead_pip, nearest_other_distance_bp = nearest,
+        lead_pip = extra$lead_pip, distance_to_tss_kb = extra$distance_to_tss_kb,
+        nearest_other_distance_bp = nearest,
         other_model_has_cs = nrow(other) > 0)
     }
   }
@@ -194,7 +221,8 @@ summarize_em_cs_agreement <- function(res_summary, res_cs_summary,
   extras <- if (length(extra_rows)) do.call(rbind, extra_rows) else data.frame(
     region_id = character(), gene = character(), tissue = character(), model = character(),
     n_add = integer(), n_em = integer(), cs_id = character(), lead_snp = character(),
-    lead_coding = character(), lead_pip = numeric(), nearest_other_distance_bp = numeric(), other_model_has_cs = logical())
+    lead_coding = character(), lead_pip = numeric(), distance_to_tss_kb = numeric(),
+    nearest_other_distance_bp = numeric(), other_model_has_cs = logical())
   selected_regions <- r[r$count_eligible, , drop = FALSE]
   tissue_rows <- lapply(sort(unique(r$tissue)), function(tissue) {
     d <- selected_regions[selected_regions$tissue == tissue, , drop = FALSE]
@@ -209,12 +237,9 @@ summarize_em_cs_agreement <- function(res_summary, res_cs_summary,
   tissues <- do.call(rbind, tissue_rows)
   tissues$ranking_eligible <- tissues$n_regions >= minimum_tissue_regions
   ranked <- tissues[which(tissues$ranking_eligible), , drop = FALSE]
-  low <- head(ranked[order(ranked$agreement_rate, -ranked$n_regions, ranked$tissue), , drop = FALSE],
-              min(2L, max(1L, nrow(ranked) %/% 2L)))
-  high <- ranked[!ranked$tissue %in% low$tissue, , drop = FALSE]
-  high <- head(high[order(-high$agreement_rate, -high$n_regions, high$tissue), , drop = FALSE], 2L)
-  low$selection <- rep("Most disagreement", nrow(low)); high$selection <- rep("Most agreement", nrow(high))
-  featured <- rbind(low, high)
+  featured <- head(ranked[order(ranked$agreement_rate, -ranked$n_regions, ranked$tissue), , drop = FALSE], 4L)
+  featured$selection <- rep("High disagreement", nrow(featured))
+  featured$disagreement_rank <- seq_len(nrow(featured))
   if (nrow(featured) < 4L) warning("Only ", nrow(featured), " tissues meet minimum_tissue_regions = ",
                                  minimum_tissue_regions, "; fewer than four tissue tables will be shown.", call. = FALSE)
   count_tables <- lapply(seq_len(nrow(featured)), function(i) {
@@ -244,6 +269,24 @@ summarize_em_cs_agreement <- function(res_summary, res_cs_summary,
       p90_kb = if (length(d)) unname(quantile(d, .9)) / 1000 else NA_real_,
       n_over_10kb = sum(d > 1e4), n_over_100kb = sum(d > 1e5))
   }))
+  # The two dashed/dotted curves in B exclude model-only regions. Reuse those
+  # exact CSs for C, then audit missing TSS distances without substituting the
+  # nearest other-model lead's TSS distance or including changed paired leads.
+  extras$tss_panel_eligible <- extras$other_model_has_cs & is.finite(extras$nearest_other_distance_bp)
+  extras$absolute_distance_to_tss_bp <- abs(extras$distance_to_tss_kb) * 1000
+  extras$tss_panel_status <- ifelse(!extras$tss_panel_eligible, "no_counterpart_in_panel_b",
+    ifelse(is.finite(extras$absolute_distance_to_tss_bp), "included", "missing_tss_distance"))
+  tss_groups <- c("Extra EM" = "EM SuSiE-mix", "Extra SuSiE" = "SuSiE")
+  tss_distances <- lapply(tss_groups, function(model)
+    extras$absolute_distance_to_tss_bp[extras$model == model & extras$tss_panel_eligible])
+  tss_summary <- do.call(rbind, lapply(names(tss_distances), function(group) {
+    raw <- tss_distances[[group]]; d <- raw[is.finite(raw)]
+    data.frame(group = group, model = unname(tss_groups[group]), n_panel_b = length(raw),
+      n_tss_distance = length(d), n_missing_tss = sum(!is.finite(raw)),
+      median_absolute_tss_kb = if (length(d)) median(d) / 1000 else NA_real_,
+      n_within_10kb = sum(d <= 1e4), n_within_100kb = sum(d <= 1e5))
+  }))
+  coding_priors <- em_agreement_coding_priors(em_priors, iteration, tissues)
   extra_em <- extras[extras$model == "EM SuSiE-mix", , drop = FALSE]
   extra_em$coding_group <- ifelse(extra_em$lead_coding %in% c("additive", "recessive", "dominant"),
                                  as.character(extra_em$lead_coding), "unknown")
@@ -261,6 +304,8 @@ summarize_em_cs_agreement <- function(res_summary, res_cs_summary,
   list(iteration = iteration, region_audit = r, tissue_ranking = tissues, selected_tissues = featured,
     tissue_cs_count_tables = tables, matched_cs_pairs = pairs, unpaired_cs = extras,
     lead_retention_summary = retention, lead_distance_summary = distance_summary,
+    tss_distance_summary = tss_summary, tss_distances = tss_distances,
+    tissue_coding_priors = coding_priors,
     extra_em_coding_summary = coding_summary, extra_em = extra_em, distances = distances,
     orphan_cs_rows = orphan, settings = list(association_threshold = association_threshold,
       minimum_mean_reads = minimum_mean_reads, minimum_tissue_regions = minimum_tissue_regions))
@@ -282,7 +327,7 @@ plot_em_cs_agreement <- function(result, output_file = NULL, preview_label = NUL
   # A: four literal contingency tables; no binning or rounding of CS counts.
   par(mar = c(1, 1.5, 3, 1))
   plot.new(); plot.window(c(0, 1), c(0, 1), xaxs = "i", yaxs = "i")
-  title("A   CS-count agreement: four tissue extremes", adj = 0, cex.main = 1.1)
+  title("A   CS-count agreement: four high-disagreement tissues", adj = 0, cex.main = 1.1)
   text(.5, .99, "Rows: SuSiE CSs   |   Columns: EM CSs   |   Cells: region counts", cex = .78)
   if (!nrow(result$selected_tissues)) text(.5, .5, "No tissues meet the ranking sample-size threshold.")
   for (i in seq_len(nrow(result$selected_tissues))) {
@@ -292,9 +337,9 @@ plot_em_cs_agreement <- function(result, output_file = NULL, preview_label = NUL
     left <- if (i %% 2L) .055 else .56
     top <- if (i <= 2L) .79 else .33
     w <- .39 / k; h <- .29 / k
-    heading_col <- if (f$selection == "Most disagreement") "#b75c32" else "#287d72"
-    text(left + .195, top + .125, f$tissue, font = 2, cex = .9, col = heading_col)
-    text(left + .195, top + .086, sprintf("%s | n = %s", f$selection, format(f$n_regions, big.mark = ",")), cex = .7)
+    text(left + .195, top + .125, f$tissue, font = 2, cex = .9, col = "#b75c32")
+    text(left + .195, top + .086, sprintf("Disagreement rank %d | n = %s",
+      f$disagreement_rank, format(f$n_regions, big.mark = ",")), cex = .7)
     text(left + .195, top + .05, sprintf("Same: %d (%.1f%%)  |  Different: %d", f$same_cs_count,
       100 * f$agreement_rate, f$different_cs_count), cex = .7)
     for (a in seq_len(k)) for (m in seq_len(k)) {
@@ -336,59 +381,66 @@ plot_em_cs_agreement <- function(result, output_file = NULL, preview_label = NUL
   mtext(sprintf("Excluded here: %s identical pairs; %s extra CSs without a counterpart model CS",
     format(sum(result$matched_cs_pairs$same_lead_snp), big.mark = ","),
     format(sum(!result$unpaired_cs$other_model_has_cs), big.mark = ",")), side = 1, line = 4.2, cex = .68)
-  # C: regions, not individual CSs; each count group has its own denominator.
-  par(mar = c(5.5, 9, 3, 1.5))
-  groups <- c("Equal CS counts", "More EM CSs", "More SuSiE CSs")
-  cats <- c("All leads retained", "Some leads retained", "No leads retained", "Other model has no CS")
-  fills <- c("#287d72", "#85b9a5", "#c16a40", "#c6cbd0")
-  rt <- result$lead_retention_summary
-  plot(NA, xlim = c(0, 1), ylim = c(.5, 4.2), axes = FALSE,
-       xlab = "Fraction of regions within each CS-count group", ylab = "")
-  axis(1, at = seq(0, 1, .25), labels = paste0(seq(0, 100, 25), "%"))
-  title("C   Lead retention across CS-count groups", adj = 0, cex.main = 1.1)
-  for (i in seq_along(groups)) {
-    d <- rt[rt$count_group == groups[i], ]; d <- d[match(cats, d$retention), ]
-    y <- 4 - i; n <- sum(d$n_regions)
-    axis(2, at = y, labels = sprintf("%s\n(n = %s)", groups[i], format(n, big.mark = ",")), las = 1, tick = FALSE, cex.axis = .85)
-    start <- 0
-    for (j in seq_along(cats)) {
-      p <- if (n) d$n_regions[j] / n else 0
-      rect(start, y - .30, start + p, y + .30, col = fills[j], border = "white")
-      if (p >= .09) text(start + p / 2, y, sprintf("%.0f%%", 100 * p), cex = .85,
-                          col = if (j %in% c(1L, 3L)) "white" else "#222222")
-      start <- start + p
-    }
-    if (!n) text(.5, y, "No eligible regions", col = "#777777")
-  }
-  legend("top", legend = cats, fill = fills, ncol = 2, bty = "n", cex = .72)
-  # D: coding-specific PIP of the extra EM CS leads, including EM-only regions.
+  # C: absolute TSS distances for the same two extra-CS groups plotted in B.
   par(mar = c(5.5, 4.5, 3, 1.5))
-  codings <- result$extra_em_coding_summary$coding
-  plot(NA, xlim = c(.5, length(codings) + .5), ylim = c(0, 1.04), xaxt = "n", las = 1,
-       xlab = "", ylab = "EM lead PIP (coding-specific)")
-  title("D   Coding and support of extra EM CSs", adj = 0, cex.main = 1.1)
-  abline(h = .5, lty = 3, col = "#bbbbbb")
-  coding_colors <- c(additive = "#346b94", recessive = "#9a6bb0", dominant = "#c18b35", unknown = "#999999")
-  for (i in seq_along(codings)) {
-    d <- result$extra_em[result$extra_em$coding_group == codings[i], ]
-    p <- d$lead_pip[is.finite(d$lead_pip) & d$lead_pip >= 0 & d$lead_pip <= 1]
-    if (length(p)) {
-      boxplot(p, at = i, add = TRUE, axes = FALSE, boxwex = .45, outline = FALSE,
-              col = grDevices::adjustcolor(coding_colors[codings[i]], .22), border = coding_colors[codings[i]])
-      # Deterministic jitter, independent of the session random-number state.
-      jitter <- ((seq_along(p) * .61803398875) %% 1 - .5) * .30
-      points(i + jitter, p, pch = 16, cex = .35, col = grDevices::adjustcolor(coding_colors[codings[i]], .35))
+  vals <- unlist(result$tss_distances); vals <- vals[is.finite(vals)]
+  xmax <- max(6, if (length(vals)) log10(1 + max(vals)) else 0)
+  plot(NA, xlim = c(0, xmax), ylim = c(0, 1.03), axes = FALSE,
+       xlab = "", ylab = "Cumulative fraction of extra CS leads")
+  ticks <- c(0, 10^(0:6))
+  axis(1, at = log10(1 + ticks), labels = c("0", "1 bp", "10 bp", "100 bp", "1 kb", "10 kb", "100 kb", "1 Mb"), cex.axis = .8)
+  axis(2, at = seq(0, 1, .25), labels = paste0(seq(0, 100, 25), "%"), las = 1)
+  abline(h = seq(0, 1, .25), col = "#eeeeee")
+  abline(v = log10(1 + c(1e4, 1e5)), lty = 3, col = "#cccccc")
+  title("C   Distance to TSS for the extra leads in B", adj = 0, cex.main = 1.1)
+  labels <- character()
+  for (j in seq_along(result$tss_distances)) {
+    d <- result$tss_distances[[j]]; d <- sort(d[is.finite(d)])
+    if (length(d)) {
+      x <- sort(unique(d)); y <- findInterval(x, d) / length(d)
+      lines(c(0, log10(1 + x), xmax), c(0, y, 1), type = "s", lwd = 2, col = colors[j + 1L], lty = j + 1L)
     }
-    axis(1, at = i, labels = sprintf("%s\nPIP n = %s / %s", tools::toTitleCase(codings[i]),
-      format(length(p), big.mark = ","), format(nrow(d), big.mark = ",")), tick = FALSE, cex.axis = .85)
+    labels <- c(labels, sprintf("%s (TSS n = %s / %s in B)", names(result$tss_distances)[j],
+      format(length(d), big.mark = ","), format(length(result$tss_distances[[j]]), big.mark = ",")))
   }
-  if (!nrow(result$extra_em)) text(mean(par("usr")[1:2]), .6, "No extra EM CSs")
-  mtext("Extra = unpaired after identical-lead and distance matching; includes EM-only regions.", side = 1, line = 4, cex = .65)
+  legend("bottomright", labels, col = colors[2:3], lty = 2:3, lwd = 2,
+         bty = "o", box.col = NA, bg = "white", cex = .77)
+  if (!length(vals)) text(xmax / 2, .55, "No extra leads with available TSS distances")
+  mtext("Absolute lead-SNP distance to gene TSS (logarithmic spacing)", side = 1, line = 2.5, cex = .9)
+  mtext(sprintf("Same extra CSs as B; %s missing TSS distances excluded. Model-only regions excluded in both panels.",
+    format(sum(result$tss_distance_summary$n_missing_tss), big.mark = ",")), side = 1, line = 4.2, cex = .65)
+  # D: retain the full coding-prior denominator (including additive mass).
+  # Order tissues by total nonadditive prior; display rec/dom separately.
+  par(mar = c(5.5, 9.5, 3, 1.5))
+  priors <- result$tissue_coding_priors
+  n <- nrow(priors); y <- rev(seq_len(n))
+  xmax <- max(.01, priors$pi_rec, priors$pi_dom) * 1.08
+  plot(NA, xlim = c(0, xmax), ylim = c(.3, n + 2.5), axes = FALSE, xlab = "", ylab = "", xaxs = "i")
+  ticks <- pretty(c(0, xmax), n = 5); ticks <- ticks[ticks >= 0 & ticks <= xmax]
+  axis(1, at = ticks, labels = paste0(format(100 * ticks, trim = TRUE), "%"), cex.axis = .85)
+  axis(2, at = y, labels = priors$tissue, las = 1, tick = FALSE, cex.axis = min(.8, 22 / n))
+  abline(v = ticks, col = "#eeeeee")
+  abline(h = y, col = "#f3f3f3")
+  coding_colors <- c(recessive = "#9a6bb0", dominant = "#c18b35")
+  for (j in 1:2) {
+    p <- priors[[c("pi_rec", "pi_dom")[j]]]
+    yy <- y + c(.14, -.14)[j]
+    segments(0, yy, p, yy, col = grDevices::adjustcolor(coding_colors[j], .45), lwd = 1.2)
+    points(p, yy, pch = c(16, 15)[j], col = coding_colors[j], cex = .65)
+  }
+  title("D   EM coding prior by tissue", adj = 0, cex.main = 1.1)
+  legend("top", c("Recessive", "Dominant"), col = coding_colors, pch = c(16, 15),
+         ncol = 2, bty = "n", cex = .85)
+  mtext("Coding prior probability (additive mass retained in denominator)", side = 1, line = 2.5, cex = .8)
+  source_iterations <- if ("source_iteration" %in% names(priors)) sort(unique(na.omit(priors$source_iteration))) else numeric()
+  prior_note <- sprintf("Priors used in iteration %s%s; fitted across all EM regions.", result$iteration,
+    if (length(source_iterations)) paste0(" (from iteration ", paste(source_iterations, collapse = ", "), ")") else "")
+  mtext(prior_note, side = 1, line = 4.2, cex = .65)
   label <- paste0(if (!is.null(preview_label)) paste0(preview_label, " | ") else "",
                   "SuSiE versus EM SuSiE-mix | iteration ", result$iteration)
   mtext(label, outer = TRUE, side = 3, line = 2, cex = 1.35, font = 2)
   s <- result$settings; audit <- result$region_audit
-  mtext(sprintf("P < %s | mean reads >= %s | at least one CS in either model | %s regions across %s tissues",
+  mtext(sprintf("A-C: P < %s | mean reads >= %s | at least one CS in either model | %s regions across %s tissues",
     format(s$association_threshold, scientific = TRUE), s$minimum_mean_reads,
     format(sum(audit$count_eligible), big.mark = ","), sum(result$tissue_ranking$n_regions > 0)),
     outer = TRUE, side = 3, line = .55, cex = .9, col = "#555555")
@@ -404,7 +456,7 @@ write_em_cs_agreement <- function(result, output_dir, show_plot = interactive(),
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
   tables <- c("region_audit", "tissue_ranking", "selected_tissues", "tissue_cs_count_tables",
     "matched_cs_pairs", "unpaired_cs", "lead_retention_summary", "lead_distance_summary",
-    "extra_em_coding_summary", "orphan_cs_rows")
+    "tss_distance_summary", "tissue_coding_priors", "extra_em_coding_summary", "orphan_cs_rows")
   for (name in tables) write.csv(result[[name]], file.path(output_dir, paste0(name, ".csv")), row.names = FALSE)
   write.csv(data.frame(em_iteration = result$iteration, as.data.frame(result$settings)),
             file.path(output_dir, "analysis_settings.csv"), row.names = FALSE)
