@@ -34,6 +34,82 @@ replace `results_slide_prior_em`, its gene results, or its original manifest.
 The old completion markers are retained as historical records and are not
 trusted by recovery. No mixed-model files are modified.
 
+## Refill while slow tasks finish (rolling mode)
+
+The default wave mode waits for every element of an array. For the long full
+screen, enable `SUSIE_SLIDE_ROLLING=1`. A short coordinator checks the queue
+every five minutes and, when fewer than 200 workers remain pending/running,
+submits enough new tasks to approach 298 active workers. It counts other jobs
+against the same 300-job user budget and reserves two coordinator slots.
+For example, two remaining workers and no unrelated jobs allow **296 new
+tasks immediately**, without cancelling the two existing workers. Slurm still
+decides when submitted tasks can run; this is not a guarantee of 200 running
+allocations. Near the end of an iteration there may be fewer genes left.
+
+Settings (inherited by continuations and the next EM iteration):
+
+* `SUSIE_SLIDE_ROLLING=1`: enable rolling refills; the default `0` retains waves.
+* `SUSIE_SLIDE_REFILL_BELOW=200`: refill when the worker count is below this
+  threshold. It is clamped to the third positional argument, the worker cap
+  (default 298). Range: 1 to 298.
+* `SUSIE_SLIDE_POLL_MINUTES=5`: delay before the next coordinator is eligible
+  to start. Range: 1 to 60 minutes. Actual start also depends on Slurm capacity.
+
+Every active array task is matched to its saved batch manifest. All genes in
+that task remain reserved, including sequential genes not started yet.
+Completed tasks free their unfinished genes for bounded retry; a live final
+attempt is not incorrectly treated as exhausted. Unknown workers, changed
+manifests, duplicate gene assignments, competing coordinators, exhausted
+retries, and repeated resource failures stop scheduling for inspection.
+Completed batches where no worker entered fitting also stop automatic refills.
+The full iteration must have no active workers and pass the existing complete
+validation before its objective and next prior update are produced.
+
+To switch an existing wave run, upload the rebuilt bundle, then cancel **only
+the pending old coordinator**. Leave worker arrays running. For the October 16
+example, the pending coordinator was `49403415` and the workers belonged to
+array `49403414`; use the current ID if the chain has advanced. Slurm captures
+the submitted shell script, so replacing the file alone does not update an
+already queued coordinator. On the RCC login node:
+
+```bash
+cd /project2/mstephens/wdenault/susie_mix
+old=$(cat results_slide_prior_em/last_continuation_job_id.txt)
+squeue -j "$old" -o '%.18i %.30j %.12T %R'
+```
+
+If that is the pending `slide_recover_control` job, cancel it (do not use a
+user-wide cancellation), extract the bundle, and submit rolling recovery:
+
+```bash
+scancel "$old"
+unzip -o output/slide_prior_recovery_rcc.zip
+cd job
+SUSIE_SLIDE_ROLLING=1 \
+SUSIE_SLIDE_REFILL_BELOW=200 \
+SUSIE_SLIDE_POLL_MINUTES=5 \
+SUSIE_SLIDE_PILOT=0 \
+SUSIE_SLIDE_GENES_PER_TASK=4 \
+SUSIE_SLIDE_MAX_ITER=5000 \
+SUSIE_SLIDE_TARGET_ITERATION=20 \
+SUSIE_SLIDE_EXCLUDE_NODES=midway2-0003 \
+sbatch --exclude=midway2-0003 recover_slide_prior_em resume 0
+```
+
+This adopts the existing iteration-000 batches and receipts. No new retry
+allowance, audit, or initialization is needed. If the current coordinator is
+already running, let it finish and inspect the newly recorded pending successor
+before switching. If no coordinator remains, submit the rolling resume after
+extracting the bundle. Cancellation may take a moment to clear the queue; a
+competing-controller refusal is safe to retry after that job disappears.
+
+Each rolling continuation depends only on the preceding coordinator and a
+begin-time delay, not on the worker arrays. Logs say `Rolling queue:` and
+`Queued rolling coordinator ...`. A queued coordinator may show `BeginTime`
+or `Resources`. To stop refilling, cancel the current/pending coordinator first;
+existing worker arrays can finish. Retry/resource safeguards may halt the chain
+with workers still running; their results are preserved for a reviewed resume.
+
 ## Upload and audit first
 
 Extract `output/slide_prior_recovery_rcc.zip` into the RCC project, preserving

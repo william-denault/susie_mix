@@ -17,7 +17,8 @@ export REC_FAIL_ARRAY=0 REC_FAIL_NEXT=0 REC_FAIL_GENES=0 REC_FAIL_GENE=0 REC_GEN
 export REC_PLAN_CALLS=0
 export REC_FAIL_VERIFY=0
 export REC_FAIL_GRANT=0
-unset SUSIE_SLIDE_GENES_PER_TASK SUSIE_SLIDE_TARGET_ITERATION SUSIE_SLIDE_PILOT SUSIE_SLIDE_EXCLUDE_NODES SLURM_RESTART_COUNT
+export REC_ROLLING_WORKERS=0 REC_CONTROL=0 REC_QUEUE_FAIL=0 REC_QUEUE_EMPTY=0 REC_DONE_CONTROL=0
+unset SUSIE_SLIDE_GENES_PER_TASK SUSIE_SLIDE_TARGET_ITERATION SUSIE_SLIDE_PILOT SUSIE_SLIDE_EXCLUDE_NODES SLURM_RESTART_COUNT SUSIE_SLIDE_ROLLING SUSIE_SLIDE_REFILL_BELOW SUSIE_SLIDE_POLL_MINUTES
 mkdir -p "$SUSIE_MIX_PROJECT_DIR/results_slide_prior_em"
 controller="$repo/job/recover_slide_prior_em"
 worker="$repo/job/recover_slide_prior_em_array"
@@ -25,11 +26,21 @@ module() { :; }
 flock() { [[ "$REC_LOCK" == 0 ]]; }
 squeue() {
     [[ "$*" == *--array* && "$*" == *"%i|%F|%j"* ]] || return 1
-    printf '9000|9000|slide_recover_control\n'
+    printf '%s\n' "$*" > "$REC_TEST/queue_args"
+    [[ "$REC_QUEUE_FAIL" == 0 ]] || return 1
+    [[ "$REC_QUEUE_EMPTY" == 0 ]] || return 0
+    qrow() {
+        if [[ "${SUSIE_SLIDE_ROLLING:-0}" == 1 ]]; then printf '%s|%s\n' "$1" "${2:-RUNNING}";
+        else printf '%s\n' "$1"; fi
+    }
+    qrow '9000|9000|slide_recover_control'
     local i
-    for ((i=1; i<=REC_OTHERS; i++)); do printf '%s|7000|unrelated\n' "7000_$i"; done
-    if [[ "$REC_ACTIVE" == 1 ]]; then printf '9100_1|9100|worker\n'; fi
-    if [[ "$REC_ACTIVE_NAME" == 1 ]]; then printf '9200_1|9200|slide_recover_worker\n'; fi
+    for ((i=1; i<=REC_OTHERS; i++)); do qrow "7000_$i|7000|unrelated"; done
+    if [[ "$REC_ACTIVE" == 1 ]]; then qrow '9100_1|9100|worker'; fi
+    if [[ "$REC_ACTIVE_NAME" == 1 ]]; then qrow '9200_1|9200|slide_recover_worker'; fi
+    for ((i=1; i<=REC_ROLLING_WORKERS; i++)); do qrow "9100_$i|9100|slide_recover_worker"; done
+    if [[ "$REC_CONTROL" == 1 ]]; then qrow '9300|9300|slide_recover_control'; fi
+    if [[ "$REC_DONE_CONTROL" == 1 ]]; then qrow '9400|9400|slide_recover_control' COMPLETED; fi
 }
 Rscript() {
     local mode=$3
@@ -42,6 +53,12 @@ Rscript() {
         verify) [[ "$REC_FAIL_VERIFY" == 0 ]] ;;
         new) printf '1\n' ;;
         plan)
+            if [[ "${SUSIE_SLIDE_ROLLING:-0}" == 1 ]]; then
+                [[ $# == 7 && -f "$7" ]] || return 1
+                cp "$7" "$REC_TEST/queue_snapshot"
+            else
+                [[ $# == 6 ]] || return 1
+            fi
             printf '%s\n' "$6" > "$REC_TEST/capacity"
             printf '%s\n' "$SUSIE_SLIDE_GENES_PER_TASK" > "$REC_TEST/gene_cap"
             printf '%s\n' "$SUSIE_SLIDE_AUTOMATIC" > "$REC_TEST/automatic"
@@ -70,6 +87,7 @@ sbatch() {
         printf '%s\n' "$@" > "$REC_TEST/next_args"
         printf '%s\n' "$SUSIE_SLIDE_GENES_PER_TASK" > "$REC_TEST/next_gene_cap"
         printf '%s\n' "${SUSIE_SLIDE_TARGET_ITERATION:-}" > "$REC_TEST/next_target"
+        printf '%s\n' "${SUSIE_SLIDE_ROLLING:-}" "${SUSIE_SLIDE_REFILL_BELOW:-}" "${SUSIE_SLIDE_POLL_MINUTES:-}" > "$REC_TEST/next_rolling"
         [[ "$REC_FAIL_NEXT" == 0 ]] || return 1
         printf '9101;cluster\n'
     fi
@@ -241,6 +259,81 @@ reset_calls
 grep -Fxq -- '--array=1-5' "$REC_TEST/array_args"
 [[ ! -s "$REC_TEST/next_args" ]]
 unset SUSIE_SLIDE_PILOT
+
+# Rolling recovery adopts live workers, counts them against the global budget,
+# and schedules its next check without an array-wide dependency.
+export SUSIE_SLIDE_ROLLING=1 SUSIE_SLIDE_TARGET_ITERATION=20
+export SUSIE_SLIDE_EXCLUDE_NODES=midway2-0003 REC_ROLLING_WORKERS=2
+export REC_DONE_CONTROL=1
+reset_calls
+"$BASH" "$controller" resume 0 > "$REC_TEST/output" 2>&1
+grep -Fxq 296 "$REC_TEST/capacity"
+grep -Fxq -- '--array=1-296' "$REC_TEST/array_args"
+grep -Fxq -- '--dependency=afterany:9000' "$REC_TEST/next_args"
+grep -Fxq -- '--begin=now+5minutes' "$REC_TEST/next_args"
+grep -Fq -- '--states=all' "$REC_TEST/queue_args"
+grep -Fxq '9100_1|9100|slide_recover_worker' "$REC_TEST/queue_snapshot"
+! grep -Fq '9400' "$REC_TEST/queue_snapshot"
+[[ "$(cat "$REC_TEST/next_rolling")" == $'1\n200\n5' ]]
+grep -Fxq 20 "$REC_TEST/next_target"
+grep -Fxq -- '--exclude=midway2-0003' "$REC_TEST/array_args"
+grep -Fxq -- '--exclude=midway2-0003' "$REC_TEST/next_args"
+export REC_OTHERS=10
+"$BASH" "$controller" continue 0 > "$REC_TEST/output" 2>&1
+grep -Fxq 286 "$REC_TEST/capacity"
+export REC_OTHERS=0
+"$BASH" "$controller" continue 0 100 > "$REC_TEST/output" 2>&1
+grep -Fxq 98 "$REC_TEST/capacity"
+# Full queues and unfinished genes are waiting states, not failed runs.
+export REC_STATUS=waiting REC_OTHERS=296
+reset_calls
+"$BASH" "$controller" continue 0 > "$REC_TEST/output" 2>&1
+grep -Fxq 0 "$REC_TEST/capacity"
+[[ ! -s "$REC_TEST/array_args" && -s "$REC_TEST/next_args" ]]
+grep -Fxq -- '--dependency=afterany:9000' "$REC_TEST/next_args"
+export REC_OTHERS=0 REC_ROLLING_WORKERS=210
+reset_calls
+"$BASH" "$controller" continue 0 > "$REC_TEST/output" 2>&1
+[[ ! -s "$REC_TEST/array_args" && -s "$REC_TEST/next_args" ]]
+export REC_ROLLING_WORKERS=2 REC_STATUS=verify
+reset_calls
+expect_fail "$BASH" "$controller" continue 0
+[[ ! -s "$REC_TEST/next_args" ]]
+! grep -Fxq verify "$REC_TEST/r_calls"
+# A second coordinator, a failed/empty query, or a lock must stop all submissions.
+export REC_STATUS=batch
+for flag in REC_CONTROL REC_QUEUE_FAIL REC_QUEUE_EMPTY REC_LOCK; do
+    export "$flag=1"
+    reset_calls
+    expect_fail "$BASH" "$controller" resume 0
+    [[ ! -s "$REC_TEST/array_args" && ! -s "$REC_TEST/next_args" && ! -s "$REC_TEST/r_calls" ]]
+    export "$flag=0"
+done
+for mode in audit verify new exclude-sex-mt; do
+    reset_calls
+    expect_fail "$BASH" "$controller" "$mode" 0
+    [[ ! -s "$REC_TEST/r_calls" ]]
+done
+expect_fail "$BASH" "$controller" retry 0 G001 3 'Node failure'
+for setting in SUSIE_SLIDE_ROLLING=2 SUSIE_SLIDE_REFILL_BELOW=0 SUSIE_SLIDE_REFILL_BELOW=299 SUSIE_SLIDE_POLL_MINUTES=0 SUSIE_SLIDE_POLL_MINUTES=61 SUSIE_SLIDE_PILOT=1; do
+    reset_calls
+    expect_fail env "$setting" "$BASH" "$controller" resume 0
+    [[ ! -s "$REC_TEST/r_calls" ]]
+done
+# Rolling configuration survives an EM boundary, which retains afterok.
+export REC_STATUS=verify REC_ROLLING_WORKERS=0
+reset_calls
+"$BASH" "$controller" continue 0 > "$REC_TEST/output" 2>&1
+grep -Fxq -- '--dependency=afterok:9000' "$REC_TEST/next_args"
+grep -Fxq new "$REC_TEST/next_args"
+[[ "$(cat "$REC_TEST/next_rolling")" == $'1\n200\n5' ]]
+export REC_STATUS=blocked
+reset_calls
+expect_fail "$BASH" "$controller" continue 0
+[[ ! -s "$REC_TEST/array_args" && ! -s "$REC_TEST/next_args" ]]
+export REC_STATUS=batch
+export REC_DONE_CONTROL=0
+unset SUSIE_SLIDE_ROLLING SUSIE_SLIDE_TARGET_ITERATION SUSIE_SLIDE_EXCLUDE_NODES
 
 # Every gene uses a separate Rscript invocation. A failed gene does not erase
 # another gene's successful work, and enumeration failures cannot look complete.

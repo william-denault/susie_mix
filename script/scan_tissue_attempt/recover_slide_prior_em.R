@@ -30,13 +30,17 @@ if (mode == "new") {
     sre_audit(ctx, if (length(args) >= 4L) args[4] else 10L,
               if (length(args) >= 5L) args[5] else 3L)
   } else if (mode == "plan") {
-    if (length(args) != 4L) stop("plan requires capacity")
+    rolling <- Sys.getenv("SUSIE_SLIDE_ROLLING", "0") == "1"
+    if (length(args) != if (rolling) 5L else 4L)
+      stop("plan requires capacity and, in rolling mode, a queue snapshot")
     pilot <- NULL
     if (Sys.getenv("SUSIE_SLIDE_PILOT") == "1" && nzchar(Sys.getenv("SUSIE_SLIDE_PILOT_GENES")))
       pilot <- trimws(readLines(Sys.getenv("SUSIE_SLIDE_PILOT_GENES"), warn = FALSE))
     batch <- sre_plan_batch(ctx, args[4], pilot,
                             automatic = Sys.getenv("SUSIE_SLIDE_AUTOMATIC") == "1",
-                            genes_per_task = Sys.getenv("SUSIE_SLIDE_GENES_PER_TASK", "4"))
+                            genes_per_task = Sys.getenv("SUSIE_SLIDE_GENES_PER_TASK", "4"),
+                            queue_file = if (rolling) args[5] else NULL,
+                            refill_below = Sys.getenv("SUSIE_SLIDE_REFILL_BELOW", "200"))
     cat(batch$status, "\n", sep = "")
     if (batch$status == "batch") cat(batch$path, "\n", batch$tasks, "\n", sep = "")
   } else if (mode == "genes") {

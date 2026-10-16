@@ -117,6 +117,59 @@ stopifnot(sre_plan_batch(ctx, 5L, automatic = TRUE)$status == "blocked",
           sre_plan_batch(ctx, 5L)$status == "batch")
 unlink(file.path(ctx$root, "last_batch.txt"))
 
+# Rolling refills retain every gene assigned to an active task, even before
+# its first R process starts. Completed tasks in that same array free capacity.
+queue_file <- file.path(root, "queue.txt")
+writeLines("9100", file.path(bounded$path, "array_job_id.txt"))
+writeLines("9100_1|9100|slide_recover_worker", queue_file)
+live_genes <- sre_task_genes(ctx, bounded$path, 1L)
+live <- sre_queue_work(ctx, queue_file)
+stopifnot(setequal(live$genes, live_genes), live$tasks == 1L)
+rolling <- sre_plan_batch(ctx, 2L, automatic = TRUE, queue_file = queue_file)
+rolling_work <- read.csv(file.path(rolling$path, "manifest.csv"))
+stopifnot(!any(rolling_work$gene %in% live_genes),
+          any(rolling_work$gene %in% sre_task_genes(ctx, bounded$path, 2L)),
+          sre_plan_batch(ctx, 2L, queue_file = queue_file, refill_below = 1L)$status == "waiting",
+          sre_plan_batch(ctx, 0L, queue_file = queue_file)$status == "waiting")
+# Pending tasks with no attempts are not treated as a launch failure.
+writeLines(bounded$path, file.path(ctx$root, "last_batch.txt"))
+stopifnot(sre_plan_batch(ctx, 2L, automatic = TRUE, queue_file = queue_file)$status == "batch")
+unlink(file.path(ctx$root, "last_batch.txt"))
+# Adopt a second array and reject overlapping assignments or untracked workers.
+writeLines("9200", file.path(pilot$path, "array_job_id.txt"))
+writeLines(c("9100_1|9100|slide_recover_worker", "9200_1|9200|slide_recover_worker"), queue_file)
+stopifnot(sre_queue_work(ctx, queue_file)$tasks == 2L,
+          setequal(sre_queue_work(ctx, queue_file)$genes, c(live_genes, "G011")))
+writeLines("9300", file.path(smaller$path, "array_job_id.txt"))
+writeLines(c("9100_1|9100|slide_recover_worker", "9300_1|9300|slide_recover_worker"), queue_file)
+fails(sre_queue_work(ctx, queue_file), "multiple active tasks")
+unlink(file.path(smaller$path, "array_job_id.txt"))
+writeLines("9999_1|9999|slide_recover_worker", queue_file)
+fails(sre_queue_work(ctx, queue_file), "Untracked recovery worker")
+writeLines("9100_299|9100|slide_recover_worker", queue_file)
+fails(sre_queue_work(ctx, queue_file), "Unknown active array task")
+writeLines("9100_1|9100|slide_recover_worker|extra", queue_file)
+fails(sre_queue_work(ctx, queue_file), "Invalid scheduler queue")
+writeLines("9100_1|9100|slide_recover_worker", queue_file)
+changed_batch <- bounded_settings; changed_batch$manifest_md5 <- "changed"
+saveRDS(changed_batch, file.path(bounded$path, "settings.rds"))
+fails(sre_queue_work(ctx, queue_file), "Batch manifest changed")
+saveRDS(bounded_settings, file.path(bounded$path, "settings.rds"))
+# A finished older batch with no worker progress stops automatic replenishment,
+# even while a newer batch remains active.
+stopifnot(sre_plan_batch(ctx, 2L, automatic = TRUE, queue_file = queue_file)$status == "blocked")
+unlink(file.path(pilot$path, "array_job_id.txt"))
+# The currently running final attempt must not exhaust the budget prematurely.
+audit_before_rolling <- read.csv(file.path(ctx$root, "audit.csv"))
+em_atomic_write(list(gene = "G002", attempt = 3L, frozen = ctx$frozen,
+                    error = "Interrupted before receipt"), sre_attempt_file(ctx, "G002"))
+stopifnot(sre_plan_batch(ctx, 2L, automatic = TRUE, queue_file = queue_file)$status == "batch")
+writeLines(character(), queue_file)
+stopifnot(sre_plan_batch(ctx, 2L, automatic = TRUE, queue_file = queue_file)$status == "blocked")
+unlink(sre_attempt_file(ctx, "G002"))
+em_atomic_write(audit_before_rolling, file.path(ctx$root, "audit.csv"), csv = TRUE)
+unlink(file.path(bounded$path, "array_job_id.txt"))
+
 # Node failures/requeues consume attempts. A reviewed allowance preserves that
 # history and permits exactly one further attempt, for exactly one gene.
 interrupted <- list(gene = "G023", attempt = 3L, frozen = ctx$frozen,
@@ -240,6 +293,15 @@ stopifnot(setequal(scheduled, remaining),
           identical(preserved_hash, tools::md5sum(preserved)))
 stopifnot(identical(hashes, tools::md5sum(frozen_files)))
 sre_verify(ctx)
+# Even with every result ready, an active task prevents the EM boundary.
+audit_before_live_boundary <- read.csv(file.path(ctx$root, "audit.csv"))
+writeLines("9100", file.path(bounded$path, "array_job_id.txt"))
+writeLines("9100_1|9100|slide_recover_worker", queue_file)
+stopifnot(sre_plan_batch(ctx, 298L, queue_file = queue_file)$status == "waiting")
+writeLines(character(), queue_file)
+stopifnot(sre_plan_batch(ctx, 298L, queue_file = queue_file)$status == "verify")
+unlink(file.path(bounded$path, "array_job_id.txt"))
+em_atomic_write(audit_before_live_boundary, file.path(ctx$root, "audit.csv"), csv = TRUE)
 # Scope is based on annotation, not failed-job text: it excludes missing genes,
 # successful fits and exhausted failures alike, while retaining autosomal errors.
 annotations <- data.frame(gene_name = genes, chromosome = rep("chr1", length(genes)))

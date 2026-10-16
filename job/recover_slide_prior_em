@@ -2,6 +2,7 @@
 # From job/: sbatch recover_slide_prior_em audit 0
 # Then: sbatch recover_slide_prior_em run 0 [MAX_TASKS_THIS_BATCH]
 # Reviewed interruption: sbatch recover_slide_prior_em retry 0 GENE 3 "REVIEW_REASON"
+# Rolling refill: SUSIE_SLIDE_ROLLING=1 sbatch recover_slide_prior_em resume 0
 # By default stop after one iteration; SUSIE_SLIDE_TARGET_ITERATION enables a chain.
 #SBATCH --job-name=slide_recover_control
 #SBATCH --output=slide_recover_control_%j.out
@@ -41,6 +42,20 @@ if [[ ! "$genes_per_task" =~ ^[1-9][0-9]?$ ]] || (( genes_per_task > 15 )); then
     exit 1
 fi
 # Propagate the selected execution cap to every automatic continuation.
+rolling=${SUSIE_SLIDE_ROLLING:-0}
+refill_below=${SUSIE_SLIDE_REFILL_BELOW:-200}
+poll_minutes=${SUSIE_SLIDE_POLL_MINUTES:-5}
+if [[ ! "$rolling" =~ ^[01]$ || ! "$refill_below" =~ ^[1-9][0-9]{0,2}$ ||
+      ! "$poll_minutes" =~ ^[1-9][0-9]?$ ]] ||
+    (( refill_below > 298 || poll_minutes > 60 )); then
+    echo 'Rolling options: SUSIE_SLIDE_ROLLING=0|1, REFILL_BELOW=1..298, POLL_MINUTES=1..60 (all with SUSIE_SLIDE_ prefix).' >&2
+    exit 1
+fi
+if [[ "$rolling" == 1 && "${SUSIE_SLIDE_PILOT:-0}" == 1 ]]; then
+    echo 'Rolling mode is not a pilot; set SUSIE_SLIDE_PILOT=0.' >&2; exit 1
+fi
+(( refill_below > batch_limit )) && refill_below=$batch_limit
+export SUSIE_SLIDE_ROLLING="$rolling" SUSIE_SLIDE_REFILL_BELOW="$refill_below" SUSIE_SLIDE_POLL_MINUTES="$poll_minutes"
 export SUSIE_SLIDE_GENES_PER_TASK="$genes_per_task"
 # Explicitly pass exclusions to every child submission; a flag on the first
 # controller alone does not specify the worker arrays' allocation.
@@ -76,23 +91,61 @@ cli="${project_dir}/script/scan_tissue_attempt/recover_slide_prior_em.R"
 
 # -r expands arrays: every pending/running array element consumes one job slot.
 # Include job names to detect a submission whose returned ID was never persisted.
-queue=$(squeue --noheader --array --user "$USER" --format='%i|%F|%j')
+queue_args=()
+queue_format='%i|%F|%j'
+if [[ "$rolling" == 1 ]]; then
+    queue_args+=(--states=all)
+    queue_format+='|%T'
+fi
+raw_queue=$(squeue --noheader --array "${queue_args[@]}" --user "$USER" --format="$queue_format")
+queue=
 other_jobs=0
-while IFS='|' read -r id array name; do
+active_workers=0
+seen_self=0
+allow_workers=0
+if [[ "$rolling" == 1 && "$mode" =~ ^(run|resume|continue)$ ]]; then allow_workers=1; fi
+while IFS='|' read -r id array name state extra; do
     [[ -n "$id" ]] || continue
-    [[ "$id" == "$SLURM_JOB_ID" ]] && continue
+    if [[ "$rolling" == 1 ]]; then
+        [[ -n "$state" && -z "$extra" ]] || { echo 'Invalid queue state response.' >&2; exit 1; }
+        # --states=all includes suspended/requeued jobs but can also retain
+        # terminal jobs briefly. Those must not masquerade as live controllers.
+        case "$state" in
+            COMPLETED|CANCELLED|FAILED|TIMEOUT|NODE_FAIL|OUT_OF_MEMORY|PREEMPTED|BOOT_FAIL|DEADLINE|REVOKED) continue ;;
+        esac
+    fi
+    queue+="${id}|${array}|${name}"$'\n'
+    if [[ "$id" == "$SLURM_JOB_ID" ]]; then seen_self=1; continue; fi
     other_jobs=$((other_jobs + 1))
     for record in "$root/last_array_job_id.txt" "$root/last_continuation_job_id.txt"; do
         [[ -f "$record" ]] || continue
         read -r recorded < "$record"
         if [[ "$id" == "$recorded" || "$array" == "$recorded" ]]; then
+            if [[ "$allow_workers" == 1 && "$name" == slide_recover_worker &&
+                  "$record" == "$root/last_array_job_id.txt" ]]; then continue; fi
             echo "Slider job $recorded is still queued/running. No competing recovery submitted." >&2; exit 1
         fi
     done
+    if [[ "$allow_workers" == 1 && "$name" == slide_recover_worker ]]; then
+        active_workers=$((active_workers + 1))
+        continue
+    fi
     if [[ "$name" == slide_recover_* ]]; then
         echo "Recovery job $id is already queued/running; inspect before retrying." >&2; exit 1
     fi
-done <<< "$queue"
+    if [[ "$rolling" == 1 && ( "$name" == em_slide_prior_prepare || "$name" == em_susie_slide_prior ) ]]; then
+        echo "Historical slider job $id is still queued/running; inspect before recovery." >&2; exit 1
+    fi
+done <<< "$raw_queue"
+[[ "$seen_self" == 1 ]] || { echo 'Queue snapshot did not include this controller; no work submitted.' >&2; exit 1; }
+queue_file=
+plan_args=()
+if [[ "$rolling" == 1 ]]; then
+    queue_file=$(mktemp "$root/.queue.${SLURM_JOB_ID}.XXXXXX")
+    trap 'rm -f -- "$queue_file"' EXIT
+    printf '%s\n' "$queue" > "$queue_file"
+    plan_args+=("$queue_file")
+fi
 
 if [[ "$mode" == retry ]]; then
     # Shared coordinator lock and active-job checks above also protect this
@@ -118,14 +171,24 @@ fi
 # Reserve this controller and the next pending controller. Count other jobs too.
 capacity=$((300 - other_jobs - 2))
 (( capacity > batch_limit )) && capacity=$batch_limit
-if (( capacity < 1 )); then
-    echo "No submission capacity under the 300-job user budget. Retry: sbatch recover_slide_prior_em resume $iteration $batch_limit" >&2
-    exit 1
+if [[ "$rolling" == 1 ]] && (( capacity > batch_limit - active_workers )); then
+    capacity=$((batch_limit - active_workers))
 fi
-launch=$(Rscript --vanilla "$cli" plan "$project_dir" "$iteration" "$capacity")
+if (( capacity < 1 )); then
+    if [[ "$rolling" == 1 ]]; then
+        capacity=0
+    else
+        echo "No submission capacity under the 300-job user budget. Retry: sbatch recover_slide_prior_em resume $iteration $batch_limit" >&2
+        exit 1
+    fi
+fi
+launch=$(Rscript --vanilla "$cli" plan "$project_dir" "$iteration" "$capacity" "${plan_args[@]}")
 mapfile -t info <<< "$launch"
 case "${info[0]}" in
     verify)
+        if (( active_workers > 0 )); then
+            echo 'Refusing verification while worker tasks remain active.' >&2; exit 1
+        fi
         Rscript --vanilla "$cli" verify "$project_dir" "$iteration"
         if [[ -n "$target_iteration" && "${SUSIE_SLIDE_PILOT:-0}" != 1 ]] &&
             (( iteration < target_iteration )); then
@@ -151,42 +214,58 @@ case "${info[0]}" in
     pilot_empty)
         echo 'Selected pilot genes are already validated; no jobs submitted.'
         exit 0 ;;
+    waiting)
+        [[ "$rolling" == 1 ]] || { echo 'Unexpected waiting response.' >&2; exit 1; }
+        echo "Rolling refill: $active_workers active workers; waiting for capacity or remaining genes." ;;
     batch) ;;
     *) echo 'Invalid recovery plan response.' >&2; exit 1 ;;
 esac
-if (( ${#info[@]} != 3 )) || [[ ! -d "${info[1]}" || ! "${info[2]}" =~ ^[1-9][0-9]*$ ]] ||
-    (( info[2] > capacity )); then echo 'Invalid batch response.' >&2; exit 1; fi
-batch=${info[1]}
-tasks=${info[2]}
-if ! response=$(sbatch --parsable "${scheduler_args[@]}" --array="1-${tasks}" --export=ALL \
-    --output="${batch}/worker_%A_%a.out" --error="${batch}/worker_%A_%a.err" \
-    "$project_dir/job/recover_slide_prior_em_array" "$project_dir" "$iteration" "$batch"); then
-    echo "Array submission failed. Audit/results preserved; retry resume $iteration." >&2; exit 1
+batch= array_id=
+if [[ "${info[0]}" == batch ]]; then
+    if (( ${#info[@]} != 3 )) || [[ ! -d "${info[1]}" || ! "${info[2]}" =~ ^[1-9][0-9]*$ ]] ||
+        (( info[2] > capacity )); then echo 'Invalid batch response.' >&2; exit 1; fi
+    batch=${info[1]}
+    tasks=${info[2]}
+    if ! response=$(sbatch --parsable "${scheduler_args[@]}" --array="1-${tasks}" --export=ALL \
+        --output="${batch}/worker_%A_%a.out" --error="${batch}/worker_%A_%a.err" \
+        "$project_dir/job/recover_slide_prior_em_array" "$project_dir" "$iteration" "$batch"); then
+        echo "Array submission failed. Audit/results preserved; retry resume $iteration." >&2; exit 1
+    fi
+    array_id=${response%%;*}
+    [[ "$array_id" =~ ^[0-9]+$ ]] || { echo 'Ambiguous sbatch response; inspect queue before retrying.' >&2; exit 1; }
+    printf '%s\n' "$array_id" > "$root/last_array_job_id.txt"
+    printf '%s\n' "$array_id" > "$batch/array_job_id.txt"
+    printf '%s\n' "$batch" > "${batch%/batches/*}/last_batch.txt"
+    echo "Submitted recovery array $array_id: $tasks tasks, at most $genes_per_task genes/task."
 fi
-array_id=${response%%;*}
-[[ "$array_id" =~ ^[0-9]+$ ]] || { echo 'Ambiguous sbatch response; inspect queue before retrying.' >&2; exit 1; }
-printf '%s\n' "$array_id" > "$root/last_array_job_id.txt"
-printf '%s\n' "$array_id" > "$batch/array_job_id.txt"
-printf '%s\n' "$batch" > "${batch%/batches/*}/last_batch.txt"
-echo "Submitted recovery array $array_id: $tasks tasks, at most $genes_per_task genes/task."
 
 # A pilot runs exactly one bounded batch. The user inspects it before resuming.
 if [[ "${SUSIE_SLIDE_PILOT:-0}" == 1 ]]; then
     echo "Pilot submitted; no automatic continuation. After it ends: sbatch recover_slide_prior_em resume $iteration"
     exit 0
 fi
-# Failure of a worker must not cancel the inspection/retry coordinator.
-if ! response=$(sbatch --parsable "${scheduler_args[@]}" --dependency="afterany:${array_id}:${SLURM_JOB_ID}" \
+# Rolling continuations depend only on this controller, so unfinished workers
+# in any registered batch retain ownership while the next controller refills.
+next_args=(--dependency="afterany:${array_id}:${SLURM_JOB_ID}")
+if [[ "$rolling" == 1 ]]; then
+    next_args=(--dependency="afterany:${SLURM_JOB_ID}" --begin="now+${poll_minutes}minutes")
+fi
+if ! response=$(sbatch --parsable "${scheduler_args[@]}" "${next_args[@]}" \
     --export=ALL --chdir="$project_dir/job" \
     --output="$project_dir/job/slide_recover_control_%j.out" \
     --error="$project_dir/job/slide_recover_control_%j.err" \
     "$project_dir/job/recover_slide_prior_em" continue "$iteration" "$batch_limit"); then
-    echo "Array $array_id remains submitted; continuation failed. After it ends: sbatch recover_slide_prior_em resume $iteration" >&2
+    echo "Array $array_id remains submitted; continuation failed. Resume iteration $iteration using the same rolling setting after inspecting the queue." >&2
     exit 1
 fi
 continuation=${response%%;*}
 [[ "$continuation" =~ ^[0-9]+$ ]] || { echo 'Ambiguous continuation response; inspect queue.' >&2; exit 1; }
 printf '%s\n' "$continuation" > "$root/last_continuation_job_id.txt"
-printf '%s\n' "$continuation" > "$batch/continuation_job_id.txt"
-echo "Queued coordinator $continuation for inspection after array $array_id ends."
-echo "Stop this recovery by cancelling coordinator $continuation first, then array $array_id."
+[[ -z "$batch" ]] || printf '%s\n' "$continuation" > "$batch/continuation_job_id.txt"
+if [[ "$rolling" == 1 ]]; then
+    echo "Queued rolling coordinator $continuation; next check eligible in $poll_minutes minutes (refill below $refill_below, cap $batch_limit)."
+    echo "Stop refills by cancelling coordinator $continuation first. Existing worker arrays can finish."
+else
+    echo "Queued coordinator $continuation for inspection after array $array_id ends."
+    echo "Stop this recovery by cancelling coordinator $continuation first, then array $array_id."
+fi

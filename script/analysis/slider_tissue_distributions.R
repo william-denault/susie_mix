@@ -20,7 +20,7 @@
 # cohort = "common". This still conditions on detection in those tissues.
 #
 # Example:
-# a <- slider_tissue_distributions(results, B = 1999, seed = 1)
+# a <- slider_tissue_distributions(results, B = 9999, seed = 1)
 # a$omnibus
 # a$pairwise[order(a$pairwise$p_holm), ]
 # a$sample_sizes
@@ -37,7 +37,7 @@ slider_tissue_distributions <- function(
     results, value_col = "lead_delta_mean", gene_col = "file",
     tissue_col = "tissue", forced_col = "lead_delta_forced",
     block_col = gene_col, weighting = c("gene", "signal"),
-    cohort = c("available", "common"), B = 1999L, n_grid = 501L,
+    cohort = c("available", "common"), B = 9999L, n_grid = 501L,
     ks = 2:6, seed = 1L, verbose = TRUE) {
   weighting <- match.arg(weighting)
   cohort <- match.arg(cohort)
@@ -67,6 +67,9 @@ slider_tissue_distributions <- function(
   tissues <- sort(unique(d$tissue))
   nt <- length(tissues)
   if (nt < 2L) stop("Need at least two tissues.")
+  if (choose(nt, 2L) / (B + 1) > 0.05)
+    warning("B is too small for any Holm-adjusted pairwise p-value below 0.05; ",
+            "increase B for pairwise inference. The omnibus test is still usable.")
   if (cohort == "common") {
     present <- unique(d[c("gene", "tissue")])
     counts <- table(present$gene)

@@ -338,12 +338,15 @@ sre_load <- function(ctx, allow_scope_adoption = FALSE) {
 }
 
 # Receipts accelerate intermediate scheduling. Final completion always rereads every fit.
-sre_refresh <- function(ctx) {
+sre_refresh <- function(ctx, active_genes = character()) {
   audit <- read.csv(file.path(ctx$root, "audit.csv"), stringsAsFactors = FALSE)
   if (!identical(audit$gene, ctx$manifest$gene)) stop("Audit gene universe changed.")
   if (!"attempts" %in% names(audit)) audit$attempts <- 0L
   exclusions <- sre_exclusions(ctx)
   for (i in seq_len(nrow(audit))) {
+    # A live task owns every assigned gene, including genes not started yet.
+    # Its result and receipt can change together; inspect them after it exits.
+    if (audit$gene[i] %in% active_genes) next
     if (audit$gene[i] %in% ctx$scope$excluded) {
       row <- sre_inspect(ctx, audit$gene[i], exclusions)
       audit[i, names(row)] <- row
@@ -375,25 +378,37 @@ sre_refresh <- function(ctx) {
 }
 
 sre_plan_batch <- function(ctx, capacity, pilot_genes = NULL, automatic = FALSE,
-                           genes_per_task = 4L) {
-  capacity <- sre_int(capacity, "capacity", 1L, 298L)
+                           genes_per_task = 4L, queue_file = NULL, refill_below = 200L) {
+  rolling <- !is.null(queue_file)
+  capacity <- sre_int(capacity, "capacity", if (rolling) 0L else 1L, 298L)
   genes_per_task <- sre_int(genes_per_task, "genes_per_task", 1L, 15L)
   loaded <- sre_load(ctx)
-  audit <- sre_refresh(ctx)
+  live <- if (rolling) sre_queue_work(ctx, queue_file) else
+    list(genes = character(), batches = character(), finished = character(), tasks = 0L)
+  if (rolling) {
+    refill_below <- sre_int(refill_below, "refill_below", 1L, 298L)
+    if (!is.null(pilot_genes)) stop("Rolling scheduling is not a pilot mode.")
+    message("Rolling queue: ", live$tasks, " active worker tasks; ", capacity,
+            " free slots; refill below ", refill_below, ".")
+  }
+  audit <- sre_refresh(ctx, live$genes)
   pending <- which(!sre_ready(audit$status))
-  if (!length(pending)) return(list(status = "verify"))
+  if (!length(pending) && !live$tasks) return(list(status = "verify"))
+  pending <- pending[!audit$gene[pending] %in% live$genes]
+  # Examine every finished overlapping batch, not just the newest submission.
+  check_batches <- if (automatic) live$finished else character()
   if (automatic && file.exists(file.path(ctx$root, "last_batch.txt"))) {
     last <- readLines(file.path(ctx$root, "last_batch.txt"), warn = FALSE)
     if (length(last) != 1L || !identical(dirname(last), paste0(ctx$root, "/batches")))
       stop("Invalid last batch record.")
-    saved <- readRDS(file.path(last, "settings.rds"))
-    if (!identical(saved$frozen, ctx$frozen) || !identical(saved$scope_md5, ctx$scope$md5) ||
-        !identical(saved$manifest_md5, unname(tools::md5sum(file.path(last, "manifest.csv")))))
-      stop("Last batch manifest changed.")
-    prior_work <- read.csv(file.path(last, "manifest.csv"), stringsAsFactors = FALSE)
+    check_batches <- unique(c(check_batches, setdiff(last, live$batches)))
+  }
+  for (last in check_batches) {
+    prior_work <- sre_batch_work(ctx, last)
     ix <- match(prior_work$gene, audit$gene)
     if (!any(audit$attempts[ix] > prior_work$attempts_before | sre_ready(audit$status[ix]))) {
-      message("No worker entered fitting in the last batch; inspect runtime/Slurm logs before manual resume.")
+      message("No worker entered fitting in batch ", basename(last),
+              "; inspect runtime/Slurm logs before manual resume.")
       return(list(status = "blocked"))
     }
   }
@@ -416,6 +431,8 @@ sre_plan_batch <- function(ctx, capacity, pilot_genes = NULL, automatic = FALSE,
     pending <- pending[audit$gene[pending] %in% pilot_genes]
     if (!length(pending)) return(list(status = "pilot_empty"))
   }
+  if (!length(pending) || capacity == 0L || (rolling && live$tasks >= refill_below))
+    return(list(status = "waiting"))
   # Subdivide only the new batch. The audited plan, previous batch assignments
   # and per-gene receipts remain immutable when the execution cap changes.
   work <- loaded$plan[pending, , drop = FALSE]
@@ -442,8 +459,7 @@ sre_plan_batch <- function(ctx, capacity, pilot_genes = NULL, automatic = FALSE,
   list(status = "batch", path = normalizePath(batch, winslash = "/"), tasks = length(selected))
 }
 
-sre_task_genes <- function(ctx, batch, task) {
-  sre_load(ctx)
+sre_batch_work <- function(ctx, batch) {
   batch <- normalizePath(batch, winslash = "/", mustWork = TRUE)
   if (!identical(dirname(batch), paste0(ctx$root, "/batches"))) stop("Invalid batch path.")
   saved <- readRDS(file.path(batch, "settings.rds"))
@@ -454,10 +470,73 @@ sre_task_genes <- function(ctx, batch, task) {
   # Older batches predate the configurable cap and remain readable as saved.
   cap <- if (is.null(saved$genes_per_task)) 15L else
     sre_int(saved$genes_per_task, "batch genes_per_task", 1L, 15L)
-  genes <- work$gene[work$array_task == sre_int(task, "array task", 1L, 298L)]
-  if (!length(genes) || any(table(work$array_task) > cap) || anyDuplicated(work$gene) ||
+  if (!all(c("gene", "array_task", "attempts_before") %in% names(work)) ||
+      !nrow(work) || anyNA(work[c("gene", "array_task", "attempts_before")]) ||
+      any(work$array_task != as.integer(work$array_task)) ||
+      any(work$array_task < 1L | work$array_task > 298L) ||
+      any(table(work$array_task) > cap) || anyDuplicated(work$gene) ||
       any(!work$gene %in% ctx$manifest$gene)) stop("Invalid batch gene assignment.")
+  work
+}
+
+sre_task_genes <- function(ctx, batch, task) {
+  sre_load(ctx)
+  work <- sre_batch_work(ctx, batch)
+  genes <- work$gene[work$array_task == sre_int(task, "array task", 1L, 298L)]
+  if (!length(genes)) stop("Invalid batch gene assignment.")
   genes
+}
+
+# Resolve a successful squeue --array --states=all snapshot against persisted
+# submissions. Unknown workers fail closed, including a submission interrupted
+# before array_job_id.txt was saved. Job names alone never authorize adoption.
+sre_queue_work <- function(ctx, queue_file) {
+  lines <- readLines(queue_file, warn = FALSE)
+  lines <- lines[nzchar(lines)]
+  queue <- data.frame(id = character(), array = character(), name = character())
+  if (length(lines)) {
+    fields <- strsplit(lines, "|", fixed = TRUE)
+    if (any(lengths(fields) != 3L)) stop("Invalid scheduler queue snapshot.")
+    queue <- as.data.frame(do.call(rbind, fields), stringsAsFactors = FALSE)
+    names(queue) <- c("id", "array", "name")
+  }
+  if (anyNA(queue) || anyDuplicated(queue$id) || any(!nzchar(queue$id)))
+    stop("Invalid scheduler queue snapshot.")
+  files <- list.files(file.path(ctx$root, "batches"), pattern = "^array_job_id\\.txt$",
+                      recursive = TRUE, full.names = TRUE)
+  ids <- vapply(files, function(file) {
+    id <- trimws(readLines(file, warn = FALSE))
+    if (length(id) != 1L || !grepl("^[0-9]+$", id)) stop("Invalid saved array ID: ", file)
+    id
+  }, character(1))
+  if (anyDuplicated(ids)) stop("Array ID is assigned to multiple batches.")
+  if (any(queue$name == "slide_recover_worker" & !queue$array %in% ids))
+    stop("Untracked recovery worker in queue; inspect submissions before resuming.")
+  genes <- active_batches <- finished <- character()
+  tasks <- 0L
+  for (i in seq_along(files)) {
+    batch <- normalizePath(dirname(files[i]), winslash = "/", mustWork = TRUE)
+    rows <- which(queue$array == ids[i])
+    saved <- readRDS(file.path(batch, "settings.rds"))
+    # Inactive historical batches may predate the explicitly changed scope.
+    if (!length(rows) && (!identical(saved$frozen, ctx$frozen) ||
+                         !identical(saved$scope_md5, ctx$scope$md5))) next
+    work <- sre_batch_work(ctx, batch)
+    if (!length(rows)) {
+      finished <- c(finished, batch)
+      next
+    }
+    if (any(queue$name[rows] != "slide_recover_worker"))
+      stop("Unexpected job name for a registered recovery array: ", ids[i])
+    expected <- paste0(ids[i], "_", unique(work$array_task))
+    if (any(!queue$id[rows] %in% expected)) stop("Unknown active array task: ", ids[i])
+    active_tasks <- unique(work$array_task)[match(queue$id[rows], expected)]
+    genes <- c(genes, work$gene[work$array_task %in% active_tasks])
+    active_batches <- c(active_batches, batch)
+    tasks <- tasks + length(rows)
+  }
+  if (anyDuplicated(genes)) stop("A gene is assigned to multiple active tasks.")
+  list(genes = genes, batches = active_batches, finished = finished, tasks = tasks)
 }
 
 sre_run_gene <- function(ctx, gene, run_gene = run_slide_prior_gene) {
