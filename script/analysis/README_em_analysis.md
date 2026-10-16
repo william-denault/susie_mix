@@ -179,6 +179,83 @@ the original GTEx data at `datadir`. The local checkout currently contains EM
 metadata but no EM gene result directories, so actual iteration-12 outputs must
 be generated on the cluster or after copying those RDS files locally.
 
+## Four-panel CS agreement figure
+
+After generating the EM summaries for the converged iteration, Source
+`plot_cs_agreement_em.R` in RStudio, or run from the project root:
+
+```bash
+Rscript --vanilla script/analysis/plot_cs_agreement_em.R /project2/mstephens/wdenault/susie_mix 18
+```
+
+Use `latest` instead of `18` to select the latest complete iteration using the
+same checks as the other EM scripts. This does not itself test convergence of
+the EM prior updates; pin the iteration you have identified as converged.
+The script uses `weighted_fit_mix` from that iteration, never SuSiE-slide or
+the original fixed-prior fit. It needs the region and CS summaries produced by
+`generate_summary_results_em.R`; no expression data or refitting is required.
+
+Outputs go to `results_em/iteration_018/descriptive_results/cs_agreement/`
+(with the selected iteration number). The main figure is
+`em_cs_agreement_4panel.png`, with a vector PDF of the same name:
+
+- **A: four tissue CS-count tables.** Rows are additive SuSiE CS counts,
+  columns are EM CS counts, and cells are numbers of gene/tissue regions.
+  Green diagonal cells have equal counts; orange off-diagonal cells differ.
+  Select two tissues with the lowest and two with the highest equal-count
+  rate, using distinct tissues. Ties use larger sample size, then tissue name.
+  `minimum_tissue_regions = 100` avoids ranking very small cohorts; edit the
+  setting as needed. With fewer than four qualifying tissues, the script warns
+  and displays the available tissues without duplication.
+- **B: lead-distance empirical cumulative distributions across all tissues.**
+  One curve describes non-identical paired leads, including distinct variants
+  at the same position. Two separate curves describe extra EM or extra SuSiE
+  CSs by their distance to the nearest lead in the other model. The transform
+  is `log10(1 + distance_bp)`, with physical-distance tick labels and zero
+  retained. Identical paired leads are counted separately. Extra CSs in
+  regions with no other-model CS have no distance and are counted separately.
+- **C: lead retention by CS-count group.** For equal counts, more EM CSs, or
+  more SuSiE CSs, report the fraction of regions retaining all, some, or none
+  of the smaller model's lead SNPs. Regions with no CS in the other model are
+  a separate category. For equal counts, full retention means identical lead
+  multisets; it does not mean identical CS membership.
+- **D: extra EM CS coding and lead PIP.** Boxplots and individual points show
+  additive, recessive, and dominant lead coding among unpaired EM CSs,
+  including regions with no additive CS. PIP is coding-specific. Labels show
+  valid-PIP counts over total CS counts; missing/invalid PIPs remain in audits.
+
+The default cohort matches `descriptive_results_em.R`: P < 1e-8 and mean reads
+>= 100, then at least one CS in either model. Zero/zero regions are excluded
+from tissue ranking and retained in `region_audit.csv`. One-sided zero-CS
+regions count as disagreement. CS size is unrestricted. Each tissue's rate
+uses regions, each distance curve uses CS pairs or unpaired CSs; multi-CS
+regions therefore contribute several distances. This is a descriptive pooled
+distribution, without independence assumptions or inferential intervals.
+
+Matching reserves identical biological lead SNP IDs first, ignoring coding,
+and pairs each CS at most once. Remaining leads use a one-to-one assignment
+minimizing total absolute distance, with unmatched CSs allowed on the larger
+side. For 1 SuSiE CS and 2 EM CSs with one shared lead, the shared lead is paired
+at zero distance, and the second EM CS is extra. Its nearest-lead distance is
+a reference distance, not a second match to the same SuSiE CS. Matching is
+deterministic under input reordering. It is positional and does not establish
+shared signals, causality, CS equivalence, or low LD.
+
+Incomplete CS summaries and invalid coordinates are audited. Valid count
+comparisons remain in panel A; valid lead identities remain in panel C even
+when coordinates cannot be used in B/D. Invalid regions are never partially
+matched or treated as evidence of extra CSs. Both summaries must have a single
+matching EM iteration, and the entry script checks saved summary provenance.
+
+The script prints the selected contingency tables using R's table display and
+leaves `em_agreement_results` in the RStudio session. It also saves:
+`tissue_ranking.csv`, `selected_tissues.csv`, `tissue_cs_count_tables.csv`,
+`matched_cs_pairs.csv`, `unpaired_cs.csv`, `lead_distance_summary.csv`,
+`lead_retention_summary.csv`, `extra_em_coding_summary.csv`,
+`region_audit.csv`, `orphan_cs_rows.csv`, and `analysis_settings.csv`.
+Sync `plot_cs_agreement_em.R` and `em_cs_agreement_utils.R` along with the
+existing `em_analysis_utils.R` when updating the cluster.
+
 ## Reusable functions and tests
 
 The shared `generate_summary_results.R` and `descriptive_results_weighted.R`
@@ -189,6 +266,7 @@ call `generate_summary_results(path_res, output_dir)` or
 
 ```bash
 Rscript --vanilla script/analysis/tests/test_em_analysis.R
+Rscript --vanilla script/analysis/tests/test_em_cs_agreement.R
 Rscript --vanilla script/analysis/tests/test_weighted_summary.R
 Rscript --vanilla script/analysis/tests/test_one_cs_plots.R
 Rscript --vanilla script/analysis/tests/test_one_cs_lead_distance_plots.R
