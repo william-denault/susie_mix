@@ -1,11 +1,12 @@
 # RStudio: edit settings and Source. CLI: Rscript this_file.R [PROJECT_DIR] [endpoints|direction]
+# Writes the lead-distance overview for pairs with exactly one CS in each model.
 slide_one_cs_settings <- list(
   project_dir = Sys.getenv("SUSIE_MIX_PROJECT_DIR", if (dir.exists("script/analysis")) getwd() else
                             "/project2/mstephens/wdenault/susie_mix"),
   expected_coding = "recessive",
   coding_selection = "endpoints", # "direction" also includes partial recessive effects.
   association_threshold = 5e-8,
-  both_one_cs = FALSE,
+  both_one_cs = TRUE,             # Exactly one CS in additive SuSiE and SuSiE-slide.
   top_n = 20L
 )
 if (sys.nframe() == 0L) {

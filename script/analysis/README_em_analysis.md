@@ -97,16 +97,23 @@ The descriptive analysis keeps the existing P < 1e-8 and mean reads >= 100
 thresholds. The interesting one-CS plots use only P < 5e-8 for eligibility,
 with no sample-size or mean-read-count cutoff, and require one **EM** CS with
 a dominant or recessive lead, respectively. The original unweighted one-CS
-plots use the same eligibility rule. Expression reconstruction still checks
-that the data match the saved fit. The one-CS analysis does not require
-one additive CS by default. For multiple additive CSs it selects the highest-PIP
-CS lead; with no additive CS it uses the highest-PIP SNP and labels that fallback.
-Set `both_one_cs = TRUE` for strictly one CS in both models. Both overview plots
+plots use the same P-value eligibility rule. Expression reconstruction still checks
+that the data match the saved fit. Both EM one-CS scripts default to
+`both_one_cs = TRUE`: exactly one additive CS and exactly one EM CS per
+gene/tissue pair. This does not require a CS to contain only one SNP.
+Set `both_one_cs = FALSE` only to include other additive CS counts; in that
+mode, multiple additive CSs use their highest-PIP CS lead, and no additive CS
+uses the highest-PIP SNP with an explicit fallback label. Both overview plots
 show the 20 largest physical shifts beside a distance-versus-PIP scatter. The
 six largest shifts with usable PIPs are labeled using the current EM results.
 The overview subtitle counts shifts strictly greater than 10 kb and 100 kb.
 These counts also appear as `n_over_10kb` and `n_over_100kb` in
 `lead_distance_summary.csv`, using all comparable lead pairs in the selection.
+The overview is always written before optional expression plots, including
+with `--summary-only`, to `plot/one_cs_dominant/lead_snp_distance_overview.png`
+or `plot/one_cs_recessive/lead_snp_distance_overview.png` within the selected
+EM iteration. Sync the entry scripts, `em_one_cs_utils.R`, and
+`one_cs_lead_distance_plot_utils.R` together when updating the cluster.
 
 `plot_additive_1cs_vs_mix_2cs_em.R` uses P < 5e-8 with no mean-read-count or
 sample-size cutoff, matching the one-CS EM scripts. It selects **one original additive CS and

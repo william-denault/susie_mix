@@ -1,6 +1,6 @@
 # Source slide_analysis_utils.R before this file.
 slide_one_cs_comparisons <- function(res, results_dir, expected_coding = "dominant",
-    association_threshold = 5e-8, both_one_cs = FALSE,
+    association_threshold = 5e-8, both_one_cs = TRUE,
     coding_selection = c("endpoints", "direction"), delta_tolerance = 1e-6) {
   expected_coding <- match.arg(expected_coding, c("dominant", "recessive"))
   coding_selection <- match.arg(coding_selection)
@@ -76,7 +76,7 @@ slide_one_cs_comparisons <- function(res, results_dir, expected_coding = "domina
 plot_one_cs_slide <- function(project_dir, expected_coding = "dominant",
     results_dir = file.path(project_dir, "results"), summary_dir = file.path(project_dir, "results_slide/summary"),
     output_dir = file.path(project_dir, "results_slide/plot", paste0("one_cs_", expected_coding)),
-    association_threshold = 5e-8, both_one_cs = FALSE,
+    association_threshold = 5e-8, both_one_cs = TRUE,
     coding_selection = "endpoints", top_n = 20L) {
   summaries <- slide_load_summary(summary_dir)
   tolerance <- unique(summaries$res$delta_tolerance)
@@ -92,7 +92,8 @@ plot_one_cs_slide <- function(project_dir, expected_coding = "dominant",
     file.path(output_dir, "lead_snp_distance_overview.png"), top_n = top_n,
     title_prefix = paste0("SuSiE-slide (", coding_selection, ") | "), annotation_mode = "largest_shifts",
     lead_pip_label = "SuSiE-slide lead SNP PIP",
-    pip_note = "Distance uses base-pair coordinates. Slide PIP is SNP-level; coding is the fitted lead delta.")
+    pip_note = "Distance uses base-pair coordinates. Slide PIP is SNP-level; coding is the fitted lead delta.",
+    both_one_cs = both_one_cs)
   write.csv(overview$top_cases, file.path(output_dir, "largest_lead_shifts.csv"), row.names = FALSE)
   distances <- completed$distance_kb[is.finite(completed$distance_kb)]
   stats <- data.frame(coding = expected_coding, coding_selection = coding_selection, delta_tolerance = tolerance,

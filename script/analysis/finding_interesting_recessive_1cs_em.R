@@ -1,12 +1,13 @@
 # RStudio: edit and Source. Generates the original four-panel SNP/PIP and
-# expression plots, plus the lead-distance overview. Requires the GTEx inputs.
+# expression plots, plus the lead-distance overview, for one CS in each model.
+# Expression plots require the GTEx inputs; --summary-only skips those panels.
 em_one_cs_settings <- list(
   project_dir = Sys.getenv("SUSIE_MIX_PROJECT_DIR", if (dir.exists("script/analysis")) getwd() else
                             "/project2/mstephens/wdenault/susie_mix"),
   iteration = "latest",
   expected_coding = "recessive",
   association_threshold = 5e-8,
-  both_one_cs = FALSE,
+  both_one_cs = TRUE,            # Exactly one CS in additive SuSiE and EM SuSiE-mix.
   expression_plots = TRUE,       # FALSE requests only saved-fit summaries/overview.
   datadir = "/project2/mstephens/gtex",
   top_n = 20L

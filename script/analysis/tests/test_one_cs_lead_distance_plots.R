@@ -42,6 +42,20 @@ small <- plot_one_cs_lead_distance_overview(
 )
 stopifnot(nrow(small$top_cases) == 2L)
 
+# Strict EM/slide overviews must reject zero/multiple/unknown additive CSs.
+strict_fixture <- fixture[which(fixture$additive_n_cs == 1L), ]
+strict <- plot_one_cs_lead_distance_overview(
+  strict_fixture, "dominant", file.path(output_dir, "both_one_cs.png"), both_one_cs = TRUE)
+stopifnot(strict$n_completed == nrow(strict_fixture),
+          all(strict$distance_data$additive_n_cs == 1L))
+for (n_cs in c(0L, 2L, NA_integer_)) {
+  bad_cs <- strict_fixture[1, ]
+  bad_cs$additive_n_cs <- n_cs
+  error <- tryCatch(plot_one_cs_lead_distance_overview(
+    bad_cs, "dominant", file.path(output_dir, "rejected.png"), both_one_cs = TRUE), error = identity)
+  stopifnot(inherits(error, "error"), grepl("exactly one additive CS", conditionMessage(error)))
+}
+
 # Same-position different alleles have distance zero, not a fabricated log
 # coordinate. Missing PIP excludes only the scatter point, not the ranking.
 zero <- fixture[1, ]

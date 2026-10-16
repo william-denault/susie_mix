@@ -9,7 +9,8 @@ plot_one_cs_lead_distance_overview <- function(
     annotate_examples = TRUE,
     annotation_mode = c("reviewed", "largest_shifts"),
     lead_pip_label = paste0("Mixed lead PIP (", expected_coding, " coding)"),
-    pip_note = "Distance uses base-pair coordinates. PIP is coding-specific.") {
+    pip_note = "Distance uses base-pair coordinates. PIP is coding-specific.",
+    both_one_cs = FALSE) {
 
   expected_coding <- match.arg(expected_coding, c("dominant", "recessive"))
   annotation_mode <- match.arg(annotation_mode)
@@ -36,6 +37,9 @@ plot_one_cs_lead_distance_overview <- function(
     if (anyNA(completed[c("n_cs", "lead_coding")]) ||
         any(completed$n_cs != 1L | completed$lead_coding != expected_coding)) {
       stop("Expected one mixed CS with a ", expected_coding, " lead in every plotted case.")
+    }
+    if (both_one_cs && (anyNA(completed$additive_n_cs) || any(completed$additive_n_cs != 1L))) {
+      stop("Expected exactly one additive CS in every plotted case.")
     }
   } else {
     # The runner returns only audit columns when no cases succeed. Still
@@ -205,7 +209,8 @@ plot_one_cs_lead_distance_overview <- function(
     text(mean(log_limits), .5, "No changed leads with positive distance and valid PIP")
   }
   coding_title <- paste0(toupper(substr(expected_coding, 1, 1)), substring(expected_coding, 2))
-  mtext(paste0(title_prefix, coding_title, " one-CS examples: lead shifts and posterior support"),
+  cohort_title <- if (both_one_cs) " one CS per model" else " one-CS examples"
+  mtext(paste0(title_prefix, coding_title, cohort_title, ": lead shifts and posterior support"),
         outer = TRUE, side = 3, line = 2.4, cex = 1.45, font = 2)
   count_text <- function(x) format(x, big.mark = ",", trim = TRUE)
   n_over_10kb <- sum(d$distance_bp > 10000)

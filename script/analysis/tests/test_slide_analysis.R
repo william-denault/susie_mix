@@ -38,6 +38,9 @@ fixtures <- list(
 fixtures$MissingSlide$fit_slide <- NULL
 fixtures$MissingPerm$fit_slide_perm <- NULL
 colnames(fixtures$BadOrder$fit_slide$alpha) <- rev(snps)
+# One CS may contain several SNPs; the filter concerns the number of sets.
+fixtures$Dominant$susie_add$sets$cs[[1]] <- c(1L, 3L)
+fixtures$Dominant$fit_slide$sets$cs[[1]] <- c(2L, 3L)
 for (gene in names(fixtures)) saveRDS(list(Tissue = fixtures[[gene]]), file.path(root, "results", paste0(gene, ".rds")))
 saveRDS(list(gene = "Failed", error = "Synthetic failure"), file.path(root, "results/Failed.rds"))
 generated <- generate_summary_results_slide(project, file.path(root, "results"),
@@ -91,17 +94,44 @@ dom <- plot_one_cs_slide(project, "dominant", file.path(root, "results"), file.p
                          file.path(root, "dominant"))
 rec <- plot_one_cs_slide(project, "recessive", file.path(root, "results"), file.path(root, "summary"),
                          file.path(root, "recessive"))
-stopifnot(dom$summary$n_compared == 5L, rec$summary$n_compared == 1L,
+stopifnot(dom$summary$n_compared == 3L, rec$summary$n_compared == 1L,
+          dom$summary$both_one_cs, rec$summary$both_one_cs,
+          all(dom$comparisons$additive_n_cs == 1L), all(rec$comparisons$additive_n_cs == 1L),
           dom$comparisons$distance_kb[dom$comparisons$gene == "Dominant"] == 250,
           dom$comparisons$distance_kb[dom$comparisons$gene == "SameLead"] == 0,
-          dom$comparisons$additive_lead_selection[dom$comparisons$gene == "NoAddCS"] ==
-            "Highest-PIP SNP (no credible set)",
+          !any(dom$comparisons$gene %in% c("NoAddCS", "MultipleAddCS")),
+          dom$overview$n_completed == 3L, dom$overview$n_changed == 2L,
+          file.info(dom$overview$output_file)$size > 10000,
+          file.info(rec$overview$output_file)$size > 10000,
           !any(dom$comparisons$gene == "PartialDominant"))
+relaxed <- slide_one_cs_comparisons(res, file.path(root, "results"), both_one_cs = FALSE)
+stopifnot(nrow(relaxed) == 5L,
+          relaxed$additive_lead_selection[relaxed$gene == "NoAddCS"] ==
+            "Highest-PIP SNP (no credible set)")
 direction <- slide_one_cs_comparisons(res, file.path(root, "results"), coding_selection = "direction")
 stopifnot("PartialDominant" %in% direction$gene,
           direction$lead_delta[direction$gene == "PartialDominant"] == .4)
 strict <- slide_one_cs_comparisons(res, file.path(root, "results"), both_one_cs = TRUE)
 stopifnot(!any(strict$gene %in% c("MultipleAddCS", "NoAddCS")))
+# Exercise both entry scripts through Source, as in RStudio, with real fixtures.
+dir.create(file.path(root, "results_slide/summary"), recursive = TRUE)
+file.copy(list.files(file.path(root, "summary"), full.names = TRUE), file.path(root, "results_slide/summary"))
+dir.create(file.path(root, "script/analysis"), recursive = TRUE)
+file.copy(list.files("script/analysis", "\\.R$", full.names = TRUE), file.path(root, "script/analysis"))
+saved_project <- Sys.getenv("SUSIE_MIX_PROJECT_DIR", unset = NA_character_)
+tryCatch({
+  Sys.setenv(SUSIE_MIX_PROJECT_DIR = root)
+  for (coding in c("dominant", "recessive")) {
+    env <- new.env(parent = globalenv())
+    source(file.path("script/analysis", paste0("finding_interesting_", coding, "_1cs_slide.R")), local = env)
+    stopifnot(env$slide_one_cs_settings$both_one_cs,
+              all(env$slide_one_cs_results$comparisons$additive_n_cs == 1L),
+              env$slide_one_cs_results$overview$n_completed == if (coding == "dominant") 3L else 1L,
+              file.info(env$slide_one_cs_results$overview$output_file)$size > 10000)
+  }
+}, finally = {
+  if (is.na(saved_project)) Sys.unsetenv("SUSIE_MIX_PROJECT_DIR") else Sys.setenv(SUSIE_MIX_PROJECT_DIR = saved_project)
+})
 empty <- plot_one_cs_slide(project, "recessive", file.path(root, "results"), file.path(root, "summary"),
                            file.path(root, "empty"), association_threshold = 0)
 stopifnot(empty$summary$n_candidates == 0L, empty$summary$n_compared == 0L)

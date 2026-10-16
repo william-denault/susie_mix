@@ -19,7 +19,7 @@ em_one_cs_lead <- function(fit, predictor_map) {
 
 em_one_cs_distances <- function(context, res, expected_coding = "dominant",
                                 association_threshold = 5e-8,
-                                both_one_cs = FALSE) {
+                                both_one_cs = TRUE) {
   expected_coding <- match.arg(expected_coding, c("dominant", "recessive"))
   count_column <- if (expected_coding == "dominant") "n_dom_weighted" else "n_rec_weighted"
   # P-value is the only quality screen; sample/read counts are metadata.
@@ -48,6 +48,8 @@ em_one_cs_distances <- function(context, res, expected_coding = "dominant",
       if (inherits(joined, "error")) stop(conditionMessage(joined))
       x <- joined[[tissue]]
       if (is.null(x) || length(get_cs(x$weighted_fit_mix)) != 1L) stop("Selected EM tissue/CS is unavailable.")
+      if (both_one_cs && length(get_cs(x$susie_add)) != 1L)
+        stop("Expected exactly one additive CS in the saved fit; regenerate the EM summary.")
       add <- em_one_cs_lead(x$susie_add, x$add_predictor_map)
       mix <- em_one_cs_lead(x$weighted_fit_mix, x$mix_predictor_map)
       if (mix$coding != expected_coding) stop("Selected coding differs from saved EM fit.")
@@ -83,7 +85,7 @@ em_one_cs_distances <- function(context, res, expected_coding = "dominant",
 
 em_plot_one_cs <- function(project_dir, iteration = "latest", expected_coding = "dominant",
                            association_threshold = 5e-8,
-                           both_one_cs = FALSE, expression_plots = TRUE,
+                           both_one_cs = TRUE, expression_plots = TRUE,
                            datadir = "/project2/mstephens/gtex", top_n = 20L) {
   context <- em_analysis_context(project_dir, iteration)
   source(file.path(context$project_dir, "script/analysis/generate_summary_results.R"), local = TRUE)
@@ -109,7 +111,7 @@ em_plot_one_cs <- function(project_dir, iteration = "latest", expected_coding = 
   overview <- plot_one_cs_lead_distance_overview(
     overview_input, expected_coding, file.path(output_dir, "lead_snp_distance_overview.png"),
     top_n = top_n, title_prefix = paste0("EM ", context$iteration, " | "),
-    annotate_examples = TRUE, annotation_mode = "largest_shifts")
+    annotate_examples = TRUE, annotation_mode = "largest_shifts", both_one_cs = both_one_cs)
   write.csv(overview$top_cases, file.path(output_dir, "largest_lead_shifts.csv"), row.names = FALSE)
   distance <- completed$distance_bp[is.finite(completed$distance_bp)]
   stats <- data.frame(

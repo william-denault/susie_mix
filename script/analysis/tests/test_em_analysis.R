@@ -89,6 +89,7 @@ expect_error(em_join_gene(bad_path, context), "wrong em_iteration")
 saveRDS(good_out, bad_path)
 plots <- em_plot_one_cs(root, 12, expression_plots = FALSE)
 stopifnot(nrow(plots$comparisons) == 1L, plots$comparisons$distance_bp == 250000,
+          plots$summary$both_one_cs, all(plots$comparisons$additive_n_cs == 1L),
           plots$comparisons$lead_snp == snps[2], plots$comparisons$selected_cs_overlap_snps == 0,
           plots$summary$max_distance_kb == 250,
           plots$summary$n_over_10kb == 1L, plots$summary$n_over_100kb == 1L,
@@ -101,6 +102,35 @@ no_cs <- baseline$susie_add
 no_cs$sets <- NULL
 lead <- em_one_cs_lead(no_cs, add_map)
 stopifnot(lead$snp == snps[1], grepl("no credible set", lead$selection))
+# The default selects one CS in each model, regardless of how many SNPs are
+# in that CS, and checks saved fits in case the summary is stale.
+baseline_path <- file.path(root, "results/DOM.rds")
+original_baseline <- readRDS(baseline_path)
+one_case <- out$res_summary[out$res_summary$gene == "DOM", , drop = FALSE]
+for (n_cs in 0:2) {
+  modified <- original_baseline
+  fit <- modified$Tissue$susie_add
+  if (n_cs == 0L) fit$sets <- NULL
+  if (n_cs == 1L) fit$sets$cs[[1]] <- 1:2
+  if (n_cs == 2L) {
+    fit$alpha <- rbind(c(.98, .02), c(.02, .98))
+    fit$pip <- 1 - apply(1 - fit$alpha, 2, prod)
+    fit$sets <- list(cs = list(L1 = 1L, L2 = 2L), cs_index = 1:2)
+  }
+  modified$Tissue$susie_add <- fit
+  saveRDS(modified, baseline_path)
+  selection <- one_case
+  selection$ncs_susie <- n_cs
+  strict <- em_one_cs_distances(context, selection)
+  relaxed <- em_one_cs_distances(context, selection, both_one_cs = FALSE)
+  stopifnot(nrow(strict) == as.integer(n_cs == 1L), all(strict$status == "compared"),
+            nrow(relaxed) == 1L, relaxed$status == "compared", relaxed$additive_n_cs == n_cs)
+  if (n_cs != 1L) {
+    stale <- em_one_cs_distances(context, one_case)
+    stopifnot(stale$status == "error", grepl("exactly one additive CS", stale$message))
+  }
+}
+saveRDS(original_baseline, baseline_path)
 if (requireNamespace("data.table", quietly = TRUE)) {
   tables <- run_weighted_descriptive_results(file.path(context$summary_dir, "res_summary.RData"),
                                              file.path(context$summary_dir, "res_cs_summary.RData"),
@@ -130,11 +160,23 @@ recessive_env <- new.env(parent = globalenv())
 suppressWarnings(source("script/analysis/finding_interesting_recessive_1cs_em.R", local = recessive_env))
 if (is.na(saved_project)) Sys.unsetenv("SUSIE_MIX_PROJECT_DIR") else Sys.setenv(SUSIE_MIX_PROJECT_DIR = saved_project)
 stopifnot(isTRUE(recessive_env$em_one_cs_settings$expression_plots),
+          isTRUE(recessive_env$em_one_cs_settings$both_one_cs),
           recessive_env$em_one_cs_results$expression_summary$status == "plotted",
           recessive_env$em_one_cs_results$expression_summary$coding == "recessive",
           recessive_env$em_one_cs_results$summary$n_compared == 1L,
           recessive_env$em_one_cs_results$comparisons$lead_coding == "recessive",
           recessive_env$em_one_cs_results$comparisons$distance_bp == 250000,
           nrow(recessive_env$em_one_cs_results$overview$annotated_cases) == 1L)
+saveRDS(good_out, bad_path)
+suppressWarnings(em_generate_summary(root, 12))
+Sys.setenv(SUSIE_MIX_PROJECT_DIR = root)
+dominant_env <- new.env(parent = globalenv())
+suppressWarnings(source("script/analysis/finding_interesting_dominant_1cs_em.R", local = dominant_env))
+if (is.na(saved_project)) Sys.unsetenv("SUSIE_MIX_PROJECT_DIR") else Sys.setenv(SUSIE_MIX_PROJECT_DIR = saved_project)
+stopifnot(dominant_env$em_one_cs_settings$both_one_cs,
+          dominant_env$em_one_cs_results$summary$n_compared == 1L,
+          dominant_env$em_one_cs_results$comparisons$additive_n_cs == 1L,
+          dominant_env$em_one_cs_results$expression_summary$coding == "dominant",
+          file.info(dominant_env$em_one_cs_results$overview$output_file)$size > 10000)
 cat("PASS: latest complete iteration, EM/baseline joining, audit records, zero-CS fits, provenance,\n",
     "250-kb lead shift, empty selection, and downstream outputs. Fixtures: ", root, "\n", sep = "")

@@ -67,12 +67,18 @@ Rscript --vanilla script/analysis/finding_interesting_recessive_1cs_slide.R /pro
 ```
 
 The comparison table retains `slide_coding_class` and `lead_delta` in either
-mode. Set `both_one_cs = TRUE` in the script for strictly one CS in both
-models. Otherwise, the additive comparator is its highest-PIP CS lead; when
+mode. Both scripts default to `both_one_cs = TRUE`: exactly one additive CS
+and exactly one slide CS per gene/tissue pair, without restricting CS size.
+Set `both_one_cs = FALSE` to include other additive CS counts. In that mode,
+the additive comparator is its highest-PIP CS lead; when
 it has no CS, it is the highest-PIP SNP, explicitly labeled in the table and
 plot. All eligible pairs, including equal leads, remain in the CSV. The plot
 ranks changed leads and shows the 20 largest shifts beside distance versus
 slide SNP PIP. Physical distance alone does not establish low LD.
+The overview is always saved as `lead_snp_distance_overview.png` under
+`results_slide/plot/one_cs_dominant/` or `results_slide/plot/one_cs_recessive/`.
+Sync the entry scripts, `slide_one_cs_utils.R`, and
+`one_cs_lead_distance_plot_utils.R` together when updating the cluster.
 
 ## TSS disagreement rule for slide, original, and EM results
 
