@@ -98,13 +98,14 @@ stopifnot(file.info(file.path(output, "em_cs_comparison_tentative_4panel.png"))$
 
 # Exercise the actual entry script and its provenance-checked summary loader.
 project <- file.path(output, "fixture_project")
-dir.create(file.path(project, "script/analysis"), recursive = TRUE)
-dir.create(file.path(project, "script/scan_tissue_attempt"), recursive = TRUE)
-file.copy(file.path("script/analysis", c("em_analysis_utils.R", "em_cs_agreement_utils.R",
-  "em_cs_comparison_tentative_utils.R")), file.path(project, "script/analysis"))
-file.copy("script/scan_tissue_attempt/em_utils.R", file.path(project, "script/scan_tissue_attempt"))
+dir.create(file.path(project, "script/analysis"), recursive = TRUE, showWarnings = FALSE)
+dir.create(file.path(project, "script/scan_tissue_attempt"), recursive = TRUE, showWarnings = FALSE)
+stopifnot(all(file.copy(file.path("script/analysis", c("em_analysis_utils.R", "em_cs_agreement_utils.R",
+  "em_cs_comparison_tentative_utils.R")), file.path(project, "script/analysis"), overwrite = TRUE)))
+stopifnot(file.copy("script/scan_tissue_attempt/em_utils.R", file.path(project, "script/scan_tissue_attempt"),
+                   overwrite = TRUE))
 it <- file.path(project, "results_em/iteration_018")
-for (part in c("summary", "results", "completed")) dir.create(file.path(it, part), recursive = TRUE)
+for (part in c("summary", "results", "completed")) dir.create(file.path(it, part), recursive = TRUE, showWarnings = FALSE)
 write.csv(priors, file.path(project, "results_em/prior_history.csv"), row.names = FALSE)
 write.csv(priors, file.path(it, "priors.csv"), row.names = FALSE)
 write.csv(data.frame(chunk = 1L, gene = "Fixture"), file.path(it, "manifest.csv"), row.names = FALSE)

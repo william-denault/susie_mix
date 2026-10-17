@@ -124,6 +124,7 @@ em_tentative_distance_axis <- function(xmax) {
 }
 
 plot_em_cs_tentative <- function(result, output_file = NULL, preview_label = NULL) {
+  if (is.null(preview_label)) preview_label <- result$preview_label
   if (!is.null(output_file)) {
     dir.create(dirname(output_file), recursive = TRUE, showWarnings = FALSE)
     if (tolower(tools::file_ext(output_file)) == "pdf") {
