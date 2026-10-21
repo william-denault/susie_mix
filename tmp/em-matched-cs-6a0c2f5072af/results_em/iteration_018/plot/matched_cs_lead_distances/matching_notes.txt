@@ -1,0 +1,21 @@
+Additive SuSiE / EM SuSiE-mix lead distances: iteration 18
+Region summary: C:/Document/Serieux/Travail/Data_analysis_and_papers/susie_mix/tmp/em-matched-cs-6a0c2f5072af/results_em/iteration_018/summary/res_summary.RData
+CS summary: C:/Document/Serieux/Travail/Data_analysis_and_papers/susie_mix/tmp/em-matched-cs-6a0c2f5072af/results_em/iteration_018/summary/res_cs_summary.RData
+Generated: 2026-10-21 18:37:54 UTC
+Plot tissue: All tissues
+Latest selects the latest complete iteration using manifests, completion markers, result files and priors.
+Completion does not itself establish convergence of the EM prior updates. Summary provenance is checked.
+Mixed-model source: weighted_fit_mix; counts: ncs_weighted_fit_mix. Original susie_mix is not substituted.
+Cohort: all available summary regions with equal positive additive/EM CS counts; no further association, read-count, convergence or coding filters.
+Summary-generation omissions remain documented in summary/res_errors.csv and summary/res_cs_errors.csv.
+Matching is identical to the original figure: sort GRCh38 lead positions and pair ranks, minimizing total one-to-one absolute distance.
+Ties minimize sum of squared distances, then use SNP ID / CS number. This does not maximize unchanged SNPs or establish signal equivalence.
+One row per matched CS pair; a k-CS region contributes k observations. region_weight = 1/k is supplied but not used in this plot.
+Coordinates are parsed from the actual lead_snp. Invalid or incomplete regions are excluded in full and audited.
+Agreement compares SNP IDs; distance compares positions. Different variants may have 0 bp distance.
+Y is the EM lead predictor's coding-specific PIP, not its component alpha or PIP summed across codings.
+Zero-distance pairs with valid PIPs form the left marginal density (Gaussian reflection at 0/1, nrd0 bandwidth, unit area).
+Positive distances with valid PIPs form the right scatter (logarithmic kb); color is EM lead coding, shape is CS count.
+Missing/invalid PIPs are retained in distance and agreement counts. All-pair percentages include zeros; cutoffs are strictly >10 kb and >100 kb.
+matched_cs_pairs.csv and region_matching_audit.csv retain all tissues; the optional tissue setting selects the figure and distance summaries.
+All mixed_* pair columns refer to the selected EM fit. comparison_mixed_model and em_iteration record this explicitly.

@@ -118,10 +118,12 @@ empty_matched_cs_pairs <- function() {
   )
 }
 
-match_equal_cs_regions <- function(res_summary, res_cs_summary) {
+match_equal_cs_regions <- function(res_summary, res_cs_summary,
+                                   mixed_model_key = "susie_mix",
+                                   mixed_count_column = "ncs_susie_mix") {
   regions <- as.data.frame(res_summary, stringsAsFactors = FALSE)
   cs <- as.data.frame(res_cs_summary, stringsAsFactors = FALSE)
-  matched_cs_require(regions, c("gene", "tissue", "ncs_susie", "ncs_susie_mix"), "res_summary")
+  matched_cs_require(regions, c("gene", "tissue", "ncs_susie", mixed_count_column), "res_summary")
   cs_required <- c("gene", "tissue", "model_key", "cs_number", "lead_snp", "lead_coding", "lead_pip")
   if (!nrow(cs) && !length(names(cs))) {
     cs <- as.data.frame(setNames(rep(list(character()), length(cs_required)), cs_required))
@@ -142,7 +144,7 @@ match_equal_cs_regions <- function(res_summary, res_cs_summary) {
   rownames(regions) <- NULL
   regions$region_id <- matched_cs_key(regions$gene, regions$tissue)
   # Explicit model keys avoid inadvertently including weighted or permuted fits.
-  cs <- cs[which(cs$model_key %in% c("susie_add", "susie_mix")), , drop = FALSE]
+  cs <- cs[which(cs$model_key %in% c("susie_add", mixed_model_key)), , drop = FALSE]
   cs$region_id <- matched_cs_key(cs$gene, cs$tissue)
   cs$cs_number <- matched_cs_numeric(cs$cs_number)
   for (nm in c("component", "lead_alpha")) {
@@ -182,11 +184,11 @@ match_equal_cs_regions <- function(res_summary, res_cs_summary) {
   rows <- vector("list", n)
   pair_columns <- names(empty_matched_cs_pairs())
   counts_add <- matched_cs_numeric(regions$ncs_susie)
-  counts_mix <- matched_cs_numeric(regions$ncs_susie_mix)
+  counts_mix <- matched_cs_numeric(regions[[mixed_count_column]])
   for (i in seq_len(n)) {
     part <- cs[by_region[[i]], , drop = FALSE]
     add <- part[part$model_key == "susie_add", , drop = FALSE]
-    mix <- part[part$model_key == "susie_mix", , drop = FALSE]
+    mix <- part[part$model_key == mixed_model_key, , drop = FALSE]
     audit$available_additive_cs[i] <- nrow(add)
     audit$available_mixed_cs[i] <- nrow(mix)
     count <- c(counts_add[i], counts_mix[i])
@@ -280,8 +282,11 @@ match_equal_cs_regions <- function(res_summary, res_cs_summary) {
   nonempty <- !vapply(rows, is.null, logical(1))
   pairs <- if (any(nonempty)) do.call(rbind, rows[nonempty]) else empty_matched_cs_pairs()
   # Copy scalar selection metadata to each pair for future tissue/cohort work.
+  mixed_metadata <- if (mixed_model_key == "weighted_fit_mix") {
+    c("converged_weighted_fit_mix", "log_lik_weighted_mix", "em_iteration")
+  } else c("converged_mix", "log_lik_mix")
   metadata <- intersect(c("result_file", "min_pv", "mean_count", "n_ind", "n_SNP",
-                          "converged_add", "converged_mix", "log_lik_add", "log_lik_mix"), names(regions))
+                          "converged_add", "log_lik_add", mixed_metadata), names(regions))
   for (nm in metadata) pairs[[nm]] <- regions[[nm]][match(pairs$region_id, regions$region_id)]
   rownames(pairs) <- NULL
   stopifnot(nrow(pairs) == sum(audit$n_pairs),
@@ -329,7 +334,8 @@ matched_cs_pip_density <- function(pip, n = 1024L) {
   result
 }
 
-plot_matched_cs_distances <- function(pairs, output_file = NULL, tissue = NULL) {
+plot_matched_cs_distances <- function(pairs, output_file = NULL, tissue = NULL,
+                                      mixed_label = "SuSiE-mix", analysis_label = NULL) {
   if (!is.null(tissue)) pairs <- pairs[which(pairs$tissue == tissue), , drop = FALSE]
   valid_pip <- is.finite(pairs$mixed_lead_pip) & pairs$mixed_lead_pip >= 0 & pairs$mixed_lead_pip <= 1
   shown <- pairs[valid_pip, , drop = FALSE]
@@ -369,7 +375,7 @@ plot_matched_cs_distances <- function(pairs, output_file = NULL, tissue = NULL) 
   par(mar = c(4.4, 5.1, .7, .6))
   density_max <- if (nrow(zero_density)) max(zero_density$density) else 1
   plot(NA_real_, NA_real_, xlim = c(0, density_max * 1.06), ylim = c(-.025, 1.025), axes = FALSE,
-       xlab = "PIP density", ylab = "SuSiE-mix lead PIP (lead coding)", yaxs = "i", xaxs = "i")
+       xlab = "PIP density", ylab = paste(mixed_label, "lead PIP (lead coding)"), yaxs = "i", xaxs = "i")
   axis(2, at = seq(0, 1, .25), las = 1)
   density_ticks <- pretty(c(0, density_max), n = 2)
   density_ticks <- density_ticks[density_ticks >= 0 & density_ticks <= density_max * 1.06]
@@ -413,9 +419,13 @@ plot_matched_cs_distances <- function(pairs, output_file = NULL, tissue = NULL) 
                           "   |   Different lead SNP: ", count_percent(summary$n_different_lead_snp)),
        adj = 0, font = 2, cex = .94)
   cohort <- if (is.null(tissue)) "All tissues" else tissue
-  text(.065, .897, sprintf("%s | %s regions | %s matched CS pairs | equal CS counts in both models",
-                           cohort, format(length(unique(pairs$region_id)), big.mark = ","),
-                           format(nrow(pairs), big.mark = ",")), adj = 0, cex = .83)
+  cohort_label <- sprintf("%s | %s regions | %s matched CS pairs | equal CS counts in both models",
+                         cohort, format(length(unique(pairs$region_id)), big.mark = ","),
+                         format(nrow(pairs), big.mark = ","))
+  if (!is.null(analysis_label)) cohort_label <- sprintf(
+    "%s | %s | %s regions | %s matched CS pairs | equal CS counts", cohort, analysis_label,
+    count_label(length(unique(pairs$region_id))), count_label(nrow(pairs)))
+  text(.065, .897, cohort_label, adj = 0, cex = .83)
   text(.065, .864, paste0("Distance >10 kb: ", count_percent(summary$n_over_10kb),
                           "   |   >100 kb: ", count_percent(summary$n_over_100kb), "   (% of all pairs)"),
        adj = 0, cex = .84)

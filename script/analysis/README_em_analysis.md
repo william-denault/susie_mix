@@ -179,6 +179,56 @@ the original GTEx data at `datadir`. The local checkout currently contains EM
 metadata but no EM gene result directories, so actual iteration-12 outputs must
 be generated on the cluster or after copying those RDS files locally.
 
+## Matched-CS lead distance and PIP figure
+
+To reproduce the two-panel figure (zero-distance PIP density at left,
+positive lead-distance versus PIP scatter at right) for the latest completed
+EM iteration, Source `generate_summary_results_em.R`, then
+`plot_matched_cs_lead_distances_em.R` in RStudio. Both default to `latest`.
+From the project root, the equivalent commands are:
+
+```bash
+Rscript --vanilla script/analysis/generate_summary_results_em.R
+Rscript --vanilla script/analysis/plot_matched_cs_lead_distances_em.R
+```
+
+An explicit project, iteration and optional tissue can be supplied:
+
+```bash
+Rscript --vanilla script/analysis/plot_matched_cs_lead_distances_em.R /project2/mstephens/wdenault/susie_mix 18
+Rscript --vanilla script/analysis/plot_matched_cs_lead_distances_em.R /project2/mstephens/wdenault/susie_mix latest Blood
+```
+
+The plot compares additive `susie_add` with the selected EM `weighted_fit_mix`,
+using `ncs_weighted_fit_mix` for equal-count selection. It does not use the
+original `susie_mix` columns retained in EM summaries. The figure labels the
+selected EM iteration and uses coding-specific EM lead PIPs on the y-axis.
+Summary provenance must match the selected iteration and its priors.
+
+This reproduces the original figure's cohort and matching: all available
+gene/tissue regions with equal positive CS counts, with no additional
+P-value, read-count, coding or convergence filter. Each CS is paired once by
+sorted physical lead position to minimize total distance; ties minimize the
+sum of squared distances. Unlike the four-panel agreement figure below, this
+does not reserve identical leads first. All matched pairs, including zero
+distances and missing PIPs, contribute to agreement and distance percentages.
+Pairs with invalid PIPs are omitted only from the density/scatter. Invalid or
+incomplete regions are audited and excluded in full.
+
+Outputs are saved under
+`results_em/iteration_NNN/plot/matched_cs_lead_distances/`:
+`matched_cs_lead_distances.png` and `.pdf`, `matched_cs_pairs.csv`,
+`region_matching_audit.csv`, `orphan_cs_rows.csv`, `distance_summary.csv`,
+`distance_summary_by_tissue.csv`, `analysis_metadata.rds`, and
+`matching_notes.txt`. Tissue-specific plots use `by_tissue/TISSUE/`; their
+pair and region audit CSVs retain all tissues. RStudio Source also leaves
+`em_matched_cs_results` and `em_matched_cs_pairs` in the session.
+
+This script uses base R and needs no GTEx expression data. Sync the new entry
+script together with the updated `plot_matched_cs_lead_distances.R`, plus the
+existing `em_analysis_utils.R` and `script/scan_tissue_attempt/em_utils.R`.
+The original unweighted entry script keeps its existing defaults.
+
 ## Four-panel CS agreement figure
 
 After generating the EM summaries for the converged iteration, Source
@@ -279,6 +329,7 @@ call `generate_summary_results(path_res, output_dir)` or
 ```bash
 Rscript --vanilla script/analysis/tests/test_em_analysis.R
 Rscript --vanilla script/analysis/tests/test_em_cs_agreement.R
+Rscript --vanilla script/analysis/tests/test_em_matched_cs_lead_distances.R
 Rscript --vanilla script/analysis/tests/test_weighted_summary.R
 Rscript --vanilla script/analysis/tests/test_one_cs_plots.R
 Rscript --vanilla script/analysis/tests/test_one_cs_lead_distance_plots.R
