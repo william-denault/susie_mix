@@ -50,7 +50,10 @@ The fitted SuSiE upper bound L remains 10; it is not the true causal count K.
 - `roc_<group>_L<K>`, `power_fdr_<group>_L<K>`: curves for each applicable K up to 4.
 - `roc_<group>_all_L`, `power_fdr_<group>_all_L`: curves pooled across applicable K up to 4.
 - `pip_calibration_<group>_all_L_<method>`: one method per calibration figure.
-- `figure1/main_simulations`: the updated five-column manuscript figure.
+- `figure1/main_simulations`: the updated six-column manuscript figure. Column F
+  shows mean credible-set size (unique biological SNPs per reported CS) at 30% PVE,
+  against 1–4 causal SNPs, with the existing CS-size error bars and one shared
+  y-axis range across the three scenario rows.
 
 Groups are `pure`, `pairs_1`, `pairs_2`, `triples_1`, and `triples_2`, retaining the
 existing scenario arrangement and PVE columns. Missing results are labeled.

@@ -1,4 +1,4 @@
-# Main manuscript simulation figure: five columns, each with three rows.
+# Main manuscript simulation figure: six columns, each with three rows.
 # Run from the project root:
 #   source("script/sim/plot_manuscript_simulations.R")
 #
@@ -10,6 +10,7 @@
 #   A-C: SNP PIP calibration at PVE = 10%, one method per column.
 #   D:   Power versus empirical FDR at PVE = 30%, all three methods.
 #   E:   Mean credible-set purity at PVE = 30%, all three methods.
+#   F:   Mean credible-set size at PVE = 30%, all three methods.
 #
 # Calibration and power/FDR pool available true causal counts K = 1 through 4.
 # Calibration bars are the saved +/-2 seed-block empirical SE intervals.
@@ -23,11 +24,13 @@
 # Purity = sum of CS minimum absolute correlations / number of reported CSs.
 # Purity shows dodged points without intervals or connecting lines, with a
 # shared lower y limit just below the lowest displayed mean.
+# CS size counts unique biological SNPs per reported CS and retains the saved
+# Gaussian intervals. Its shared y range includes all displayed intervals.
 #
 # To customize without running the defaults:
 #   options(susie.manuscript.autorun = FALSE)
 #   source("script/sim/plot_manuscript_simulations.R")
-#   result <- make_manuscript_simulation_figure(width = 12, height = 7.2)
+#   result <- make_manuscript_simulation_figure(width = 14.4, height = 7.2)
 #   result$figure  # patchwork object containing editable ggplots
 
 make_manuscript_simulation_figure <- function(
@@ -41,7 +44,7 @@ make_manuscript_simulation_figure <- function(
     purity_padding = 0.01,
     purity_dodge_width = 0.72,
     max_causal = 4L,
-    width = 12,
+    width = 14.4,
     height = 7.2,
     base_size = 10,
     png_dpi = 300) {
@@ -125,6 +128,11 @@ make_manuscript_simulation_figure <- function(
     purity_limits[1] <- min(purity$purity) - purity_padding
   }
   purity <- purity[order(purity$scenario, purity$method, purity$K), ]
+  cs_size <- purity
+  if (any(!is.finite(cs_size$cs_size)) || any(cs_size$cs_size < 1)) {
+    stop("Missing or invalid credible-set sizes in the selected panels.")
+  }
+  cs_size_limits <- c(0, 1.04 * max(c(cs_size$cs_size, cs_size$cs_size_hi), na.rm = TRUE))
   calibration <- calibration[order(calibration$scenario, calibration$method,
                                    calibration$bin), ]
   # geom_path connects rows in their saved threshold order. geom_line would
@@ -262,9 +270,29 @@ make_manuscript_simulation_figure <- function(
                   x = "Number of causal SNPs", y = "purity") +
     theme_manuscript + hide_row_labels
 
+  cs_size_plot <- ggplot2::ggplot(
+    cs_size, ggplot2::aes(K, cs_size, color = method, shape = method,
+                         group = method)) +
+    ggplot2::geom_errorbar(ggplot2::aes(ymin = cs_size_lo, ymax = cs_size_hi),
+                            position = purity_position, width = 0.12,
+                            linewidth = 0.3, alpha = 0.65,
+                            na.rm = TRUE, show.legend = FALSE) +
+    ggplot2::geom_point(ggplot2::aes(size = method),
+                        position = purity_position, show.legend = FALSE) +
+    ggplot2::scale_size_manual(values = method_point_sizes, guide = "none") +
+    facet_rows() + method_scales(linetype = FALSE) +
+    ggplot2::scale_x_continuous(breaks = k_values,
+                               expand = ggplot2::expansion(add = 0.2)) +
+    ggplot2::scale_y_continuous(breaks = pretty(cs_size_limits, n = 4)) +
+    ggplot2::coord_cartesian(ylim = cs_size_limits,
+                             expand = c(bottom = FALSE, top = FALSE)) +
+    ggplot2::labs(title = "F  CS size", x = "Number of causal SNPs",
+                  y = "Mean SNPs per CS") +
+    theme_manuscript + hide_row_labels
+
   figure <- patchwork::wrap_plots(
-    c(calibration_plots, list(power_plot, purity_plot)),
-    nrow = 1, widths = rep(1, 5), guides = "collect") &
+    c(calibration_plots, list(power_plot, purity_plot, cs_size_plot)),
+    nrow = 1, widths = rep(1, 6), guides = "collect") &
     ggplot2::theme(legend.position = "bottom")
 
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
@@ -280,20 +308,22 @@ make_manuscript_simulation_figure <- function(
     calibration = calibration, power_fdr = curves, threshold_markers = threshold_markers,
     power_fdr_display = displayed_curves,
     power_fdr_omitted = curves[omit_curve_point, , drop = FALSE],
-    purity = purity,
+    purity = purity, cs_size = cs_size,
     settings = list(methods = methods, labels = method_labels, colors = method_colors, max_causal = max_causal, scenarios = scenarios, causal_counts = k_values,
                     calibration_pve = calibration_pve, performance_pve = performance_pve,
                     fdr_max = fdr_max, power_limits = power_limits,
                     recessive_susie_min_power = recessive_susie_min_power,
-                    purity_limits = purity_limits, purity_dodge_width = purity_dodge_width),
+                    purity_limits = purity_limits, purity_dodge_width = purity_dodge_width,
+                    cs_size_limits = cs_size_limits),
     source_md5 = tools::md5sum(c(paths, helper_path, publication_helper)))
   saveRDS(plot_data, paste0(stem, "_data.rds"))
   message("Saved: ", normalizePath(output_dir, winslash = "/"))
   message("Pooled available causal counts: ", paste(k_values, collapse = ", "))
   message("Shared purity y range: ", paste(round(purity_limits, 4), collapse = " to "))
   message("Shared power y range: ", paste(round(power_limits, 4), collapse = " to "))
+  message("Shared CS-size y range: ", paste(round(cs_size_limits, 4), collapse = " to "))
   invisible(list(figure = figure, plots = c(calibration_plots,
-                 list(power_plot, purity_plot)), data = plot_data,
+                 list(power_plot, purity_plot, cs_size_plot)), data = plot_data,
                  files = paste0(stem, c(".pdf", ".png", "_data.rds"))))
 }
 
