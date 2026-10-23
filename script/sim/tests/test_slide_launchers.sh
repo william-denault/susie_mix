@@ -10,7 +10,7 @@ mkdir -p "$SUSIE_MIX_PROJECT_DIR/script/sim/jobs_slide" "$SUSIE_MIX_PROJECT_DIR/
 cp "$repo_dir/script/sim/jobs_slide/submission_batches.csv" "$SUSIE_MIX_PROJECT_DIR/script/sim/jobs_slide/"
 cp "$repo_dir"/job/run_simulation_slide_batch_* "$SUSIE_MIX_PROJECT_DIR/job/"
 cp "$repo_dir/job/launch_simulation_slide" "$SUSIE_MIX_PROJECT_DIR/job/"
-for id in 1 300 301 600 601 900 901 1125; do
+for id in 1 300 301 600 601 900; do
     touch "$SUSIE_MIX_PROJECT_DIR/script/sim/jobs_slide/sim_job_${id}.R"
 done
 export SLIDE_TEST_DIR="$test_dir" SLIDE_FAIL_R=0 SLIDE_FAIL_ARRAY=0 SLIDE_FAIL_CONT=0
@@ -38,10 +38,9 @@ sbatch() {
 }
 export -f module flock squeue Rscript sbatch
 
-# Every first/last task selects the right numbered R file, including batch 4.
-for batch in 1 2 3 4; do
+# Every first/last task selects the right numbered R file, including batch 3.
+for batch in 1 2 3; do
     last=299
-    if (( batch == 4 )); then last=224; fi
     grep -Fxq "#SBATCH --array=0-$last" "$repo_dir/job/run_simulation_slide_batch_$batch"
     for task in 0 "$last"; do
         export SLURM_ARRAY_TASK_ID=$task
@@ -51,8 +50,8 @@ for batch in 1 2 3 4; do
         grep -Fxq "$SUSIE_MIX_PROJECT_DIR/script/sim/jobs_slide/sim_job_${expected}.R" "$test_dir/r_args"
     done
 done
-export SLURM_ARRAY_TASK_ID=225
-if "$BASH" "$repo_dir/job/run_simulation_slide_batch_4" > "$test_dir/out" 2>&1; then
+export SLURM_ARRAY_TASK_ID=300
+if "$BASH" "$repo_dir/job/run_simulation_slide_batch_3" > "$test_dir/out" 2>&1; then
     echo 'Expected out-of-range job to fail' >&2; exit 1
 fi
 for invalid in -1 abc 01 400; do
@@ -71,14 +70,14 @@ if "$BASH" "$repo_dir/job/run_simulation_slide" > "$test_dir/out" 2>&1; then
 fi
 export SLIDE_FAIL_R=0
 
-# Four stages submit four arrays and only three small continuation jobs. Each
+# Three stages submit three arrays and only two small continuation jobs. Each
 # continuation must depend on the whole preceding array AND its launcher.
-for batch in 1 2 3 4; do
+for batch in 1 2 3; do
     export SLIDE_BATCH=$batch
     rm -f "$test_dir/cont_args"
     "$BASH" "$repo_dir/job/launch_simulation_slide" "$batch" > "$test_dir/out" 2>&1
     grep -Fxq "$SUSIE_MIX_PROJECT_DIR/job/run_simulation_slide_batch_$batch" "$test_dir/array_args"
-    if (( batch < 4 )); then
+    if (( batch < 3 )); then
         grep -Fxq -- "--dependency=afterok:$((7000 + 2 * batch)):$SLURM_JOB_ID" "$test_dir/cont_args"
         grep -Fxq -- '--kill-on-invalid-dep=yes' "$test_dir/cont_args"
         [[ "$(tail -n 1 "$test_dir/cont_args")" == "$((batch + 1))" ]]
@@ -87,12 +86,12 @@ for batch in 1 2 3 4; do
         [[ ! -e "$test_dir/cont_args" ]]
     fi
 done
-[[ "$(grep -c '^array$' "$test_dir/calls")" == 4 ]]
-[[ "$(grep -c '^continuation$' "$test_dir/calls")" == 3 ]]
+[[ "$(grep -c '^array$' "$test_dir/calls")" == 3 ]]
+[[ "$(grep -c '^continuation$' "$test_dir/calls")" == 2 ]]
 
 # An active array or queued continuation blocks a duplicate manual launch.
 export SLURM_JOB_ID=9000
-for active in 7008 7007; do
+for active in 7006 7005; do
     export SLIDE_ACTIVE=$active
     rm -f "$test_dir/array_args"
     if "$BASH" "$repo_dir/job/launch_simulation_slide" > "$test_dir/out" 2>&1; then
@@ -106,7 +105,7 @@ if "$BASH" "$repo_dir/job/launch_simulation_slide" > "$test_dir/out" 2>&1; then
 fi
 [[ ! -e "$test_dir/array_args" ]]
 export SLIDE_LOCKED=0
-for invalid in 0 -1 abc 01 5; do
+for invalid in 0 -1 abc 01 4; do
     if "$BASH" "$repo_dir/job/launch_simulation_slide" "$invalid" > "$test_dir/out" 2>&1; then
         echo 'Expected invalid batch to fail' >&2; exit 1
     fi
@@ -128,5 +127,5 @@ if "$BASH" "$repo_dir/job/launch_simulation_slide" 2 > "$test_dir/out" 2>&1; the
     echo 'Expected continuation failure to be reported' >&2; exit 1
 fi
 grep -q 'sbatch job/launch_simulation_slide 3' "$test_dir/out"
-grep -Fxq '7004' "$SUSIE_MIX_PROJECT_DIR/simulation results/slide_prior_v1/launcher/last_array_job_id.txt"
-echo 'PASS: batch boundaries, R failure propagation, four-stage chain, duplicate protection and submission failures (mock Slurm).'
+grep -Fxq '7004' "$SUSIE_MIX_PROJECT_DIR/simulation results/n250_r300_v1/launcher/last_array_job_id.txt"
+echo 'PASS: batch boundaries, R failure propagation, three-stage chain, duplicate protection and submission failures (mock Slurm).'

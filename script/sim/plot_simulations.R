@@ -5,8 +5,12 @@
 # Settings to change if needed
 # ------------------------------------------------------------
 
+.plot_sources <- vapply(sys.frames(), function(f) if (is.null(f$ofile)) "" else f$ofile, "")
+.plot_source <- if (any(nzchar(.plot_sources))) tail(.plot_sources[nzchar(.plot_sources)], 1L) else
+  sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1L])
 project_dir <- Sys.getenv("SUSIE_MIX_PROJECT_DIR",
-                         "C:/Document/Serieux/Travail/Data_analysis_and_papers/susie_mix")
+  dirname(dirname(dirname(normalizePath(.plot_source, winslash = "/", mustWork = TRUE)))))
+rm(.plot_sources, .plot_source)
 source(file.path(project_dir, "script/sim/simulation_design.R"), local = TRUE)
 source(file.path(project_dir, "script/sim/simulation_plot_helpers.R"), local = TRUE)
 source(file.path(project_dir, "script/sim/simulation_metric_helpers.R"), local = TRUE)
@@ -15,8 +19,8 @@ chunk_dir <- file.path(project_dir, results_dir, "chunks")
 output_dir <- file.path(project_dir, results_dir, "figures")
 reuse_saved_summaries <- isTRUE(getOption("susie.sim.reuse_saved_summaries", FALSE))
 
-pve_values <- c(0.05, 0.10, 0.20, 0.30, 0.40)
-n_value <- 500
+pve_values <- sim_pve_values
+n_value <- sim_n
 fit_L <- 10                   # SuSiE's fitted upper bound, NOT the true count.
 target_coverage <- 0.95
 exclude_nonconverged <- FALSE # TRUE excludes a replicate if ANY fit did not converge.
@@ -30,13 +34,15 @@ roc_max_fpr <- 0.25           # Display range, as in Supplementary Figure 6.
 fdr_max <- 0.25               # Display range for power versus empirical FDR.
 write_roc_all_L <- TRUE       # Also pool all causal counts into one curve per method.
 write_roc_pages <- FALSE      # Optional extra PDFs collecting the per-L figures.
-write_png <- TRUE            # PDF is always written; PNG is useful for previews.
+write_png <- isTRUE(getOption("susie.sim.write_png", TRUE))
+show_metric_intervals <- isTRUE(getOption("susie.sim.show_intervals", FALSE))
+# September-style point panels by default; interval estimates remain in CSVs.
 
 method_names <- getOption("susie.sim.methods", sim_methods)
 stopifnot(length(method_names) > 0, !anyDuplicated(method_names), all(method_names %in% sim_methods))
-method_colors <- setNames(c("#2489FF", "#D81B60", "#009E73", "#E69F00", "#7B61A8"),
+method_colors <- setNames(c("#2489FF", "#D81B60", "#009E73"),
                           sim_methods)[method_names]
-method_symbols <- setNames(c(16, 17, 15, 18, 8), sim_methods)[method_names]
+method_symbols <- setNames(rep(16, 3), sim_methods)[method_names]
 scenario_rows <- lapply(1:3, function(k) {
   vapply(combn(5L, k, simplify = FALSE), function(ids) {
     counts <- integer(5L)
@@ -204,21 +210,14 @@ for (f in seq_len(nrow(file_info))) {
     if (!identical(as.integer(table(factor(x$causal_coding, levels = names(sim_effect_delta)))),
                    as.integer(unlist(s[sim_count_columns]))))
       stop("Causal coding labels disagree with settings.")
-    if ("SuSiE-slide" %in% method_names) {
-      if (!s$schema_version %in% c(2L, sim_schema_version) ||
-          !isTRUE(all.equal(c(s$delta_prec, s$delta_pdom, s$slide_min_obs), c(-.5, .5, 5))))
-        stop("Missing or unexpected slider design.")
-      if (length(x$susie_slide_pip) != length(x$susie_pip))
-        stop("Missing or incompatible slider SNP PIPs.")
-      if (!identical(x$causal_delta, unname(sim_effect_delta[x$causal_coding])))
-        stop("Saved causal delta values disagree with the design.")
-    }
-    if (any(c("SuSiE-slide-prior", "SuSiE-init-slide") %in% method_names)) {
+    if ("SuSiE-slide-prior" %in% method_names) {
       if (!identical(s$schema_version, sim_schema_version) ||
           !identical(s$slide_prior_grid, sim_delta_grid) ||
           !identical(s$slide_prior_weights, sim_delta_prior) ||
-          !s$init_argument %in% c("model_init", "s_init"))
-        stop("Missing or unexpected finite-prior/initialization design; use five-method checkpoints.")
+          !isTRUE(all.equal(c(s$delta_prec, s$delta_pdom, s$slide_min_obs), c(-.5, .5, 5))))
+        stop("Missing or unexpected finite-prior design; use the new three-method checkpoints.")
+      if (!identical(x$causal_delta, unname(sim_effect_delta[x$causal_coding])))
+        stop("Saved causal delta values disagree with the design.")
     }
     if (any(vapply(sim_pip_fields[method_names], function(field)
       length(x[[field]]) != length(x$susie_pip) || !length(x[[field]]), logical(1))))
@@ -375,6 +374,11 @@ draw_figure <- function(metric, scenarios, only_K = NULL, y_limits = NULL,
   d_figure <- figure_data(metric, scenarios, only_K, methods)
   # Every panel in this output shares the range of all displayed estimates.
   ylim <- if (is.null(y_limits)) figure_y_limits(metric, d_figure, c(0, fdr_max)) else y_limits
+  if (metric == "coverage" && is.null(y_limits)) {
+    values <- d_figure$coverage[is.finite(d_figure$coverage)]
+    # Match the September panels while extending down if n=250 needs it.
+    ylim <- c(max(0, min(.75, floor((min(c(values, target_coverage)) - .01) / .05) * .05)), 1)
+  }
   yticks <- if (metric %in% c("power", "roc", "pip_calibration")) seq(0, 1, .25) else panel_y_ticks(ylim)
 
   for (i in seq_along(scenarios)) {
@@ -433,7 +437,7 @@ draw_figure <- function(metric, scenarios, only_K = NULL, y_limits = NULL,
           xpos <- dm$K + seq(-.12, .12, length.out = length(method_names))[m]
           lo <- dm[[paste0(metric, "_lo")]]
           hi <- dm[[paste0(metric, "_hi")]]
-          if (!is.null(lo) && !is.null(hi)) {
+          if (show_metric_intervals && !is.null(lo) && !is.null(hi)) {
             ok <- is.finite(lo) & is.finite(hi) & hi >= ylim[1] & lo <= ylim[2]
             bar_color <- adjustcolor(method_colors[m], alpha.f = .65)
             # Clip explicitly: some Windows raster devices mishandle a segment
@@ -486,7 +490,7 @@ draw_figure <- function(metric, scenarios, only_K = NULL, y_limits = NULL,
          lwd = 1.5, horiz = TRUE, xjust = .5, yjust = .5, bty = "n", cex = .95)
   if (is_calibration) {
     text(.5, .015, "Ten equal-width PIP bins; error bars: +/-2 empirical SE across seed blocks", cex = .85)
-  } else if (!is_curve && paste0(metric, "_lo") %in% names(summary_table)) {
+  } else if (show_metric_intervals && !is_curve && paste0(metric, "_lo") %in% names(summary_table)) {
     text(.5, .015, paste0(round(100 * interval_level),
       if (metric == "cs_size") "% Gaussian CI: mean +/- z * SD/sqrt(n CS)" else
         paste0("% normal CI: p +/- z * sqrt(p(1-p)/n); n = ",

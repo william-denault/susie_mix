@@ -1,0 +1,288 @@
+# Test SuSiE initialization using the original simulations
+
+The focused experiment calls the existing `sim_mix()` generator in
+`script/sim/sim_workhorse.R` with `L_add = 2`, all other causal counts zero,
+and PVE 0.025 or 0.05. It uses the original genotype file pool when available;
+otherwise it extracts real GTEx genotypes for a gene using the scanning
+workhorse's procedure. Both paths then use the original sim_mix() QC, donor
+sampling, causal selection, random signs, LD-adjusted effect scaling and
+Gaussian noise.
+
+The new optional `return_data = TRUE` argument to `sim_mix()` returns its X/y
+immediately before fitting. Its default is FALSE, so the original simulation
+jobs retain their existing behavior and output.
+
+The focused runner fits these three methods to each generated dataset:
+
+1. SuSiE with its default initialization.
+2. SuSiE-slide.
+3. Additive SuSiE on the same original X/y, with `model_init = slide_fit`
+   (or the equivalent `s_init` on older susieR versions).
+
+Both baseline calls use the same arguments as `sim_mix()`: fitted L = 10,
+standardization, prior method "optim", coverage 0.95, minimum absolute
+correlation 0.5 and max_iter = 1000. Package defaults, including convergence
+tolerance, are used as in the original workhorse. Slide uses min_obs = 5.
+The warm-start call uses the same additive fitting arguments plus the
+initialization object. SuSiE-mix is not fitted in this focused comparison.
+
+## Run in RCC RStudio
+
+Upload/extract the current ZIP into the project root on RCC, including the
+updated `sim_workhorse.R`. Then run in the R Console:
+
+```r
+project_dir <- "/project2/mstephens/wdenault/susie_mix"
+Sys.setenv(SUSIE_MIX_PROJECT_DIR = project_dir)
+source(file.path(project_dir, "script/sim/sim_additive_slide_init.R"))
+
+results <- run_additive_initialization_experiment()
+```
+
+This uses n = 500, two true additive causal SNPs, fitted L = 10, both PVE
+values, and 400 replicates per PVE (four chunks of 100). Seeds
+1000001-1000400 match the original 400-replicate jobs. Reusing the same seed,
+genotype files and R/package versions reproduces the original generator's
+dataset at the matching PVE. Across PVEs, genotypes, causal SNPs, signs and
+standardized noise are paired.
+
+The genotype directory is resolved exactly as in the original generated jobs:
+`SUSIE_MIX_GENOTYPE_DIR`, if set, otherwise the project's `temp_plink` folder.
+If your original jobs use an override, use that same value in RStudio.
+If that folder contains .raw files, they are used as before. If it is empty or
+missing, the runner automatically extracts real cis-genotypes from GTEx. For
+each seed it samples an autosomal protein-coding gene from
+`data/genes_protein_coding.txt`, obtains its annotation using the scanning
+workhorse's parser, and exports SNPs within 500 kb of its TSS with PLINK.
+The same seed picks the same gene at both PVEs and on reruns. The selected gene
+and coordinates are saved with the results.
+
+The fallback uses the scanning workhorse's existing paths:
+
+- `/project2/mstephens/gtex/plink2`
+- `/project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.{bed,bim,fam}`
+- `/project2/mstephens/gtex/Homo_sapiens.GRCh38.103.chr.reformatted.collapse_only.gene.gtf.gz`
+
+PLINK uses the workhorse's SNP/duplicate filtering and additive export flags,
+with one thread and an 8000 MiB workspace, matching the scanning workhorse's
+memory setting. The resulting .raw file is passed to
+the original sim_mix() generator in a private temporary folder. Its temporary
+export and logs are removed after use, including on failure. They are not added
+to the original genotype pool. The genotype data remain real; only the phenotype
+is simulated. Since the fallback samples genes afresh, its regions need not be
+identical to those in an older cached-file run.
+
+No new arguments are needed for the fallback. If desired, specify one gene
+instead of randomly selecting genes (this applies when no cached files exist):
+
+```r
+Sys.setenv(SUSIE_MIX_SIM_GENE = "GTF2H2")
+results <- run_additive_initialization_experiment()
+```
+
+Unset `SUSIE_MIX_SIM_GENE` to restore random gene selection. If the data paths
+differ from the scanning workhorse defaults, set `SUSIE_MIX_GTEX_DIR` or
+`SUSIE_MIX_PLINK` before running. A change of input mode or selected gene requires
+a separate output directory when checkpoints already exist.
+
+If PLINK reports an out-of-memory error, the runner saves the failed seed and
+stops the entire experiment immediately. The PLINK workspace is configurable:
+
+```r
+Sys.setenv(SUSIE_MIX_PLINK_MEMORY_MB = "8000")
+results <- run_additive_initialization_experiment()
+```
+
+The earlier 2000 MiB setting was insufficient for the GTEx input in the reported
+RCC run. The updated default is 8000 MiB, as in the scanning workhorse. This is
+PLINK's workspace setting, not an increase to the RStudio/server job allocation;
+choose a larger value only when the session has enough allocated memory for it
+and the existing R process. Memory-only changes can resume existing checkpoints:
+failed seeds are retried and successful replicates are kept. No deletion of old
+failed checkpoints is needed. Other input/design changes remain incompatible.
+
+Sourcing or pasting the main script only loads functions. The explicit
+experiment call runs sequentially inside the existing RStudio session.
+It does not submit a Slurm job. Packages are checked before fitting.
+
+To start with the first 100 replicates at each PVE:
+
+```r
+results <- run_additive_initialization_experiment(chunks = 1L)
+```
+
+Later, repeat the full command to skip successes and retry failures, or use
+`chunks = 2:4`. Keep reps_per_chunk = 100 when resuming because it determines
+the seed numbering. For a two-replicate pilot, use a separate output folder:
+
+```r
+pilot <- run_additive_initialization_experiment(chunks = 1L, reps_per_chunk = 2L,
+  output_dir = file.path(project_dir, "simulation results/additive_init_pilot"))
+```
+
+## Results
+
+Checkpoints and summaries go to `simulation results/additive_slide_init_v3/`.
+Each PVE has its own `pve_0.025/` or `pve_0.05/` subfolder. This separates the
+original-generator experiment from the previous runner's outputs.
+
+Each replicate is checkpointed. Successful records are skipped on rerun;
+failures are retried. Changes in settings, genotype file signatures or package
+versions require a new output directory. Do not run the same PVE/chunk twice
+concurrently. All three methods use the same X and y within a replicate.
+
+```r
+results <- summarize_additive_experiment()
+results$summary
+```
+
+The per-PVE and combined CSV files are `replicate_metrics.csv`,
+`metric_summary.csv`, `method_comparison.csv`, `optimization_comparison.csv`,
+and `errors.csv`. Coverage, power and purity use the requested denominator-based
+normal intervals; CS size uses Gaussian intervals. Successful nonconverged fits
+remain included and their convergence counts are reported.
+
+Compare SuSiE versus SuSiE-init-slide in `optimization_comparison.csv`:
+a higher additive ELBO after initialization indicates a better solution for
+the additive objective. The saved results also include PIPs, credible sets,
+ELBO histories, convergence, timings and causal slider estimates.
+Set `save_fits = TRUE` to retain complete models as well.
+
+## ROC plots from saved PIPs
+
+Upload `script/sim/plot_additive_init_roc.R` to the same location on RCC, then
+run this in RStudio. It uses only base R and reads the saved checkpoints:
+
+```r
+project_dir <- "/project2/mstephens/wdenault/susie_mix"
+Sys.setenv(SUSIE_MIX_PROJECT_DIR = project_dir)
+source(file.path(project_dir, "script/sim/plot_additive_init_roc.R"))
+```
+
+The output folder is `simulation results/additive_slide_init_v3/figures/`:
+
+- `roc_pip.pdf` / `.png`: full ROC, false positive rate 0-1.
+- `roc_pip_zoom.pdf` / `.png`: false positive rate 0-0.25, matching the main plots.
+- `roc_pip_counts.csv`: PIP thresholds, pooled TP/FP counts and rates.
+- `roc_pip_replicates.csv`: included, nonconverged, failed and pending replicates.
+
+Each figure has a panel for each PVE and curves for SuSiE, SuSiE-slide and
+SuSiE-init-slide. Both panels use the same y-axis range, 0-1. True-positive rate
+is detected causal SNPs divided by all causal SNPs; false-positive rate is
+selected noncausal SNPs divided by all noncausal SNPs. Counts are pooled across
+successful replicates at each common PIP threshold. The threshold grid matches
+the main simulation plots, with dense tails near zero and one, including exact
+endpoints. Equal PIPs always enter together. These are ROC curves, not
+power-versus-FDR curves or PIP calibration plots.
+
+Failed and unfinished replicates are omitted. All methods use the same included
+replicates. By default, successful nonconverged fits are included and flagged
+in the audit CSV, matching the metric summaries. A panel without successful
+replicates is labelled accordingly; if neither PVE has successes, the script
+writes the audit CSV and reports that ROC plotting is not yet possible.
+
+For a different results directory or to exclude a replicate when any method
+did not converge, load the functions without automatic plotting:
+
+```r
+options(susie.init.roc.autorun = FALSE)
+source(file.path(project_dir, "script/sim/plot_additive_init_roc.R"))
+roc <- plot_additive_init_roc(
+  results_dir = file.path(project_dir, "simulation results/additive_slide_init_v3"),
+  exclude_nonconverged = TRUE
+)
+options(susie.init.roc.autorun = TRUE)
+```
+
+## Diagnose the ROC difference without rerunning simulations
+
+For completed runs, do **not** call `run_additive_initialization_experiment()`
+again just to analyze results. That function checks the current fitting/input
+settings before resuming. A package update or changed input signature can
+therefore reject a resume even though all saved results remain readable.
+The error now lists the changed settings fields. Keep the checkpoints intact;
+do not bypass the compatibility check or change their saved settings.
+
+Upload `script/sim/diagnose_additive_init.R` into the same directory on RCC.
+It reuses the existing `plot_additive_init_roc.R` and
+`simulation_metric_helpers.R`; it needs only base R and the saved checkpoints.
+
+```r
+project_dir <- "/project2/mstephens/wdenault/susie_mix"
+Sys.setenv(SUSIE_MIX_PROJECT_DIR = project_dir)
+source(file.path(project_dir, "script/sim/diagnose_additive_init.R"))
+diagnostics <- diagnose_additive_initialization()
+```
+
+Outputs go to `simulation results/additive_slide_init_v3/diagnostics/`:
+
+- `overview.csv` and `per_dataset.csv`: the size of PIP changes, causal versus
+  null changes, exact within-dataset AUC/rank gains, and credible-set recovery
+  gains. Both slide and initialized additive SuSiE are compared with SuSiE.
+- `roc_influence.csv`: leave-one-dataset-out changes in the **pooled** ROC gap.
+  `roc_sensitivity.csv` and `roc_sensitivity_curves.csv` recompute the curves
+  after removing 1, 5 or 10 datasets ranked by their positive slide influence,
+  or by their largest absolute PIP change. The same datasets are removed from
+  all methods and the causal/noncausal denominators are recalculated.
+- `cs_summary.csv` and `cs_paired_differences.csv`: saved-CS power, empirical
+  coverage, CS size and paired differences. `cs_fdr = 1 - coverage`.
+- `examples.csv` and `examples.pdf`: selected CS wins with no additional false
+  CSs, ranking wins, influential datasets and ranking losses. Each example
+  gives the seed, gene, checkpoint and record slot, with PIPs, causal ranks
+  and CS recovery. `causal_snps.csv` includes causal IDs and effect coefficients.
+- `diagnostics.pdf`: PIP-change and ranking-gain distributions, ROC influence,
+  and the ROC before/after removing influential datasets. The original full
+  and zoomed ROC plots are also regenerated in this diagnostics folder.
+
+The influence measure is the slide-minus-SuSiE difference in partial ROC area
+over FPR 0-0.25, divided by 0.25 (mean TPR over the plotted interval). It uses
+the existing threshold-grid curve and trapezoidal interpolation. Change
+`max_fpr = 0.05` for a narrower range, preferably with a separate `output_dir`.
+Positive influence means removing that dataset reduces the slide advantage;
+influences are not additive contributions. Removal rankings use the full data.
+
+Within-dataset AUC counts all causal/noncausal pairs with half credit for ties.
+It tests ranking **within each region**, while the pooled ROC also compares
+PIPs across regions. Improvements in pooled ROC need not imply improvements
+in within-region ranking, calibrated PIPs, or 95% credible-set coverage.
+CS power is the fraction of distinct causal SNPs recovered in any reported CS;
+coverage is the fraction of reported CSs containing a causal SNP. Examine both
+power and coverage when evaluating CS performance.
+
+Examples are exploratory selections, not independent evidence of superiority.
+The default selects up to three per category/PVE, with duplicate PDF pages
+removed. Compact records do not contain X/y or component alpha, so a mechanistic
+LD/coding explanation may require a later targeted rerun of a selected seed.
+Successful nonconverged fits remain included and flagged, as in the original
+ROC script; `exclude_nonconverged = TRUE` excludes them from every method.
+
+For just the existing summary tables, the original script already supports:
+
+```r
+source(file.path(project_dir, "script/sim/sim_additive_slide_init.R"))
+results <- summarize_additive_experiment()
+```
+
+## Optional Slurm execution
+
+```sh
+sbatch job/run_additive_slide_init
+```
+
+Tasks 1-4 run chunks 1-4 at 2.5% PVE; tasks 5-8 run them at 5% PVE.
+
+```sh
+Rscript --vanilla script/sim/sim_additive_slide_init.R 1 100 0.025
+Rscript --vanilla script/sim/sim_additive_slide_init.R 1 100 0.05
+Rscript --vanilla script/sim/sim_additive_slide_init.R summarize
+```
+
+## Validation
+
+The focused tests compare X, y, causal SNPs and effects against the original
+generator and compare both baseline fits against the original `sim_mix()`
+route. They also verify the direct warm-start call, pairing across PVEs,
+checkpoint resume/retry, summaries and Console/source loading. GTEx extraction
+tests use fixture annotations and a mocked PLINK export to check selection,
+arguments, temporary-file cleanup, reproducibility and unchanged phenotype
+generation. Running against the actual GTEx files requires the RCC environment.

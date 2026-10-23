@@ -21,8 +21,8 @@ if [[ ! "$offset" =~ ^(0|[1-9][0-9]*)$ ]] ||
   exit 1
 fi
 job_id=$((offset + task_id + 1))
-if (( job_id > 1125 )); then
-  echo "Simulation job $job_id is outside the generated range 1-1125." >&2
+if (( job_id > 900 )); then
+  echo "Simulation job $job_id is outside the generated range 1-900." >&2
   exit 1
 fi
 project_dir="${SUSIE_MIX_PROJECT_DIR:-/project2/mstephens/wdenault/susie_mix}"

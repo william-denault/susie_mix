@@ -1,4 +1,4 @@
-# Run from the project root. Uses real five-method fits and a mocked PLINK
+# Run from the project root. Uses real three-method fits and a mocked PLINK
 # export, because the protected GTEx data are only available on RCC.
 source("script/sim/run_job.R")
 
@@ -26,7 +26,7 @@ test_slide_genotypes <- function() {
   close(connection)
 
   variables <- c("SUSIE_MIX_GTEX_DIR", "SUSIE_MIX_PLINK", "SUSIE_MIX_GENOTYPE_DIR",
-                 "SUSIE_MIX_SIM_GENE", "SUSIE_MIX_PLINK_MEMORY_MB")
+                 "SUSIE_MIX_SIM_GENE", "SUSIE_MIX_PLINK_MEMORY_MB", "SUSIE_MIX_SIM_INPUT")
   previous <- Sys.getenv(variables, unset = NA_character_)
   on.exit({
     Sys.unsetenv(variables)
@@ -47,14 +47,15 @@ test_slide_genotypes <- function() {
                     SEX = 0, PHENOTYPE = -9, X)
   raw_file <- file.path(raw_dir, "fixture.raw")
   write.table(raw, raw_file, row.names = FALSE, quote = FALSE, sep = "\t")
-  cached_source <- prepare_simulation_genotypes(project, raw_dir)
+  cached_source <- prepare_simulation_genotypes(project, raw_dir, input_mode = "raw")
+  stopifnot(prepare_simulation_genotypes(project, raw_dir)$mode == "gtex")
   stopifnot(cached_source$mode == "raw")
 
   # Missing input files are diagnosed before submission/fitting.
   Sys.setenv(SUSIE_MIX_GTEX_DIR = file.path(directory, "missing"))
   missing <- tryCatch(prepare_simulation_genotypes(project, empty), error = conditionMessage)
   stopifnot(grepl("GTEx extraction needs", missing, fixed = TRUE),
-            prepare_simulation_genotypes(project, raw_dir)$mode == "raw")
+            prepare_simulation_genotypes(project, raw_dir, input_mode = "raw")$mode == "raw")
   Sys.setenv(SUSIE_MIX_GTEX_DIR = datadir)
 
   produced <- character()
@@ -95,7 +96,7 @@ test_slide_genotypes <- function() {
             is.null(saved$checkpoint_settings$arguments$temp_dir))
 
   # Increasing PLINK memory resumes exactly the unfinished seed, preserving
-  # the first real five-method fit and its selected gene.
+  # the first real three-method fit and its selected gene.
   Sys.setenv(SUSIE_MIX_PLINK_MEMORY_MB = "16000")
   run()
   load(checkpoint, saved)
@@ -107,7 +108,7 @@ test_slide_genotypes <- function() {
   stopifnot(is.null(second$error), identical(second$metrics$method, sim_methods))
 
   # Reconstruct the same phenotype/causal SNPs through the original cached
-  # path and compare all five models, independently of the extraction wrapper.
+  # path and compare all three models, independently of the extraction wrapper.
   arguments <- saved$checkpoint_settings$arguments
   arguments$seed <- second$seed
   arguments$temp_dir <- raw_dir
@@ -139,13 +140,14 @@ test_slide_genotypes <- function() {
   incompatible <- tryCatch(run(), error = conditionMessage)
   stopifnot(grepl("Checkpoint design", incompatible), attempts == attempts_before)
   Sys.unsetenv("SUSIE_MIX_SIM_GENE")
+  Sys.setenv(SUSIE_MIX_SIM_INPUT = "raw")
   changed <- tryCatch(run_simulation_job(job$job_id, project, raw_dir, job = job),
                       error = conditionMessage)
   stopifnot(grepl("Checkpoint design", changed))
   writeLines("new region", file.path(raw_dir, "new.raw"))
   changed <- tryCatch(simulate_slide_replicate(arguments, cached_source), error = conditionMessage)
   stopifnot(grepl("file list changed", changed, fixed = TRUE), file.exists(raw_file))
-  cat("PASS: full runner GTEx fallback, five real fits, seeded genes, cleanup, PLINK failure, resume, source validation and cached-pool precedence.\n")
+  cat("PASS: full runner GTEx fallback, three real fits, seeded genes, cleanup, PLINK failure, resume, source validation and explicit cached mode and default GTEx precedence.\n")
 }
 
 test_slide_genotypes()

@@ -58,8 +58,9 @@ calibration_summary <- function(groups, pool_K = FALSE) {
       n_replicates = sum(d[, 31]), row.names = NULL)
   })
   out <- do.call(rbind, rows)
+  out <- out[order(out$scenario, out$pve, out$K, out$method, out$bin), ]
   rownames(out) <- NULL
-  out[order(out$scenario, out$pve, out$K, out$method, out$bin), ]
+  out
 }
 
 calibration_selection <- function(replicates, methods) {

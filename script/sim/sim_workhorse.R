@@ -8,7 +8,7 @@ rm(.sim_source, .sim_sources)
 
 sim_mix <- function(
     pve = 0.6,
-    n = 500,
+    n = sim_n,
     L_add = 0,
     L_rec = 1,
     L_dom = 0,
@@ -25,7 +25,7 @@ sim_mix <- function(
     return_data = FALSE
 ) {
 
-  for (package in c("data.table", "matrixStats", "susieR", "susieSlide")) {
+  for (package in c("data.table", "matrixStats", "susieR")) {
     if (!requireNamespace(package, quietly = TRUE)) stop("Required package is missing: ", package)
   }
   if (!return_data && !requireNamespace("susieRSlidePrior", quietly = TRUE))
@@ -187,7 +187,7 @@ sim_mix <- function(
   ))
 
   # ------------------------------------------------------------
-  # Fit all five methods to the same phenotype; namespace calls avoid masking.
+  # Fit the three requested methods to the same phenotype.
   # ------------------------------------------------------------
 
   susie_res <- susieR::susie(
@@ -201,22 +201,6 @@ sim_mix <- function(
     standardize = TRUE, estimate_prior_method = "optim",
     coverage = 0.95, min_abs_corr = 0.5, max_iter = 1000
   )
-
-  susie_res_slide <- susieSlide::susie(
-    X = geno_all, y = y, L = L, min_obs = slide_min_obs,
-    standardize = TRUE, estimate_prior_method = "optim",
-    coverage = 0.95, min_abs_corr = 0.5, max_iter = 1000
-  )
-
-  # Repeat the additive fit on the ORIGINAL genotypes, initialized by the full
-  # continuous-slide fit, as in the focused additive initialization experiment.
-  # The resulting model is additive; it does not retain slider coding.
-  init_argument <- sim_initialization_argument()
-  init_args <- list(X = geno_all, y = y, L = L, standardize = TRUE,
-    estimate_prior_method = "optim", coverage = 0.95, min_abs_corr = 0.5,
-    max_iter = 1000)
-  init_args[[init_argument]] <- susie_res_slide
-  susie_res_init_slide <- do.call(susieR::susie, init_args)
 
   # Coding probabilities remain fixed throughout this fit; no outer EM here.
   susie_res_slide_prior <- susieRSlidePrior::susie(
@@ -259,10 +243,8 @@ sim_mix <- function(
 
   # A false CS contains none of the generating causal SNPs.
   methods <- sim_methods
-  fits <- list(susie_res, susie_res_mix, susie_res_slide,
-               susie_res_slide_prior, susie_res_init_slide)
-  sets <- list(cs_add, cs_mix, susie_res_slide$sets$cs,
-               susie_res_slide_prior$sets$cs, susie_res_init_slide$sets$cs)
+  fits <- list(susie_res, susie_res_mix, susie_res_slide_prior)
+  sets <- list(cs_add, cs_mix, susie_res_slide_prior$sets$cs)
   metrics <- do.call(rbind, lapply(seq_along(methods), function(m) {
     hit <- vapply(sets[[m]], function(cs) any(cs %in% true_pos), logical(1))
     data.frame(method = methods[m], converged = fits[[m]]$converged,
@@ -284,7 +266,6 @@ sim_mix <- function(
       L_prec = L_prec, L_pdom = L_pdom,
       delta_prec = -0.5, delta_pdom = 0.5, slide_min_obs = slide_min_obs,
       slide_prior_grid = sim_delta_grid, slide_prior_weights = sim_delta_prior,
-      init_argument = init_argument,
       all_additive = all_additive,
       min_maf = min_maf, hwe_thresh = hwe_thresh, min_n_rec = min_n_rec
     ),
@@ -304,19 +285,12 @@ sim_mix <- function(
     susie_mix_pip = unname(susie_res_mix$pip),
     susie_mix_pip_snp = unname(pip_mix_snp),
     cs_mix_as_additive_indices = cs_mix,
-    susie_slide_cs = susie_res_slide$sets,
-    susie_slide_pip = unname(susie_res_slide$pip),
-    susie_slide_delta_cs = susie_res_slide$delta_cs,
-    susie_slide_delta_causal = susie_res_slide$delta[, true_pos, drop = FALSE],
-    susie_slide_delta_forced = unname(susie_res_slide$delta_forced),
     susie_slide_prior_cs = susie_res_slide_prior$sets,
     susie_slide_prior_pip = unname(susie_res_slide_prior$pip),
     susie_slide_prior_delta_cs = susie_res_slide_prior$delta_cs,
     susie_slide_prior_delta_causal = susie_res_slide_prior$delta[, true_pos, drop = FALSE],
     susie_slide_prior_delta_forced = unname(susie_res_slide_prior$delta_forced),
     susie_slide_prior_counts = susie_res_slide_prior$delta_prior_counts,
-    susie_init_slide_cs = susie_res_init_slide$sets,
-    susie_init_slide_pip = unname(susie_res_init_slide$pip),
     genetic_variance = var(g),
     beta_standardized = beta
   ))

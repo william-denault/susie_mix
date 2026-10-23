@@ -1,193 +1,59 @@
-# Simulation figures
+# Plots for the n=250, three-method benchmark
 
-For the slider-prior results, run the dedicated entry script from the project root:
+From the project root, run `source("generate_sim_figures.R")` in R or:
 
-```r
-source("generate_sim_figures_slide_prior.R")
+```sh
+Rscript --vanilla generate_sim_figures.R
 ```
 
-It explicitly selects `simulation results/slide_prior_v1/chunks` and all five
-methods, even if the R session still has options from an older analysis. It
-uses the same plotting code and style as `slide_v1`, and writes PDF/PNG figures
-and summary tables to `simulation results/slide_prior_v1/figures`. By default
-it reads all available saved replicates. After a successful full run, set
-`reuse_saved_summaries <- TRUE` in the entry script for a faster redraw; keep
-it `FALSE` after adding or replacing chunks. The script restores the previous
-R options when it finishes.
+The entry point explicitly selects `simulation results/n250_r300_v1/chunks`,
+n=250 and SuSiE, SuSiE-mix, SuSiE-slide-prior, then restores session options.
+It never fits models. The old generate_sim_figures_slide_prior.R name forwards
+to this entry point. Archived results have their own frozen plotting scripts.
 
-Run `source("script/sim/plot_simulations.R")` from R at the project root, or use the script's absolute path. Only base R is needed. Set `SUSIE_MIX_PROJECT_DIR` or edit `project_dir` if the project moves.
+## September-style panels
 
-The script reads `simulation results/slide_prior_v1/chunks` and writes to `simulation results/slide_prior_v1/figures`. It never refits models. See [README_simulations.md](README_simulations.md) for the generating design and cluster commands.
+- Four PVE columns: **10%, 20%, 30%, 40%**.
+- Causal count **1–5**; pairs start at 2 and triples at 3.
+- Blue SuSiE, pink SuSiE-mix, green SuSiE-slide-prior, with offset point markers,
+  right-side scenario labels and a dashed 95% coverage reference.
+- Point-only coverage, purity, power and CS-size panels by default, as in the
+  September screenshots. Analytic intervals and paired comparisons remain in
+  the tables. Set `options(susie.sim.show_intervals=TRUE)` to display metric bars.
+- Five pure rows, ten pair rows and ten triple rows, in groups `pure`,
+  `pairs_1`, `pairs_2`, `triples_1`, `triples_2` with at most five rows each.
+- Coverage starts at .75, or lower when necessary to show all estimates at
+  n=250. Every panel within a figure shares limits. The new runs are not
+  restricted to the K=1–4 display of the archived publication figures.
 
-To redraw an existing analysis after changing figure settings, use
-`source("script/sim/refresh_simulation_figures.R")`. This reuses the saved compact
-CS counts and ROC tables, and recomputes analytic confidence intervals each
-time. Older compact counts without CS-size sums of squares are rebuilt once
-from the checkpoints. Calibration bin totals are also cached after their
-first calculation. Later refreshes reuse these saved quantities.
-Use the full `plot_simulations.R` after adding results or changing inclusion
-settings, so all summaries use the new selection.
+PDF and PNG outputs go to `simulation results/n250_r300_v1/figures/`.
+There are coverage, purity, power and CS-size panels; ROC and power-FDR curves
+for individual K and all K pooled; and pooled-K PIP calibration by method.
+PIP calibration retains its +/-2 empirical-SE bars across seed blocks.
 
-## Figures
+## Metrics and uncertainty
 
-Blue is SuSiE, pink is SuSiE-mix, green is SuSiE-slide, orange is SuSiE-slide-prior, and purple is SuSiE-init-slide. Columns are PVE **5%, 10%, 20%, 30%, 40%**. Figures contain at most five scenario rows:
+Coverage = reported CSs containing any true biological causal SNP / reported
+CSs. No-CS runs add no sets to that denominator. Power = causal SNPs found in
+the union of reported sets / all causal SNPs; no-CS runs contribute zero.
+Purity is mean saved minimum absolute correlation under the fitted coding.
+CS size is the mean number of unique biological SNPs per reported set.
 
-| Suffix | Scenarios |
-|---|---|
-| `pure` | All five pure effect types |
-| `pairs_1`, `pairs_2` | All ten pairs of distinct effect types |
-| `triples_1`, `triples_2` | All ten triples of distinct effect types |
+SuSiE-mix PIPs aggregate coding probabilities within each single effect before
+combining active effects. Mixed sets are mapped to biological SNPs. All methods
+use the same included replicate identities. Error records are excluded;
+nonconverged fits remain by default and are counted in the audit.
 
-Effect order is additive, recessive, dominant, partial recessive, partial dominant. Pairs and triples follow combination order. Every allocation with the indicated total causal count K contributes to its scenario. For example, recessive + partial recessive at K = 3 pools allocations (1, 2) and (2, 1). K ranges from 1–5 for pure effects, 2–5 for pairs, and 3–5 for triples; fitted L remains 10.
+Counts are pooled before ratios. Marginal coverage/power/purity intervals use
+the existing normal proportion approximation; CS-size intervals use the
+empirical size variance. Three paired method contrasts use seed-block
+delta-method intervals. ROC and empirical-FDR curves pool threshold counts,
+retain threshold order, and have no uncertainty bands. See the helper code
+for formulas; these intervals do not imply guaranteed FDR control.
 
-Each figure is saved as PDF and PNG by default:
-
-- `coverage_<group>`, `purity_<group>`, `power_<group>`, `cs_size_<group>`: points and 95% analytic normal intervals against the number of causal SNPs.
-- `roc_<group>_L<K>` and `power_fdr_<group>_L<K>`: five method curves at a fixed true causal count.
-- `roc_<group>_all_L` and `power_fdr_<group>_all_L`: all applicable causal counts pooled into one curve per method. Set `write_roc_all_L <- FALSE` to omit.
-- Optional `roc_<group>_by_L.pdf` and `power_fdr_<group>_by_L.pdf`: multipage collections when `write_roc_pages <- TRUE`.
-- `pip_calibration_<group>_all_L_<method>`: mean PIP against the fraction of
-  SNPs that are causal, with one method per figure and the same scenario/PVE
-  panels. Method suffixes are `susie`, `susie_mix`, `susie_slide`, `susie_slide_prior`, and `susie_init_slide`, retaining
-  their original colors and symbols. Calibration exports only pooled all-L
-  figures (25 PDFs and 25 PNGs with all five methods), independently of the ROC settings.
-  After successful export, the script removes the obsolete L-specific,
-  multipage and combined-method calibration PDF/PNG files from the output
-  directory. Calibration CSV summaries and the RDS cache are retained.
-
-All scenario/PVE panels in a given PDF/PNG share the same y-axis limits and
-ticks. Coverage always uses 0.7-1; points below 0.7 are outside the displayed
-range, and intervals are clipped at the boundary. Purity runs from the lowest
-point estimate anywhere in that figure to 1, ignoring confidence bounds when
-choosing the limits. CS size
-runs from 0 to the highest point estimate anywhere in that figure. Power-FDR
-runs from 0 to the highest curve value across all panels within the displayed
-FDR window, including line intersections with the window boundary. Only the
-scenarios, PVE values, methods and causal counts displayed in that output
-contribute to its limits. Optional multipage PDFs also share limits across
-their pages. Confidence intervals can be clipped by these limits.
-Power, ROC and calibration retain a 0-1 y-axis;
-calibration also uses a 0-1 x-axis. The 0.95 coverage reference is shown when
-inside the panel. An all-one purity figure uses 0.95-1 to avoid a zero-height
-plot. Empty purity figures and empty/all-zero CS-size or power-FDR figures
-use 0-1; coverage remains 0.7-1 even for empty panels. Missing cells say "No saved
-results". PNGs use the `cairo-png` device when available to preserve labels on Windows.
-
-## Metric definitions
-
-- **Coverage:** reported credible sets containing a true biological causal SNP, divided by the number of reported sets. No-CS runs contribute no sets to this denominator. This is not posterior `sets$coverage`.
-- **Purity:** mean saved minimum absolute correlation across reported CSs. SuSiE-mix uses its fitted coding columns; SuSiE-slide uses each component's fitted transformed genotypes. These are each model's native purity measures, not a common additive-LD measure. Singleton purity is 1.
-- **Power:** fraction of true causal SNPs found in the union of reported CSs. Each causal SNP counts once; no-CS runs have zero power.
-- **CS size:** mean number of unique biological SNPs per reported CS. Multiple coding columns of one SNP count once within a mixed CS. No-CS runs contribute no fictitious size of zero.
-- **ROC:** pooled SNP-level PIP threshold counts, TPR = TP / causal SNPs and FPR = FP / noncausal SNPs. Tied PIPs enter together. The full threshold range is saved; the display defaults to FPR up to 0.25.
-- **Power–FDR:** pooled PIP-based TPR against FP / (TP + FP). This is pooled empirical FDP, labelled empirical FDR; it differs from FPR and the mean of replicate FDPs. No discoveries give (0, 0). Curves retain threshold order, including reversals, rather than a sorted or optimized envelope.
-
-SuSiE-mix SNP PIPs combine coding probabilities **within each single effect** before computing the union across active effects. Final coding PIPs are not summed. All five methods are evaluated at biological SNPs, including partial-effect scenarios without an exact generating predictor in SuSiE-mix. SuSiE-slide conditions on fitted deltas; SuSiE-slide-prior averages over its 17-point slider posterior and uses posterior-mean-coded genotypes for CS purity. SuSiE-init-slide reports additive PIPs and CSs after refitting from the continuous-slide initialization.
-
-Pooling sums counts before calculating ratios, including pooled-K curves. Larger loci contribute more noncausal SNPs, and allocations with more completed replicates contribute more observations. The analysis does not equally weight configuration averages; `configuration_counts.csv` exposes imbalance.
-
-## Intervals and paired comparisons
-
-No bootstrap is used. Point estimates still pool the same counts. By default,
-`interval_level = 0.95`, with `z = qnorm((1 + interval_level)/2)` (about 1.96).
-
-- **Coverage:** `SE = sqrt(p * (1-p) / n)`, where `p = covered_cs / n_cs`
-  and `n` is the total number of reported credible sets.
-- **Power:** the same formula, where `p = recovered / n_causal` and `n` is
-  the total number of true causal SNPs across included replicates.
-- **Purity:** the same requested formula, where `p = purity_sum / n_cs`
-  and `n` is the total number of reported credible sets. Purity is continuous,
-  so `p(1-p)` is an approximation here, not its empirical sample variance.
-- **CS size:** Gaussian interval `mean +/- z * s / sqrt(n_cs)`, where `s`
-  is the sample SD of individual credible-set sizes. It is computed exactly
-  from saved size sums and sums of squared sizes, using divisor `n_cs - 1`.
-  This preserves the pooled CS mean, rather than averaging replicate means.
-
-Bounds are `estimate +/- z * SE`, restricted to 0-1 for coverage, power and
-purity, and to a nonnegative lower bound for CS size. Zero reported sets give
-undefined coverage, purity and size; fewer than two reported sets give no
-CS-size interval. The proportion formula gives zero-width intervals at p=0
-or p=1. The plot's y-axis may further clip these bounds. These marginal bars
-use the requested event-count formulas and do not adjust for shared seeds
-or dependence among credible sets. `proportion_ci_n = "denominator"` is the
-default; `"replicates"` is an optional alternative for the three bounded metrics.
-
-`method_comparison.csv` reports all ten paired contrasts between the five methods. The `method` and `reference` columns specify subtraction direction. Positive CS-size differences mean larger sets, not improved resolution. Overlapping marginal intervals are not a paired comparison.
-
-The separate paired contrasts use Gaussian delta-method intervals with seed
-blocks, retaining covariance between methods without resampling. For method
-m, seed s, pooled ratio q_m, numerator A_ms and denominator B_ms, define
-`g_ms = (A_ms - q_m * B_ms) / sum_s(B_ms)`. The SE for a contrast is
-`sqrt(S/(S-1) * sum_s((g_2s - g_1s)^2))`. Fewer than two seed blocks gives
-unavailable contrast bounds. The reader and summary code require identical
-replicate identities for all selected methods. ROC and power-FDR figures
-have no uncertainty bands; calibration keeps its empirical-SE bars below.
-
-## PIP calibration
-
-The calibration definition follows Supplementary Figure 1 of the mvSuSiE
-supplement (DOI `10.1038/s41588-025-02486-7`). Biological SNP PIPs from all
-included replicates are assigned to ten equal-width bins: `[0,0.1)`, ...,
-`[0.9,1]`. The x-coordinate is the **actual mean PIP**, not the bin midpoint.
-The y-coordinate is the number of causal SNPs divided by the number of SNPs
-in that bin. Zero and one are included; empty bins are omitted from the plot
-and recorded with zero counts and unavailable estimates in the tables.
-
-All-L figures pool SNP counts and PIP sums over the available causal counts
-and allocations before calculating ratios; they do not average the separate
-L-specific frequencies. Thus incomplete allocations contribute fewer SNPs.
-SuSiE-mix uses its SNP-level PIPs, with each biological SNP counted once per
-replicate. Points below the diagonal indicate PIPs larger than the observed
-causal frequency; points above it indicate smaller PIPs.
-
-Error bars are the observed frequency plus/minus **two empirical standard
-errors**, clipped to 0-1, matching the reference's display convention. Here the
-SE of the pooled ratio is calculated across seed blocks, keeping SNPs within
-a replicate and repeated uses of a seed together. If `C_s` and `N_s` are a
-seed's causal and total bin counts, `q = sum(C_s)/sum(N_s)` and
-`SE = sqrt(S/(S-1) * sum((C_s-q*N_s)^2)) / sum(N_s)`. Seeds with no SNPs in
-that bin have zero counts and remain in the calculation. Fewer than two
-seeds gives unavailable error bars. These are approximate empirical error
-bars, not independent-SNP binomial intervals or posterior credible intervals.
-
-## Checkpoints, audits and tables
-
-The reader checks all five causal counts, true effect labels/deltas, PVE, sample size, fitted L, QC settings and slider settings. It requires five-method saves by default. Partial effects are never coerced into endpoint truth categories. Paired all-additive controls need separate plots.
-
-Larger advertised checkpoints are preferred; repeated configuration/seed pairs are removed. Successful saved replicates are included even when jobs are incomplete. Error records are audited and excluded from every method. By default, nonconverged fits remain in the comparison and are counted. Set `exclude_nonconverged <- TRUE` to exclude a replicate from every method whenever any fit did not converge. All-error input stops after writing the audit.
-
-- `file_audit.csv`: saved, examined, included, duplicate, error and convergence counts.
-- `configuration_counts.csv`: included replicates per exact allocation/PVE/method.
-- `metric_summary.csv`: pooled metrics, analytic SEs, interval bounds and
-  the denominator used for each SE (`coverage_n`, `power_n`, `purity_n`, `cs_size_n`).
-- `method_comparison.csv`: paired method-minus-reference differences,
-  analytic SEs and Gaussian intervals across seed blocks.
-- `replicate_metrics.rds`: per-replicate compact metric counts, including
-  `cs_size_sum_sq` for Gaussian CS-size intervals.
-- `roc_counts.rds` and `roc_counts_all_L.rds`: threshold counts/rates by K and pooled K.
-- `pip_calibration.csv` and `pip_calibration_all_L.csv`: bin counts, causal
-  counts, PIP sums/means, observed frequencies, empirical SEs and error bars.
-- `pip_calibration_seed_counts.rds`: exact per-seed bin totals, source file
-  signatures and the included replicate/method selection for rapid redraws.
-
-Run `Rscript script/sim/tests/test_plot_calibration.R` for base-R checks of
-bin boundaries, pooled means/frequencies, seed-level uncertainty and panel
-limits shared across each figure; this does not fit models.
-Run `Rscript script/sim/tests/test_metric_intervals.R` for hand-calculated
-normal/Gaussian interval checks, edge cases and analytic paired contrasts.
-
-For a small preview, set `max_reps_per_file <- 5`, use another output directory and optionally disable PNG output. Restore `Inf` for final figures. `tests/test_slide_simulation.R` validates all 25 families and exports representative figures to `tmp/slide_prior_simulation_validation/run_*/figures`.
-
-Existing three-method results remain readable without refitting:
-
-```r
-options(susie.sim.results_dir = "simulation results/slide_v1",
-        susie.sim.methods = c("SuSiE", "SuSiE-mix", "SuSiE-slide"))
-source("script/sim/plot_simulations.R")
-options(susie.sim.results_dir = NULL, susie.sim.methods = NULL)
-```
-
-For legacy two-method saves, use `susie.sim.results_dir = "simulation results"`
-and `susie.sim.methods = c("SuSiE", "SuSiE-mix")`. The filename reader accepts
-the old format. Old saves cannot supply the two new methods. The exact-coding
-diagnostics still target the original three-coding data; see README_simulations.md.
+Tables include file_audit.csv, configuration_counts.csv, metric_summary.csv,
+method_comparison.csv, replicate_metrics.rds, ROC count caches and calibration
+CSV/RDS caches. Check the audits for errors and incomplete conditions before
+interpreting figures. After adding chunks, rerun the full entry point. For
+an unchanged selection, `source("script/sim/refresh_simulation_figures.R")`
+reuses compact saved summaries to redraw more quickly.

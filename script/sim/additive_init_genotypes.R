@@ -12,10 +12,12 @@ prepare_additive_genotypes <- function(
     project_dir = init_project_dir,
     target_gene = Sys.getenv("SUSIE_MIX_SIM_GENE", ""),
     cis_window = 5e5, plink_threads = 1L,
-    plink_memory = as.numeric(Sys.getenv("SUSIE_MIX_PLINK_MEMORY_MB", "8000"))) {
+    plink_memory = as.numeric(Sys.getenv("SUSIE_MIX_PLINK_MEMORY_MB", "8000")),
+    input_mode = c("auto", "gtex", "raw")) {
+  input_mode <- match.arg(input_mode)
   if (!nzchar(genotype_dir)) genotype_dir <- file.path(init_project_dir, "temp_plink")
   files <- list.files(genotype_dir, pattern = "\\.raw$", full.names = TRUE)
-  if (length(files)) {
+  if (input_mode != "gtex" && length(files)) {
     if (any(file.access(files, 4L) != 0L)) stop("Some simulation genotype files are not readable: ", genotype_dir)
     directory <- normalizePath(genotype_dir, winslash = "/", mustWork = TRUE)
     files <- normalizePath(files, winslash = "/", mustWork = TRUE)
@@ -24,6 +26,7 @@ prepare_additive_genotypes <- function(
          settings = list(mode = "original_simulation_files", files = init_file_signatures(files))))
   }
 
+  if (input_mode == "raw") stop("Explicit cached-genotype mode requires .raw files in ", genotype_dir)
   stopifnot(length(target_gene) == 1L, !is.na(target_gene),
     cis_window > 0, cis_window == floor(cis_window),
     plink_threads >= 1L, plink_threads == floor(plink_threads),
@@ -60,7 +63,7 @@ prepare_additive_genotypes <- function(
   loci <- data.frame(gene = annotations$gene_name, chromosome = chr, tss = tss,
     from_bp = pmax(0, tss - cis_window), to_bp = tss + cis_window, row.names = NULL)
   if (!nrow(loci)) stop("No matching autosomal protein-coding gene regions in the GTEx annotations.")
-  message("No cached .raw files: using real GTEx cis-genotypes from ", datadir, ". ",
+  message("Using real GTEx cis-genotypes from ", datadir, ". ",
     if (nzchar(target_gene)) paste0("Gene: ", target_gene) else
       paste0("Each seed selects one of ", nrow(loci), " autosomal protein-coding genes."),
     " PLINK workspace: ", plink_memory, " MiB.")

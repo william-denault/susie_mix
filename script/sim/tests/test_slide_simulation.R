@@ -4,7 +4,9 @@ source("script/sim/write_jobs.R")
 options(.writer_options)
 source("script/sim/run_job.R")
 root <- normalizePath(".", winslash = "/")
-validation <- tempfile("run_", tmpdir = file.path(root, "tmp/slide_prior_simulation_validation"))
+previous_input_mode <- Sys.getenv("SUSIE_MIX_SIM_INPUT", unset = NA_character_)
+Sys.setenv(SUSIE_MIX_SIM_INPUT = "raw")
+validation <- tempfile("run_", tmpdir = file.path(root, "tmp/n250_simulation_validation"))
 dir.create(validation, recursive = TRUE, showWarnings = FALSE)
 
 expect_error <- function(expression, pattern) {
@@ -37,10 +39,10 @@ expect_error(sim_scenario_name(c(1, 1, 1, 1, 0)), "sum")
 expect_error(sim_scenario_name(c(0, 0, 0, 0, 0)), "sum")
 
 manifest <- write_simulation_jobs(validation)
-stopifnot(nrow(manifest) == 1125L, sum(manifest$reps_per_chunk) == 450000,
-          identical(sort(unique(manifest$pve)), c(.05, .1, .2, .3, .4)),
-          !anyDuplicated(manifest$output_file), all(manifest$schema_version == 3L),
-          all(startsWith(manifest$output_file, "simulation results/slide_prior_v1/chunks/")))
+stopifnot(nrow(manifest) == 900L, sum(manifest$reps_per_chunk) == 270000,
+          identical(sort(unique(manifest$pve)), c(.1, .2, .3, .4)),
+          !anyDuplicated(manifest$output_file), all(manifest$schema_version == 4L), all(manifest$n == 250L), all(manifest$reps_per_chunk == 300L),
+          all(startsWith(manifest$output_file, "simulation results/n250_r300_v1/chunks/")))
 # Both SuSiE APIs are supported, without changing the warm-start semantics.
 stopifnot(sim_initialization_argument(function(model_init) NULL) == "model_init",
           sim_initialization_argument(function(s_init) NULL) == "s_init")
@@ -55,18 +57,18 @@ for (i in seq_len(nrow(disk_manifest))) {
             identical(eval(settings[[1]][[3]]), disk_manifest[i, , drop = FALSE]))
 }
 batches <- read.csv(file.path(validation, "script/sim/jobs_slide/submission_batches.csv"))
-stopifnot(identical(batches$first_job, c(1L, 301L, 601L, 901L)),
-          identical(batches$last_job, c(300L, 600L, 900L, 1125L)),
-          identical(batches$array_end, c(299L, 299L, 299L, 224L)))
+stopifnot(identical(batches$first_job, c(1L, 301L, 601L)),
+          identical(batches$last_job, c(300L, 600L, 900L)),
+          identical(batches$array_end, c(299L, 299L, 299L)))
 for (launcher in batches$launcher) {
   path <- file.path(validation, launcher)
   stopifnot(file.exists(path), !any(readBin(path, "raw", n = file.info(path)$size) == as.raw(13)))
 }
 # Regenerating a smaller layout must remove stale jobs and batch launchers.
-invisible(write_simulation_jobs(validation, pve_values = .05, array_batch_size = 50L))
+invisible(write_simulation_jobs(validation, pve_values = .1, array_batch_size = 50L))
 stopifnot(length(list.files(file.path(validation, "script/sim/jobs_slide"), "^sim_job_[0-9]+\\.R$")) == 225L,
           length(list.files(file.path(validation, "job"), "^run_simulation_slide_batch_")) == 5L)
-invisible(write_simulation_jobs(validation, pve_values = .05, array_batch_size = 300L))
+invisible(write_simulation_jobs(validation, pve_values = .1, array_batch_size = 300L))
 stopifnot(length(list.files(file.path(validation, "job"), "^run_simulation_slide_batch_")) == 1L)
 parsed <- sim_parse_checkpoints(manifest$output_file)
 stopifnot(all(as.matrix(parsed[sim_count_columns]) == as.matrix(manifest[sim_count_columns])),
@@ -84,11 +86,11 @@ raw <- data.frame(FID = 1:650, IID = paste0("donor", 1:650), PAT = 0, MAT = 0,
                   SEX = 0, PHENOTYPE = -9, X)
 write.table(raw, file.path(genotypes, "fixture.raw"), row.names = FALSE, quote = FALSE, sep = "\t")
 
-# One real five-method fit for all 25 supports, plus an unequal K=5 triple
+# One real three-method fit for all 25 supports, plus an unequal K=5 triple
 # and a high-PVE repeat to check seed pairing and the noise scaling convention.
 selected <- which(!duplicated(conditions$name))
 selected <- c(selected, which(observed == "add0_rec2_dom0_prec1_pdom2"))
-smoke_manifest <- manifest[manifest$pve == .05 &
+smoke_manifest <- manifest[manifest$pve == .1 &
                             manifest$name %in% conditions$name[selected], ]
 smoke_manifest <- smoke_manifest[match(observed[selected],
     apply(smoke_manifest[sim_count_columns], 1, sim_configuration)), ]
@@ -104,30 +106,29 @@ for (i in seq_len(nrow(smoke_manifest))) {
   args$seed <- 1000001
   args$temp_dir <- genotypes
   x <- suppressMessages(do.call(sim_mix, args))
-  stopifnot(identical(x$metrics$method, c("SuSiE", "SuSiE-mix", "SuSiE-slide",
-                                       "SuSiE-slide-prior", "SuSiE-init-slide")),
+  stopifnot(identical(x$metrics$method, c("SuSiE", "SuSiE-mix", "SuSiE-slide-prior")),
             abs(x$genetic_variance - cell$pve) < 1e-12,
             length(unique(x$causal_snps)) == cell$K,
             identical(x$causal_delta, unname(sim_effect_delta[x$causal_coding])),
             identical(is.na(x$true_pos_mix), grepl("^partial_", x$causal_coding)),
-            all(abs(x$susie_slide_delta_causal) <= 1),
-            ncol(x$susie_slide_delta_causal) == cell$K,
-            length(x$susie_slide_pip) == length(x$susie_pip),
-            all(x$susie_slide_pip >= 0 & x$susie_slide_pip <= 1),
-            !any(c("y", "g", "noise") %in% names(x)))
+            all(abs(x$susie_slide_prior_delta_causal) <= 1),
+            ncol(x$susie_slide_prior_delta_causal) == cell$K,
+            length(x$susie_slide_prior_pip) == length(x$susie_pip),
+            all(x$susie_slide_prior_pip >= 0 & x$susie_slide_prior_pip <= 1),
+            !any(c("y", "g", "noise", "susie_slide_pip", "susie_init_slide_pip") %in% names(x)))
   stopifnot(identical(x$settings$slide_prior_grid, seq(-1, 1, length.out = 17)),
             identical(x$settings$slide_prior_weights, rep(1 / 17, 17)),
             all(is.finite(x$metrics$elbo)), all(is.finite(x$metrics$sigma2)),
             identical(dim(x$susie_slide_prior_counts), c(10L, 17L)),
             all(rowSums(x$susie_slide_prior_counts) <= 1 + 1e-10),
             all(abs(x$susie_slide_prior_delta_causal) <= 1))
-  for (field in c("susie_slide_prior_pip", "susie_init_slide_pip"))
+  for (field in "susie_slide_prior_pip")
     stopifnot(length(x[[field]]) == length(x$susie_pip),
               all(is.finite(x[[field]])), all(x[[field]] >= 0 & x[[field]] <= 1))
   full_indices <- !is.na(x$true_pos_mix)
   stopifnot(identical(x$mix_to_add[x$true_pos_mix[full_indices]], x$true_pos[full_indices]))
-  for (j in seq_along(x$susie_slide_cs$cs)) {
-    cs <- x$susie_slide_cs$cs[[j]]
+  for (j in seq_along(x$susie_slide_prior_cs$cs)) {
+    cs <- x$susie_slide_prior_cs$cs[[j]]
     stopifnot(all(cs %in% seq_along(x$susie_pip)))
   }
   results <- list(x)
@@ -138,14 +139,14 @@ for (i in seq_len(nrow(smoke_manifest))) {
 low <- fitted[[length(fitted) - 1L]]
 high <- fitted[[length(fitted)]]
 stopifnot(identical(low$causal_snps, high$causal_snps),
-          isTRUE(all.equal(high$beta_standardized / low$beta_standardized, rep(sqrt(8), 5))))
+          isTRUE(all.equal(high$beta_standardized / low$beta_standardized, rep(2, 5))))
 
 # Reconstruct partial predictors independently, including minor-allele orientation
 # and donor sampling, and verify the original additive fit saw this phenotype.
 set.seed(1000001)
 invisible(sample.int(1, 1))
 G <- qc_filter_geno(X)$X
-G <- G[sample.int(nrow(G), 500), , drop = FALSE]
+G <- G[sample.int(nrow(G), 250), , drop = FALSE]
 G <- G[, colSums(G) >= 5 & matrixStats::colSds(G) > 0, drop = FALSE]
 counts <- sapply(0:2, function(g) colSums(G == g))
 eligible <- colnames(G)[apply(counts, 1, min) >= 5]
@@ -157,8 +158,8 @@ truth_X[, 1:2] <- (truth_X[, 1:2] == 2) * 1
 for (j in 3:5) truth_X[, j] <- truth_X[, j] + c(-.5, .5, .5)[j - 2] * (truth_X[, j] == 1)
 signs <- sample(c(-1, 1), 5, replace = TRUE)
 g <- drop(scale(truth_X) %*% signs)
-g <- g * sqrt(.05 / var(g))
-y <- g + rnorm(500, sd = sqrt(.95))
+g <- g * sqrt(.1 / var(g))
+y <- g + rnorm(250, sd = sqrt(.9))
 storage.mode(G) <- "double"
 reference <- susieR::susie(G, y, L = 10, standardize = TRUE, estimate_prior_method = "optim",
                           coverage = .95, min_abs_corr = .5, max_iter = 1000)
@@ -166,24 +167,16 @@ reference <- susieR::susie(G, y, L = 10, standardize = TRUE, estimate_prior_meth
 # variance optimizer amplifies that slightly. Check the resulting PIPs to 1e-7.
 stopifnot(max(abs(unname(reference$pip) - low$susie_pip)) < 1e-7)
 
-# Independently refit both new methods on the exact generated X/y. The warm
-# start must be the continuous slide fit, not the additive or finite-prior fit.
-data <- sim_mix(pve = .05, n = 500, L_rec = 2, L_prec = 1, L_pdom = 2,
+# Independently refit the finite-prior method on the exact generated X/y.
+data <- sim_mix(pve = .1, n = 250, L_rec = 2, L_prec = 1, L_pdom = 2,
   seed = 1000001, temp_dir = genotypes, return_data = TRUE)
 args <- list(X = data$X, y = data$y, L = 10, standardize = TRUE,
   estimate_prior_method = "optim", coverage = .95, min_abs_corr = .5, max_iter = 1000)
-slide <- do.call(susieSlide::susie, c(args, list(min_obs = 5)))
-warm_args <- args
-warm_args[[sim_initialization_argument()]] <- slide
-warm <- do.call(susieR::susie, warm_args)
 prior <- do.call(susieRSlidePrior::susie, c(args, list(min_obs = 5,
   delta_grid = seq(-1, 1, length.out = 17), delta_prior = rep(1 / 17, 17))))
-stopifnot(isTRUE(all.equal(unname(warm$pip), low$susie_init_slide_pip, tolerance = 1e-10)),
-          isTRUE(all.equal(warm$sets, low$susie_init_slide_cs, tolerance = 1e-10)),
-          isTRUE(all.equal(unname(prior$pip), low$susie_slide_prior_pip, tolerance = 1e-10)),
+stopifnot(isTRUE(all.equal(unname(prior$pip), low$susie_slide_prior_pip, tolerance = 1e-10)),
           isTRUE(all.equal(prior$delta_prior_counts, low$susie_slide_prior_counts)),
-          identical(prior$delta_prior, rep(1 / 17, 17)),
-          identical(warm_args[[sim_initialization_argument()]], slide))
+          identical(prior$delta_prior, rep(1 / 17, 17)))
 free <- which(!prior$delta_forced)
 counts <- apply(prior$alpha_delta[, free, , drop = FALSE], c(1, 3), sum)
 counts[prior$V == 0, ] <- 0
@@ -192,12 +185,13 @@ stopifnot(isTRUE(all.equal(counts, low$susie_slide_prior_counts)))
 # Check actual save/resume through the shared runner, including refusal to reuse
 # an incompatible checkpoint. Use two reps only, in this isolated test project.
 runner_root <- file.path(validation, "runner")
-runner_manifest <- write_simulation_jobs(runner_root, pve_values = .05, reps_per_chunk = 2)
+runner_manifest <- write_simulation_jobs(runner_root, pve_values = .1, reps_per_chunk = 2)
 # Copy only the shared source files so the generated script can resolve its
 # own test project, just as a locally generated script resolves the RCC copy.
 shared <- c("script/sim/run_job.R", "script/sim/sim_workhorse.R",
             "script/sim/simulation_design.R", "script/sim/additive_init_genotypes.R",
-            "script/scan_tissue_attempt/workhorse_utils.R")
+            "script/scan_tissue_attempt/workhorse_utils.R",
+            "script/scan_tissue_attempt/get_gene_annotations.R")
 for (file in shared) {
   dir.create(dirname(file.path(runner_root, file)), recursive = TRUE, showWarnings = FALSE)
   stopifnot(file.copy(file.path(root, file), file.path(runner_root, file), overwrite = TRUE))
@@ -262,20 +256,21 @@ for (expression in script) {
   if (is.call(expression) && identical(expression[[1]], as.name("save_calibration_figures"))) next
   eval(expression, e)
 }
-stopifnot(sum(e$audit$included) == length(fitted), nrow(e$replicates) == 5L * length(fitted),
+stopifnot(sum(e$audit$included) == length(fitted), nrow(e$replicates) == 3L * length(fitted),
           length(unique(e$replicates$scenario)) == 25L,
-          nrow(e$metric_analysis$differences) == 40L * length(fitted),
+          nrow(e$metric_analysis$differences) == 12L * length(fitted),
           setequal(e$calibration_table$method, sim_methods),
           setequal(e$roc_table$method, sim_methods))
 reloaded <- e$collect_calibration(file.path(chunks, basename(smoke_manifest$output_file)),
   e$replicates, sim_methods)
-stopifnot(isTRUE(all.equal(e$calibration_summary(reloaded), e$calibration_table)))
+calibration_check <- all.equal(e$calibration_summary(reloaded), e$calibration_table)
+if (!isTRUE(calibration_check)) stop(paste(calibration_check, collapse = "\n"))
 for (group in names(e$scenario_groups))
   e$save_figure("coverage", e$scenario_groups[[group]], paste0("coverage_", group))
 for (metric in c("purity", "power", "cs_size", "roc", "power_fdr"))
   e$save_figure(metric, e$scenario_groups$triples_2, paste0(metric, "_triples_2"),
                 only_K = if (metric %in% c("roc", "power_fdr")) 5 else NULL)
-e$save_figure("pip_calibration", e$scenario_groups$triples_2, "calibration_five_methods")
+e$save_figure("pip_calibration", e$scenario_groups$triples_2, "calibration_three_methods")
 e$write_png <- TRUE
 e$save_figure("power", e$scenario_groups$triples_2, "review_power_triples")
 
@@ -287,7 +282,7 @@ toy <- data.frame(scenario = "test", pve = .05, K = 5, configuration = "one", se
                    recovered = rep(0:1, 10), n_causal = 5)
 mix <- slide <- toy
 mix$method <- "SuSiE-mix"; mix$recovered <- toy$recovered + 1
-slide$method <- "SuSiE-slide"; slide$recovered <- toy$recovered + 2
+slide$method <- "SuSiE-slide-prior"; slide$recovered <- toy$recovered + 2
 paired <- rbind(toy, mix, slide)
 duplicated_config <- paired; duplicated_config$configuration <- "two"
 a <- e$summarize_metrics(paired)
@@ -305,4 +300,6 @@ p <- c(0, .1, .1, .9, 1)
 pc <- e$pip_counts(p, c(2, 5), t)
 stopifnot(all(pc[, "tp"] == sapply(c(t, Inf), function(cut) sum(p[c(2, 5)] >= cut))),
           all(pc[, "fp"] == sapply(c(t, Inf), function(cut) sum(p[-c(2, 5)] >= cut))))
-cat("PASS: complete grid, 27 five-method datasets, direct warm-start/prior fits, generating effects/PVE, resume, plots and paired metrics.\n")
+cat("PASS: complete grid, 27 three-method datasets, direct prior fit, generating effects/PVE, resume, plots and paired metrics.\n")
+
+if (is.na(previous_input_mode)) Sys.unsetenv("SUSIE_MIX_SIM_INPUT") else Sys.setenv(SUSIE_MIX_SIM_INPUT = previous_input_mode)

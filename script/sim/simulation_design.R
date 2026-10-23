@@ -1,14 +1,14 @@
 # Shared design and checkpoint naming for the five-effect simulations.
-sim_schema_version <- 3L
-sim_results_dir <- "simulation results/slide_prior_v1"
-sim_methods <- c("SuSiE", "SuSiE-mix", "SuSiE-slide",
-                 "SuSiE-slide-prior", "SuSiE-init-slide")
+sim_schema_version <- 4L
+sim_results_dir <- "simulation results/n250_r300_v1"
+sim_methods <- c("SuSiE", "SuSiE-mix", "SuSiE-slide-prior")
+sim_n <- 250L
+sim_replicates <- 300L
+sim_pve_values <- c(.10, .20, .30, .40)
 sim_delta_grid <- seq(-1, 1, length.out = 17L)
 sim_delta_prior <- rep(1 / 17, 17L)
-sim_pip_fields <- setNames(c("susie_pip", "susie_mix_pip_snp", "susie_slide_pip",
-                             "susie_slide_prior_pip", "susie_init_slide_pip"), sim_methods)
-sim_set_fields <- setNames(c("susie_cs", "susie_mix_cs", "susie_slide_cs",
-                             "susie_slide_prior_cs", "susie_init_slide_cs"), sim_methods)
+sim_pip_fields <- setNames(c("susie_pip", "susie_mix_pip_snp", "susie_slide_prior_pip"), sim_methods)
+sim_set_fields <- setNames(c("susie_cs", "susie_mix_cs", "susie_slide_prior_cs"), sim_methods)
 
 # The RCC installation can expose either the current or older SuSiE API.
 sim_initialization_argument <- function(fun = susieR::susie) {

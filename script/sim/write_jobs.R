@@ -8,9 +8,9 @@ sim_project_dir <- dirname(dirname(dirname(.job_source)))
 rm(.job_source, .job_sources)
 
 write_simulation_jobs <- function(project_dir = sim_project_dir,
-                                  pve_values = c(.05, .10, .20, .30, .40),
-                                  n = 500L, L = 10L, chunks_per_cell = 1L,
-                                  reps_per_chunk = 400L, seed_base = 1000000L,
+                                  pve_values = sim_pve_values,
+                                  n = sim_n, L = 10L, chunks_per_cell = 1L,
+                                  reps_per_chunk = sim_replicates, seed_base = 1000000L,
                                   array_batch_size = getOption("susie.sim.array_batch_size", 300L)) {
   stopifnot(length(pve_values) > 0L, !anyDuplicated(pve_values),
             all(pve_values > 0 & pve_values < 1), n >= 3, L >= 1,

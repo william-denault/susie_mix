@@ -8,12 +8,15 @@ source(file.path(dirname(.run_source), "additive_init_genotypes.R"), local = TRU
 sim_project_dir <- dirname(dirname(dirname(.run_source)))
 rm(.run_source, .run_sources)
 
-# Reuse the same real-gene loader as the initialization experiment. Existing
-# .raw pools keep their original sampling; an absent pool selects GTEx genes.
+# Use random GTEx gene regions even when an old cached pool remains on RCC.
+# Cached mode is an explicit override for fixtures or a separate experiment.
 prepare_simulation_genotypes <- function(project_dir = sim_project_dir,
-    temp_dir = Sys.getenv("SUSIE_MIX_GENOTYPE_DIR", file.path(project_dir, "temp_plink"))) {
+    temp_dir = Sys.getenv("SUSIE_MIX_GENOTYPE_DIR", file.path(project_dir, "temp_plink")),
+    input_mode = Sys.getenv("SUSIE_MIX_SIM_INPUT", "gtex")) {
   if (!nzchar(temp_dir)) temp_dir <- file.path(project_dir, "temp_plink")
-  prepare_additive_genotypes(genotype_dir = temp_dir, project_dir = project_dir)
+  if (!input_mode %in% c("gtex", "raw")) stop("SUSIE_MIX_SIM_INPUT must be gtex or raw.")
+  prepare_additive_genotypes(genotype_dir = temp_dir, project_dir = project_dir,
+                            input_mode = input_mode)
 }
 
 sim_comparable_checkpoint <- function(settings) {
@@ -71,15 +74,12 @@ run_simulation_job <- function(job_id, project_dir = sim_project_dir,
       row$K != sum(counts) || row$name != sim_scenario_name(counts))
     stop("Unsupported or inconsistent simulation design; regenerate the manifest.")
   # Fail once on an installation problem instead of saving 400 error records.
-  packages <- c("susieR", "susieSlide", "susieRSlidePrior", "data.table", "matrixStats")
+  packages <- c("susieR", "susieRSlidePrior", "data.table", "matrixStats")
   for (package in packages) if (!requireNamespace(package, quietly = TRUE))
     stop("Install required package before running jobs: ", package)
   versions <- setNames(vapply(packages, function(p) as.character(utils::packageVersion(p)), ""), packages)
-  if (!"min_obs" %in% names(formals(susieSlide::susie)))
-    stop("The installed susieSlide package does not provide the genotype slider.")
-  if (!all(c("delta_grid", "delta_prior") %in% names(formals(susieRSlidePrior::susie))))
+  if (!all(c("delta_grid", "delta_prior", "min_obs") %in% names(formals(susieRSlidePrior::susie))))
     stop("Update susieRSlidePrior to the finite-prior implementation.")
-  init_argument <- sim_initialization_argument()
   genotype_source <- prepare_simulation_genotypes(project_dir, temp_dir)
 
   argument_names <- c("pve", "n", "L", sim_count_columns, "all_additive",
@@ -88,11 +88,13 @@ run_simulation_job <- function(job_id, project_dir = sim_project_dir,
   if (identical(genotype_source$mode, "raw")) args$temp_dir <- genotype_source$directory
   checkpoint_settings <- list(design = row, arguments = args, package_versions = versions,
     methods = sim_methods, delta_grid = sim_delta_grid, delta_prior = sim_delta_prior,
-    init_argument = init_argument)
-  # Keep cached-pool checkpoints compatible. GTEx runs additionally record
-  # their fixed source files and eligible gene pool, never a temporary path.
-  if (identical(genotype_source$mode, "gtex"))
-    checkpoint_settings$genotype_inputs <- genotype_source$settings
+    genotype_inputs = genotype_source$settings,
+    R_version = R.version.string, RNG_kind = RNGkind(),
+    source_md5 = unname(tools::md5sum(file.path(sim_project_dir, c(
+      "script/sim/sim_workhorse.R", "script/sim/simulation_design.R",
+      "script/sim/run_job.R", "script/sim/additive_init_genotypes.R",
+      "script/scan_tissue_attempt/workhorse_utils.R",
+      "script/scan_tissue_attempt/get_gene_annotations.R")))))
   output <- file.path(project_dir, row$output_file)
   results <- list()
   if (file.exists(output)) {
@@ -113,7 +115,6 @@ run_simulation_job <- function(job_id, project_dir = sim_project_dir,
             !identical(x$metrics$method, sim_methods) ||
             !identical(x$settings$slide_prior_grid, sim_delta_grid) ||
             !identical(x$settings$slide_prior_weights, sim_delta_prior) ||
-            !identical(x$settings$init_argument, init_argument) ||
             any(vapply(sim_pip_fields, function(field)
               length(x[[field]]) != length(x$susie_pip) || !length(x[[field]]) ||
                 any(!is.finite(x[[field]])), logical(1))))))
