@@ -1,0 +1,60 @@
+20 W. Denault et al.
+where f = Wb is the vector of effects in the wavelet space, and Ew = EmW⊺ is an N × T matrix of
+residuals in the wavelet space.
+Next we extend (2) to a multiple linear regression model in which the molecular trait is modeled
+as a linear combination of J covariates of interest (e.g., genotypes measured at J SNPs):
+Y =
+JX
+j=1
+xjb⊺
+j + Em. (4)
+The corresponding multiple regression model in wavelet space is
+D =
+JX
+j=1
+xjf ⊺
+j + Ew, (5)
+in which fj = W⊺bj. We often write (4) and (5) more compactly as
+Y = XB + Em (6)
+D = XF + Ew, (7)
+where X is the N × J matrix containing N observations about the J covariates of interest, B is the
+J × T matrix of unknown effects, and F = BW⊺ is the J × T matrix of unknown effects in the wavelet
+space. fSusiE is developed based on (7). (The measurement-space model (6) is implied but never
+directly used in fSuSiE.) In expressions below, we denote elements of X, Y, B, F, Em and Ew by xij,
+yit, bjt, fjt, em
+it and ew
+it, respectively. To simplify notation in the equations below, we drop the “ w”
+superscript from Ew when it is clear from the context that these are residuals in the wavelet space.
+Independence of residuals in wavelet space.fSuSiE follows the common assumption in wavelet regres-
+sion methods that the residuals in wavelet spaceew
+it are independent across t; that is, Ew is multivariate
+normal with mean zero and diagonal covariance matrix Σ, with diagonal entries σ2
+1, . . . , σ2
+T . Allowing
+the variances σ2
+t to vary by t is important for accommodating non-stationary signals, which frequently
+occur in practice [63, 74].
+The independence of the residuals ew
+it across indices t—i.e., across different wavelet scales and
+locations (see below)—can be motivated by the wavelets’ decorrelating effect on spatially structured
+signals, often referred to as the “whitening property” of the DWT. (See Fig. 1 in [63], Fig. 4.1 in [75],
+Figures 1 and 2 in [74], and https://stephenslab.github.io/fsusie-experiments/whitening_
+demo.html for illustrations of the whitening effect.) It is important to recognize that independence
+of the residuals ew
+it in the wavelet space does not imply independence of the residuals em
+it in the
+measurement space; indeed, assuming independence of the residuals in measurement space would be
+inappropriate due to the spatial structure. See [50, 63] for additional discussion.
+Multiple wavelet regression model with an intercept and additional covariates.In practice, we augment
+the multiple wavelet regression model (7) to include an intercept, and we often include additional
+covariates (e.g., sex, age, batch effects, genotype PCs):
+D = 1N µ⊺ + ZW + XF + E, (8)
+where 1N is a vector of ones of length N, Z is an N × nz matrix containing data about nz ≥ 0
+additional covariates, µ = ( µ1, . . . , µT )⊺ is the (unknown) intercept, and W is the nz × T matrix
+of (unknown) coefficients corresponding to the additional covariates Z. To simplify presentation, we
+store the intercept µ in the first row B, and set the first column of Z to be all ones, so the same model
+can be written more simply as
+D = ZW + XF + E. (9)
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

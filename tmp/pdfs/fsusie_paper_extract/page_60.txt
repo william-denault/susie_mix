@@ -1,0 +1,17 @@
+60 W. Denault et al.
+Supplementary Figure 17. Cmparison of SuSiE, mvSuSiE, and fSuSiE on a single simulated locus with
+a spatially structured genetic effect. An example simulation replicate with N = 100 samples, T = 128
+positions, and J = 991 candidate SNPs; a single causal SNP (index 691) has a cosine-shaped effect spanning
+88 of the 128 positions, with independent Gaussian residuals. (A) Ground-truth effect of the causal SNP
+along genomic positions. (B) Univariate SuSiE applied independently at each position. Only a small subset of
+affected positions yields a 95% credible set, and the lead variants differ across adjacent positions even when
+the underlying effect is similar in amplitude, illustrating the difficulty of aggregating per-position fine-mapping
+into a single coherent signal. (C) mvSuSiE with two prior/residual configurations. Left: true effect-size prior and
+true residual variance, in which case mvSuSiE recovers the causal SNP at PIP = 1. Right: canonical MASH
+prior [33] with a default-initialized residual variance, in which case mvSuSiE returns PIP = 0 and no credible
+set. (D) fSuSiE recovers the causal SNP at PIP = 1 and reconstructs a smooth effect curve along the genome
+(solid line) with a 95% credible band (shaded region) that closely tracks the ground truth (grey dots), without
+requiring problem-specific specification of the prior or residual variance.
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

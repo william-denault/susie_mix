@@ -88,7 +88,7 @@ spe_update_weights <- function(counts, previous) {
   counts / sum(counts)
 }
 
-spe_pool <- function(files, previous) {
+spe_summarize_gene <- function(out, gene, previous) {
   spe_validate_priors(previous)
   totals <- matrix(0, nrow(previous), length(spe_grid()),
                    dimnames = list(previous$tissue, spe_columns()))
@@ -97,31 +97,42 @@ spe_pool <- function(files, previous) {
     n <<- n + 1L
     audit[[n]] <<- data.frame(gene, tissue, issue, active, free_mass = mass, elbo, detail)
   }
-  for (file in files) {
-    out <- readRDS(file)
-    gene <- sub("\\.rds$", "", basename(file))
-    if (!is.list(out)) stop("Invalid gene result: ", file)
-    if (!is.null(out$error)) {
-      add_audit(gene, issue = "gene_error", detail = as.character(out$error))
-      next
-    }
+  if (!is.list(out)) stop("Invalid gene result: ", gene)
+  if (!is.null(out$error)) {
+    add_audit(gene, issue = "gene_error", detail = as.character(out$error))
+  } else {
     errors <- attr(out, "tissue_errors", exact = TRUE)
     for (tissue in names(errors)) add_audit(gene, tissue, "tissue_error", detail = errors[[tissue]])
     if (length(out) && (is.null(names(out)) || anyDuplicated(names(out)) ||
-                        any(!names(out) %in% previous$tissue))) stop("Invalid tissue names: ", file)
+                        any(!names(out) %in% previous$tissue))) stop("Invalid tissue names: ", gene)
     for (tissue in names(out)) {
       fit <- out[[tissue]]$fit_slide_prior
       counts <- tryCatch(spe_fit_counts(fit, spe_prior(previous, tissue)),
                          error = function(e) stop(gene, " / ", tissue, ": ", conditionMessage(e)))
       totals[tissue, ] <- totals[tissue, ] + colSums(counts)
-      if (!length(fit$elbo) || !is.finite(tail(fit$elbo, 1))) stop("Missing finite ELBO: ", file)
+      if (!length(fit$elbo) || !is.finite(tail(fit$elbo, 1))) stop("Missing finite ELBO: ", gene)
       active <- sum(rep(fit$V, length.out = nrow(counts)) > 0)
       add_audit(gene, tissue, "fit", active, sum(counts), tail(fit$elbo, 1))
     }
     if (!length(out) && !length(errors)) add_audit(gene, issue = "no_eligible_tissues")
   }
-  audit <- do.call(rbind, audit)
+  list(counts = totals, audit = do.call(rbind, audit))
+}
+
+# Both the original serial reader and the parallel checkpoint reader use this
+# same M-step. Counts are posterior mass, without CS filtering or pseudocounts.
+spe_pool_summaries <- function(summaries, previous) {
+  spe_validate_priors(previous)
+  totals <- matrix(0, nrow(previous), length(spe_grid()),
+                   dimnames = list(previous$tissue, spe_columns()))
+  for (x in summaries) {
+    if (!is.matrix(x$counts) || !identical(dimnames(x$counts), dimnames(totals)) ||
+        any(!is.finite(x$counts)) || any(x$counts < 0)) stop("Invalid count summary.")
+    totals <- totals + x$counts
+  }
+  audit <- do.call(rbind, lapply(summaries, `[[`, "audit"))
   if (is.null(audit) || !any(audit$issue == "fit")) stop("No successful slider fits to learn from.")
+  rownames(audit) <- NULL
   weights <- t(vapply(seq_len(nrow(previous)), function(i)
     spe_update_weights(totals[i, ], spe_prior(previous, previous$tissue[i])), numeric(17)))
   colnames(weights) <- spe_columns()
@@ -137,6 +148,12 @@ spe_pool <- function(files, previous) {
   })
   list(priors = data.frame(tissue = previous$tissue, weights, do.call(rbind, diagnostics)),
        audit = audit, counts = data.frame(tissue = previous$tissue, totals))
+}
+
+spe_pool <- function(files, previous) {
+  summaries <- lapply(files, function(file)
+    spe_summarize_gene(readRDS(file), sub("\\.rds$", "", basename(file)), previous))
+  spe_pool_summaries(summaries, previous)
 }
 
 # Diagnostics for the fits at iteration k, before applying the k -> k+1 M-step.

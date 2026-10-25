@@ -1,0 +1,53 @@
+Fine-mapping molecular QTLs using fSuSiE 13
+the imputation is accurate and/or there are not too many missing measurements. Second, the cur-
+rent framework requires analyzing one molecular context at a time. Future work includes developing
+joint modeling approaches for multiple molecular contexts to finemap shared effects without requiring
+separate colocalization analyses. This would be particularly valuable for multiome data where both
+single-nucleus RNA-seq and single-nucleus ATAC-seq data are available, enabling simultaneous anal-
+ysis of gene expression and chromatin accessibility as spatially structured molecular profiles. Third,
+while fSuSiE can handle both normalized and count-based data, our applications focused on normal-
+ized molecular phenotypes. Although our method and software implementation includes count-based
+models specifically designed for high-throughput sequencing data that could be beneficial in other
+applications, we did not apply these count-based alternatives in the current work.
+A final limitation we mention is that fSuSiE relies on individual-level data. fSuSiE could, in
+principle, be adapted to summary statistics (association test statistics and an LD matrix), analogous
+to SuSiE-RSS and mvSuSiE-RSS [25, 33] (see the Supplementary Note). However, it is not clear that
+this would be practical or desirable for high-dimensional molecular traits. Consider that standard
+summary-statistics sharing for spatially structured data first collapses the signal into called peaks
+or regions and then reports per-feature summaries, which loses resolution by construction. fSuSiE
+works directly on the sequencing coverage or on small fixed-width bins (e.g., 50 bp); T therefore
+scales with assay resolution, from the ∼850K CpGs of the Illumina EPIC array to the ∼28 million
+CpGs in human whole-genome bisulfite sequencing, pushing T into the thousands per window without
+peak calling. The fSuSiE output is not a J × T matrix but a compact fine-mapping object that, as
+demonstrated here, can be consumed directly by SuSiE-based COLOC [85] and related pipelines. We
+therefore recommend that molecular-QTL studies run fSuSiE on their individual-level data and share
+the fine-mapping objects for downstream integration.
+The fSuSiE methods are implemented in an R package, fsusieR, available on GitHub and distributed
+via the MIT Open Source license. The R package includes detailed documentation, examples, and
+guidance on applying the methods in practice.
+References
+[1] Aguet, F., K. Alasoo, Y. I. Li, A. Battle, H. K. Im, S. B. Montgomery, and T. Lappalainen (2023).
+Molecular quantitative trait loci. Nature Reviews Methods Primers 3 , 4.
+[2] Mortazavi, A., B. A. Williams, K. McCue, L. Schaeffer, and B. Wold (2008). Mapping and
+quantifying mammalian transcriptomes by RNA-Seq. Nature Methods 5 (7), 621–628.
+[3] Pickrell, J. K. (2014). Joint analysis of functional genomic data and genome-wide association
+studies of 18 human traits. American Journal of Human Genetics 94 (4), 559–573.
+[4] Ferkingstad, E., P. Sulem, B. A. Atlason, G. Sveinbjornsson, M. I. Magnusson, E. L. Styrmisdottir,
+et al. (2021). Large-scale integration of the plasma proteome with genetics and disease. Nature
+Genetics 53 (12), 1712–1721.
+[5] Sun, B. B., J. Chiou, M. Traylor, C. Benner, Y.-H. Hsu, T. G. Richardson, et al. (2023). Plasma
+proteomic associations with genetics and health in the UK Biobank. Nature 622 (7982), 329–338.
+[6] Lister, R., M. Pelizzola, R. H. Dowen, R. D. Hawkins, G. Hon, J. Tonti-Filippini, et al.
+(2009). Human DNA methylomes at base resolution show widespread epigenomic differences. Na-
+ture 462 (7271), 315–322.
+[7] Bock, C. (2012). Analysing and interpreting DNA methylation data. Nature Reviews Genet-
+ics 13 (10), 705–719.
+[8] Banovich, N. E., X. Lan, G. McVicker, B. van de Geijn, J. F. Degner, J. D. Blischak, J. Roux,
+J. K. Pritchard, and Y. Gilad (2014). Methylation QTLs are associated with coordinated changes in
+transcription factor binding, histone modifications, and gene expression levels.PLoS Genetics 10 (9),
+e1004663.
+[9] Teschendorff, A. E. and C. L. Relton (2018). Statistical and integrative system-level analysis of
+DNA methylation data. Nature Reviews Genetics 19 (3), 129–147.
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

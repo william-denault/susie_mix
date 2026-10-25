@@ -1,0 +1,50 @@
+fSuSiE enables fine-mapping of QTLs from genome-scale molecular
+profiles
+William R. P . Denault1,†,*, Hao Sun 2,3,†, Peter Carbonetto 1, Anjing Liu 2, Philip L. De Jager 4,5,6, David
+Bennett7, The Alzheimer’s Disease Functional Genomics Consortium , Gao Wang 2,6,8*, and Matthew
+Stephens1,9,*
+1Department of Human Genetics, University of Chicago, Chicago, IL, USA
+2Center for Statistical Genetics, The Gertrude H. Sergievsky Center, Columbia University, New Y ork, NY ,
+USA
+3Graduate School of Biomedical Sciences, Icahn School of Medicine at Mount Sinai, New Y ork, NY , USA
+4Center for Translational & Computational Neuroimmunology, Columbia University, New Y ork, NY , USA
+5Taub Institute for Research on Alzheimer’s Disease and the Aging Brain, Columbia University, New Y ork,
+NY , USA
+6Department of Neurology, Columbia University, New Y ork, NY , USA
+7Rush Alzheimer’s Disease Center and Department of Neurological Sciences, Rush University Medical
+Center, Chicago, IL, USA
+8Department of Biostatistics, Columbia University, New Y ork, NY , USA
+9Department of Statistics, University of Chicago, Chicago, IL, USA
+†Equally significant contributions
+*Correspondence: William R.P . Denault wdenault@uchicago.edu; Gao Wang, wang.gao@columbia.edu;
+Matthew Stephens, mstephens@uchicago.edu
+Abstract.
+Molecular quantitative trait locus (QTL) studies seek to identify the causal variants affecting molecular
+traits like DNA methylation and histone modifications. However, existing fine-mapping tools are not well
+suited to high-dimensional molecular traits, and so analyses of these traits typically proceed by consid-
+ering each variant and each molecular measurement independently, ignoring the LD among variants and
+the spatial correlation in effects between nearby sites. This severely limits accuracy in identifying causal
+variants and quantifying their molecular trait effects. Here, we introduce fSuSiE (“functional Sum of Sin-
+gle Effects”), a fine-mapping method that addresses these challenges by explicitly modeling the spatial
+structure of genetic effects on molecular traits. fSuSiE integrates wavelet-based functional regression with
+the computationally efficient “Sum of Single Effects” framework to simultaneously finemap causal variants
+and identify the molecular traits they affect. In simulations, fSuSiE identified causal variants and affected
+CpGs more accurately than methods that ignore spatial structure. In applications to DNA methylation and
+histone acetylation (H3K9ac) data from the ROSMAP study of the dorsolateral prefrontal cortex, fSuSiE
+achieved dramatically higher resolution than existing methods (e.g., identifying 6,355 single-variant methy-
+lation credible sets compared to only 328 from an existing approach). Applied to Alzheimer’s disease (AD)
+risk loci, fSuSiE identified potential causal variants colocalizing with AD GWAS signals for established
+genes, including CASS4 and CR1/CR2, suggesting specific potential regulatory mechanisms underlying
+these AD risk loci.
+Introduction
+Molecular quantitative trait locus (QTL) mapping [1] aims to identify genetic variants associated
+with a wide variety of molecular traits measured across the genome, including RNA expression [2, 3],
+protein expression [4, 5], DNA methylation [6–11], chromatin accessibility [12, 13], transcription-
+factor binding [14, 15] and histone modification [16, 17]. A critical next step, known as fine-mapping,
+is to pinpoint the individual causal variants, determine how many act independently, and estimate
+their effects on the (typically large number of) molecular traits [18–22]. While sophisticated fine-
+mapping methods exist to handle these challenges for univariate or low-dimensional traits such as
+the total expression level of a gene [23–39], they are ill-suited to many molecular traits such as DNA
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

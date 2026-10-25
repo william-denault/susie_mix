@@ -24,6 +24,10 @@ fi
 project_dir="${SUSIE_MIX_PROJECT_DIR:-/project2/mstephens/wdenault/susie_mix}"
 project_dir=$(cd "$project_dir" && pwd -P)
 export SUSIE_MIX_PROJECT_DIR="$project_dir"
+if [[ -f "$project_dir/results_slide_prior_em/shared_scheduler/enabled.json" ]]; then
+    echo 'Future simulations are owned by the shared EM/simulation controller; no duplicate batch submitted.'
+    exit 0
+fi
 plan="${project_dir}/script/sim/jobs_slide/submission_batches.csv"
 if [[ ! -r "$plan" ]]; then
     echo "Missing batch plan: $plan. Source script/sim/write_jobs.R first." >&2

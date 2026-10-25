@@ -1,0 +1,530 @@
+# Parallel continuation (October 23, 2026)
+
+For the resumed slider-prior run, use [the parallel workflow](README_slide_prior_parallel.md).
+It reuses initialization results, validates/collects counts in parallel, and
+fits one gene per task with five-minute refills. Once adopted, the legacy
+launcher below refuses to restart serial verification.
+
+# Recover slider-prior EM with bounded batches
+
+This scheduler changes execution and recovery, not the statistical model. It
+keeps the frozen grid, priors, fitting settings, package version, input QC,
+warm starts and `spe_pool()` M-step. PLINK uses one thread to match the one-CPU
+allocation. New tasks handle at most **4 genes by default**, each in a **fresh
+Rscript process**, and save each gene before starting the next. Set
+`SUSIE_SLIDE_GENES_PER_TASK=5` for a five-gene cap; values from 1 to 15 are
+supported. The coordinator exports this setting to its continuations.
+
+New recovery workers request **48G per array task** on `broadwl` (increased
+from 40G on October 12, 2026). Genes within a task run sequentially. The memory
+request is in `job/recover_slide_prior_em_array`; changing only the controller's
+`sbatch --mem` does not change that worker directive. The coordinator retains
+its 40G request. The increase provides headroom; it is not an established cure
+for the documented CCDC62 node failures, so retain the diagnosed node exclusion.
+
+RCC lists 64 GB physical RAM for Broadwell nodes, while its
+[SU accounting](https://rcc.uchicago.edu/accounts-allocations/calculations-service-units)
+uses 56 GB per Broadwell node. Actual request limits depend on the live Slurm
+configuration and account/QoS. Verify those before requesting the full physical
+capacity. Higher-memory nodes require a different partition and should be
+considered for individual genes with measured memory needs. Memory-based SU
+charges for a 48G request are 20% above a 40G request at equal runtime.
+
+The original audit manifest retains its 1,847 groups of at most 10 genes.
+Planning subdivides each group's unresolved genes into smaller execution tasks
+before applying the available job capacity. Existing manifests, batches, fits
+and retry counts are preserved. Changing this execution cap needs no new audit
+and does not alter already-submitted tasks. Each new array has at most 298 tasks.
+
+The first recovery target is the existing `iteration_000`. Do not delete or
+replace `results_slide_prior_em`, its gene results, or its original manifest.
+The old completion markers are retained as historical records and are not
+trusted by recovery. No mixed-model files are modified.
+
+## Refill while slow tasks finish (rolling mode)
+
+The default wave mode waits for every element of an array. For the long full
+screen, enable `SUSIE_SLIDE_ROLLING=1`. A short coordinator checks the queue
+every five minutes and, when fewer than 200 workers remain pending/running,
+submits enough new tasks to approach 298 active workers. It counts other jobs
+against the same 300-job user budget and reserves two coordinator slots.
+For example, two remaining workers and no unrelated jobs allow **296 new
+tasks immediately**, without cancelling the two existing workers. Slurm still
+decides when submitted tasks can run; this is not a guarantee of 200 running
+allocations. Near the end of an iteration there may be fewer genes left.
+
+Settings (inherited by continuations and the next EM iteration):
+
+* `SUSIE_SLIDE_ROLLING=1`: enable rolling refills; the default `0` retains waves.
+* `SUSIE_SLIDE_REFILL_BELOW=200`: refill when the worker count is below this
+  threshold. It is clamped to the third positional argument, the worker cap
+  (default 298). Range: 1 to 298.
+* `SUSIE_SLIDE_POLL_MINUTES=5`: delay before the next coordinator is eligible
+  to start. Range: 1 to 60 minutes. Actual start also depends on Slurm capacity.
+
+Every active array task is matched to its saved batch manifest. All genes in
+that task remain reserved, including sequential genes not started yet.
+Completed tasks free their unfinished genes for bounded retry; a live final
+attempt is not incorrectly treated as exhausted. Unknown workers, changed
+manifests, duplicate gene assignments, competing coordinators, exhausted
+retries, and repeated resource failures stop scheduling for inspection.
+Completed batches where no worker entered fitting also stop automatic refills.
+The full iteration must have no active workers and pass the existing complete
+validation before its objective and next prior update are produced.
+
+To switch an existing wave run, upload the rebuilt bundle, then cancel **only
+the pending old coordinator**. Leave worker arrays running. For the October 16
+example, the pending coordinator was `49403415` and the workers belonged to
+array `49403414`; use the current ID if the chain has advanced. Slurm captures
+the submitted shell script, so replacing the file alone does not update an
+already queued coordinator. On the RCC login node:
+
+```bash
+cd /project2/mstephens/wdenault/susie_mix
+old=$(cat results_slide_prior_em/last_continuation_job_id.txt)
+squeue -j "$old" -o '%.18i %.30j %.12T %R'
+```
+
+If that is the pending `slide_recover_control` job, cancel it (do not use a
+user-wide cancellation), extract the bundle, and submit rolling recovery:
+
+```bash
+scancel "$old"
+unzip -o output/slide_prior_recovery_rcc.zip
+cd job
+SUSIE_SLIDE_ROLLING=1 \
+SUSIE_SLIDE_REFILL_BELOW=200 \
+SUSIE_SLIDE_POLL_MINUTES=5 \
+SUSIE_SLIDE_PILOT=0 \
+SUSIE_SLIDE_GENES_PER_TASK=4 \
+SUSIE_SLIDE_MAX_ITER=5000 \
+SUSIE_SLIDE_TARGET_ITERATION=20 \
+SUSIE_SLIDE_EXCLUDE_NODES=midway2-0003 \
+sbatch --exclude=midway2-0003 recover_slide_prior_em resume 0
+```
+
+This adopts the existing iteration-000 batches and receipts. No new retry
+allowance, audit, or initialization is needed. If the current coordinator is
+already running, let it finish and inspect the newly recorded pending successor
+before switching. If no coordinator remains, submit the rolling resume after
+extracting the bundle. Cancellation may take a moment to clear the queue; a
+competing-controller refusal is safe to retry after that job disappears.
+
+Each rolling continuation depends only on the preceding coordinator and a
+begin-time delay, not on the worker arrays. Logs say `Rolling queue:` and
+`Queued rolling coordinator ...`. A queued coordinator may show `BeginTime`
+or `Resources`. To stop refilling, cancel the current/pending coordinator first;
+existing worker arrays can finish. Retry/resource safeguards may halt the chain
+with workers still running; their results are preserved for a reviewed resume.
+
+## Upload and audit first
+
+Extract `output/slide_prior_recovery_rcc.zip` into the RCC project, preserving
+the paths. The archive contains code, documentation, tests and the 36-gene
+pilot list at `output/slide_prior_pilot_genes.txt`; it contains no input datasets
+or fitted results. It includes updated guards for the historical slider launcher
+and preparation script; upload these too.
+
+First verify the old slider array and continuation have stopped. Allow the
+mixed-model run to reach your chosen stopping point before the full recovery:
+its launcher independently requests up to 298 tasks. The recovery coordinator
+counts other queued/running jobs, but cannot reserve slots against a different
+launcher that submits new jobs after that count.
+
+On RCC:
+
+```bash
+cd /project2/mstephens/wdenault/susie_mix/job
+sbatch recover_slide_prior_em audit 0
+```
+
+This is an audit only. It reads the actual RCC gene files, including genes
+inside the five old chunks marked complete, and writes:
+
+```text
+results_slide_prior_em/iteration_000/recovery/
+  state.rds                  # hashes of the frozen original files and plan
+  manifest.csv               # task, gene, original_chunk; <=10 genes per task
+  audit.csv                  # status, detail, result checksum, number of fits
+```
+
+The local copy without `results/` cannot establish which genes are reusable;
+run this audit on RCC. Progress is logged every 100 genes. A full audit can
+take substantial time because it reads all saved posteriors. Auditing does
+not run the fitter or submit workers.
+
+Statuses:
+
+| Status | Meaning |
+|---|---|
+| `valid` | Converged fits with the correct iteration, priors and posterior structure |
+| `qc_excluded` | An existing result has no eligible tissues and no recorded errors, under the existing input QC |
+| `retry` | Missing, unreadable, unconverged or invalid result, or an unresolved gene/tissue error |
+| `reviewed_exclusion` | An exact saved error record explicitly reviewed for exclusion, or that frozen exclusion inherited in a later iteration |
+| `scope_excluded` | Gene on X, Y or MT, excluded by the explicitly selected chromosome scope |
+
+Old `.done` markers do not override any of these checks. Missing files are
+retried, and successful genes in interrupted chunks are reused. Partially
+successful genes with unresolved tissue errors are retried as whole genes.
+
+## Run a pilot, then resume
+
+### Exclude X/Y/MT for this analysis
+
+The user selected this scope on October 7, 2026. After uploading the updated
+bundle, activate it once, while no slider workers/continuations are active:
+
+```bash
+cd /project2/mstephens/wdenault/susie_mix/job
+sbatch recover_slide_prior_em exclude-sex-mt 0
+```
+
+This reads the same GTEx gene annotation as the worker and freezes the first
+chromosome assignment for every original gene, normalizing `chrX`, `chrY`,
+`chrM`/`MT` and numeric aliases. An unmapped gene stops activation for inspection.
+It records the mapping and annotation checksum in
+`results_slide_prior_em/chromosome_scope.rds`, writes
+`results_slide_prior_em/chromosome_exclusions.csv`, and updates the existing
+recovery audit without rereading all fitted posteriors. The pre-scope audit is
+preserved as `recovery/audit_before_chromosome_scope.csv`.
+
+X/Y/MT genes are skipped even when no result exists, a retry budget was exhausted,
+or an old fit succeeded. Their existing files remain intact. They contribute
+no counts to the prior update and stay excluded in subsequent iterations.
+Autosomal errors still require recovery; the fitter and `spe_pool()` calculation
+are unchanged. Original manifests and frozen fitting settings are retained.
+Old batches/certificates cannot be used across this scope change. Activation
+can be safely repeated after interruption; changing scope after learned-prior
+updates have begun is refused. No chromosome-inventory command is needed.
+
+Wait for this small setup job to finish before the pilot. The updated
+`output/slide_prior_pilot_genes.txt` contains 36 candidates after removing
+the diagnostic X-chromosome case; the scope policy will also filter any other
+excluded candidates identified by the annotation.
+The previously synced pilot list also works: its X-chromosome gene is filtered
+out automatically after scope activation.
+
+### Pilot
+
+For the supplied 36-gene diagnostic pilot, verify that the bundled list exists
+on RCC, then submit from the project's `job` directory. With a four-gene cap,
+these candidates occupy at most 12 tasks across their original audit groups:
+
+```bash
+test -s ../output/slide_prior_pilot_genes.txt && \
+SUSIE_SLIDE_PILOT=1 \
+SUSIE_SLIDE_PILOT_GENES=/project2/mstephens/wdenault/susie_mix/output/slide_prior_pilot_genes.txt \
+SUSIE_SLIDE_GENES_PER_TASK=4 \
+SUSIE_SLIDE_MAX_ITER=5000 \
+sbatch recover_slide_prior_em run 0 12
+```
+
+If the list is missing, extract the updated bundle or sync that file before
+submission. A controller that cannot read this list exits before planning or
+launching any gene workers. The 5000 setting raises the inner solver's iteration
+budget; it does not request 5000 EM updates.
+
+Alternatively, after the audit job ends, start a **single five-task pilot**
+(at most 20 genes at the default cap):
+
+```bash
+SUSIE_SLIDE_PILOT=1 sbatch recover_slide_prior_em run 0 5
+```
+
+To target known slow or failed genes, create a plain-text list with one gene
+per line, selected from `audit.csv`, and provide its absolute RCC path:
+
+```bash
+SUSIE_SLIDE_PILOT=1 \
+SUSIE_SLIDE_PILOT_GENES=/absolute/path/pilot_genes.txt \
+sbatch recover_slide_prior_em run 0 5
+```
+
+Only unresolved listed genes are scheduled; the final command argument caps
+the number of execution tasks, not genes. Include prior memory-failure and slow cases, not only
+easy genes. Already validated genes are reused without refitting. The pilot
+does not schedule a continuation or change any priors. Inspect its per-gene
+logs, Slurm elapsed times and peak memory before scaling up. Fresh processes
+limit cross-gene memory retention; they do not guarantee that a single large
+gene fits in the requested memory or 23 hours.
+
+Then, after the pilot is no longer active:
+
+```bash
+SUSIE_SLIDE_PILOT=0 SUSIE_SLIDE_GENES_PER_TASK=4 SUSIE_SLIDE_MAX_ITER=5000 \
+sbatch recover_slide_prior_em resume 0
+```
+
+This retains the pilot's increased inner-solver budget. Use a five-gene cap
+instead by changing only `SUSIE_SLIDE_GENES_PER_TASK=5`. Do not edit
+`recovery/manifest.csv` or rerun the audit with a different manifest size.
+The October 8 pilot snapshot had 35 validated genes (945 tissue fits) and one
+unfinished gene, ACSL1. The slow task spent 16.3 hours on five preceding genes;
+its first four alone took 14.3 hours. A smaller cap reduces accumulated runtime
+but cannot guarantee that every future task will fit within 23 hours.
+
+The default batch has at most 298 worker tasks. The coordinator subtracts
+other submitted jobs and reserves two slots for the current and next control
+jobs, keeping its submission within a 300-job budget for your user at that snapshot. It
+counts **pending and running array elements**, not just parent array IDs.
+Lower RCC QOS limits still apply; it does not bypass them. If no slot is
+available it stops with a manual resume command. Submission failures preserve
+all files and are reported; an ambiguous response requires queue inspection
+before retrying. Duplicate launches are blocked by the shared preparation
+lock, recorded job IDs and recovery job names.
+
+Each batch queues one inspection coordinator with `afterany`, so a worker
+failure does not discard the opportunity to recover. Batches run sequentially;
+the next batch waits for the slowest task in the current batch. This first
+implementation favors simple, auditable recovery over a rolling worker pool.
+
+## Errors and bounded retries
+
+An actual fitting attempt is recorded before it starts. Default maximum:
+three attempts per gene across the recovery, including interrupted attempts.
+Unattempted genes are prioritized ahead of retries. Successful checkpoints
+are skipped. A worker error does not prevent the task from attempting its
+other genes, but the task exits unsuccessfully if any gene failed.
+
+The coordinator stops for inspection when the retry limit is reached. An
+automatic continuation also stops when two genes report memory/system
+allocation failures, when one gene reports such a failure twice, or if no worker in
+the previous batch reached fitting; this prevents endless resubmission after
+module/package/launch failures. A manual resume can retry a launch after its
+cause has been fixed; manual resume also retries resource failures within the
+remaining budget. Gene retry budgets are not silently reset. An exhausted
+gene requires diagnosis and an explicit repair/review, rather than repeated
+blind submission.
+
+Errors are never automatically converted to biological exclusions. If an
+initialization error is legitimately explained by input eligibility, review
+the saved record and create `recovery/reviewed_exclusions.csv` with columns
+`gene,result_md5,reason`. Use the checksum from `audit.csv` and document the
+actual reason. This authorizes only that exact saved error record; a changed
+record invalidates the approval. A partial gene retains its successful tissue
+fits and its explicitly reviewed tissue-error exclusions. Do not approve
+timeouts, allocation failures, missing packages or other infrastructure
+failures as input exclusions. Ordinary zero-eligible-tissue results require
+no manual approval. Keep this file empty/absent when there are no reviewed
+exclusions. Re-run `audit` after adding reviews, then `resume`.
+
+`SUSIE_SLIDE_MAX_ITER` remains available for a diagnosed inner numerical
+iteration limit, as in the original workflow. Raising it does not cure a
+wall-clock limit or memory failure and does not reset the retry counter.
+
+### Reviewed node failure: preserve the count and allow one more attempt
+
+The October 12 investigation found that CCDC62's three attempts were interrupted
+by `NODE_FAIL` on `midway2-0003`. Slurm restarted array task `49219819_1`
+three times. Its final execution on `midway2-0079` refused CCDC62 because the
+budget was already exhausted, then processed the other three genes. The final
+`FAILED` record therefore does not describe the earlier node failures. Use
+`sacct --duplicates -j 49219819_1` to see all executions; the cancelled batch
+steps beneath the `NODE_FAIL` allocations do not establish a manual cancellation.
+
+After uploading the updated bundle and confirming there are no active slider
+jobs, this command records the reviewed interruption and resumes initialization:
+
+```bash
+cd /project2/mstephens/wdenault/susie_mix/job
+SUSIE_SLIDE_PILOT=0 SUSIE_SLIDE_GENES_PER_TASK=4 SUSIE_SLIDE_MAX_ITER=5000 \
+SUSIE_SLIDE_EXCLUDE_NODES=midway2-0003 \
+sbatch --exclude=midway2-0003 recover_slide_prior_em retry 0 CCDC62 3 \
+  "Reviewed sacct --duplicates: 49219819_1 had three NODE_FAIL executions on midway2-0003; third attempt started 2026-10-11 05:49:58 UTC"
+```
+
+The new `retry ITERATION GENE EXPECTED_ATTEMPTS "REVIEW_REASON"` mode runs
+under the normal coordinator lock and active-job guards. It accepts only a
+currently unresolved gene whose exact expected count equals the original retry
+limit and whose last receipt says `Interrupted before receipt`, without a
+finished timestamp. This message alone is not evidence of node failure: inspect
+the accounting/logs and state that evidence in the reason before using `retry`.
+
+It writes `recovery/retry_allowances/CCDC62.rds` containing the original receipt,
+frozen-file and chromosome-scope identities, review reason and time, and a total
+limit of four attempts. The existing receipt/count, original retry policy,
+manifest, priors and saved gene results are left in place. Both planner and
+worker enforce the same per-gene allowance; other genes retain their original
+limits. Repeating the same review is idempotent and cannot authorize a fifth
+attempt. A further interruption or fitting error stops again for inspection.
+This is an execution retry, not an input exclusion or a completed fit.
+
+The command resumes all remaining genes, reusing validated checkpoints and
+retaining the usual priority of unattempted genes ahead of retries. It stops
+after initialization unless `SUSIE_SLIDE_TARGET_ITERATION` is explicitly set
+as described below. A previously written `blocked.csv` is a historical stop
+record; consult the refreshed `audit.csv` and controller log for current status.
+
+`SUSIE_SLIDE_EXCLUDE_NODES` accepts comma-separated node names and is explicitly
+passed to every worker array and continuation, including later iterations.
+The initial `sbatch --exclude` keeps the first controller off the node too.
+This exclusion applies only to the submitted recovery chain; it does not change
+cluster configuration. Omit it from a future manual launch once the node is
+known to be repaired.
+
+Worker and coordinator stdout/stderr use Slurm append mode. Gene logs now have
+names such as `CCDC62_JOBID_restart_0.err`; a requeue gets a different restart
+suffix, and repeated invocations append rather than discard earlier output.
+New attempt receipts also record the Slurm job, array task, restart count and
+node. Existing overwritten logs cannot be reconstructed by this update.
+
+## Completion and the next EM update
+
+When all genes appear resolved, the coordinator rereads **every full result**
+and writes `recovery/COMPLETE.rds` only if validation succeeds and at least one
+tissue fit exists. The completion certificate is tied to the frozen files and
+audit. A prior update revalidates all results again before calling the original
+pooling/M-step. Verification also records the completed iteration's objective
+using that same pooling function. When preparing the next iteration, its
+revalidation returns the pooled counts directly to preparation, avoiding a
+duplicate pooling pass. Original chunk markers are neither rewritten nor reused for
+this decision. Later iterations must preserve the validated initialization
+cohort, including reviewed exclusions.
+
+**By default, recovery stops after finishing the requested iteration.**
+Once initialization is complete, prepare and fit exactly one new update with:
+
+```bash
+sbatch recover_slide_prior_em new
+```
+
+This invokes the existing prior-estimation function, then audits and schedules
+the new iteration using the same configurable execution cap. The original
+`em_susie_slide_prior` launcher refuses to run once recovery is adopted, to
+prevent an accidental return to 61-62-gene jobs. Use the new launcher for
+subsequent updates and resumes.
+
+### Record and interpret convergence
+
+Each completed iteration, including the final requested iteration, writes:
+
+```text
+results_slide_prior_em/objective_history.csv
+results_slide_prior_em/iteration_NNN/objective_summary.csv
+results_slide_prior_em/iteration_NNN/objective_fit_audit.csv
+```
+
+The history has one `level=overall` row and one row per tissue for each
+completed iteration. `elbo` is the sum of the **final saved ELBO of every
+validated gene/tissue fit under that iteration's frozen prior**. Fits without
+credible sets or active components still contribute. X/Y/MT and frozen input
+exclusions are outside this objective, consistently across iterations. A
+changed gene/tissue cohort or a missing/nonfinite ELBO prevents recording.
+Repeating verification replaces the iteration's rows without duplication.
+
+The [SuSiE objective is a variational evidence lower bound](https://stephenslab.github.io/susieR/reference/susie.html),
+not the exact marginal likelihood. The sum here is the composite variational
+objective of the fitted gene/tissue models; overlapping genes and tissues do
+not define an independent joint likelihood for the whole dataset.
+
+Columns to inspect:
+
+| Column | Interpretation |
+|---|---|
+| `iteration` | The iteration actually fitted; iteration 0 is the uniform-prior baseline |
+| `elbo` | Completed-fit objective, overall or for one tissue |
+| `delta_elbo` | Current minus previous completed objective; positive means improvement |
+| `relative_delta_elbo` | `delta_elbo / max(1, abs(previous_elbo))` |
+| `delta_elbo_per_fit` | Objective change divided by the number of gene/tissue fits |
+| `prior_max_change` | Largest absolute weight change from the previous frozen prior |
+| `next_prior_max_change` | Largest weight change proposed by pooling the current fits |
+| `next_m_step_q_gain` | Expected slider log-prior improvement proposed for the next M-step |
+| `elbo_decreased` | A decrease beyond a small floating-point tolerance; also logged as a warning |
+| `n_fits`, `n_genes` | Cohort sizes supporting the objective |
+
+The `next_*` diagnostics describe a proposed update; they do not modify the
+frozen prior or launch another iteration. In particular, Q gain is not the
+observed between-iteration ELBO gain. The existing `prior_history.csv`
+`source_elbo` describes the source fits for the *next* prior, so use the new
+objective history for an unambiguous iteration-aligned convergence curve.
+
+Monitor the overall and per-tissue changes, together with prior movement over
+several iterations. A large negative baseline can make a relative change look
+small, so also inspect change per fit and `next_prior_max_change`. A plateau
+is evidence of numerical stabilization, not proof of a global optimum. No
+automatic convergence threshold or early stopping rule is imposed. ELBO
+decreases are recorded and warned about; unresolved fits and cohort changes
+still stop the normal completion gate.
+
+For example, in R:
+
+```r
+h <- read.csv("/project2/mstephens/wdenault/susie_mix/results_slide_prior_em/objective_history.csv")
+overall <- h[h$level == "overall", ]
+overall[, c("iteration", "n_fits", "elbo", "delta_elbo",
+            "delta_elbo_per_fit", "next_prior_max_change", "elbo_decreased")]
+plot(overall$iteration, overall$elbo, type = "b",
+     xlab = "Completed EM iteration", ylab = "Sum of final fit ELBOs")
+```
+
+### Continue through 20 learned-prior updates
+
+After the pilot ends, extract the updated bundle into the RCC project and run:
+
+```bash
+cd /project2/mstephens/wdenault/susie_mix/job
+SUSIE_SLIDE_PILOT=0 \
+SUSIE_SLIDE_GENES_PER_TASK=4 \
+SUSIE_SLIDE_MAX_ITER=5000 \
+SUSIE_SLIDE_TARGET_ITERATION=20 \
+sbatch recover_slide_prior_em resume 0
+```
+
+This completes/reuses initialization 000, then runs learned-prior iterations
+001 through 020, recording all 21 completed objectives. The target is an
+absolute iteration index, not an additional-iteration count. It stops after
+020; increase the target later if convergence needs more updates. The target,
+gene cap and inner-solver budget propagate to subsequent controllers. Only
+the next controller is queued after successful verification; there is no
+advance submission of 20 arrays. Pilot mode never chains iterations.
+
+Existing job-capacity and retry checks still apply. If the account has no
+submission capacity, or recovery stops on unresolved errors, fix the cause
+and repeat the command with `resume K` for the current prepared iteration.
+An interrupted verification/objective write is rerunnable. To backfill a
+previously completed iteration's objective, use `sbatch recover_slide_prior_em
+verify K`; this does not launch another iteration. Later objective rows require
+the preceding iteration's recorded fit audit for cohort comparison.
+
+## Inspect or stop a recovery
+
+```text
+recovery/audit.csv                      # latest audit/receipt status
+recovery/attempts/<gene>.rds             # attempt count, timestamps, errors/warnings
+recovery/blocked.csv                    # genes needing inspection, when applicable
+recovery/batches/batch_*/manifest.csv    # exact genes in each submitted batch
+recovery/batches/batch_*/worker_*.out    # array-task progress
+recovery/batches/batch_*/gene_logs/*     # separate R stdout/stderr for each gene
+job/slide_recover_control_*.out/.err     # audit/coordinator logs
+```
+
+The root `last_array_job_id.txt` and `last_continuation_job_id.txt` track this
+workflow too. Read and verify their IDs in `squeue`, then cancel the queued
+coordinator first and its array second. Cancelled work keeps its saved gene
+results. A pilot has no new continuation; its recorded continuation ID may
+belong to an older, completed job. Do not launch competing workers manually.
+
+## Local verification
+
+```bash
+Rscript --vanilla script/scan_tissue_attempt/tests/test_slide_prior_recovery.R
+bash script/scan_tissue_attempt/tests/test_slide_prior_recovery_launcher.sh
+Rscript --vanilla script/scan_tissue_attempt/tests/test_slide_prior_em.R
+Rscript --vanilla script/scan_tissue_attempt/tests/test_slide_prior_objective.R
+Rscript --vanilla script/scan_tissue_attempt/tests/test_slide_prior_em_smoke.R
+Rscript --vanilla script/scan_tissue_attempt/tests/test_slide_prior_em_worker.R
+bash script/scan_tissue_attempt/tests/test_slide_prior_em_launcher.sh
+```
+
+The recovery tests use synthetic saved fits and mocked Slurm commands. The
+real-worker test uses synthetic GTEx-format inputs and the installed discrete
+slider package. Only an RCC pilot can verify real workload memory and timing.
+
+The scheduler follows [Slurm's documented array accounting and dependency
+semantics](https://slurm.schedmd.com/job_array.html): array tasks count against
+job limits individually, and `afterany` on an array waits for all its tasks to
+terminate. Rebuild the upload archive from the repository root with:
+
+```bash
+python script/scan_tissue_attempt/build_slide_prior_recovery_bundle.py
+```

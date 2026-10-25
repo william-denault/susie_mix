@@ -1,0 +1,32 @@
+#!/bin/bash
+#SBATCH --job-name=slide_parallel_fit
+#SBATCH --open-mode=append
+#SBATCH --time=23:00:00
+#SBATCH --partition=broadwl
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=48G
+set -euo pipefail
+project=$1; iteration=$2; batch=$3
+module load R/4.2.0
+export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+cli="$project/script/scan_tissue_attempt/run_slide_prior_parallel.R"
+rows=$(Rscript --vanilla "$cli" task "$project" "$iteration" "$batch" "$SLURM_ARRAY_TASK_ID")
+printf -v name 'iteration_%03d' "$iteration"
+locks="$project/results_slide_prior_em/$name/recovery/gene_locks"
+mkdir -p "$locks" "$batch/gene_logs"
+failed=0
+while IFS=$'\t' read -r gene action extra; do
+    [[ "$gene" =~ ^[A-Za-z0-9_.-]+$ && "$gene" != . && "$gene" != .. &&
+       "$action" =~ ^(fit|validate)$ && -z "$extra" ]] || { echo 'Invalid task row.' >&2; exit 1; }
+    exec 8>"$locks/$gene.lock"
+    if ! flock -n 8; then echo "Gene already locked: $gene" >&2; failed=1; continue; fi
+    log="$batch/gene_logs/${gene}_${SLURM_JOB_ID}_restart_${SLURM_RESTART_COUNT:-0}"
+    echo "$action $gene on ${SLURMD_NODENAME:-unknown}"
+    if ! Rscript --vanilla "$cli" gene "$project" "$iteration" "$batch" "$SLURM_ARRAY_TASK_ID" "$gene" \
+        >>"$log.out" 2>>"$log.err"; then failed=1; echo "Inspect $log.err" >&2; fi
+    flock -u 8
+    exec 8>&-
+done <<< "$rows"
+exit "$failed"

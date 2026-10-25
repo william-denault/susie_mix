@@ -1,0 +1,56 @@
+Fine-mapping molecular QTLs using fSuSiE 7
+SNPs in very high LD with the causal SNP (including in cases where the other SNP differed from
+the causal SNP at only a single individual). To confirm this striking result, we performed additional
+simulations to specifically confirm that, given sufficiently strong signals, fSuSiE can indeed accurately
+produce a single-variant CS even in the presence of very strong LD (see Online Methods, “Additional
+simulations to assess single-variant CSs” and Supplementary Fig. 13). These results highlight an im-
+portant general benefit of joint analysis of multiple traits: when a SNP affects multiple traits, joint
+analysis not only increases power to detect effects, but also substantially improves the fine-mapping
+resolution by reducing the typical sizes of CSs (see also [33]).
+As noted above, a limitation of SuSiE-topPC (and related methods) is that it does not identify
+which locations (the CpGs) are affected by the causal SNPs identified. One way to address this
+would be to follow SuSiE-topPC with simple univariate SNP-CpG tests to determine which CpGs are
+significantly associated with the causal SNPs identified. A benefit of functional regression methods like
+fSuSiE is that they exploit spatial correlations in effects to increase power to detect such associations.
+To demonstrate this, we performed simulations with a single (causal) SNP affecting a subset of CpGs,
+and applied both fSuSiE and standard SNP-CpG tests to detect the associated CpGs. The results
+showed consistent gains in power and accuracy for fSuSiE, with the power gains being greatest in the
+more challenging WGBS decay simulations (Fig. 3D, Supplementary Figures 14 and 15). (We did
+not use the wavelet simulations here because in these simulations the causal SNPs produced changes,
+mostly small, to all CpGs.) This illustrates the ability of fSuSiE to combine borderline association
+signals across spatially-proximal affected CpGs to more accurately identify these signals.
+Overall, the two variants of fSuSiE—one with the simpler IS prior, the other with a more flexible
+SPS prior—performed similarly, with a slight power advantage for the SPS prior. The tradeoff is that
+the SPS prior also increases running time (Fig. 3E, Supplementary Fig. 16). Thus, the choice of prior
+depends on weighing the benefits of additional discoveries against the additional computation. While
+both variants of fSuSiE take much longer to run than SuSiE-topPC, they remain practical for data
+sets of the scale we expect to analyze in molecular QTL studies—that is, data sets with thousands of
+SNPs and thousands of molecular trait measurements. We took the IS prior to be the default prior in
+light of its good performance at a favourable computational cost, and in subsequent fSuSiE analyses
+the IS prior is assumed unless stated otherwise.
+Genome-wide fine-mapping of DNA methylation and histone acetylation QTL
+To demonstrate the potential of fSuSiE to generate insights into genetic regulation of molecular
+trait profiles, and to aid in interpretation of disease-associated genetic variants, we applied fSuSiE
+to DNA methylation (DNAm) and histone acetylation (H3K9ac) data from the Religious Orders
+Study/Memory and Aging Project (ROSMAP) with harmonized genotypes from the Alzheimer’s Dis-
+ease Sequencing Project [62, 76, 77]. Array-based DNA methylation profiles of n = 636 donors and
+H3K9ac ChIP-seq profiles of n = 592 donors were obtained from the dorsolateral prefrontal cortex
+(DLPFC), a brain tissue affected by AD. The molecular trait data for fine-mapping with fSuSiE were
+the n = 636 methylation proportions (“β values”) at 413,433 CpGs and the n = 592 read counts at
+92,401 H3K9ac peaks. (H3K9ac peak calling and other data processing steps are detailed in the Online
+Methods.) Supplementary Fig. 18 shows the trait-level spatial clustering of high-activity positions in
+these data at the CASS4 (methylation) and CR1/CR2 (H3K9ac) fine-mapping regions, illustrating
+the empirical pattern that motivates fSuSiE. We used fSuSiE to fine-map SNPs affecting methylation
+(mSNPs) and H3K9ac (haSNPs), as described below. We also performed SuSiE fine-mapping of gene
+expression and protein abundance (from the same DLPFC samples) to obtain a more complete picture
+of the genetic regulation in this brain region.
+To apply fSuSiE genome-wide, we partitioned the genome into large genomic regions, and then (af-
+ter filtering out regions containing too few CpGs or peaks) applied fSuSiE to each region separately,
+using the SNP genotype data and molecular trait data at all SNPs and locations within the region.
+To minimize regulatory interactions between regions, we defined the regions based on topologically
+associating domains (TAD) [78]. For brevity we refer to these regions as TADs, although they also
+contain boundaries between TADs; see Online Methods. In total, we decomposed the genome (au-
+tosomal chromosomes only) into 1,329 TADs ranging in size from 2 to 35 Mb (median: 4 Mb) each
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

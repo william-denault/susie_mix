@@ -1,0 +1,82 @@
+Coverage history audit, 23 October 2026
+
+The attached plots match the legacy two-method summaries in
+simulation results/figures/metric_summary.csv. The coverage PNG first appears
+in repository commit 59e2301 (10 September 2026); this establishes the local
+archive date, not the date on which the user first viewed the results.
+
+Current publication_plots/input_data/metric_summary.csv contains the newer
+slide_prior_v1 summaries. For additive-only effects at PVE 10%, 20%, 30%,
+and 40%, K=1..4, SuSiE-mix has higher coverage in 15 cells and equal coverage
+in one (40%, K=1). The additive advantage has therefore not generally reversed.
+
+New weak-signal setting:
+PVE 5% was added with the expanded simulation design (5e94b68, 18 September).
+It did not occur in either attached plot. Current additive-only coverage is:
+  K=3: SuSiE 94/105 = 89.52%; SuSiE-mix 59/68 = 86.76%.
+  K=4: SuSiE 66/79 = 83.54%; SuSiE-mix 46/60 = 76.67%.
+These denominators count reported credible sets, not the 400 simulated datasets.
+The existing paired seed-block 95% intervals for mix-minus-SuSiE are
+[-8.60, +3.08] percentage points for K=3 and [-14.91, +1.15] for K=4.
+Both include zero. This is uncertainty about the differences, not evidence
+that the two methods are equivalent.
+
+Confirmed input change:
+Commit 9833df3 (27 September) made the full simulation runner fall back to
+direct GTEx gene extraction when the old cached .raw pool was unavailable.
+The newer inspected checkpoint explicitly records genotype mode gtex_fallback
+and an eligible pool of 17,617 autosomal protein-coding gene regions.
+The old checkpoint records cached temp_plink/plink_GENE.raw inputs.
+For K=1, PVE=10%, comparing all 400 seeds:
+  old run: 203 distinct sampled region names;
+  new run: 397 distinct sampled region names;
+  identical causal SNPs across matching seeds: 0/400;
+  identical retained SNP counts across matching seeds: 0/400.
+The counts of distinct sampled regions are not the size of the old source pool.
+For example seed 1000001 changed from MILR1 / chr17_63979009_T_G_b38_T
+to ATXN3 / chr14_92208655_C_T_b38_C. Keeping a numerical seed therefore did
+not preserve the input dataset across the two sampling procedures.
+
+Changes to presentation and additional methods:
+The current publication figures explicitly restrict K to 1..4, include PVE 5%,
+add error bars, and use coverage limits 0.7..1 (the attached plots use 0.75..1).
+They also include additional generating effect types. The new green publication
+label SuSiE-slide represents the method stored as SuSiE-slide-prior.
+The additional methods are fitted separately; the blue baseline is still the
+ordinary additive fit. The slide-initialized additive fit has its own identifier.
+No new K=5 additive checkpoint is present in the local slide_prior_v1 archive.
+
+No explicit fitting/coverage change found for the original two methods:
+Comparing script/sim/sim_workhorse.R at 25274b5 (9 September) against HEAD,
+the additive and mixed calls retain standardize=TRUE, prior variance estimation
+method optim, coverage=.95, min_abs_corr=.5 and max_iter=1000. The jobs retain
+n=500, fitted L=10, and 400 requested replicates. The original additive
+phenotype-generation/QC rules are unchanged, as is the shared workhorse helper.
+The two calls are now namespace-qualified as susieR::susie. Neither call adds
+an EM coding-weight update or an explicit refinement option.
+Coverage remains pooled reported sets containing any true biological causal
+SNP divided by all reported sets. No-set replicates contribute no denominator.
+
+Software provenance limit:
+The newer inspected checkpoint records susieR 0.14.2. The old compact checkpoint
+does not record package versions, so a package-version difference cannot be
+confirmed or excluded. Neither archive saves full X/y or fitted objects, so
+these comparisons do not experimentally isolate the effect of the input change
+from every possible software/environment change.
+
+Example comparisons (SuSiE / SuSiE-mix coverage):
+  PVE 10%, K=3: old 88.38% / 91.82%; current 88.34% / 90.18%.
+  PVE 10%, K=4: old 86.51% / 89.15%; current 84.68% / 86.33%.
+  PVE 20%, K=3: old 93.05% / 93.47%; current 93.39% / 94.23%.
+  PVE 30%, K=3: old 92.59% / 93.04%; current 93.26% / 93.66%.
+
+Audit files:
+audit.R and audit_output.txt: summary comparison and checkpoint provenance.
+matched_seed_inputs_K1_PVE10.csv: 400 old/new seed input comparisons.
+current_paired_coverage.csv: existing paired additive-coverage intervals.
+verify_counts.R: independently re-count coverage from the saved credible sets.
+verification_output.txt and verified_counts.csv: verification results.
+coverage_comparison_wide.csv: one row per PVE and K, old/current coverage.
+
+No production code, original results or figures were changed. No model fits
+were rerun. This audit writes only within tmp/coverage_history_audit/.

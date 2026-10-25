@@ -1,0 +1,96 @@
+44 W. Denault et al.
+Where ˆRr corresponds to the expected residual without effect e, i.e.:
+ˆRr = Eq [Rr] = Eq
+
+D −
+X
+r′̸=r
+XF(r′)
+
+ (111)
+Proof for this Proposition in the univariate case is given in [24].
+Expected residual sum of squares. Here we focus on the second term of equation (105), which we
+refer to as the “expected residual sum of squares” (ERSS). To compute this term, we need to compute
+EF∼qr[f r
+j,s,l] and EF∼qr[(f e
+j,s,l)2], given that gr is a scale mixture prior, it is straightforward given to
+compute these quantities using the analytical formula provided in (71) (72). Thus the “expected
+residual sum of squares” (ERSS) can be written as:
+ERSS (D, X, ¯F , ¯F 2) =
+X
+s
+X
+l
+||ds,l −
+RX
+e=1
+X¯Fr
+.,s,l||2 +
+RX
+e=1
+X
+j
+X
+s
+X
+l
+V ar(f r
+j,s,l) (112)
+ELBO for thee-th single effect. Similar to the SuSiE approachFr(qr, gr, σ2, ˆRr, X) is equal to logL(Rr, gr, X, σ2)
+at the maximum ˆqe = argmaxqFr(qr, gr, σ2, ˆRr, X), which can be computed as
+Fr(qr, gr, σ2, ˆRr, X) = log
+
+Y
+s,l,i
+N( ˆRei,sl, 0, σ2)
+
+ + log
+
+X
+j
+πjBFmix( ˆRr, X, σ2, (σ2
+k), (πk,s))
+
+ (113)
+K-L divergence for the e-th effect. Following previous derivations, we have that
+EF∼qr
+"
+log gr(F(r))
+qr(F(r))
+#
+= Fr(qr, gr, σ2, ˆRr, X) + T × N
+2 log(2πσ2) + 1
+2σ2 Eqr
+h
+|| ˆRr − XF(r)||
+i
+(114)
+= −KL(qr(F(r)) || gr(F(r))) (115)
+Summary-statistics formulation of fSuSiE
+An fSuSiE analysis of individual-level data (X, Y) can be re-expressed as a summary-statistics analysis,
+analogous to SuSiE–RSS [25] and mvSuSiE–RSS [33]. The required inputs are the per-SNP marginal
+OLS estimates ˆB and standard errors ˆS from the individual-level data (both J × T ), the LD matrix
+R = (n − 1)−1X⊤X, and the sample size n. We assume the columns of X and Y are centered and
+scaled to unit sample variance.
+Because the DWT acts linearly on the position axis, the wavelet-coefficient marginal OLS estimates
+follow from the individual-level ones by
+ˆBW = ˆB W, (116)
+obtained by post-multiplying X⊤Y by W. Positionwise standard errors propagate as (ˆ sW
+js )2 =P
+t W 2
+ts ˆs2
+jt; under homoscedasticity across positions this reduces to ˆsW
+js = ˆsj by orthogonality of W.
+Within the IBSS loop, the partial-residual update for component r at wavelet coefficient s can be
+written as
+eBW
+r, s = ˆBW
+·,s − R
+X
+r′̸=r
+αr′ ⊙ µr′,s,
+and the ELBO-based residual-variance update reduces to a function of ( ˆB, R, n) and the internal
+posterior state. The adaptive-shrinkage mixture prior on wavelet coefficients used in fSuSiE is itself
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

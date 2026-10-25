@@ -1,3 +1,10 @@
+# Parallel continuation (October 23, 2026)
+
+For the resumed slider-prior run, use [the parallel workflow](README_slide_prior_parallel.md).
+It reuses initialization results, validates/collects counts in parallel, and
+fits one gene per task with five-minute refills. Once adopted, the legacy
+launcher below refuses to restart serial verification.
+
 # Recover slider-prior EM with bounded batches
 
 This scheduler changes execution and recovery, not the statistical model. It

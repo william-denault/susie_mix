@@ -1,0 +1,56 @@
+12 W. Denault et al.
+[95]. However, none of these studies have pinpointed the causal variant. Our SuSiE and fSuSiE
+analyses suggest that the top association for AD, rs679515 ( p = 5.6 × 10−33, MAF = 20.0%) is a solid
+candidate causal variant: first, rs679515 is the only SNP that overlaps CSs for both CR1 expression
+and CR2 expression; second, this SNP is one of the top SNPs in a CS for H3K9ac, with PIP =
+0.14 (Fig. 6B, Supplementary Fig. 19). Furthermore, fSuSiE results suggest rs679515 has moderately
+long-range effects on histone acetylation, including at H3K9ac peaks near the TSSs of both CR1 and
+CR2 (Fig. 6B). Therefore, the fSuSiE H3K9ac results not only nominates a potential causal variant
+(rs679515), but also implicate both CR1 and CR2 via histone modification associations. (This result is
+supported by the multi-trait colocalization analysis in another FunGen-xQTL study [96].) We caution
+that the direction of causality is ambiguous in this example; fSuSiE cannot distinguish between these
+two scenarios: (i) the SNP affects regulatory activity near both genes; (ii) the SNP affects regulatory
+activity near one gene which in turn alters activity near the other gene [82].
+Discussion
+We have introduced fSuSiE, a method that extends SuSiE to high-dimensional, spatially structured
+traits by borrowing ideas from functional regression. In simulated and real data sets, we demonstrated
+the benefits of fSuSiE for fine-mapping high-dimensional molecular traits; most notably, fSuSiE is the
+only method that can simultaneously estimate the genetic variants affecting the molecular trait and the
+specific changes to the molecular trait that are produced by the genetic variants. Although fSuSiE is
+more computationally demanding than conventional QTL association analysis, or than fine-mapping
+of a univariate trait (e.g., SuSiE-topPC), as we have shown here it remains practical for data sets
+containing hundreds of samples, thousands of molecular locations, and thousands of SNPs.
+The molecular data sets we considered here consist of measurements made at predefined genomic
+locations (CpGs or peaks called by MACS). However, fSuSiE does not require predefined molecular
+features; for sequencing data (e.g., RNA-seq, ChIP-seq, WGBS), fSuSiE could instead be applied
+directly to the base-pair-level sequencing data (or data combined into small bins), in which case
+the relevant molecular features would be inferred from the fSuSiE effect estimates and credible bands.
+Applying fSuSiE to high-resolution sequencing data has the potential to quantify gene regulatory effects
+in greater detail and discover additional gene regulatory effects in regions outside the called peaks,
+opening new avenues for analyzing and integrating multiome data. In fact, beyond the ROSMAP
+methylation and histone modification analyses presented here, we have deployed fSuSiE across diverse
+molecular contexts within the FunGen-xQTL consortium, including integration with methylation data
+from multiple cohorts and analysis of single-nucleus ATAC-seq data from six major brain cell types
+for chromatin accessibility using recently published data on ROSMAP individuals [97].
+fSuSiE is also a very flexible model framework, and includes additional modeling features we did
+not highlight in this paper. For example, one could incorporate functional annotations to guide
+discovery of the causal variants and affected molecular features. Second, fSuSiE is not limited to
+using wavelet-based functional regression; our implementation also includes hidden Markov model
+(HMM) alternatives that, while computationally slower, can sometimes offer more refined results
+for certain data types, and other functional regression approaches might be better suited to certain
+types of molecular data. A key advantage of embedding our approach within the SuSiE framework
+is the seamless integration with numerous available downstream analytical methods based on SuSiE.
+This design choice makes fSuSiE readily available for data integration pipelines, as demonstrated
+through our colocalization analysis using SuSiE-based COLOC methods [85] in Alzheimer’s disease
+GWAS applications. Additionally, fSuSiE-estimated effect sizes can be directly incorporated into
+transcriptome-wide association studies (TWAS) to combine multiple genetic regulatory effects across
+molecular profile regions with GWAS signals. Note that for other fine-mapping problems in which
+there are a small number of traits that are not necessarily spatially structured, mvSuSiE [33] remains
+a good option. (See Supplementary Fig. 17 for an illustration of how univariate SuSiE, mvSuSiE, and
+fSuSiE behave on a single locus with a spatially structured effect.)
+Our work has several limitations representing directions for future research. First, the current
+methods do not handle missing data: the molecular trait needs to be measured at every location in
+every sample. When some measurements are missing, they could potentially be imputed provided that
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

@@ -1,0 +1,69 @@
+Fine-mapping molecular QTLs using fSuSiE 3
+b. genotypes
+SNPs
+individuals measurement measurement
+c. apply wavelet
+transform
+location
+d. wavelet coefficientsscale
+location
+scale
+individual 1
+individual 2
+a. molecular trait profiles
+individual 1
+individual 2
+genomic location
+genomic location
+e. fit fSuSiE
+model
+mixture componentscale × location
+scale
+SNP
+g. effect priors
+f. posterior estimates of
+SNP effects on WCs
+h. CSs and PIPs
+i. Effects of SNPs on the molecular trait
+g. compute
+posterior
+statistics
+SNP
+PIP
+CS 2CS 1
+SNP SNP
+effect on trait
+effect on trait
+Fig. 1. Overview of fine-mapping high-dimensional, spatially structured molecular traits using fSuSiE.
+The inputs to fSuSiE are anN ×T matrix, Y, containing N samples of the molecular trait measured atT locations
+(a), and an N ×J genotype matrix, X (b). First, the discrete wavelet transform (DWT) is applied toY (c), resulting
+in an N × T matrix of wavelet coefficients (WCs), D (d). The fSuSiE model is fit to X, D (e); this model fitting
+includes estimating the effects of the SNPs on the WCs—aJ × T matrix, F (f)—and fitting the adaptive shrinkage
+priors for the effects F (g). Key fSuSiE outputs include: credible sets (h), each of which is intended to capture
+a distinct causal SNP; a posterior inclusion probability (PIP) for each SNP giving the probability that the SNP is
+causal for at least one trait (h); and posterior estimates of the SNP effects on Y, credible bands, and estimates
+of affected locations (i). These quantities are defined in the Online Methods.
+prior to all wavelet-transformed effects; and a more flexible “shrinkage-per-scale” (SPS) prior that
+uses a different prior for each wavelet scale. The SPS prior is more flexible and is therefore expected
+to perform better, but at an increased computational cost.
+The key analysis questions answered by fSuSiE are: (i) which SNPs are causally affecting the
+observed molecular phenotypes? (ii) which molecular phenotypes are affected by each causal SNP? In
+terms of the model above, question (i) asks which rows of B (or rows of B(l)) are non-zero, whereas
+question (ii) relates to the values of the effect estimates in these non-zero rows. To answer (i), fSuSiE
+outputs a posterior inclusion probability (PIP) for each SNP and a “credible set” (CS) [20, 24] for
+each non-zero B(l). The PIP for SNP j is the probability that the jth row of B is non-zero. The
+CS for each B(l) is a subset of (highly correlated) SNPs that has high probability (e.g., >0.95) of
+containing the non-zero row. Within each CS, we refer to the SNP with the highest PIP as the
+“sentinel SNP”. To answer (ii), fSuSiE outputs, for each sentinel SNP, an estimate of its effect on each
+molecular trait, along with an assessment of its uncertainty: a pointwise credible band that is designed
+to have high probability (e.g.,>0.95) of containing the effect at each location. If the credible band for
+a particular molecular phenotype excludes zero then we say that the CS containing that sentinel SNP
+is“significant” for that molecular phenotype.
+Fig. 1 summarizes the overall fSuSiE pipeline. Fig. 2 illustrates fSuSiE in a simulated example,
+contrasting it with a simple univariate QTL mapping (SNP-trait association tests) as well as a two-step
+univariate fine-mapping (SNP-trait association tests followed by fine-mapping the associated traits).
+This example illustrates how fSuSiE directly addresses the key questions of which SNPs are impacting
+the molecular traits (D), and which traits are affected by each causal SNP (E), whereas the other
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

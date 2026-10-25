@@ -1,0 +1,77 @@
+8 W. Denault et al.
+CS 1
+CS 2
+CS 3
+CS 4
+0
+0.5
+1
+haSNP PIP
+2
+1
+4
+CS size
+3
+3
+1
+34
+15
+sentinel SNP
+rs9438393
+rs12757179
+rs35184657
+rs11392366
+CS 2CS 1
+CS 4
+CS 3
+−12
+−8
+−4
+0
+2
+205.5 206 206.5 207 207.5 208 208.5
+205.5 206 206.5 207 207.5 208 208.5
+base-pair position on chromosome 1 (Mb)
+effect on H3K9ac
+A
+B
+Fig. 4. Example fSuSiE fine-mapping of H3K9ac. Panel A shows the posterior inclusion probabilities (PIPs)
+for all SNPs analyzed in the TAD (chromosome 1, 205.1–208.8 Mb, 16,642 SNPs, 269 H3K9ac peaks). The
+PIP is an estimate of the probability that the SNP affects H3K9ac levels at one or more peaks within the TAD.
+The colors indicate the different haSNPs, and the uncertainty in which SNP is the haSNP is represented by
+the 95% credible set (CS): each SNP in the CS is a candidate haSNP , with probability of being causal given
+by the PIP .CS size is the number of SNPs in the CS; sentinel SNP is the SNP with the highest PIP in the
+CS. Panel B shows the effect of each haSNP on H3K9ac levels at each of the peaks analyzed in the TAD.
+(When the CS contains more than one SNP , the effect of the sentinel SNP is shown.) Since the effects were
+estimated at different scales in this analysis, to show the effect estimates in a single plot, we divided the effects
+by the credible band sizes. Base-pair positions are based on Genome Reference Consortium human genome
+assembly 38 (hg38). The results within the blue-shaded region are examined in more detail in Fig. 6.
+containing 18–10,035 CpGs (median: 450 CpGs) and 2–827 H3K9ac peaks (median: 116 peaks).
+To illustrate the inferences produced by fSuSiE, Fig. 4 presents a detailed example of H3K9ac
+fine-mapping in a 3.7-Mb TAD on chromosome 1. (See also Supplementary Fig. 19 for a detailed
+methylation example.) In this TAD, we used fSuSiE to analyze the genotypes at 16,642 SNPs and
+H3K9ac measurements at 269 peaks for n = 592 individuals. fSuSiE produced 4 CSs (Fig. 4A)
+corresponding to 4 independent signals of genetic effects on histone acetylation levels at one or more
+peaks (Fig. 4B). One SNP (rs12757179 in CS 1) was identified as a haSNP with high confidence (PIP =
+0.99). For the other haSNPs, fSuSiE was less certain about which SNP was causal; this uncertainty is
+represented by CSs containing several SNPs each. Some of the haSNPs produce coordinated changes
+in histone acetylation across several sites, where a single variant simultaneously modulates histone
+acetylation levels at multiple nearby peaks in a spatially-correlated pattern; for example, the CS1
+haSNP (rs12757179) affects histone acetylation (in both directions) at 17 H3K9ac peaks (that is, their
+95% credible bands did not include zero). Interestingly, all inferred changes occur at peaks near an
+haSNP. (The CS3 haSNP produces the longest-range changes, but the changes still remain within
+200 kb of the SNP.) We also observed this tendency genome-wide in both methylation and H3K9ac
+(Fig. 5B). Since the fSuSiE model does not take location of SNPs into account, the fact that fSuSiE
+identified mostly short-range effects provides some independent support that these effects are likely
+real rather than false positives.
+Fig. 5 summarizes the genome-wide results from applying fSuSiE to all the methylation and H3K9ac
+data. Consistent with the increases in power shown in the simulations, fSuSiE identified many more
+putative causal SNPs than SuSiE-topPC, and at a much higher resolution; for example, fSuSiE identi-
+fied 1,372 single-variant CSs for H3K9ac and 6,355 single-variant CSs for DNA methylation, compared
+to just 56 and 328, respectively, from SuSiE-topPC (Fig. 5A; see also Supplementary Fig. 20A, B).
+Among the SNPs in single-variant CSs, 55 were identified as affecting both histone acetylation and
+methylation. Furthermore, 50 of the mSNPs and 27 of the haSNPs affect transcript levels of one or
+more genes. These observations suggest potential coordinated cis-regulatory effects (Supplementary
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

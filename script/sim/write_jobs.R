@@ -12,6 +12,8 @@ write_simulation_jobs <- function(project_dir = sim_project_dir,
                                   n = sim_n, L = 10L, chunks_per_cell = 1L,
                                   reps_per_chunk = sim_replicates, seed_base = 1000000L,
                                   array_batch_size = getOption("susie.sim.array_batch_size", 300L)) {
+  if (file.exists(file.path(project_dir, "results_slide_prior_em/shared_scheduler/enabled.json")))
+    stop("Shared EM/simulation scheduler is enabled. Do not regenerate its frozen jobs or migration launchers.")
   stopifnot(length(pve_values) > 0L, !anyDuplicated(pve_values),
             all(pve_values > 0 & pve_values < 1), n >= 3, L >= 1,
             chunks_per_cell >= 1, reps_per_chunk >= 1,

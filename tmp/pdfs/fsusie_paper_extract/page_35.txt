@@ -1,0 +1,69 @@
+Fine-mapping molecular QTLs using fSuSiE 35
+[150] suggested considering a new set of evenly space-time point, t0, ..., tT where T = 2 S, S ∈ N, in
+which ti = (i + 1
+2)2−S and S = min{s ∈ N, 2s, ≥ n}.
+We generate a new matrix of observation Yinter by interpolating each individual curve on this grid
+as follows. For a given individual k we define Yk,inter(t) (the interpolated value of curve of individual
+k at time point t) as:
+Yk,inter(t) =
+
+
+
+
+Yk(τ0)if ti ≤ τ1
+Yk(τi) + (ti − τi) Yk(τi+1)−Yk(τi)
+τi+1−τi
+if τi ≤ ti ≤ τi+1
+Yk(τT ′)if ti ≥ τT ′
+(23)
+The expression can then be written in terms of the matrix as follows:
+Yk,inter = ΩYk (24)
+Where Ω is the matrix corresponding to the interpolation procedure described in equation (23). The
+resulting vector Yk,inter is of length 2S and corresponds to the linear interpolation of Yk on the evenly
+spaced time points t0, ..., tT .
+Elementary posterior expressions used to derive fSuSiE computations
+To derive our VA approximation of the posterior of model (12), we start by computing some key
+quantities of some simpler models. These quantities will serve as building blocks for our estimation
+procedure. Here, we consider that the matrices Y, D (response data) and X (covariates) are centered
+in a column-wise fashion. Similarly the corresponding vectors Y, d (response data) and x (covariates)
+are also assumed to be centered.
+Simple Bayesian functional regression. The most basic building block in our derivations is a wavelet
+regression model in which the effects have independent normal priors. We call this thesimple Bayesian
+functional regression model:
+D = xf ⊺ + E
+eit ∼ N (0, σ2)
+fs,l ∼ N (0, σ2
+0),
+(25)
+where D is a matrix of dimension N × T , x is a vector of length N, f is a vector of length T , and E is
+a matrix of dimension N × T in which the individual entries are denoted by eit. Although not strictly
+needed to describe this simple functional regression model, here we introduce the indices s and l for
+wavelet scale and wavelet location; in this notational convention, each pair ( s, l) corresponds to an
+integer from 1 to T so that fs,l is an element of the vector f. This notation will become moree useful
+below for thee more complex functional regression models.
+The maximum-likelihood estimate of f and its corresponding variance are given by
+ˆfs,l = x⊺d · s,l
+x⊺x (26)
+ˆσ2
+s,l = σ2
+x⊺x , (27)
+in which d · s,l denotes a column of D.
+The posterior distribution of f is given by
+fs,l | x, D ∼ N (µ1,s,l, σ2
+1,s,l), (28)
+where
+σ2
+1,s,l := 1
+1/σ2
+0 + 1/ˆσ2
+s,l
+(29)
+µ1,s,l :=
+σ2
+1,s,l
+ˆσ2
+s,l
+× ˆfs,l. (30)
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

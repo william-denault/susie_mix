@@ -1,6 +1,6 @@
 # Iteration 000 fits uniform priors; iterations 001+ update and then refit.
 spe_prepare_iteration <- function(project_dir, mode = "new", n_chunks = 298L,
-                                  package_version = spe_check_packages()) {
+                                  package_version = spe_check_packages(), completion_reader = NULL) {
   if (!mode %in% c("new", "resume")) stop("Mode must be new or resume.")
   project_dir <- normalizePath(project_dir, winslash = "/", mustWork = TRUE)
   root <- file.path(project_dir, "results_slide_prior_em")
@@ -33,7 +33,8 @@ spe_prepare_iteration <- function(project_dir, mode = "new", n_chunks = 298L,
     if (recovery) {
       if (mode == "resume") stop("Use recover_slide_prior_em resume for this recovery-managed iteration.")
       source(file.path(project_dir, "script/scan_tissue_attempt/slide_prior_recovery.R"))
-      pooled <- sre_require_complete(project_dir, previous_dir)
+      pooled <- if (is.null(completion_reader)) sre_require_complete(project_dir, previous_dir) else
+        completion_reader(project_dir, previous_dir)
       pending <- integer()
     } else pending <- em_pending_chunks(previous_dir, manifest)
     if (mode == "resume") {
@@ -90,6 +91,7 @@ spe_prepare_iteration <- function(project_dir, mode = "new", n_chunks = 298L,
                   file.path(iteration_dir, "grid.csv"), csv = TRUE)
   em_atomic_write(pooled$audit, file.path(iteration_dir, "source_audit.csv"), csv = TRUE)
   em_atomic_write(pooled$counts, file.path(iteration_dir, "pooled_counts.csv"), csv = TRUE)
+  em_atomic_write(rbind(history, priors), file.path(iteration_dir, "prior_history.csv"), csv = TRUE)
   em_atomic_write(rbind(history, priors), history_file, csv = TRUE)
   message("Prepared slider iteration ", iteration, " for ", nrow(priors), " tissues and ",
           length(unique(manifest$chunk)), " chunks. Priors are frozen before submission.")

@@ -1,0 +1,20 @@
+During startup - Warning messages:
+1: Setting LC_COLLATE=C.UTF-8 failed 
+2: Setting LC_CTYPE=C.UTF-8 failed 
+3: Setting LC_MONETARY=C.UTF-8 failed 
+4: Setting LC_TIME=C.UTF-8 failed 
+Iteration 0: 1/55 resolved; 0 active tasks; 2 submission slots.
+Iteration 0: 26/55 resolved; 1 active tasks; 1 submission slots.
+Iteration 0: 33/55 resolved; 0 active tasks; 298 submission slots.
+Iteration 0: 55/55 resolved; 0 active tasks; 298 submission slots.
+Validated iteration 0; collected counts for 53 fits.
+Prepared slider iteration 1 for 2 tissues and 55 chunks. Priors are frozen before submission.
+Iteration 1: 1/55 resolved; 0 active tasks; 2 submission slots.
+Iteration 1: 1/55 resolved; 0 active tasks; 1 submission slots.
+PASS: parallel adoption/resume, identical EM counts/weights, no coordinator posterior reads, one-gene fitting, frozen cohort, checksums, exclusions, warm starts and failure guards.
+Saved target iteration 40. Already prepared: 1. The next planning check reads this override; do not submit another controller.
+Saved target iteration 40. Already prepared: 1. The next planning check reads this override; do not submit another controller.
+Update 1: 53 gene-tissue fits; normalized pooled counts match all 2 tissue priors. max |weight change| = 0.74118
+Metadata audit passed through prepared iteration 1; current summary sample: 0 valid completed, 2 stale/unfinished. This is not a full posterior audit.
+Run target: 40. Frozen tol: 1e-05; grid points: 17; L: 10.
+PASS: 20 -> 40 override, inherited environment, idempotence, invalid/decreased targets, unchanged fits/history, metadata audit and corrupt pooled-count rejection.

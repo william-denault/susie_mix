@@ -1,0 +1,71 @@
+Fine-mapping molecular QTLs using fSuSiE 59
+0.0
+0.2
+0.4
+0.1 0.5 1 2 4
+Noise level
+RMSE
+wavelet simulations
+0.0
+0.2
+0.4
+0.1 0.5 1 2 4
+Noise level
+RMSE
+WGBS block
+0.0
+0.2
+0.4
+0.1 0.5 1 2 4
+Noise level
+RMSE
+WGBS decay
+fSuSiE ISP fSuSiE SPSP SNP−CpG association tests
+Supplementary Figure 15. Accuracy of effect estimates in simulations. In addition to assessing recovery
+of the affected CpGs (Fig. 3D), we also assessed accuracy of the estimated effects of genotype on methy-
+lation levels at all CpGs. “Accuracy” in a data set is summarized by the root mean squared error, RMSE =
+[ 1
+T
+PT
+t=1(bjt − ˆbjt)]1/2, where T is the number of CpGs, ˆbjt is the estimated effect and bjt is the true effect
+(bjt = 0 at unaffected CpGs). Note that j is always 1 in these simulations since there is only 1 SNP . Each box
+plot summarizes accuracy across n = 50 simulations: the box plot whiskers depict 1.5× the interquartile range,
+the box bounds represent the upper and lower quartiles (25th and 75th percentiles), the center line represents
+the median (50th percentile), and points represent outliers. The data sets were simulated withN = 100 samples,
+T = 128 CpGs and J = 1 causal SNP .
+SuSiE-topPC
+fSuSiE (SPS prior)
+fSuSiE (IS prior)
+100 SNPs 500 SNPs 1,000 SNPs
+1
+2
+3
+4
+5
+1
+2
+3
+4
+5
+1
+2
+3
+4
+5
+number of causal SNPs
+number of causal SNPs
+number of causal SNPs
+running time (s)
+0.1 1 10 100 1,000
+running time (s)
+0.1 1 10 100 1,000
+running time (s)
+0.1 1 10 100 1,000
+Supplementary Figure 16. Additional running times in simulations. Running times in simulated data sets
+with 100, 500 and 1,000 SNPs (each plot summarizes results from n = 300 simulations). The box plot whiskers
+depict 1.5× the interquartile range, the box bounds represent the upper and lower quartiles (25th and 75th
+percentiles), the center line represents the median (50th percentile), and points represent outliers. The data
+sets were simulated withN = 100 samples,T = 128 CpGs, 1–20 causal SNPs, and 10% total variance explained.
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

@@ -1,0 +1,51 @@
+Fine-mapping molecular QTLs using fSuSiE 19
+[105] Sniekers, S. and A. van der Vaart (2020). Adaptive Bayesian credible bands in regression with
+a Gaussian process prior. Sankhya A 82 (2), 386–425.
+[106] Barber, S., G. P. Nason, and B. W. Silverman (2002). Posterior probability intervals for wavelet
+thresholding. Journal of the Royal Statistical Society, Series B 64 (2), 189–205.
+[107] Rasmussen, C. E. and C. K. I. Williams (2006). Gaussian processes for machine learning .
+Cambridge, MA: MIT Press.
+[108] Beran, J. (2017, November). Statistics for Long-Memory Processes. New York: Routledge.
+[109] Cruchaga, C. (2022). ADSP functional genomics: from gene, to function to mechanisms and
+targets. Alzheimer’s & Dementia 18 (S4), e066436.
+[110] Leung, Y. Y., W.-P. Lee, A. B. Kuzma, H. Nicaretta, O. Valladares, P. Gangadharan, et al.
+(2025). Alzheimer’s Disease Sequencing Project release 4 whole genome sequencing dataset.
+Alzheimer’s & Dementia 21 (5), e70237.
+[111] Leung, Y. Y., O. Valladares, Y.-F. Chou, H.-J. Lin, A. B. Kuzma, L. Cantwell, L. Qu, P. Gan-
+gadharan, W. J. Salerno, G. D. Schellenberg, and L.-S. Wang (2019). VCPA: genomic variant
+calling pipeline and data management tool for Alzheimer’s Disease Sequencing Project. Bioinfor-
+matics 35 (10), 1768–1770.
+[112] Taylor-Weiner, A., F. Aguet, N. J. Haradhvala, S. Gosai, S. Anand, J. Kim, K. Ardlie, E. M.
+Van Allen, and G. Getz (2019). Scaling computational genomics to millions of individuals with
+GPUs. Genome Biology 20, 228.
+[113] Heintzman, N. D., R. K. Stuart, G. Hon, Y. Fu, C. W. Ching, R. D. Hawkins, L. O. Barrera,
+S. Van Calcar, C. Qu, K. A. Ching, W. Wang, Z. Weng, R. D. Green, G. E. Crawford, and B. Ren
+(2007). Distinct and predictive chromatin signatures of transcriptional promoters and enhancers in
+the human genome. Nature Genetics 39 (3), 311–318.
+[114] Bibikova, M., B. Barnes, C. Tsan, V. Ho, B. Klotzle, J. M. Le, D. Delano, L. Zhang, G. P.
+Schroth, K. L. Gunderson, J.-B. Fan, and R. Shen (2011). High density DNA methylation array
+with single CpG site resolution. Genomics 98 (4), 288–295.
+Methods
+fSuSiE
+Wavelet-based functional model. Consider a data set consisting of N samples of a molecular trait
+measured at T locations. The measurements are stored in an N × T matrix Y, in which i ∈ {1, . . . , N}
+indexes samples and t ∈ {1, . . . , T} indexes locations. Let x = (x1, . . . , xN)⊺ be a covariate of interest
+(e.g., a genotype) measured in the N samples.
+We begin with a standard multivariate linear regression model of Y given x,
+Y = xb⊺ + Em, (2)
+where b = (b1, . . . , bT )⊺ is a column vector of regression coefficients (“effects”) to be estimated, and
+Em is an N × T matrix of residuals (which we will assume are normally distributed). The m in the
+superscript here refers to the fact that the residuals are defined in “measurement space” (as opposed
+to “wavelet space”, which will be denoted using the w superscript).
+Transforming Y to the wavelet space involves a simple linear transformation, D = YW−1, where
+W is the T × T DWT matrix. The resulting transformed data, D, also an N × T matrix, contains
+the empirical wavelet coefficients (WCs). The DWT matrix W is an orthogonal matrix, which is very
+convenient; for example, statistical quantities on the measurement scale are easily recovered after they
+have been estimated on the wavelet scale. The orthogonality of W also means that W−1 = W⊺,
+and therefore the transformed data can be written as D = YW⊺. (See [63, 75, 98–103] and the
+Supplementary Note for background on statistical modeling using wavelets.) Applying D = YW⊺ to
+(2) results in a wavelet space version of the model,
+D = xf ⊺ + Ew, (3)
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

@@ -1,0 +1,52 @@
+28 W. Denault et al.
+rate <5%; MAF ≥ 1%; and no significant deviation from Hardy-Weinberg equilibrium (p ≥ 10−6).
+Additional sample-level quality control steps included: verifying genetic sex; flagging duplicated and
+related individuals; outliers identified by heterozygosity levels and genotype call rates. The final data
+set contained approximately 30 million biallelic SNVs and 3.5 million indels.
+To control for population stratification, PCA was performed on LD-pruned common variants using
+PLINK (MAF > 5%, r2 < 0.2). We retained the first 15 PCs for use in subsequent analyses.
+Defining regions for cis-eQTL mapping and fine-mapping of molecular traits. Since methylation and
+H3K9ac lack gene-centric reference points, we adopted a unified approach using topologically associ-
+ating domains (TADs) and their boundaries to define regions for QTL mapping and fine-mapping for
+all molecular traits analyzed. The TADs and their boundaries were derived from combined brain and
+blood Hi-C data [78]. In total, we defined 1,449 “extended TADs” for our analyses ranging in size
+from 1 to 17 Mb. For fine-mapping of methylation and H3K9ac, we used these extended TADs as
+the fine-mapping regions. For QTL mapping and fine-mapping of RNA and protein expression, the
+analysis region was defined as the extended TAD containing the gene, plus any additional part of the
+chromosome needed to include ±1 Mb from the gene’s transcription start and end sites.
+RNA-seq data and analyses of RNA expression. The DLPFC bulk RNA-seq came in three different
+batches (n = 638, 252, 251). Total RNA ( ≥50µg) from DLPFC was used for library preparation
+via poly(A) selection (strand-specific dUTP protocol, n = 638) or rRNA depletion (KAPA Stranded
+RNA-Seq Kit with RiboErase, n = 252, RiboGold n = 251). Libraries were sequenced at 30–50 million
+paired-end reads per donor with exact depth varying by batch as described in [61]. Following standard
+QC via FastQC adapter trimming using fastp [126], reads were aligned to the human reference genome
+(hg38) using STAR [127] with WASP correction to reduce reference bias [128], with further quality
+control via Picard [129]. Gene-level RNA expression was quantified with RNA-SeQC [130], removing
+genes if over 20% samples had TPM expression level of 10% or less. Sample-level RNA QC was
+performed following from methods outlined by GTEx V8 [36] using three metrics to remove outliers:
+relative log expression; Mahalanobis distance to hierarchical clustering of samples; and D-statistics
+quantifying average correlation between pairs of samples. After these QC steps, a total of n = 777
+samples were retained for subsequent analyses of RNA expression in DLPFC.
+After these quality control steps, the transcript abundance (TPM) matrices were quantile-normalized.
+Technical factors (batch, RNA integrity number, post-mortem interval) and biological covariates (sex,
+age at death) were included as covariates in QTL analyses, along with the top 15 genotype PCs to
+account for population stratification. Additional hidden confounders included as covariates were es-
+timated by PCA performed on the quantile-normalized RNA expression matrix, with the number of
+PCs (34) determined by the Marchenko-Pastur limit [131].
+QTL mapping for each gene was performed using TensorQTL [112]. Fine-mapping for each gene
+was performed using SuSiE [24] after removing the linear effects of aforementioned covariates from both
+the phenotype and genotype matrices. We took an adaptive approach to determine L, the number
+of CSs, for each gene: starting with L = 5, we iteratively increased L by 2 if all the single effect
+regressions (SERs) in the fitted model had a prior variance greater than zero. We continued in this
+way until at least one SER had a prior variance of zero. This adaptive strategy increased detection of
+causal SNPs while avoiding an unnecessarily large setting of L (which increases computation). Using
+this adaptive approach, the largest setting of L for a gene was 12. We filtered the CSs returned by
+SuSiE in two ways: we removed a CS if the “purity” [24]—the smallest absolute correlation (Pearson’s
+r) among all pairs of SNPs in the CS—was less than 0.8; and we removed a CS if the sentinel SNP
+had a MAF less than 5%. (See below for the rationale for filtering based on MAF.)
+Proteomic data and analyses of protein abundance. DLPFC protein abundance was quantified using
+selected reaction monitoring (SRM) proteomics [132–135]. Gray matter tissue from DLPFC was ho-
+mogenized and proteins were extracted, followed by trypsin digestion. Targeted peptides were selected
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

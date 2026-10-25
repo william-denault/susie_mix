@@ -1,0 +1,54 @@
+Fine-mapping molecular QTLs using fSuSiE 29
+based on prior discovery proteomics experiments, and SRM assays were performed with manual in-
+spection to ensure correct peak assignment and peak boundaries. After QC and filtering for proteins
+quantified in at least 50% of samples, n = 416 subjects with matched genotype and protein abun-
+dance data of 7,710 proteins were retained for association analysis and fine-mapping. Peptide relative
+abundances were (base-2) log-transformed, and centered at the median, then imputation of missing
+protein levels was performed using grouped empirical Bayes matrix factorization (gEBMF) [136]. QTL
+mapping and fine-mapping was performed as described for RNA expression (see above).
+H3K9ac ChIP-seq data, association analysis and fine-mapping. H3K9ac ChIP-seq [113] was per-
+formed on DLPFC donors using a well validated H3K9ac antibody (Millipore #06-942). Approxi-
+mately 50 mg of gray matter tissue was dissected, cross-linked with 1% formaldehyde, and sonicated
+prior to overnight immunoprecipitation. Purified DNA was used to construct libraries (including end
+repair, adapter ligation and size selection), and single-end 36-bp reads were generated. Reads were
+aligned to human genome assembly hg38, and broad peaks were called with MACS [137, 138] (q < 0.05,
+broad cutoff = 0.1). Stringent per-sample quality control criteria were also applied ( ≥15 × 106 unique
+reads, non-redundant fraction ≥ 0.3, fraction of reads in peaks ≥ 0.05). A union peak set of 92,401
+peaks was established to leverage information across donors. Peak counts were computed for the final
+set of n = 592 donors, then normalized using a limma-voom pipeline [139, 140]. Batch effects for 62
+libraries were removed using ComBat [141, 142]. Other technical factors (RNA integrity number, post-
+mortem interval) and biological covariates (sex, age at death), along with the top 15 genotype PCs,
+were included as covariates the association and fine-mapping analyses. Additional hidden confounders
+included as covariates in these analyses were estimated from PCA applied to the normalized methyla-
+tion matrix. The number of hidden confounders, 113, was determined by the Marchenko-Pastur limit
+based on the input methylation matrix.
+SNP-peak association testing was performed using TensorQTL [112]. Significance of the SNP-peak
+associations was determined by computing q-values [143] across all tested variants, separately for each
+H3K9ac peak.
+For fine-mapping, SuSiE-topPC and fSuSiE with the IS prior were applied to the data from each
+fine-mapping region (the TADs) in the same way as in the simulations, except that we set L = 20.
+Since fSuSiE requires a minimum of 16 peaks, we did not finemap the TADs that had fewer than than
+16 peaks. We also did not consider SNPs with minor allele count (MAC) ≤ 5 (which corresponds to
+MAF ≤ MAC/2n = 0.4%).
+DNA methylation data, association analysis and fine-mapping. DNA methylation was assayed using
+the Illumina 450K array [61, 114] and processed via the SeSAMe pipeline [144]. SeSAMe applies
+NOOB background correction, nonlinear dye-bias normalization, and pOOBAH-based probe filtering
+to generate high-quality methylation proportions ( β values) [144]. The resulting β values were then
+transformed using a logit transformation. Missing data in the transformed matrix were imputed using
+flashier, a factor analysis method that estimates latent factors from the observed methylation data and
+predicts missing entries. As with other molecular datasets, additional hidden confounders were esti-
+mated by applying PCA to the imputed methylation matrix, with the number of hidden confounders
+(38) determined by the Marchenko-Pastur limit. Technical covariates and biological covariates were
+included as covariates in the association and fine-mapping analyses. Association analysis (TensorQTL)
+and fine-mapping (SuSiE-topPC, fSuSiE) were performed as described for the H3K9ac ChIP-seq data.
+An additional issue specific to the Illumina 450K array is that SNPs within CpG probe sequences
+can create false methylation signals [145, 146]. Such polymorphisms can interfere with probe hy-
+bridization or affect signal detection, particularly when located within the CpG dinucleotide or the
+adjacent single base extension site, producing false intermediate methylation values often misinter-
+preted as epigenetic differences. To address this issue, we removed all all SuSiE-topPC and fSuSiE
+CSs in which one or more of the SNPs overlapped with a CpG probe in the Illumina 450K array
+(source: IlluminaHumanMethylation450K.rda from https://github.com/Yang9704/MethylCallR/
+[147]). Reassuringly, most of the CpG probes overlapping the methylation CSs were also included in
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

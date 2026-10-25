@@ -1,0 +1,74 @@
+22 W. Denault et al.
+Since each binary vector γ(r) = (γ(r)
+1 , . . . , γ(r)
+J ) contains exactly one 1, by contruction at most R rows
+of F contain nonzeros. The fSuSiE model reduces to the SFR model when R = 1. Note that this
+model allows for a different prior on the effects f r
+jt for each r; these priors are automatically adapted
+to the data using the algorithms described below.
+Scale-dependent mixture priors for fSuSiE. Above, we did not specify the exact form of the priors gt
+and gr
+t in the SFR and fSuSiE models. To define a prior, we expand on a detail that was previously
+hidden: the t index represents both a wavelet scale and location. Our convention is to use s to index
+scales and l to index locations.
+Previous wavelet regression approaches have exploited the scale-dependent sparsity of the wavelet
+coefficients [101, 102] [117, 118]. One of these approaches used a spike-and-slab prior [117, 118].
+Building on this spike-and-slab prior as well as our recent work on adaptive shrinkage methods [65, 104]
+[119], we extend this scale-dependent spike-and-slab prior to a scale-dependent mixture prior, which
+we refer to as the “shrinkage-per-scale” (SPS) prior:
+gr
+sl =
+KX
+k=0
+πr
+ksN(0, σ2
+ks). (14)
+Here, the πr
+ks denote the mixture weights (πr
+ks ≥ 0,PK
+k=0 πr
+ks = 1) for each single function r = 1, . . . , R,
+and the σ2
+ks denote the variances of the mixture components. The number of mixture components, K,
+and the component variances σ2
+ks are fixed, user-specified quantities, whereas the mixture weights πr
+ks
+are estimated. Note that this prior depends on the scale s but not on the location l.
+The component variances σ2
+ks are assumed to be increasing ( σ2
+k,s > σ 2
+k−1,s, k = 1, . . . , K), and the
+first component is assumed to be a Dirac “delta” mass at zero, denoted here by a normal distribution
+with zero variance, N(0, 0). We use procedures similar to those implemented in the ashr R package
+[104] to automatically determine a suitable K as well as the components variances σ2
+ks.
+We also consider a special case of the SPS prior in which the mixture proportions πks and variances
+σ2
+ks do not depend on the scale, s [65]; that is, gr
+sl =PK
+k=0 πr
+kN(0, σ2
+k). We call this the “independent
+shrinkage” (IS) prior. While clearly less flexible than the SPS prior, the IS prior reduces the number
+of parameters to estimate and reduces overall computational effort, and therefore is sometimes more
+convenient in practice. We empirically assess the benefits of the SPS and IS priors in simulations.
+Posterior statistics. Here we define the key posterior quantities used in an fSuSiE analysis (Fig. 1). We
+do not explain here how these quantities are computed; these details are given in the Supplementary
+Note.
+As we briefly explained in the Methods overview, we have three main inference aims:
+• Variable selection: identify the causal SNPs.
+• Feature annotation: identify the molecular features and locations that are affected by one or
+more SNPs.
+• Feature selection: identify the molecular features and locations that are affected by a given causal
+SNP.
+For variable selection, we compute credible sets (CSs): a CS is defined as a subset of {1, . . . , J}
+containing an effect SNP with high probability [20, 24]. More precisely, a level- ρ CS is defined as a
+set of SNPs that is as small as possible such that it has probability at least ρ of containing an effect
+SNP (a row of F containing at least one non-zero). The number of CSs should reflect the number of
+causal SNPs, and the size of a CS should reflect the number of plausible candidate effects SNPs. We
+calculate CSs as described in [24].
+To determine which SNPs within a CS are the strongest candidates for being an effect SNP, we
+compute a posterior inclusion probability (PIP) for each SNP. The PIP for SNP j is defined as the
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

@@ -1,0 +1,97 @@
+Fine-mapping molecular QTLs using fSuSiE 37
+Where ˜πk,s,l is the posterior probability of κs,l
+˜πk,s,l = p(κs,l = k|D.,s,l, x, σ2, (σ2
+k), (πk,s)) (48)
+=
+πk,sBFuni
+
+D.,s,l, x, σ2, σ2
+k
+
+PK
+k′=0 πk′,sBFuni
+
+D.,s,l, x, σ2, σ2
+k′
+ (49)
+Where BFuni is defined as
+BFuni
+
+D.,s,l, x, σ2, σ2
+k
+
+=
+N ( ˆfs,l, 0, σ2
+k + σ2
+f)
+N ( ˆfs,l, 0, σ2
+f)
+(50)
+Finally, the Bayes factor for the simple Bayesian functional regression using a mixture prior can be
+computed as follows:
+BFmix
+
+D, x, σ2, (σ2
+k), (πk,s))
+
+= p(D|x, f , σ2, (σ2
+k))
+p(D|x, f ≡ 0, σ2, (σ2
+k)) (51)
+=
+Q
+s,l
+PK
+k=1 πk,sN ( ˆfs,l, 0, σ2
+k + σ2
+f)
+Q
+s,l N ( ˆfs,l, 0, σ2
+f)
+(52)
+Bayesian simple single functional regression. Let’s extend the SFR model with a simple normal prior
+to a multivariate setting. Here we suppose that only one of the covariate in X is affecting the outcome.
+Our goal is to corner this single covariate by modeling the effect of X as follow,
+D = XF + E (53)
+E ∼ N(0, σ2) (54)
+F = diag(γ)F 1 (55)
+γ ∼ M ult(1,p) (56)
+f 1
+j,s,l ∼ N(0, σ2
+0) (57)
+Where X is a matrix of dimension N × J, F is a matrix of length J × T , where exactly only one row
+is different from 0 T , E is a matrix of dimension N × T , f is a vector of length 2 S = T , p is a vector
+length J, with components between 0 and 1 and the sum of its components sums to 1. This model
+can be fitting using the quantities defined in the previous section as well as the following posterior
+distribution for γ and F . Following the seminal work of Wang and colleagues [24]:
+γ|D, X, σ2
+0, σ2 ∼ M ult(1,α) (58)
+Where the component of the posterior probability of inclusion α can be computed as following
+using Bayes rules
+αj = p(γj = 1|D, X, σ2
+0, σ2) = p(D|γj = 1, X, σ2
+0, σ2)p(γj = 1)PJ
+j′=1 p(D|γj′ = 1X, σ2
+0, σ2)p(γj′ = 1)
+(59)
+= pjBFsimple(D, X.,j, σ2
+0, σ2)PJ
+j′=1 pj′BFsimple(D, X.,j′, σ2
+0, σ2)
+(60)
+Therefore, the posterior first and second moments of the column of the entries of F in model (53) can
+be computed as follow:
+E[fj,s,l] = p(fj,s,l|D.,s,l, Xj, σ2, σ2
+0) (61)
+= p(f 1
+j,s,l|γj = 1, D.,s,l, Xj, σ2, σ2
+0)p(γj = 1|D.,s,l, Xj, σ2, σ2
+0) (62)
+= αjµ1,js,l (63)
+E[f 2
+j,s,l] = αj(σ2
+1,s,l + µ2
+1,js,l) (64)
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

@@ -1,0 +1,130 @@
+#!/bin/bash
+# Parallel count collection and tissue-wide EM; submit from the project root.
+# Example: SUSIE_SLIDE_TARGET_ITERATION=20 sbatch job/resume_slide_prior_em latest
+#SBATCH --job-name=slide_parallel_control
+#SBATCH --output=slide_parallel_control_%j.out
+#SBATCH --error=slide_parallel_control_%j.err
+#SBATCH --open-mode=append
+#SBATCH --time=01:00:00
+#SBATCH --partition=broadwl
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=8G
+set -euo pipefail
+iteration=${1:-latest}
+if (( $# > 1 )) || [[ ! "$iteration" =~ ^(latest|0|[1-9][0-9]{0,7})$ ]]; then
+    echo 'Usage: sbatch job/resume_slide_prior_em [latest|ITERATION]' >&2; exit 1
+fi
+[[ "${SLURM_JOB_ID:-}" =~ ^[0-9]+$ ]] || { echo 'Submit with sbatch.' >&2; exit 1; }
+project_dir=$(cd "${SUSIE_MIX_PROJECT_DIR:-/project2/mstephens/wdenault/susie_mix}" && pwd -P)
+export SUSIE_MIX_PROJECT_DIR="$project_dir"
+target=${SUSIE_SLIDE_TARGET_ITERATION:-20}
+poll=${SUSIE_SLIDE_POLL_MINUTES:-5}
+limit=${SUSIE_SLIDE_WORKERS:-298}
+wait_sim=${SUSIE_SLIDE_WAIT_FOR_SIMULATIONS:-1}
+if [[ ! "$target" =~ ^(0|[1-9][0-9]{0,7})$ || ! "$poll" =~ ^[1-9][0-9]?$ ||
+      ! "$limit" =~ ^[1-9][0-9]{0,2}$ || ! "$wait_sim" =~ ^[01]$ ]] ||
+      (( poll > 60 || limit > 298 )); then
+    echo 'Invalid target, poll interval (1..60), worker cap (1..298), or simulation wait flag.' >&2; exit 1
+fi
+export SUSIE_SLIDE_TARGET_ITERATION="$target" SUSIE_SLIDE_POLL_MINUTES="$poll"
+export SUSIE_SLIDE_WORKERS="$limit" SUSIE_SLIDE_WAIT_FOR_SIMULATIONS="$wait_sim"
+export SUSIE_SLIDE_MAX_ITER="${SUSIE_SLIDE_MAX_ITER:-5000}"
+export SUSIE_SLIDE_RECORD_ELBO="${SUSIE_SLIDE_RECORD_ELBO:-0}"
+scheduler_args=()
+if [[ -n "${SUSIE_SLIDE_EXCLUDE_NODES:-}" ]]; then
+    [[ "$SUSIE_SLIDE_EXCLUDE_NODES" =~ ^[A-Za-z0-9_.-]+(,[A-Za-z0-9_.-]+)*$ ]] || exit 1
+    export SUSIE_SLIDE_EXCLUDE_NODES
+    scheduler_args+=(--exclude="$SUSIE_SLIDE_EXCLUDE_NODES")
+fi
+root="$project_dir/results_slide_prior_em"
+mkdir -p "$root"
+exec 9>"$root/.prepare.lock"
+flock -n 9 || { echo 'Another EM controller holds the preparation lock.' >&2; exit 1; }
+pending="$root/parallel_pending_submission.txt"
+[[ ! -f "$pending" ]] || { echo "Unresolved submission in $pending; inspect Slurm before retrying." >&2; exit 1; }
+# Use full job names, expanded arrays, and all states. Suspended/requeued jobs
+# still own their assignments. Terminal records do not consume capacity.
+raw=$(squeue --noheader --array --states=all --user "$USER" --format='%i|%F|%200j|%T')
+queue_file=$(mktemp "$root/.parallel_queue.${SLURM_JOB_ID}.XXXXXX")
+trap 'rm -f -- "$queue_file"' EXIT
+others=0; workers=0; simulations=0; self=0
+while IFS='|' read -r id array name state extra; do
+    [[ -n "$id" ]] || continue
+    # Width specifiers can introduce trailing blanks.
+    name="${name%"${name##*[![:space:]]}"}"
+    name="${name#"${name%%[![:space:]]*}"}"
+    [[ -n "$state" && -z "$extra" ]] || { echo 'Invalid squeue response.' >&2; exit 1; }
+    case "$state" in
+        COMPLETED|CANCELLED|FAILED|TIMEOUT|NODE_FAIL|OUT_OF_MEMORY|PREEMPTED|BOOT_FAIL|DEADLINE|REVOKED) continue ;;
+    esac
+    if [[ "$id" == "$SLURM_JOB_ID" ]]; then self=1; continue; fi
+    others=$((others + 1))
+    case "$name" in
+        slide_parallel_validate|slide_parallel_fit) workers=$((workers + 1)) ;;
+        slide_parallel_control|slide_recover_*|em_slide_prior_prepare|em_susie_slide_prior)
+            echo "Another slider controller/legacy worker is active: $id ($name). No competing submission." >&2; exit 1 ;;
+        susie_slide_sim|susie_slide_launch) simulations=$((simulations + 1)) ;;
+    esac
+    printf '%s|%s|%s\n' "$id" "$array" "$name" >> "$queue_file"
+done <<< "$raw"
+[[ "$self" == 1 ]] || { echo 'Queue did not include this controller.' >&2; exit 1; }
+capacity=$((300 - others - 2))
+(( capacity > limit - workers )) && capacity=$((limit - workers))
+(( capacity < 0 )) && capacity=0
+echo "Queue: $workers EM workers, $simulations simulation jobs; $capacity free EM slots (user budget 300)."
+status=waiting
+if [[ "$wait_sim" == 1 && "$simulations" -gt 0 && "$workers" -eq 0 ]]; then
+    # The existing simulation launcher submits its next 300-task batch at once.
+    # Taking its released slots would jeopardize that continuation. Let the
+    # already-submitted chain finish, checking again in five minutes.
+    echo 'Waiting for the existing simulation chain; no EM workers submitted.'
+else
+    [[ "$wait_sim" == 1 && "$simulations" -gt 0 ]] && capacity=0
+    module load R/4.2.0
+    cli="$project_dir/script/scan_tissue_attempt/run_slide_prior_parallel.R"
+    response=$(Rscript --vanilla "$cli" plan "$project_dir" "$iteration" "$capacity" "$queue_file")
+    mapfile -t info <<< "$response"
+    status=${info[0]:-}
+    [[ "${info[1]:-}" =~ ^[0-9]+$ ]] || { echo 'Invalid iteration response.' >&2; exit 1; }
+    current=${info[1]}
+    case "$status" in
+        complete) echo "Iteration $current complete; target $target reached. No more jobs queued."; exit 0 ;;
+        waiting) ;;
+        batch)
+            [[ ${#info[@]} == 5 && -d "${info[2]}" && "${info[3]}" =~ ^[1-9][0-9]*$ &&
+               "${info[4]}" =~ ^(fit|validate)$ ]] || { echo 'Invalid worker plan.' >&2; exit 1; }
+            batch=${info[2]}; tasks=${info[3]}; action=${info[4]}
+            (( tasks <= capacity )) || { echo 'Plan exceeds capacity.' >&2; exit 1; }
+            printf '%s\n' "$batch" > "$pending"
+            if ! submission=$(sbatch --parsable "${scheduler_args[@]}" --array="1-${tasks}" --export=ALL \
+                --job-name="slide_parallel_${action}" --chdir="$project_dir/job" \
+                --output="$batch/worker_%A_%a.out" --error="$batch/worker_%A_%a.err" \
+                "$project_dir/job/slide_prior_parallel_worker" "$project_dir" "$current" "$batch"); then
+                rm -f -- "$pending"
+                echo "Worker submission failed; saved results intact. Resume with job/resume_slide_prior_em latest." >&2; exit 1
+            fi
+            array=${submission%%;*}
+            [[ "$array" =~ ^[0-9]+$ ]] || { echo 'Ambiguous sbatch response; inspect pending submission.' >&2; exit 1; }
+            printf '%s\n' "$array" > "$batch/array_job_id.txt"
+            rm -f -- "$pending"
+            echo "Submitted $action array $array: $tasks tasks (fit: one gene/task; validation: up to 25)." ;;
+        *) echo "Invalid plan status: $status" >&2; exit 1 ;;
+    esac
+fi
+# Only this short controller is a dependency: no wait for an entire worker wave.
+printf 'continuation after %s\n' "$SLURM_JOB_ID" > "$pending"
+if ! response=$(sbatch --parsable "${scheduler_args[@]}" --dependency="afterany:${SLURM_JOB_ID}" \
+    --begin="now+${poll}minutes" --export=ALL --chdir="$project_dir/job" \
+    --output="$project_dir/job/slide_parallel_control_%j.out" \
+    --error="$project_dir/job/slide_parallel_control_%j.err" \
+    "$project_dir/job/resume_slide_prior_em" latest); then
+    rm -f -- "$pending"
+    echo 'Continuation submission failed. Existing workers remain; resume latest after inspecting the queue.' >&2; exit 1
+fi
+next=${response%%;*}
+[[ "$next" =~ ^[0-9]+$ ]] || { echo 'Ambiguous continuation submission; inspect queue.' >&2; exit 1; }
+printf '%s\n' "$next" > "$root/parallel_continuation_job_id.txt"
+rm -f -- "$pending"
+echo "Queued controller $next; next check eligible in $poll minutes. Stop refills by cancelling that controller first."

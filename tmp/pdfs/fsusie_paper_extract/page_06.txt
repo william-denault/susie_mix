@@ -1,0 +1,144 @@
+6 W. Denault et al.
+B Detection of causal SNPs (CSs)
+C CS sizes
+power coverage
+wavelet WGBSblockGP noisefrac. noise
+WGBSdecay wavelet WGBSblockGP noisefrac. noise
+WGBSdecay
+0
+0.25
+0.50
+0.75
+1
+0
+0.25
+0.50
+0.75
+1
+0
+0.25
+0.50
+0.75
+1
+0
+0.25
+0.50
+0.75
+1
+0
+0.25
+0.50
+0.75
+1
+0 0.01 0.02 0.03 0.04 0.05
+FDR
+0 0.01 0.02 0.03 0.04 0.05
+FDR
+0 0.01 0.02 0.03 0.04 0.05
+FDR
+0 0.01 0.02 0.03 0.04 0.05
+FDR
+0 0.01 0.02 0.03 0.04 0.05
+FDR
+power
+wavelet simulations WGBS block WGBS decay
+A Detection of causal SNPs (PIPs)
+SuSiE-topPC
+fSuSiE (IS prior)
+fSuSiE (SPS prior)
+wavelet, fractional noise wavelet, GP noise
+SNP-CpG tests
+fSuSiE (IS prior)
+fSuSiE (SPS prior)
+SNP-CpG tests
+fSuSiE (IS prior)
+fSuSiE (SPS prior)
+WGBS block simulations WGBS decay simulations
+D Recovery of affected CpGs
+0
+0.25
+0.50
+0.75
+1
+0
+0.25
+0.50
+0.75
+1
+power
+power
+FDR FDR
+0 0.1 0.2 0.3 0.4 0.5 0 0.1 0.2 0.3 0.4 0.5
+E Running times
+running time (s)
+0.1 1 10 100 1,000
+1
+2
+3
+4
+5number of causal SNPs
+fSuSiE (IS prior)
+fSuSiE (SPS prior)
+SuSiE-topPC
+fSuSiE (IS prior)
+fSuSiE (SPS prior)
+SuSiE-topPC
+IS prior        SPS prior         SuSiE-topPC
+0.4
+0.6
+0.8
+0.3
+0.7
+0.5
+0.925
+0.950
+0.975
+CS size
+1 2
+3−56−10>10
+CS size
+1 2
+3−56−10>10
+CS size
+1 2
+3−56−10>10
+CS size
+1 2
+3−56−10>10
+CS size
+1 2
+3−56−10>10
+number of CSs
+wavelet fractional noise GP noise WGBS block WGBS decay
+0
+500
+1,000
+1,500
+2,000
+Fig. 3. Performance assessment in simulated data sets. Performance in simulated data sets was evaluated
+in two separate tasks: recovery of the causal SNPs (A–C), and identification of the affected molecular trait
+locations (D). In A–C, we simulated data sets under five scenarios. In each of the five scenarios, n = 300
+methylation data sets were simulated with N = 100 samples, T = 128 locations (CpGs), J = 1,500–4,000 SNPs,
+among which 1–20 were causal, and 10% total variance explained. In D, data sets were simulated in two
+scenarios with the same settings as above, but with J = 1 SNP , which was causal. Panels A, D show power
+vs. FDR (i.e., precision-recall with a flipped x-axis) in identifying causal SNPs (A) and affected CpGs (D). In
+each simulation setting, FDR and power were calculated by varying a measure threshold from 0 to 1 (n =
+300). In A, the measure was PIP for all methods; in D, it was αmax for fSuSiE and p-value from the SNP-CpG
+tests. (See Online Methods for a definition of αmax.) Power and FDR were calculated as FDR := FP
+TP+FP and
+power := TP
+TP+FN, where FP, TP, FN, FN denote, respectively, the number of false positives, true positives,
+false negatives and true negatives. Note that the yellow and red curves (fSuSiE, IS and SPS priors) closely
+overlap in some plots and therefore are not always visible. Panels B, C evaluate the 95% CSs returned by
+fSuSiE and SuSiE-topPC: power, the proportion of the true causal SNPs included in at least one CS;coverage,
+the proportion of CSs containing a true causal SNP; and CS size, the number of SNPs in a CS. The dotted
+horizontal line in B shows the target coverage (95%). Panel E summarizes the running times in simulated data
+sets with J = 1,000 SNPs (n = 300). The box plot whiskers depict 1.5× the interquartile range, the box bounds
+represent the upper and lower quartiles (25th and 75th percentiles), the center line represents the median (50th
+percentile), and points represent outliers. See Supplementary Figures 1–16 for additional results.
+One particularly striking result is the increase in the number of single-variant CSs returned by
+fSuSiE vs. SuSiE-topPC (Fig. 3C). In most cases (7,188 out of 7,422), these single-variant CSs con-
+tained the causal SNP, and in many cases single-variant CSs occurred even when there were other
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

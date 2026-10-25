@@ -1,0 +1,15 @@
+#!/bin/bash
+#SBATCH --job-name=slide_shared_sim
+#SBATCH --time=23:00:00
+#SBATCH --partition=broadwl
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=20G
+set -euo pipefail
+project_dir=$1
+batch=$2
+export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+module load R/4.2.0
+exec python3 "$project_dir/script/scan_tissue_attempt/slide_shared_scheduler.py" worker \
+    "$project_dir" "$batch" "${SLURM_ARRAY_TASK_ID:?Submit as an array}"

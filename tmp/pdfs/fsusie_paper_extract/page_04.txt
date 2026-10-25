@@ -1,0 +1,108 @@
+4 W. Denault et al.
+0
+2
+4
+6
+1
+3
+5
+7
+1 4 8 12 16 20 24 28 32
+CpG
+0
+2
+1
+4
+6
+3
+5
+7
+1 2 3 4 5 6 7 8 9 101112
+SNP
+−log10 p-value
+−log10 p-value
+true effect: no yes true effect: no yes
+0
+0.5
+1
+1 2 3 4 5 6 7 8 9 10 11 12
+SNP
+PIP
+0
+0.5
+1
+PIP
+1
+2
+3
+E fSuSiE estimates of causal SNP effectsC QTL mapping, CpG viewB QTL mapping, SNP view
+A true effect of SNP 3 on methylation
+1 4 8 12 16 20 24 28 32
+−2
+0
+2
+change in methylation level
+−2
+0
+2
+CS 2
+CS 1
+CS 3
+−1
+0
+1
+2
+3
+CpG
+0
+5
+10
+15
+20
+1 4 8 12 16 20 24 28 32
+CpG
+methylation level
+genotype
+of SNP 3
+CS
+0
+1
+2
+D fine-mapping results CpG
+9
+10
+14
+25
+28
+32
+fSuSiE
+SuSiE
+Fig. 2. Fine-mapping with fSuSiE: an illustration. In this simulated example, the methylation levels Y of N =
+100 samples are measured at 32 CpGs within a locus of interest (A). The methylation levels in two “clusters” of
+16 CpGs are affected by 3 of 12 candidate SNPs. The effect of one of the causal SNPs is depicted in A. (The
+three curves show the mean methylation levels at the three SNP genotypes.) To map methylation QTLs, one
+might perform an association test for each SNP-CpG pair [10, 61, 66], resulting in 32 × 12 = 384 association
+tests. (The p-values are from two-sided t-tests, and are not corrected for multiple testing.) Examining the
+associations by SNP (B) or by CpG (C), the association tests find signals corresponding to 2 of the 3 causal
+SNPs, and the affected CpGs appear to “cluster”. (Perhaps all three causal SNPs would be identified with a
+more careful multiple testing correction; here we used Bonferroni.) The 3 causal SNPs and corresponding 8
+affected CpGs are indicated by △ or ▲. (SNPs 1 and 9 affect the same CpGs.) From these same data, fSuSiE
+provides a more parsimonious fine-mapping: fSuSiE identifies 3 95% CSs, each containing a causal SNP , and
+expresses uncertainty in which SNP is causal by the PIPs (D–bottom). (Note that SNPs 3 and 4 are strongly
+correlated.) fSuSiE also provides 95% credible bands for each CS summarizing the CpGs that are affected by
+each causal SNP (E). A credible band that does not include zero indicates that the CpG is affected (•). One
+could instead analyze each of the 6 associated CpGs separately using a univariate fine-mapping method (e.g.,
+SuSiE). However, this results in a less parsimonious fine-mapping result that is difficult to make sense of: first, it
+produces multiple fine-mapping signals, and so it is unclear which one should be used (D–top); second, it does
+not provide a summary similar to E indicating which CpGs are affected by each causal SNP (E). This example
+is also an R “vignette” available athttps://stephenslab.github.io/fsusieR/articles/methyl_demo.html.
+analyses do not. Further details of the fSuSiE implementation, and guidance on applying fSuSiE to
+genome-scale molecular trait data, are given in the Methods and Supplementary Note.
+Performance assessment in simulated methylation data sets
+To validate fSuSiE we used simulated molecular QTL data sets where we could assess accuracy of the
+estimates by comparing to the true values. We assessed fSuSiE’s ability to perform the two key tasks
+highlighted above: (i) correctly identify the causal SNPs that affect the molecular trait at one or more
+locations; and (ii) correctly identify the molecular locations affected by the causal SNPs.
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

@@ -1,0 +1,58 @@
+Fine-mapping molecular QTLs using fSuSiE 5
+We simulated data sets containing both SNP genotypes and CpG methylation levels, in which one
+or more SNPs affected the methylation levels at one or more CpGs. We simulated genotypes with
+realistic patterns of linkage disequilibrium (LD) using sim1000G [67], with genotype data from the
+1000 Genomes Phase 3 whole-genome sequencing [68] as the input source. The simulations varied
+in size of genomic region (median: ∼1 Mb), number of SNPs (1,500–4,000 SNPs), and LD patterns.
+Consistent with real patterns of LD, simulated SNPs were often very strongly correlated with each
+other, and sometimes perfectly correlated, and therefore one should not expect 100% accuracy in
+identifying the causal SNPs, even in the simulation settings that were most favorable to fSuSiE.
+We simulated realistic whole-genome bisulfite sequencing (WGBS) methylation levels using WGB-
+SSuite [69], with different types of spatial structure in the methylation changes that might be motivated
+by different epigenetic mechanisms: constant changes in methylation across contiguous windows, with
+abrupt changes between windows (“WGBS block”); and changes that varied smoothly within the locus
+(“WGBS decay”). We also benchmarked fSuSiE in three other simulation settings in which the data
+conformed more closely to fSuSiE’s modeling assumptions (“wavelet simulations”), but also allowed
+for some departures to assess more realistic situations in which the variance due to non-genetic effects
+(i.e., “noise”) was spatially structured. We varied the number of CpGs ( T ), the number of SNPs
+(J), the number of causal SNPs, and the total amount of variation explained by the SNPs. Detailed
+descriptions of the simulation procedures are given in the Online Methods.
+As far as we are aware, fSuSiE is the first available tool to perform statistical fine-mapping of
+spatially structured traits. Among existing approaches, perhaps the most obvious competitors are
+approaches that first reduce the high-dimensional trait to a single dimension, e.g. using the top
+principal component (PC), and then apply a univariate fine-mapping method (e.g., [70, 71]). Here we
+implemented a version of this approach, “SuSiE-topPC”, by running SuSiE on the top PC computed
+from the column-centered Y. This type of approach has important limitations compared with fSuSiE.
+First, in real applications the top PC may primarily capture non-genetic effects such as experimental
+batch effects or population structure [72, 73]. Second, it only identifies causal SNPs that impact some
+aspect of the high-dimensional trait, without identifying which specific molecular locations (CpGs) are
+affected by these SNPs. Nonetheless, this existing approach may work well for detecting causal SNPs
+that have the biggest effect on a locus, and serves as a helpful benchmark against which to compare
+the ability of fSuSiE to identify causal SNPs.
+Both fSuSiE and SuSiE-topPC produce posterior inclusion probabilities (PIPs) that assess the
+probability of each SNP being a causal SNP, and 95% credible sets (CSs) that are designed to contain
+(with probability >0.95) at least one causal SNP. In fine-mapping applications, due to high LD, it
+may often be impossible to confidently identify the causal SNP, but it may nonetheless be possible
+to identify a small number of SNPs, in high LD with one another (which we call high “purity”), that
+likely contains a causal SNP. That is, while no single SNP may have a PIP near 1, there may be a
+small, high purity, 95% CS. For this reason CSs, are perhaps the most relevant fine-mapping output;
+however comparing PIPs is also informative, and so we assessed both PIPs and CSs here.
+Comparing PIPs (Fig. 3A), both variants of fSuSiE (IS prior and SPS prior) achieved higher
+power than SuSiE-topPC at the same false discovery rate in all simulation scenarios. Comparing CSs
+(Fig. 3B, C, Supplementary Fig. 1), fSuSiE consistently achieved better power, with smaller and higher
+purity CSs, while maintaining coverage close to the target value (95%). Notably, fSuSiE maintained
+coverage close to the target value even in situations (“fractional noise”, “GP noise”) where fSuSiE’s
+assumptions about the spatial dependence might be expected to be violated (Fig. 3B, Supplementary
+Figures 5–8). This is partly explained by the decorrelating, or “whitening”, effect of wavelets on
+spatially structured signals [63, 74, 75]. As expected, the performance of fSuSiE also tended to
+improve as the density of the molecular trait measurements increased (i.e., more CpGs), and as the
+SNPs produced larger changes in methylation (Supplementary Figures 3–12). All methods produced
+well calibrated PIPs (Supplementary Fig. 2). Interestingly, the performance gains over SuSiE-topPC
+were among the greatest in the WGBS and GP noise simulations that did not conform to fSuSiE’s
+modeling assumptions. Consistent with this, in the simpler wavelet simulations the top PC captures
+the genetic component of variation well, whereas in the WGBS block and WGBS decay simulations
+the genetic effect is distributed across many CpGs and the top PC mixes genetic with non-genetic
+variation.
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

@@ -82,6 +82,9 @@ project_dir=$(cd "$project_dir" && pwd -P)
 export SUSIE_MIX_PROJECT_DIR="$project_dir"
 root="${project_dir}/results_slide_prior_em"
 mkdir -p "$root"
+if [[ -f "$root/parallel_adopted.rds" ]]; then
+    echo 'Parallel recovery is active. Use: sbatch job/resume_slide_prior_em latest' >&2; exit 1
+fi
 exec 9>"${root}/.prepare.lock"
 flock -n 9 || { echo 'Another slider coordinator holds the preparation lock.' >&2; exit 1; }
 module load R/4.2.0

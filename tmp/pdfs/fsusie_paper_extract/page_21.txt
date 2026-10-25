@@ -1,0 +1,66 @@
+Fine-mapping molecular QTLs using fSuSiE 21
+This model can be reduced to the previous model (7) if we remove the linear effects of Z on X and D
+by making the substitutions D ← ˜D, X ← ˜X, in which we define
+˜X := X − Z(Z⊺Z)−1Z⊺X (10)
+˜D := D − Z(Z⊺Z)−1Z⊺D. (11)
+This is an extension the reduction used for univariate linear regression [115]. Note that we have
+sometimes found it more convenient to remove the linear effects of Z from Y instead of from D, then
+compute D = YW, but this is equivalent to (11) because W is orthogonal.
+Standardization. In practice, we scale each column of Y to have unit variance before computing the
+wavelet transform (this is often called “standardization”). This simplifies modeling because it allows
+us to reasonably assume that the wavelet coefficients have homoskedastic residual variances; consider
+that em
+it
+i.i.d.
+∼ N(0, σ2) ⇒ ew
+it
+i.i.d.
+∼ N(0, σ2). Therefore, in fSuSiE we make the additional modeling
+assumption that the residual variances do not depend on location; ew
+it
+i.i.d.
+∼ N(0, σ2).
+Also, although not necessary, in practice we also standardize ˜X before running fSuSiE. This simpli-
+fies many of the underlying statistical computations in fSuSiE. Standardizing ˜X is common practice
+in QTL mapping analyses, and can be justified in some settings [104] [116]. However, standardizizing
+˜X may also lead to issues with low-frequency SNPs; see “Disclaimer on including genetic variants at
+low minor allele frequencies” below.
+Single function regression model. The “single function regression” (SFR) model is the functional
+counterpart of the “single effect regression” (SER) model [24]. The SFR model is a multiple wavelet
+regression model (7) with the constraint that exactly one of the covariatesj ∈ {1, . . . , J} has a nonzero
+effect on the wavelet coefficients:
+F = diag(γ) × F1
+γ ∼ Multinom(1, p)
+f 1
+jt ∼ gt,
+(12)
+where γ = (γ1, . . . , γJ)⊺, F1 is a J ×T matrix with entries f 1
+jt, Multinom(n, p) denotes the multinomial
+distribution with sample size n and multinomial probabilities p = (p 1, . . . , pJ), gt denotes the prior
+distribution for the effects at location t (specified in greater detail below), and diag(x) denotes the
+N × N diagonal matrix in which the diagonal elements are given by the vector x = (x1, . . . , xN).
+Defined in this way, the SFR model has the following properties: (i) γ is a binary vector in which
+exactly one of the elements is one and the rest are zeros; (ii) at most one of the rows of the F contains
+nonzero values; and (iii) the f 1
+jt’s are a priori independent across locations t (again motivated by the
+“whitening” property of the wavelet transform).
+Elements of p are the prior probabilities that each covariate has a nonzero effect on the wavelet
+coefficients D. Unless otherwise stated, the prior probabilities are the same for all covariates (SNPs);
+pj = 1/J, j = 1, . . . , J.
+fSuSiE model. The fSuSiE model extends the SFR model to allow at most R ≥ 1 nonzero effects. It is
+the functional counterpart to the Sum of Single Effects (SuSiE) model [24], so we call it the “functional
+Sum of Single Effects model” (fSuSiE) model. The fSuSiE model is the wavelet regression model (7)
+together with the following prior on F:
+F =
+RX
+r=1
+F(r)
+F(r) = diag(γ(r)) × Fr
+γ(r) ∼ Multinom(1, p)
+f r
+jt ∼ gr
+t .
+(13)
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

@@ -1,0 +1,151 @@
+Fine-mapping molecular QTLs using fSuSiE 9
+1 2
+3–56–1011–20>20 1 2
+3–56–1011–20>20
+number of CSs (eSNPs)
+number of CSs (pSNPs)
+CS size CS size
+1 2
+3–56–1011–20>20
+CS size
+1 2
+3–56–1011–20>20
+CS size
+protein expressionH3K9ac DNA methylation RNA expression
+0
+1,000
+2,000
+3,000
+4,000
+0
+250
+500
+750
+1,000
+3401,420
+0
+250
+500
+750
+1,000
+1,250num. CSs (haSNPs)
+fSuSiE
+SuSiE-topPC
+SuSiE SuSiE
+0
+1,000
+2,000
+3,000
+4,000
+5,000
+6,000num. CSs (mSNPs)
+fSuSiE
+SuSiE-topPC
+A Fine-mapping discovery and resolution
+56
+1,372
+328
+6,355
+0
+2.5
+5.0
+7.5
+1 2 3 4 5 6 7 8 9 10
+affected H3K9ac peaks
+number of SNPs
+SNP-peak assoc. tests
+0
+100
+200
+300
+400
+0 10 20 30 40
+affected H3K9ac peaks
+number of CSs
+fSuSiE
+0
+3
+6
+9
+0 5 10 15 20 25
+affected CpGs
+number of SNPs
+SNP-CpG assoc. tests
+0
+500
+1,000
+1,500
+0 50 100 150
+affected CpGs
+number of CSs
+fSuSiE
+C Recovery of affected molecular locations
+×105 ×105
+0
+100
+200
+300
+400
+500
+−2 −1 0 1 2
+H3K9ac peak – haSNP (Mb)
+number of haSNPs
+H3K9ac
+0
+0.1
+0.2
+0.3
+0.4
+-400 -200 0 200 400
+distance to TSS (kb) distance to TSS (kb)
+proportion of SNPs
+DNA methylation
+0
+0.05
+0.10
+0.15
+0.20
+0.25
+-200 -100 0 100 200
+proportion of SNPs0
+1,000
+2,000
+3,000
+−100 −50 0 50 100
+CpG − mSNP (kb)
+number of mSNPs
+fSuSiE haSNPs fSuSiE mSNPs
+B Functional enrichment of causal SNPs and affected molecular locations
+SNP-CpG
+tests
+fSuSiE
+SuSiE-topPC
+SNP-CpG
+tests
+fSuSiE
+SuSiE-topPC
+Fig. 5. Fine-mapping of mSNPs (n = 636) and haSNPs (n = 592) in DLPFC. Panel A compares: the number
+of CSs returned by SuSiE-topPC, fSuSiE (for H3K9ac and DNA methylation) and SuSiE (for RNA and protein
+expression, also in DLPFC; n = 777 and 416, respectively); and the fine-mapping resolution (“CS size” is
+the number of SNPs included in the 95% CS). In Panel B, functional enrichment of the mSNPs and haSNPs is
+assessed by distance between fine-mapped SNP and the nearest affected molecular location (for single-variant
+CSs only), and by distance to the nearest gene transcription start site (TSS). Panel C compares the number
+of affected molecular locations per SNP from fSuSiE and the association tests. Notes: in C, a small fraction
+of SNPs and CSs (<2%) with a larger number of affected locations were not included in the histograms; in
+the distance-to-TSS plots, the SuSiE-topPC and fSuSiE SNP counts were weighted by the PIPs; the TSSs are
+obtained from the annotated gene transcripts in the GENCODE combined Ensembl/HAVANA database [79]; all
+the CS statistics do not double-count CSs that overlap in different (overlapping) TADs. See Supplementary Fig.
+20 for additional supporting results.
+Fig. 21). fSuSiE also produced a much higher proportion of single-variant CSs compared to SuSiE
+fine-mapping analysis of RNA and protein expression (Fig. 5A), again highlighting the benefits of joint
+analysis of multiple traits [33]. (Although the increase in single-variant CSs outputted by fSuSiE here
+is consistent with results in the simulations, and consistent with the expectation that joint analysis will
+improve fine-mapping resolution, it is also prudent to point out that fSuSiE makes additional modeling
+assumptions about the molecular trait. Large deviations from these assumptions may cause fSuSiE
+to be overcondident in its inferences, and potentially produce CSs that are too small. In particular,
+additional factors such as batch effects could induce correlations between molecular locations if they
+are not included in the fSuSiE model; see Methods for details.)
+The many more additional haSNPs and mSNPs discovered by fSuSiE tend to be located close to
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

@@ -1,0 +1,52 @@
+30 W. Denault et al.
+a list of “suggested probes for removal” from [146] (specifically, these are the CpG probes flagged as
+“discard” in “Additional file 2”). We also did the same for the SNP-CpG associations, although this
+removed only a very small number of SNP-CpG associations meeting the q-value threshold.
+AD GWAS fine-mapping and colocalization. To finemap AD risk loci, we constructed an LD reference
+panel using genotype data from the Alzheimer’s Disease Sequencing Project (ADSP), which consisted
+of approximately 17,000 WGS individuals of European ancestry. QC on two recent AD GWAS meta-
+analysis summary statistics [83, 84] was then performed against this reference panel, including allele
+harmonization and LD mismatch detection using SLALOM [148], which flagged suspicious variants
+and then removed them. We then ran SuSiE-RSS [24, 25] using the z-scores from each of the AD
+GWAS and the LD from the LD reference panel as input data. To prioritize AD risk loci for further
+investigation, we ran COLOC (version 5) [85] to assess colocalization of the putative causal AD SNPs
+with RNA expression, protein expression, DNA methylation and H3K9ac SNPs.
+To benchmark fSuSiE+COLOC against a standard per-trait pipeline, we additionally ran univariate
+SuSiE on each molecular location (each CpG for methylation, each peak for H3K9ac) within the regions
+nominated by fSuSiE, followed by COLOC v5 applied to the resulting per-location credible sets. Of 18
+loci identified by fSuSiE+COLOC at 95% colocalization CSs, 5 were also recovered by SuSiE+COLOC
+on the same regions and 13 were specific to fSuSiE+COLOC. Of the shared set, 60% (3/5) reached
+AD GWAS p < 5 × 10−8 at the lead SNP; of the fSuSiE-only set, 53.8% (7/13), with the largest
+fSuSiE-only AD GWAS p-value being 7.69 × 10−6.
+Excess-of-overlap enrichment analysis. We performed an excess-of-overlap (EOO) enrichment analy-
+sis of the haSNPs and mSNPs using a collection of predefined functional annotations from the Baseline-
+LD v2.2 model among common SNPs (MAF > 0.05) in the 1000 Genomes Project [80, 81]. For each
+molecular trait (H3K9ac, DNA methylation) and method (fSuSiE, SuSiE-topPC), we defined the “pos-
+itive set” for enrichment analysis using variants within 95% credible sets (CSs) that had PIP> 0.5 and
+complete functional annotations available in Baseline-LD v2.2 common SNPs. This filtering process
+yielded 8,264 CS variants from a total of 74,065 variants across DNA methylation and H3K9ac credible
+sets for fSuSiE, and 749 out of 97,595 for SuSiE-topPC. Following [96], we tested whether selected
+SNPs showed greater overlap with functional annotations than expected by chance, with control set
+defined as follows: for each selected SNP, 5 SNPs outside the selected set were chosen to match based
+on LD score and minor allele frequency. For each annotation, enrichment was calculated as the ra-
+tio of the proportion of selected SNPs overlapping the annotation to the proportion of control SNPs
+overlapping the annotation. Statistical significance and confidence intervals were estimated using a
+jackknife resampling procedure, where the enrichment ratio was recalculated after iteratively removing
+each chromosome. Mean and standard error of enrichment estimates were computed from jackknife
+samples; annotations were considered significantly enriched if the 95% jackknife confidence interval
+for the enrichment ratio did not include 1.
+Data availability
+The datasets analyzed, including the ADSP R4 WGS genotype data, are available for application and
+download from the NIAGADS Data Sharing Service, https://dss.niagads.org. The code imple-
+menting the data processing and analysis pipelines for is available at https://statfungen.github.
+io/xqtl-protocol. Data generated from numerical studies and analysis to prepare figures for the
+paper is available at https://github.com/stephenslab/fsusie-experiments/. A subset of fine-
+mapped QTL obtained from our analyses are available for peer review purposes, at https://github.
+com/stephenslab/fsusie-experiments/blob/main/data/README.md. The complete set of QTL
+data and QTL-GWAS integration models will be made publicly available at https://synapse.org
+prior to publication for registered Synapse users, as per the Data Management and Sharing policy of
+the FunGen-xQTL project. Other data sets used include: 1000 Genomes Phase 3 whole-genome se-
+quencing data, https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/; GENCODE
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

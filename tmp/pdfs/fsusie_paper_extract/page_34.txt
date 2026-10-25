@@ -1,0 +1,66 @@
+34 W. Denault et al.
+Supplementary text
+Background on wavelet regression
+Wavelet transform and the concept of scale. To introduce the basic ideas, we consider the discrete
+wavelet transform (specifically, the unscaled Haar wavelet transform). Then we present the concept
+of scale (or resolution level), and define notation for the wavelet coefficients. For a more detailed
+introduction, see Nason[75].
+Let f = (f1, . . . , fT ) be a time series such that T = 2S. The wavelet transform of f1, . . . , fT is a set
+of T coefficients, denoted by ds,l, with s ∈ [0, S −1], in which each coefficient summarizes the variation
+of f on an interval of [1 , T]. The index s is the “scale” of a wavelet coefficient (WC); WCs at a small
+s (say, 0, 1 or 2) capture variation of f over large intervals whereas WCs at large s capture variation
+over small intervals of [1, T ].
+To give some intuition for how wavelet coefficients are generated from an observed signal, consider
+the unscaled Haar wavelet transform, a wavelet transform which involves relatively simple calculations.
+The single unscaled WC at scale 0 is a simple sum:
+d0,1 =
+TX
+t=1
+ft. (19)
+This WC is sometimes called the “height” of f. The single WC at scale 1 is
+d1,1 =
+T /2X
+t=1
+ft −
+TX
+t=T /2+1
+ft, (20)
+which is the difference in height between left half and right half. The two WCs at scale 2 are
+d2,1 =
+T /22
+X
+t=1
+ft −
+T ×2/22
+X
+t=T /22+1
+ft (21)
+d2,2 =
+T ×22/22
+X
+t=T ×2/22+1
+ft −
+TX
+t=T ×22/22+1
+ft. (22)
+The d2,1 coefficient is the difference in the height of g between the first and second quarters, and d2,2
+is the contrast in the height of g between the third and fourth quarters.
+The WCs at scales 3 and larger follow a similar logic. By repeating this process at scales s = 3
+up to s = S − 1, we obtain a total of 2 S WCs. This process just described can also be equivalently
+formulated as matrix multiplication with orthogonal projection matrix W. This ability to express the
+wavelet decomposition as a matrix multiplication is a property of all wavelet bases, not just the Haar
+basis [101].
+The undecimated wavelet transform. In the presented work, we assume that the data are evenly spaced
+and have T = 2S measurements. However, such an assumption is not realistic in practice. The prob-
+lem of applying wavelets to unevenly-spaced data of length n ̸= 2 S has been addressed by several
+authors [100] [149] [150] and is referred to as an undecimated/non-decimated wavelet transform or
+lifting scheme. In our implementation, we used the approach of Kovac and Silverman [150]. The ap-
+proach of Kovac and Silverman [150] for non-decimated (size ̸= 2S) and unevenly-spaced data consist
+on interpolating the observed data on a evenly spaced grid of length 2 S. The interpolated data is then
+used as our response variable and we apply fSuSiE directly. We provide an additional description of
+the procedure of Kovac and Silverman [150] is described below.
+Suppose, we observe Y at T ′ unevenly spaced time points τ1, . . . , τT ′ and we assume that T ′ is not
+a power of 2. For simplicity, we consider these time points to be between [0, 1]. Kovac and Silverman
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

@@ -1,0 +1,55 @@
+2 W. Denault et al.
+methylation that are inherently high-dimensional. For example, a two-step approach consisting of
+univariate association testing followed by univariate-trait fine-mapping has been used at scale (e.g., for
+fine-mapping expression QTLs and splice-junction QTLs [40]), but this approach will not work well for
+spatially structured molecular traits. The existing methods fail to leverage the fact that causal SNPs
+may often affect nearby univariate molecular traits in a coordinated or spatially dependent way [41, 42].
+(For example, methylation QTLs frequently affect multiple CpGs within regions spanning several kb
+[7, 8, 10, 43–49].) This not only limits power to detect such effects, but also limits understanding of
+the effects of genetic variants on molecular traits. Furthermore, since most genetic effects on complex
+disease risk are likely mediated through effects on molecular traits, these limitations of existing analysis
+tools also hinder progress in understanding the genetics of complex disease.
+To address these limitations, we introduce functional SuSiE (fSuSiE), a new method for fine-
+mapping high-dimensional, spatially structured molecular traits, drawing on ideas from functional
+data analysis [44, 50–54]. fSuSiE models the effects of each putative causal SNP as a function that
+varies along the genome so as to capture spatially dependent changes in the molecular trait [44–47, 50–
+53, 55–60]. It overcomes the high computational burden of fine-mapping high-dimensional molecular
+traits by building on the “Sum of Single Effects” (SuSiE) model [24, 25], which decomposes the complex
+multi-SNP computations into a series of simpler single-SNP computations. The resulting method is
+computationally practical for fine-mapping molecular measurements made across moderately large
+genetic regions containing hundreds or thousands of trait measurements and thousands of genetic
+variants.
+We validate fSuSiE’s performance using simulated methylation QTL datasets, where it simultane-
+ously identifies causal variants and affected CpGs more accurately than methods ignoring spatial struc-
+ture. To demonstrate its potential for biological discovery, we applied fSuSiE genome-wide to DNA
+methylation (DNAm) and H3K9ac data [61] from the ROSMAP study [62], analyzing over 400,000
+CpG sites and 90,000 histone peaks. Applied to Alzheimer’s disease risk loci, fSuSiE pinpointed pu-
+tative causal variants that colocalized with AD GWAS signals for established genes including CASS4
+and CR1/CR2, suggesting biologically coherent regulatory mechanisms underlying genetic risk. While
+we showcase fSuSiE using DNAm and H3K9ac, it is widely applicable to any trait that varies along
+the genome, such as other histone marks, chromatin accessibility, expression level variation among
+exons and introns, and other traits measured by high-throughput sequencing technologies.
+Results
+Overview of fSuSiE
+fSuSiE takes as input an N ×T matrix, Y, containing molecular trait data on N samples at T genomic
+locations, and an N ×J matrix, X of genotypes for the same N samples at J genetic variants, typically
+SNPs (Fig. 1a–b). It then attempts to identify which SNPs affect which molecular traits by fitting a
+multivariate linear model,
+Y = XB + E, (1)
+where B is a J × T matrix of effects whose element bjt represents the effect of SNP j on molecular
+trait t, and E is a matrix of residuals. Like most fine-mapping methods, fSuSiE assumes that only
+a few genetic variants affect the trait: that is, most rows of B are zero. It does so by modeling B
+using a “sum of single effects” (SuSiE) model [24, 25], B = B(1) + · · · + B(L), where each matrix B(l)
+is assumed to capture the effect of a single SNP, and so has exactly one non-zero row. (One or more
+B(l) may be entirely zero if the data support fewer than L effects.)
+fSuSiE uses a wavelet-based linear model [63, 64] for the effects of each causal SNP—that is, for
+the non-zero row in each B(l). Wavelets have been used in several genomics applications to model
+temporally or spatially structured data [44, 50, 53, 63, 65]. Here, we use wavelets to model spatial
+structure in the effect of each SNP on the molecular trait. Specifically, fSuSiE applies the discrete
+wavelet transform (DWT) to (1), then uses flexible sparse prior distributions to shrink the DWT-
+transformed effects. This approach is motivated by the observation thatspatial structure in the original
+signal (Fig. 1a) often corresponds to sparse structure in the wavelet-transformed signal (Fig. 1b). We
+implemented two different priors: a simple “independent shrinkage” (IS) prior that applies the same
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

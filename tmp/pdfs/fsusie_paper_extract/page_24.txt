@@ -1,0 +1,51 @@
+24 W. Denault et al.
+Outline of an fSuSiE analysis. Briefly, the minimal requirements for performing an fSuSiE analysis
+are:
+i) An N × T matrix, ˜Y, containing N molecular trait measurements at T locations after the linear
+effects of selected covariates are removed. The specific steps that were taken to prepare ˜Y for
+the molecular data sets analyzed in this paper are detailed below.
+ii) An N × J matrix, ˜X, containing the genotype information for the J SNPs to be fine-mapped
+after removing the linear effects of the selected covariates.
+iii) Rmax, an upper limit on R, the number of single functions in the fSuSiE model. Unless specifically
+mentioned, we set Rmax = 10.
+iv) The prior for the wavelet effects. In this paper, we considered two priors: the independent
+shrinkage (IS) prior and the shrinkage-per-scale (SPS) prior (see “Scale-dependent mixture priors
+for fSuSiE” for explanations). We used the IS prior unless otherwise mentioned.
+An additional input is optional but recommended:
+v) The positions (e.g., base-pair positions) ϕ1, . . . , ϕT ∈ R corresponding to the locations 1, . . . , T .
+If not specified, the positions are assumed to be evenly spaced. Molecular traits are typically not
+measured at evenly spaced positions, so providing this information will produce more accurate
+results.
+Beyond this, the fSuSiE software includes many other settings and tuning parameters which may be
+adjusted as needed.
+The basic steps of an fSuSiE analysis are as follows:
+1. Compute the wavelet coefficients. Compute the WCs, ˜D, from the molecular trait data, ˜Y. For
+computational efficiency, ˜D is obtained using the standard discrete wavelet transform (DWT). (In
+later steps, a second set of WCs are computed using the translation-invariant wavelet transform
+to improve accuracy.) For all the results presented in this paper, we used the (undecimated)
+wavelet transform with Daubechies least-asymmetric orthonormal compactly supported wavelets
+and with 10 vanishing moments (see Chapter 2 of [75]). Note that the fSuSiE software currently
+supports any wavelet transform that is implemented in the wavethresh R package [75].
+2. Search for a good upper limit on R (optional). R determines the number of single functions
+and, correspondingly, the number of causal SNPs. If R is too small, fSuSiE may miss some
+causal SNPs; on the other hand, if R is too large, fSuSiE may take a long time to run. We have
+implemented an ad hoc procedure to find a reasonable initial estimate of R. By default, this
+procedure starts by fitting an fSuSiE model with R = 3. If all R = 3 single functions are kept,
+R is increased by one. This procedure iterates until one or more single functions are pruned, or
+if the upper limit, Rmax, is reached.
+3. Fit fSuSiE model. We use an iterative algorithm, described below, to fit the fSuSiE model to the
+data ˜X, ˜D. This includes estimating the priors gr
+t and the residual variance σ2. During estimation
+of the priors, some single functions may be pruned, and therefore R is an upper bound on the
+final number of single functions (and CSs).
+4. Compute SNP-level posterior quantities: CSs and PIPs. Compute CSs and PIPs from the fSuSiE
+model fitted in the previous step.
+5. Filter credible sets (optional). One may filter out the CSs with low “purity” (purity is defined as
+the smallest absolute correlation among all pairs of SNPs in the CS). This often improves quality
+or interpretability of the fine-mapping results.
+6. Compute posterior effect estimates and credible bands. The final step is to compute posterior
+mean estimates of bjt, and corresponding 1 − α pointwise credible bands, α ∈ [0, 1], for each
+location t and sentinel SNP j (the SNP with the largest PIP in each CS). To address possible
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

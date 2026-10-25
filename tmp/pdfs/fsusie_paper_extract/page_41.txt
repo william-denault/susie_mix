@@ -1,0 +1,56 @@
+Fine-mapping molecular QTLs using fSuSiE 41
+Formal arguments to prove Proposition 1 are provided in Appendix section 13. Informally Proposi-
+tion 1 states that the approximate posterior distribution of a given effect can be obtained by subtracting
+all the fitted effects to the response apart from the one we are trying to estimate. It follows the IBSS
+described in Algorithm 1 is a coordinate ascend algorithm that maximizes the ELBO for q belonging
+to the class of distribution defined in (87). Thus providing a simple iterative algorithm to solve (86).
+Algorithm 1: Basic Iterative Bayesian stepwise selection for functional data
+1 Input
+2 Data : D, X
+3 Prior :G
+4 A function: SF R(X, D, G, σ2
+0) → (α, ˜F ∗)
+5 Initialization
+6 Rr ← −D
+7 repeat
+8 for r = 1 to R do
+9 Rr ← D − XP
+r′̸=e ˆF (r′)
+10 (αe, ˜F r, (σe,j,s,l)) ← −SF R(X, Rr, G, σ2
+0)
+11 ˆF (r) ← − ˜F r ⊙ αe
+12 until the convergence criterion is satisfied
+13 Output
+Hyperparemeter estimation. Until now (σ2
+k), (πs,k), σ2 were assumed to be known. In practice, ( σ2
+k) is
+a thin grid of values that are selected in a data-adaptive way. Briefly put, this grid contains values that
+range from 0 to ≈ 10 ∗ M, where M is the largest entry (in absolute value) of ˆFmarg, and where ˆFmarg
+is the matrix corresponding to the marginal association between each covariate and D (see [104], and
+[153] section 1.3.2 for more details). Thus these quantities are not random and are not updated after
+being selected. On the other hand, ( πs,k), σ2 are considered as random quantities and are estimated
+by maximizing the ELBO over ( πs,k) and σ2.
+Optimizing over σ2 is straightforward as it simply requires computing the residual sum of squares
+under variational approximation to then estimate σ2. Optimizing over ( πs,k) is done by maximizing
+the marginal likelihood of the SFR model over ( πs,k). This step is done using a weighted EM algo-
+rithm [154]. We provide a detailed description of this step in the Appendix section “Bayesian single
+functional regression with mixture prior”.
+Derivation of the fSuSiE model fitting algorithms
+In this section, we describe our variational approach to fit the sum of single functions model (see
+equation (13)). Let’s rewrite (13) in the following form form:
+D ∼ p(D|F, X, θ) (90)
+F ∼ g(.) (91)
+Where D is the matrix of the observed data, X is the matrix of the observed covariates, F is the
+latent/unobserved variable of interest, g ∈ G is a prior distribution for F and θ ∈ Θ is the set of the
+additional/nuisance parameters to be estimated. We adopt an Empirical Bayes (EB) approach, by
+first estimating our prior g and the noise parameters θ by maximizing the marginal log-likelihood:
+(ˆg, ˆθ) = argmax
+g∈G,θ∈Θ
+l(g, θ, D, X) (92)
+where (93)
+l(g, θ, D, X) = log
+Z
+p(D|F, θ, X)g(F)dF (94)
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

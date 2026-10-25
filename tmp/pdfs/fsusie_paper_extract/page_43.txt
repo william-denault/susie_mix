@@ -1,0 +1,86 @@
+Fine-mapping molecular QTLs using fSuSiE 43
+In particular, the ELBO can be written in two different way:
+ELBO = F (q, g, θ, D, X) = log
+Z
+p(D|F, X, θ)g(F)dF − KL(q(F) || p(F|D, X, θ)) (100)
+= EF∼q
+
+log p(D|F, X, θ)
+
++ EF∼q
+
+log g(F)
+q(F)
+
+(101)
+= EF∼q
+
+log p(D|F, X, θ)
+
+− KL(q(F) || g(F)) (102)
+So the ELBO depends on three ”parameters” g(.), q(.), θ. Our general optimization problem is the
+following:
+(ˆq, ˆg, ˆθ) = argmax
+q∈Q,g,θ
+F (q, g, θ, D, X) (103)
+Maximizing the ELBO with respect to ( g(.), θ) corresponds to our EB procedure (as the first terms
+of eq (100) corresponds to the marginal likelihood); maximizing the ELBO with respect to q ∈ Q is
+the standard variational Bayes (VB) approach. We optimize (88) in a iterative fashion, by keeping
+q(.) constant and maximize over ( g(.), θ). Then by keeping ( g(.), θ) constant and maximize over q(.)
+(using equation (101)). The EB procedure to maximize g is described in Appendix section “Bayesian
+single functional regression with mixture prior”. Here we solely focus on maximizing the ELBO while
+keeping g and θ constant.
+Form of the variational approximation. As previously mentioned, computing the full posterior of (88) is
+a (likely) intractable problem. Thus, we restrict the form of the “candidatr” posterior ( q) to facilitate
+the optimization. More precisely, we choose a classical mean-field approximation, so Q is defined as
+q(F(1), ..,F(R)) =
+RY
+e=1
+qr(F(r)) (104)
+Analytical expression for the ELBO. For q ∈ Q the ELBO can be written as
+F (q, g, σ2, D, X) = T × N
+2 log(2πσ2) − 1
+2σ2 EF∼q
+
+X
+s
+X
+l
+||ds,l −
+RX
+e=1
+Xf t
+rs,l||2
+
+ (105)
++
+RX
+e=1
+EF∼qr
+"
+log gr(F(r))
+qr(F(r))
+#
+(106)
+Where ||.|| is the euclidean norm and g = (g1, ..., gE) is a collection of mixture prior. In the line of
+Wang and colleagues[24] (proposition A.1) given that we restrict q to (104) the ELBO becomes
+F (q, g, σ2, D, X) =Eq[log(p(D|F, X)] +
+X
+r
+Eqr[log gr(F(r))
+qr(F(r))] (107)
+=Eq[log(p(D|F, X)] −
+X
+r
+KL(qr(F) || gr(F)) (108)
+=Eq[log(p(D|F, X)] +
+X
+r
+Fr(qr, gr, σ2, ˆRr, X) (109)
+−
+X
+r
+Eqr[p( ˆRr|F(r), X)] (110)
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

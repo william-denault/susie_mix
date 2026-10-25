@@ -1,0 +1,47 @@
+26 W. Denault et al.
+lated using the following logistic regression model:
+yit = sigmoid(zit)
+zit =PJ
+j=1 xijbjt + probit(βt) + eit
+eit ∼ NT (0, σ2),
+(18)
+where βt denotes a baseline methylation level (a “Beta value” [122]) simulated using OmicsSIMLA
+[123], sigmoid(x) = 1/(1 + e−x) denotes the sigmoid function, probit( x) = Φ−1(x) denotes the probit
+link function in which Φ(x) is the cumulative density function (CDF) of the standard normal distribu-
+tion, Nd(x; µ, Σ) denotes the multivariate normal distribution on x ∈ Rd with mean µ and covariance
+matrix Σ, and the other notation was defined above. We transform the Beta values using the probit
+as this makes the data approximately homoskedastic with a Gaussian noise distribution [122]. The
+residual variance σ2 was chosen so that X explained a specified total variance in the unobserved Z.
+The effects bj ∈ RT of the causal SNPs j were simulated from a multivariate normal distribution,
+bj ∈ NT (0, C), in which C is a T × T correlation matrix. (The effects of the non-causal SNPs j were
+set to zero, bjt = 0.) The correlation matrix C determines the spatial structure of the methylation
+changes. We considered two different designs of C that resulted in two different sets of WGBS
+simulations, which we referred to as “WGBS block” and “WGBS decay” in the text.
+WGBS block simulations. In a “WGBS block” simulation, the fine-mapping region was divided
+into 5 blocks with the same number of CpGs in each block. The SNP effects were the same within a
+block: ctt′ = 1 if CpGs t, t′ were in the same block; otherwise, ctt′ = 0.
+WGBS decay simulations. In a “WGBS decay” simulation, the fine-mapping region was divided
+into 5 blocks of the same size (same number of CpGs). The SNP effects were similar within a block,
+but differed more as the CpGs were more distant within the block: ctt′ = ρ|t−t′| if CpGs t, t′ were in
+the same block, otherwise ctt′ = 0, with ρ = 0.9.
+Methods compared in the simulations.
+fSuSiE. We ran two variants of fSuSiE: one using the IS prior, and another using the SPS prior. fSuSiE
+was applied as described above (“Outline of an fSuSiE analysis”) by calling the susiF() function from
+the fsusieR R package with the following settings: L = 20, which sets the upper limit on the number
+of CSs to X; prior = "mixture
+normal" for the IS prior or prior = "mixture normal per scale"
+for the SPS prior; and all other options were kept at their defaults.
+For a given CpG, we defined αmax as the largest confidence level α for which the corresponding
+credible band at that CpG did not include zero. For a given αmax threshold, a CpG was defined as
+“affected” if αmax was less than this threshold.
+SuSiE-topPC. The top PC, denoted here by y, was obtained from the methylation data, Y, after
+centering the columns of Y. (Note that the columns of Y were not scaled to unit variance.) Then
+we ran function susie() from the susieR R package [24] on the data X, y with the following settings:
+standardize = TRUE; L = X, which sets the upper limit on the number of CSs to X; and all other
+options were kept at their defaults. Note that SuSiE-topPC was not used to identify affected CpGs.
+SNP-CpG association tests. The SNP-CpG association tests were implemented using the lm() func-
+tion in R. For a given p-value threshold, a CpG t was defined as “affected” if the (two-sided) p-value
+from the association test for that CpG was less than the threshold.
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

@@ -253,7 +253,8 @@ sre_previous <- function(ctx, gene) {
                     "results", paste0(gene, ".rds")))
 }
 
-sre_inspect <- function(ctx, gene, exclusions = sre_exclusions(ctx)) {
+sre_inspect <- function(ctx, gene, exclusions = sre_exclusions(ctx), summary_sink = NULL,
+                        previous = sre_previous(ctx, gene)) {
   file <- sre_result(ctx, gene)
   row <- data.frame(gene = gene, status = "retry", detail = "Missing result", result_md5 = "",
                     n_fits = 0L, stringsAsFactors = FALSE)
@@ -266,7 +267,6 @@ sre_inspect <- function(ctx, gene, exclusions = sre_exclusions(ctx)) {
   row$result_md5 <- unname(tools::md5sum(file))
   tryCatch({
     out <- readRDS(file)
-    previous <- sre_previous(ctx, gene)
     sre_validate(out, ctx, previous)
     errors <- c(if (!is.null(out$error)) as.character(out$error),
                 unlist(attr(out, "tissue_errors", exact = TRUE), use.names = TRUE))
@@ -284,8 +284,9 @@ sre_inspect <- function(ctx, gene, exclusions = sre_exclusions(ctx)) {
       row$status <- if (length(out)) "valid" else "qc_excluded"
       row$detail <- if (length(out)) "Validated converged fits" else "No eligible tissues under existing input QC"
     }
+    if (!is.null(summary_sink) && sre_ready(row$status)) summary_sink(out, row)
     row
-  }, error = function(e) { row$detail <- conditionMessage(e); row })
+  }, error = function(e) { row$status <- "retry"; row$detail <- conditionMessage(e); row })
 }
 
 sre_audit <- function(ctx, genes_per_task = 10L, max_attempts = 3L) {
@@ -539,10 +540,10 @@ sre_queue_work <- function(ctx, queue_file) {
   list(genes = genes, batches = active_batches, finished = finished, tasks = tasks)
 }
 
-sre_run_gene <- function(ctx, gene, run_gene = run_slide_prior_gene) {
+sre_run_gene <- function(ctx, gene, run_gene = run_slide_prior_gene, inspect = sre_inspect) {
   loaded <- sre_load(ctx)
   if (!gene %in% ctx$manifest$gene) stop("Gene is not in the frozen manifest.")
-  before <- sre_inspect(ctx, gene)
+  before <- inspect(ctx, gene)
   if (sre_ready(before$status)) return(invisible(before))
   gc(verbose = FALSE)
   a <- sre_read(sre_attempt_file(ctx, gene))
@@ -585,7 +586,7 @@ sre_run_gene <- function(ctx, gene, run_gene = run_slide_prior_gene) {
     rm(out, previous)
     if (exists("args", inherits = FALSE)) rm(args)
     gc(verbose = FALSE)
-    record$result <- sre_inspect(ctx, gene)
+    record$result <- inspect(ctx, gene)
     record$error <- if (sre_ready(record$result$status)) NULL else record$result$detail
   }, warning = function(w) { warnings <<- c(warnings, conditionMessage(w)) }), error = function(e) {
     record$error <<- conditionMessage(e)
@@ -596,7 +597,7 @@ sre_run_gene <- function(ctx, gene, run_gene = run_slide_prior_gene) {
     # An error is saved for review, never counted as completed automatically.
     out <- structure(list(gene = gene, error = record$error), em_iteration = ctx$iteration)
     em_atomic_write(out, sre_result(ctx, gene))
-    record$result <- sre_inspect(ctx, gene)
+    record$result <- inspect(ctx, gene)
   }
   record$finished_at <- format(Sys.time(), tz = "UTC", usetz = TRUE)
   em_atomic_write(record, sre_attempt_file(ctx, gene))

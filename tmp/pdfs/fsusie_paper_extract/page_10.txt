@@ -1,0 +1,56 @@
+10 W. Denault et al.
+the inferred affected peaks/CpGs, and remain concentrated near gene TSSs (Fig. 5B). This provides
+evidence that the additional effects detected are mostly real signals rather than false positives. More
+generally, enrichments of haSNPs and mSNPs in predefined functional annotations [80, 81] were largely
+consistent between fSuSiE and SuSiE-topPC, suggesting that the additional discoveries of fSuSiE
+maintain similar functional characteristics (Supplementary Fig. 22). One exception was the stronger
+enrichments of SuSiE-topPC mSNPs in regions involved more directly in gene transcription (TSS, 5’
+UTR, promoters and coding regions). This may be because the strongest methylation signals (the
+top methylation PC) tend to occur near regions of direct transcriptional regulation. In comparison,
+fSuSiE, by looking beyond the strongest methylation signals, provides a more balanced picture of
+mSNPs involved in both direct and indirect gene regulation.
+As a fine-mapping method, fSuSiE provides a much more parsimonious explanation for observed
+associations than does conventional (univariate or “SNP-by-SNP”) QTL association testing (Fig. 5C).
+Conventional QTL testing results in large numbers of SNPs, many in high LD with one other, being
+associated with a (usually) small number of peaks/CpGs; in contrast, fSuSiE identifies a much smaller
+number of potentially-causal SNPs associated with (usually) a larger number of peaks/CpGs. In other
+words, fSuSiE finds many more changes in methylation and histone acetylation that span large parts
+the fine-mapping regions; some mSNPs are estimated to affect methylation levels at more than 100
+CpGs). The vast majority of mSNPs and haSNPs identified by fSuSiE are associated with methylation
+and histone acetylation at locations very close to the SNP; for 96% mSNPs and 54% haSNPs, the
+nearest affected location is within 100 kb (Fig. 5B). Additionally, 26.8% of haSNP CSs contain at
+least one SNP that is within the MACS2-called interval of the affected H3K9ac peak. These results
+agree with the general expectation that the variants affecting chromatin are often within the regulated
+chromatin region [82].
+fSuSiE reveals epigenetic regulatory mechanisms colocalizing with Alzheimer’s disease risk loci
+Alzheimer’s disease (AD) is a complex neurodegenerative disorder with substantial genetic heritability.
+Recent large-scale genome-wide association studies have identified hundreds of AD risk loci [83, 84], but
+the molecular mechanisms underlying most genetic associations remain unclear. Since GWAS variants
+typically affect gene regulation rather than protein coding sequences, integration of molecular QTL
+data with GWAS through colocalization analysis offers a powerful approach to identify regulatory
+mechanisms and target genes underlying disease associations. To demonstrate this, we performed
+colocalization analysis using COLOC (version 5) [85] between our fSuSiE fine-mapping results for
+methylation and histone acetylation, and AD GWAS summary statistics from two large-scale meta-
+analyses [83, 84].
+This genome-wide colocalization analysis identified 18 loci colocalizing with AD risk variants in 95%
+colocalization CSs. For illustration, we focus on 6 of these loci (3 methylation and 3 histone acetylation)
+with AD variants reaching genome-wide significance (Fig. 6, Supplementary Figures 23 and 24). A
+targeted SuSiE+COLOC comparison on the fSuSiE-nominated regions recovered 5 of the 18 loci with
+broadly consistent evidence; the fraction of the remaining 13 fSuSiE-only loci reaching ADp < 5×10−8
+(53.8%) is comparable to the shared set (60%), so the fSuSiE-only loci are supported by AD evidence
+of similar strength. These colocalized variants suggest potential regulatory targets for AD-associated
+epigenetic changes. In an attempt to pinpoint the specific genes regulated by these epigenetic changes,
+we integrated our results with eQTL data from the same ROSMAP DLPFC samples. This multi-modal
+integration provides substantial advantages over eQTL analysis alone: while eQTL colocalization
+with GWAS can identify genes affected by disease variants, the association itself does not provide
+mechanistic insights into how the disease variants may operate through regulation. To illustrate how
+integrating epigenomic QTL data can help address this, we show results for two well-studied AD risk
+loci, near genes CASS4 and CR1/CR2), where the fSuSiE fine-mapping results provide mechanistic
+insights into disease-associated genetic variants.
+CASS4 is a potential AD risk gene supported by association analyses [83, 86, 87] and colocalization
+of AD SNPs with CASS4 expression SNPs [87, 88]. Previous colocalization and fine-mapping analyses
+have suggested rs6014724 and rs17462136 in the 5’ UTR of CASS4 as putative causal variants [88].
+The fSuSiE methylation fine-mapping suggests another potential causal variant: rs1884913 (PIP >
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

@@ -1,0 +1,59 @@
+Fine-mapping molecular QTLs using fSuSiE 25
+inaccuracies with the DWT (see Chapter 9 of [100]), we compute a new WC matrix ˜D using the
+translation-invariant wavelet transform (TIWT), also known as the stationary wavelet transform.
+(In brief, the TIWT modifies the original DWT by applying it to shifted copies of the signal, then
+the WCs are averaged across the shifted copies.) Since the TIWT greatly increases computational
+effort, we use this TIWT only in this final step.
+All these steps are implemented by the susiF function of the fsusieR R package.
+Molecular QTL simulations
+Simulation of genotype data. The fine-mapping regions for the simulations were selected uniformly at
+random from 94 breast cancer loci on autosomal chromosomes reported in [120] (see Supplementary
+Table 1 of that paper). The median size of a fine-mapping reagion was about 1 Mb.
+Similar to [121], we used sim1000G [67] to simulate genotypes of unrelated individuals based on the
+genotypes from the 1000 Genomes Phase 3 whole-genome sequencing [68]. First, we randomly selected
+a continent-of-origin label (EUR, AMR, AFR, EAS, SAS), then we simulated SNP genotypes using
+N = 100 individuals chosen uniformly at random from the 1000 Genomes samples with the selected
+continent-of-origin label.
+Within the fine-mapping region, we kept all biallelic SNPs with minor allele frequencies (MAFs)
+of 5% or greater; that is, SNPs in which the minor allele was observed at least 10 times out of the
+2N = 200 chromosomes).
+For a single simulation, the genotype matrix, X, was a matrix with N = 100 rows (individuals)
+and J columns (SNPs), in which J ranged from approximation 1,500 to 4,000.
+Simulation of molecular trait data—wavelet simulations. In these simulations, the molecular trait data
+were simulated from an fSuSiE model, and more precisely, a multiple wavelet regression model with an
+SPS prior for the causal SNP effects. Simulating the data involved the following steps: the effects of
+all causal SNPs j (on the wavelet scale) were simulated from an SPS prior, fjt ∼PK
+k=0 πksN(0, σ2
+ks), in
+which the first mixture component was always a “spike” at zero (σ0s = 0); the effects of all non-causal
+SNPs j were set to zero, fjt = 0; and then the effects in the measurement space were then obtained
+as B = FW−1. Similar to [101][117, 118], we simulated molecular trait data with different levels of
+smoothness: first, we drew a “smoothness parameter”, µ, uniformly at random between 0 and 1; then
+we set the k = 0 (“spike”) mixture component at each scale s to be π0s = 1 − 2−µs. The intuition is
+that settings of µ closer to one produce “smoother” signals (larger effects at the largest scales), while
+settings of µ closer to zero produce effects of similar size across all scales.
+Finally, we simulated the molecular trait data, Y, according to (6). The noise eit was simulated in
+different ways. First, we considered i.i.d. noise, em
+it
+i.i.d.
+∼ N(0, σ2). (Note that independent homoskedas-
+tic nose in the original space is the same as independent homoskedastic noise in the wavelet space
+because the wavelet transform is orthogonal; that is, simulating em
+it as i.i.d. normal is the same as sim-
+ulating ew
+it as i.i.d. normal.) Second, we simulated spatially structured noise σm
+it using: (i) a Gaussian
+process (GP) [107] with a squared exponential kernel, Cov( em
+it , em
+it′) = e−(dtt′ /λ)2
+and λ = 20, where
+dtt′ = |t − t′| denotes the distance between trait locations t and t′ (defined in this way, the distance
+betwen two adjacent locations was always equal to 1); or (ii) fractional Gaussian noise [108] with Hurst
+parameter H = 0.75. The GP introduced shorter-range dependencies among molecular trait locations,
+whereas the fractional Gaussian noise induced longer-range dependencies. In all simulations, the noise
+was rescaled to achieve the specified proportion of variance in X explained by Y.
+Simulation of molecular trait data—WGBS block and WGBS decay simulations. In these simulations,
+we simulated methylation data from WGBS similar to [69]. The methylation profiles, Y, were simu-
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

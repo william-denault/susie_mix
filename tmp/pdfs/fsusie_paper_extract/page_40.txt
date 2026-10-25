@@ -1,0 +1,60 @@
+40 W. Denault et al.
+Algorithms for fitting the fSuSiE model
+In the line of the work of [24], we show that given F(1), . . . ,F(R−1) are known, estimating effect R,
+(i.e., F(R)) from model (13) corresponds to fitting an SFR model using as response R = D − XFR−1
+where FR−1 = PE−1
+e=1 F (r) (see Appendix section 13). This suggests that model (13) can be fitted
+using an iterative algorithm that estimates each element of F =PR
+r F(r) one at a time using an SFR,
+while holding the other constant. In the vein of [24], we use an Iterative Bayesian stepwise selection
+(IBSS) to fit the fSuSiE model. We detail our IBSS method in Algorithm 1. Similar to the IBSS in
+the univariate case, our algorithm is simple and has a complexity O(N J T L) per outer-loop iteration.
+In particular, the IBSS described in Algorithm 1 is a coordinate ascent algorithm that optimizes a
+VA of the posterior distribution of F(1), . . . ,F(R) under the fSuSiE model (13). The key idea of VA is
+to find an approximation of the posterior distribution ppost(F(1), . . . ,F(R)|Y, X, σ2, (σ2
+k), (πs,k)) that is
+simpler to compute than the actual posterior. This approximation is generally obtained by imposing
+a certain form of the approximation of the posterior; noted:
+q(F(1), . . . ,F(R)|Y, X, σ2, (σ2
+k), (πs,k))
+that makes the problem more tractable. As in most VA [152], we fit the fSuSiE by minimizing the
+Kullback-Leibler ( DKL) divergence between q and ppost.
+DKL(q, ppost) = log(p(Y|X, σ2, (σ2
+k), (πs,k))) − F (q, Y, X, σ2, (σ2
+k), (πs,k)) (85)
+Albeit the DKL(q, ppost) is in general intractable, it can be written as a sum of two terms in which
+only one depends on q (see equation (85) ). Thus minimizing the Kullback-Leibler divergence in terms
+of q is equivalent to minimizing the second term of (85), which is easier to compute. The function F is
+referred to as the ”evidence lower bound” (ELBO). Thus minimizing (85) corresponds to the following
+maximization problem.
+maximize
+q1,...,qR
+F (q1, . . . , qR, Y, X, σ2, (σ2
+k), (πs,k)) (86)
+To make (86) a more tractable problem, we seek to minimize the ELBO given that q can be
+factorized as follow:
+q(F(1), . . . ,F(R)) =
+RY
+e=1
+qr(F(R)) (87)
+Equation (87) imposes independence between the posterior of distribution of F(1), ...,F(R). As
+noted by Wang and colleagues [24] this factorization allows each posterior distribution qr to select
+which are the likely covariates that contain effect e. While the maximization problem (86) can be
+challenging, optimizing (86) for one qr at a time is straightforward. In particular, optimizing (86) for
+one qr corresponds to fitting a SFR model (see the proposition below).
+Proposition 1.
+maximize
+qr
+F (q1, . . . , qR, Y, X, σ2, (σ2
+k), (πs,k) = SF R(X, ¯Rr, G, σ2
+0) (88)
+Where ¯Rr is the expected value of the residual when removing all the effects except effect r. More
+formally
+¯Rr = D − X
+RX
+r′̸=r
+¯F(r′) (89)
+Where ¯F(r′) are the expected value of F(r′) with respect to qr′
+.CC-BY-NC-ND 4.0 International licenseavailable under a 
+was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made 
+The copyright holder for this preprint (whichthis version posted June 8, 2026. ; https://doi.org/10.1101/2025.08.17.670732doi: bioRxiv preprint 

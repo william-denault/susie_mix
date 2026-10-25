@@ -59,10 +59,17 @@ args$tissue_priors <- priors; args$previous_result <- out
 next_out <- do.call(worker_env$run_slide_prior_gene, args)
 for (tissue in names(out)) {
   f <- next_out[[tissue]]$fit_slide_prior
-  spe_fit_counts(f, spe_prior(priors, tissue))
+  learned_counts <- spe_fit_counts(f, spe_prior(priors, tissue))
+  free <- !f$delta_forced & seq_len(ncol(f$alpha)) <= f$input_p
+  independent_counts <- apply(f$alpha_delta[, free, , drop = FALSE], c(1, 3), sum)
+  independent_counts[rep(f$V, length.out = nrow(f$alpha)) == 0, ] <- 0
+  stopifnot(isTRUE(all.equal(unname(learned_counts), unname(independent_counts), tolerance = 1e-12)))
   stopifnot(next_out[[tissue]]$em_warm_started,
             identical(out[[tissue]]$sample_ids, next_out[[tissue]]$sample_ids))
 }
+stopifnot(any(vapply(names(out), function(tissue)
+  max(abs(next_out[[tissue]]$fit_slide_prior$alpha_delta - out[[tissue]]$fit_slide_prior$alpha_delta)) > 1e-10,
+  logical(1))))
 stopifnot(!length(list.files(args$temp_dir)))
 cat("PASS: synthetic GTEx import, donor alignment, QC, association metadata, real discrete fitting and warm-start refit.\n")
 
