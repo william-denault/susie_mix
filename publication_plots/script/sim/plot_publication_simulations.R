@@ -4,13 +4,13 @@
 # Purity has no error bars. Calibration retains its seed-block empirical bars.
 make_publication_simulation_figures <- function(
     project_dir = Sys.getenv("SUSIE_MIX_PROJECT_DIR", getwd()),
-    input_dir = file.path(dirname(project_dir), "simulation results/n250_r300_v1/figures"),
+    input_dir = file.path(project_dir, "input_data"),
     output_dir = file.path(project_dir, "figures"),
-    max_causal = 5L, write_png = TRUE) {
+    max_causal = 4L, write_png = TRUE) {
   source(file.path(project_dir, "script/sim/simulation_design.R"), local = TRUE)
   source(file.path(project_dir, "script/sim/simulation_plot_helpers.R"), local = TRUE)
   source(file.path(project_dir, "script/sim/publication_plot_helpers.R"), local = TRUE)
-  stopifnot(max_causal %in% 3:5)
+  stopifnot(max_causal %in% 3:4)
   method_names <- publication_methods
   method_labels <- publication_labels
   method_colors <- publication_colors

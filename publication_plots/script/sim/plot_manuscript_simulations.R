@@ -12,7 +12,7 @@
 #   E:   Mean credible-set purity at PVE = 30%, all three methods.
 #   F:   Mean credible-set size at PVE = 30%, all three methods.
 #
-# Calibration and power/FDR pool true causal counts K = 1 through 5.
+# Calibration and power/FDR pool true causal counts K = 1 through 4.
 # Calibration bars are the saved +/-2 seed-block empirical SE intervals.
 # Power/FDR pools TP and FP counts at each PIP threshold, preserving threshold
 # order; it does not average per-K rates or construct a monotone envelope.
@@ -34,7 +34,7 @@
 
 make_manuscript_simulation_figure <- function(
     project_dir = Sys.getenv("SUSIE_MIX_PROJECT_DIR", getwd()),
-    input_dir = file.path(dirname(project_dir), "simulation results/n250_r300_v1/figures"),
+    input_dir = file.path(project_dir, "input_data"),
     output_dir = file.path(project_dir, "figures/figure1"),
     calibration_pve = 0.10,
     performance_pve = 0.30,
@@ -42,7 +42,7 @@ make_manuscript_simulation_figure <- function(
     recessive_susie_min_power = 0.01,
     purity_padding = 0.01,
     purity_dodge_width = 0.72,
-    max_causal = 5L,
+    max_causal = 4L,
     width = 14.4,
     height = 7.2,
     base_size = 10,
@@ -96,7 +96,7 @@ make_manuscript_simulation_figure <- function(
   calibration_metrics <- select_data(metrics, calibration_pve)
 
   # Check that the pooled inputs describe the same available K values and
-  # replicate counts as the metric summary; never silently label absent K = 5.
+  # replicate counts as the metric summary; never label absent causal counts.
   k_values <- seq_len(max_causal)
   for (s in scenarios) for (m in methods) {
     pm <- purity[purity$scenario == s & purity$method == m, ]

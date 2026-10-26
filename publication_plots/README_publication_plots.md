@@ -16,8 +16,7 @@ source("C:/Document/Serieux/Travail/Data_analysis_and_papers/susie_mix/publicati
 figures <- generate_publication_figures()
 ```
 
-`figures$figure1$figure` is the editable Figure 1 patchwork object;
-`figures$audit` contains the checkpoint and replicate counts.
+`figures$figure1$figure` is the editable Figure 1 patchwork object.
 
 Figure 1 requires `ggplot2` and `patchwork`. If needed, install them once:
 
@@ -29,27 +28,19 @@ This folder is separate from the original analysis. All publication scripts,
 including both Figure 1 entry scripts, are copies; the original scripts and
 figures remain available for discussions with collaborators.
 
-The entry point reads the synced checkpoints in
-`../simulation results/n250_r300_v1/chunks/`: **n=250**, **300 requested replicates
-per condition**, all **225 effect allocations**, three methods, and **PVE 10%,
-20%, 30%, 40%**. Temporary `.tmp` and `.filepart` files are not read.
-It rebuilds the summaries in `../simulation results/n250_r300_v1/figures/`
-before drawing the publication plots. It does not run simulations or refit models.
-The old `input_data` snapshots are no longer the default input.
+The entry point reads the **original n=500 publication snapshots** in
+`input_data/`, restoring the old comparison with **causal counts 1–4**.
+PVE is **10%, 20%, 30%, 40%**; 5% remains excluded as requested.
+It reads the three saved summaries (`metric_summary.csv`, `roc_counts.rds`, and
+`pip_calibration_seed_counts.rds`), without rebuilding from raw checkpoints.
 
-The first run reads all checkpoints (about 23 GB for the complete run).
-Subsequent calls reuse summaries only when the checkpoint names, sizes and
-modification times, summary-script hashes, and saved summary hashes match the
-manifest. Syncing added or updated checkpoints automatically triggers a rebuild.
-To force a rebuild, use `generate_publication_figures(rebuild_summaries = TRUE)`.
-Finish syncing before running: a changed input signature during summarization
-stops the run instead of marking inconsistent summaries as current.
-
-The function prints the file count, included replicate count, error count, and
-number of checkpoints with fewer than 300 recorded attempts. Error records are
-excluded from all three methods together; nonconverged fits remain included.
-Review `file_audit.csv` and `configuration_counts.csv` in the summary folder.
-Three hundred recorded attempts do not necessarily mean 300 successful replicates.
+These snapshots include the finite-prior results saved as `SuSiE-slide-prior`.
+The older raw `../simulation results/slide_v1/chunks/` files contain the
+continuous-slide method, so they cannot replace the finite-prior snapshots.
+The copied simulation design refers to the older `slide_prior_v1` run.
+The n=250 results and summaries remain in their existing folder for later use;
+they are no longer inputs to the publication entry point. The n=500 input check
+prevents silently using them with old sample-size labels.
 
 Outputs are PDF and PNG files in **`figures/`**, with Figure 1
 in **`figures/figure1/`**. Run the script again to refresh them.
@@ -66,7 +57,7 @@ identify methods. The continuous-delta method originally saved as `SuSiE-slide`
 is excluded: the publication label **SuSiE-slide always refers to SuSiE-slide-prior**.
 Data exports retain the original identifiers to avoid ambiguity.
 
-True causal counts **K = 1–5** are included (pairs start at 2; triples at 3).
+True causal counts **K = 1–4** are included (pairs start at 2; triples at 3).
 Both pooled calibration and pooled ROC/power–FDR curves are recomputed after
 filtering K. Calibration retains its existing seed-block empirical error bars.
 The fitted SuSiE upper bound L remains 10; it is not the true causal count K.
@@ -74,12 +65,12 @@ The fitted SuSiE upper bound L remains 10; it is not the true causal count K.
 - `coverage_<group>`, `purity_<group>`, `cs_size_<group>`: value versus causal count.
 - `power_<group>`: current power scale, 0–1.
 - `power_<group>_zoom_075_1`: the same points/bars with the y-axis restricted to 0.75–1.
-- `roc_<group>_L<K>`, `power_fdr_<group>_L<K>`: curves for each applicable K up to 5.
-- `roc_<group>_all_L`, `power_fdr_<group>_all_L`: curves pooled across applicable K up to 5.
+- `roc_<group>_L<K>`, `power_fdr_<group>_L<K>`: curves for each applicable K up to 4.
+- `roc_<group>_all_L`, `power_fdr_<group>_all_L`: curves pooled across applicable K up to 4.
 - `pip_calibration_<group>_all_L_<method>`: one method per calibration figure.
 - `figure1/main_simulations`: the updated six-column manuscript figure. Column F
   shows mean credible-set size (unique biological SNPs per reported CS) at 30% PVE,
-  against 1–5 causal SNPs, with the existing CS-size error bars and one shared
+  against 1–4 causal SNPs, with the existing CS-size error bars and one shared
   y-axis range across the three scenario rows.
   The PIP threshold markers use `>=0.95` and `>=0.80`, matching the saved counts.
 
@@ -91,8 +82,7 @@ retain their current definitions. Purity has no error bars and its y-axis label
 is exactly `purity`. Points are offset by −0.24, 0, +0.24 around each causal count;
 Figure 1 uses the equivalent dodge width of 0.72. A zoomed power plot can omit
 estimates below 0.75; the full-scale version includes them.
-Coverage keeps its usual 0.70 lower limit when possible, and expands downward
-in 0.05 steps when needed to show lower estimates in the new n=250 results.
+Coverage uses the original 0.70–1.00 scale.
 
 For editable settings, use `script/sim/plot_publication_simulations.R` and
 `script/sim/main_manuscript_fig1.R`. The alternate Figure 1 entry

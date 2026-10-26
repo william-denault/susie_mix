@@ -1,13 +1,15 @@
-# Small synthetic summaries check that K=5 contributes to every pooled panel.
+# Small synthetic summaries check method selection and filtering BEFORE pooling.
 local({
   source("publication_plots/script/sim/simulation_plot_helpers.R", local = TRUE)
   source("publication_plots/script/sim/publication_plot_helpers.R", local = TRUE)
-  stopifnot(identical(figure_y_limits("coverage", data.frame(coverage = c(.64, .95))), c(.6, 1)),
-    identical(figure_y_limits("coverage", data.frame(coverage = c(.8, .95))), c(.7, 1)))
+  stopifnot(identical(figure_y_limits("coverage", data.frame(coverage = c(.8, .95))), c(.7, 1)),
+    publication_n == 500L,
+    identical(unname(publication_labels["SuSiE-slide-prior"]), "SuSiE-slide"))
   input <- tempfile("publication-counts-")
   dir.create(input)
   metrics <- expand.grid(scenario = c("Additive only", "Recessive only", "Partial recessive only"),
-    pve = publication_pve_values, K = 1:5, method = publication_methods,
+    pve = c(.05, publication_pve_values), K = 1:5,
+    method = c(publication_methods, "SuSiE-slide", "SuSiE-init-slide"),
     stringsAsFactors = FALSE)
   metrics$n_replicates <- 2L
   metrics$n_causal <- 2L * metrics$K
@@ -27,24 +29,25 @@ local({
     rownames(values) <- c("1", "2")
     list(meta = d, totals = values)
   })
-  cache <- list(signature = data.frame(file = "fixture_n250_L10_results.RData"), groups = groups)
+  cache <- list(signature = data.frame(file = "fixture_n500_L10_results.RData"), groups = groups)
   write.csv(metrics, file.path(input, "metric_summary.csv"), row.names = FALSE)
   saveRDS(do.call(rbind, curves), file.path(input, "roc_counts.rds"))
   saveRDS(cache, file.path(input, "pip_calibration_seed_counts.rds"))
-  five <- read_publication_simulation_data(input)
-  four <- read_publication_simulation_data(input, max_causal = 4L)
-  stopifnot(setequal(five$metrics$K, 1:5), all(five$pooled_curves$tp[five$pooled_curves$threshold == 0] == 30L),
+  four <- read_publication_simulation_data(input)
+  stopifnot(setequal(four$metrics$K, 1:4),
+    setequal(four$metrics$method, publication_methods),
+    setequal(four$metrics$pve, c(.1, .2, .3, .4)),
     all(four$pooled_curves$tp[four$pooled_curves$threshold == 0] == 20L),
-    all(five$pooled_calibration$n_replicates == 10L),
     all(four$pooled_calibration$n_replicates == 8L))
-  totals <- aggregate(five$pooled_calibration$n_causal,
-    five$pooled_calibration[c("scenario", "pve", "method")], sum)
-  stopifnot(all(totals$x == 30L))
-  write.csv(metrics[metrics$K < 5, ], file.path(input, "metric_summary.csv"), row.names = FALSE)
+  totals <- aggregate(four$pooled_calibration$n_causal,
+    four$pooled_calibration[c("scenario", "pve", "method")], sum)
+  stopifnot(all(totals$x == 20L),
+    inherits(try(read_publication_simulation_data(input, max_causal = 5L), silent = TRUE), "try-error"))
+  write.csv(metrics[metrics$K != 4, ], file.path(input, "metric_summary.csv"), row.names = FALSE)
   stopifnot(inherits(try(read_publication_simulation_data(input), silent = TRUE), "try-error"))
   write.csv(metrics, file.path(input, "metric_summary.csv"), row.names = FALSE)
-  cache$signature$file <- "fixture_n500_L10_results.RData"
+  cache$signature$file <- "fixture_n250_L10_results.RData"
   saveRDS(cache, file.path(input, "pip_calibration_seed_counts.rds"))
   stopifnot(inherits(try(read_publication_simulation_data(input), silent = TRUE), "try-error"))
-  cat("PASS: K=5 included in metrics, pooled ROC counts and calibration; incomplete K range and old n=500 inputs rejected.\n")
+  cat("PASS: only K=1:4, PVE=10/20/30/40 and the three requested methods contribute to metrics, pooled ROC and calibration; missing K=4 and n=250 inputs rejected.\n")
 })
