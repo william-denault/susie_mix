@@ -15,9 +15,10 @@ source(file.path(project_dir, "script/sim/simulation_design.R"), local = TRUE)
 source(file.path(project_dir, "script/sim/simulation_plot_helpers.R"), local = TRUE)
 source(file.path(project_dir, "script/sim/simulation_metric_helpers.R"), local = TRUE)
 results_dir <- getOption("susie.sim.results_dir", sim_results_dir)
-chunk_dir <- file.path(project_dir, results_dir, "chunks")
-output_dir <- file.path(project_dir, results_dir, "figures")
+chunk_dir <- getOption("susie.sim.chunk_dir", file.path(project_dir, results_dir, "chunks"))
+output_dir <- getOption("susie.sim.summary_dir", file.path(project_dir, results_dir, "figures"))
 reuse_saved_summaries <- isTRUE(getOption("susie.sim.reuse_saved_summaries", FALSE))
+summaries_only <- isTRUE(getOption("susie.sim.summaries_only", FALSE))
 
 pve_values <- sim_pve_values
 n_value <- sim_n
@@ -345,6 +346,7 @@ write.csv(pooled_calibration_table, file.path(output_dir, "pip_calibration_all_L
 # Draw the panels in the style of the supplementary figures
 # ------------------------------------------------------------
 
+if (!summaries_only) {
 figure_data <- function(metric, scenarios, only_K = NULL, methods = method_names) {
   d <- if (metric == "pip_calibration" && is.null(only_K)) pooled_calibration_table else
     if (metric == "pip_calibration") calibration_table else
@@ -562,8 +564,9 @@ save_calibration_figures <- function() {
   }
 }
 save_calibration_figures()
+}
 
-cat("\nFigures and summary tables saved in:", output_dir, "\n")
+cat(if (summaries_only) "\nSummary tables saved in:" else "\nFigures and summary tables saved in:", output_dir, "\n")
 cat("Included", sum(audit$included), "unique simulations; skipped",
     sum(audit$duplicates), "duplicate copies; recorded", sum(audit$errors), "error entries.\n")
 cat("Replicates with a nonconverged fit:", sum(audit$nonconverged),

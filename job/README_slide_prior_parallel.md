@@ -129,35 +129,6 @@ until sharing is explicitly enabled. Do not manually switch that old mode to
 
 ## Progress and restart
 
-### Extend an already running chain to 40 updates
-
-The October 25 target-control patch adds `set-target` and a read-only metadata
-`audit` mode to the R CLI. After installing that patch atomically, run from the
-RCC project root:
-
-```bash
-module load R/4.2.0
-Rscript --vanilla script/scan_tissue_attempt/run_slide_prior_parallel.R audit "$PWD" latest
-Rscript --vanilla script/scan_tissue_attempt/run_slide_prior_parallel.R set-target "$PWD" latest 40
-```
-
-Chain these with `&&` to extend only if the audit succeeds. The target is saved
-in `results_slide_prior_em/run_control.rds`. Every planning check reads this
-file, overriding the old inherited `SUSIE_SLIDE_TARGET_ITERATION=20`. No worker,
-controller or simulation needs cancelling or resubmitting. This is **40 total
-learned-prior updates**, ending with fits under iteration 040, plus initial 000.
-It is an iteration cap; the controller still stops for unresolved failures.
-`set-target` only extends targets. It changes no priors, fits, fitting tolerance
-or posterior calculations. Controller stderr prints `Run target iteration: 40`.
-
-The metadata audit compares every prepared iteration's tissue weights with
-its normalized pooled counts, checks history/snapshot agreement and the frozen
-successful gene/tissue cohort, and samples compact result summaries. It does
-not reopen every large posterior, and it does not establish biological validity
-or convergence of the outer EM. Stale summaries can occur while workers write
-new results; their count is reported separately. Monitor the root
-`prior_history.csv`, especially per-tissue `prior_max_change` and `w_01..w_17`.
-
 ```bash
 squeue --user="$USER" --array --format='%.20i %.28j %.10T %.12M %R'
 cat results_slide_prior_em/parallel_continuation_job_id.txt

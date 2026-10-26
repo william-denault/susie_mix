@@ -17,16 +17,26 @@ printf -v name 'iteration_%03d' "$iteration"
 locks="$project/results_slide_prior_em/$name/recovery/gene_locks"
 mkdir -p "$locks" "$batch/gene_logs"
 failed=0
-while IFS=$'\t' read -r gene action extra; do
+while IFS=$'\t' read -r gene action unit extra; do
+    unit=${unit:-gene}
     [[ "$gene" =~ ^[A-Za-z0-9_.-]+$ && "$gene" != . && "$gene" != .. &&
-       "$action" =~ ^(fit|validate)$ && -z "$extra" ]] || { echo 'Invalid task row.' >&2; exit 1; }
+       "$action" =~ ^(fit|validate)$ && "$unit" =~ ^(gene|prepare|assemble|tissue_[0-9]{3})$ &&
+       -z "$extra" ]] || { echo 'Invalid task row.' >&2; exit 1; }
     exec 8>"$locks/$gene.lock"
-    if ! flock -n 8; then echo "Gene already locked: $gene" >&2; failed=1; continue; fi
-    log="$batch/gene_logs/${gene}_${SLURM_JOB_ID}_restart_${SLURM_RESTART_COUNT:-0}"
-    echo "$action $gene on ${SLURMD_NODENAME:-unknown}"
-    if ! Rscript --vanilla "$cli" gene "$project" "$iteration" "$batch" "$SLURM_ARRAY_TASK_ID" "$gene" \
+    lock_args=(-n)
+    [[ "$unit" != tissue_* ]] || lock_args+=(-s)
+    if ! flock "${lock_args[@]}" 8; then echo "Gene already locked: $gene" >&2; failed=1; continue; fi
+    exec 9>"$locks/${gene}_${unit}.lock"
+    if ! flock -n 9; then echo "Unit already locked: $gene/$unit" >&2; failed=1; flock -u 8; continue; fi
+    log="$batch/gene_logs/${gene}_${unit}_${SLURM_JOB_ID}_restart_${SLURM_RESTART_COUNT:-0}"
+    echo "$action $gene/$unit on ${SLURMD_NODENAME:-unknown}"
+    unit_args=()
+    [[ "$unit" == gene ]] || unit_args+=("$unit")
+    if ! Rscript --vanilla "$cli" gene "$project" "$iteration" "$batch" "$SLURM_ARRAY_TASK_ID" "$gene" "${unit_args[@]}" \
         >>"$log.out" 2>>"$log.err"; then failed=1; echo "Inspect $log.err" >&2; fi
     flock -u 8
+    flock -u 9
     exec 8>&-
+    exec 9>&-
 done <<< "$rows"
 exit "$failed"

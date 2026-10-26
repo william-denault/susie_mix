@@ -4,20 +4,20 @@
 # Purity has no error bars. Calibration retains its seed-block empirical bars.
 make_publication_simulation_figures <- function(
     project_dir = Sys.getenv("SUSIE_MIX_PROJECT_DIR", getwd()),
-    input_dir = file.path(project_dir, "input_data"),
+    input_dir = file.path(dirname(project_dir), "simulation results/n250_r300_v1/figures"),
     output_dir = file.path(project_dir, "figures"),
-    max_causal = 4L, write_png = TRUE) {
+    max_causal = 5L, write_png = TRUE) {
   source(file.path(project_dir, "script/sim/simulation_design.R"), local = TRUE)
   source(file.path(project_dir, "script/sim/simulation_plot_helpers.R"), local = TRUE)
   source(file.path(project_dir, "script/sim/publication_plot_helpers.R"), local = TRUE)
-  stopifnot(max_causal == 4L)
+  stopifnot(max_causal %in% 3:5)
   method_names <- publication_methods
   method_labels <- publication_labels
   method_colors <- publication_colors
   method_symbols <- publication_shapes
   method_lines <- publication_lines
-  pve_values <- c(.05, .10, .20, .30, .40)
-  n_value <- 500
+  pve_values <- publication_pve_values
+  n_value <- publication_n
   target_coverage <- .95
   roc_max_fpr <- fdr_max <- .25
   write_roc_all_L <- TRUE
@@ -32,7 +32,7 @@ make_publication_simulation_figures <- function(
   scenario_groups <- list(pure = scenario_rows[[1]],
     pairs_1 = scenario_rows[[2]][1:5], pairs_2 = scenario_rows[[2]][6:10],
     triples_1 = scenario_rows[[3]][1:5], triples_2 = scenario_rows[[3]][6:10])
-  message("Reading saved summaries; selecting the three publication methods and K = 1:4.")
+  message("Reading n=", n_value, " summaries; selecting the three publication methods and K = 1:", max_causal, ".")
   data <- read_publication_simulation_data(input_dir, max_causal, method_names)
   summary_table <- data$metrics
   roc_table <- data$curves
@@ -47,7 +47,9 @@ make_publication_simulation_figures <- function(
   saveRDS(roc_table, file.path(output_dir, "roc_counts.rds"))
   saveRDS(pooled_roc_table, file.path(output_dir, "roc_counts_all_L.rds"))
   saveRDS(list(methods = method_names, labels = method_labels, colors = method_colors,
-    shapes = method_symbols, causal_counts = 1:4, point_offsets = c(-.24, 0, .24),
+    shapes = method_symbols, causal_counts = seq_len(max_causal), n = n_value,
+    pve_values = pve_values, input_dir = normalizePath(input_dir, winslash = "/"),
+    point_offsets = c(-.24, 0, .24),
     power_limits = c(0, 1), power_zoom_limits = c(.75, 1), purity_error_bars = FALSE,
     source_md5 = tools::md5sum(data$paths)), file.path(output_dir, "publication_settings.rds"))
 
@@ -171,7 +173,7 @@ draw_figure <- function(metric, scenarios, only_K = NULL, y_limits = NULL,
   title_text <- paste0(titles[metric], "  |  n = ", n_value)
   if (!is.null(only_K)) title_text <- paste0(title_text, "  |  L = ", only_K, " causal SNP",
                                           if (only_K == 1) "" else "s")
-  if (is_pip && is.null(only_K)) title_text <- paste0(title_text, "  |  Causal counts up to 4 pooled")
+  if (is_pip && is.null(only_K)) title_text <- paste0(title_text, "  |  Causal counts up to ", max_causal, " pooled")
   if (length(methods) == 1L) title_text <- paste0(title_text, "  |  ", method_labels[methods])
   mtext(title_text, side = 3, outer = TRUE, line = 1.2, font = 2, cex = 1.1)
   mtext(if (is_calibration) "Mean PIP within bin" else if (is_fdr) "Empirical FDR" else if (is_roc) "False positive rate" else "Number of causal SNPs",

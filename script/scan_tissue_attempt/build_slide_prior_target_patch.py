@@ -5,6 +5,8 @@ from pathlib import Path
 from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
 
 ROOT = Path(__file__).resolve().parents[2]
+if "slide_prior_tissue_parallel.R" in (ROOT / "script/scan_tissue_attempt/run_slide_prior_parallel.R").read_text():
+    raise SystemExit("The CLI now requires tissue-worker dependencies. Use build_slide_prior_tissue_patch.py; the existing October 25 target-only ZIP is preserved.")
 PREFIX = "updates/slide_prior_target_40/"
 FILES = ["script/scan_tissue_attempt/slide_prior_run_control.R",
          "script/scan_tissue_attempt/run_slide_prior_parallel.R"]

@@ -170,7 +170,12 @@ visible_curve_max <- function(d, xlim) {
 }
 
 figure_y_limits <- function(metric, d, xlim = c(0, .25)) {
-  if (metric == "coverage") return(c(.7, 1))
+  if (metric == "coverage") {
+    values <- d$coverage[is.finite(d$coverage)]
+    # Keep the publication scale when possible, but show lower n=250 estimates.
+    lower <- if (length(values)) min(.7, floor(min(values) * 20) / 20) else .7
+    return(c(lower, 1))
+  }
   values <- if (metric %in% c("coverage", "purity", "cs_size")) d[[metric]] else numeric()
   values <- values[is.finite(values)]
   if (metric == "purity") {

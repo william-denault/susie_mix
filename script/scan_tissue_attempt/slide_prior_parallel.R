@@ -145,11 +145,24 @@ spp_batch <- function(ctx, batch) {
   if (!identical(settings$key, spp_key(ctx)) || !identical(settings$manifest_md5, unname(tools::md5sum(f))))
     stop("Parallel batch inputs changed.")
   work <- read.csv(f, stringsAsFactors = FALSE)
-  if (!nrow(work) || anyDuplicated(work$gene) || any(!work$gene %in% ctx$manifest$gene) ||
+  if (!"unit" %in% names(work)) work$unit <- "gene"
+  if (!nrow(work) || anyNA(work) ||
+      anyDuplicated(paste(work$gene, work$unit, sep = ":")) || any(!work$gene %in% ctx$manifest$gene) ||
       any(!work$action %in% c("validate", "fit")) || length(unique(work$action)) != 1L ||
+      any(!grepl("^(gene|prepare|assemble|tissue_[0-9]{3})$", work$unit)) ||
+      any(work$action == "validate" & work$unit != "gene") ||
       !identical(sort(unique(as.integer(work$task))), seq_len(max(work$task))) || max(work$task) > 298L ||
       any(table(work$task) > if (work$action[1] == "fit") 1L else 25L)) stop("Invalid parallel assignment.")
+  spp_check_units(work)
   work
+}
+spp_check_units <- function(work) {
+  for (g in unique(work$gene)) {
+    u <- work$unit[work$gene == g]
+    if (anyDuplicated(u) || (length(u) > 1L && any(!grepl("^tissue_", u))))
+      stop("Overlapping active gene assignments: ", g)
+  }
+  invisible(TRUE)
 }
 spp_queue <- function(ctx, queue_file) {
   lines <- readLines(queue_file, warn = FALSE); lines <- lines[nzchar(lines)]
@@ -169,7 +182,7 @@ spp_queue <- function(ctx, queue_file) {
   if (anyDuplicated(ids)) stop("Duplicate array registration.")
   workers <- q$name %in% c("slide_parallel_validate", "slide_parallel_fit")
   if (any(!q$array[workers] %in% ids)) stop("Unregistered parallel worker; inspect submissions.")
-  active <- character(); tasks <- 0L
+  active <- data.frame(gene = character(), unit = character()); tasks <- 0L
   for (i in seq_along(f)) {
     batch <- dirname(f[i]); rows <- which(q$array == ids[i])
     # Finished batches are inspected once, then a tiny marker avoids repeated
@@ -180,7 +193,8 @@ spp_queue <- function(ctx, queue_file) {
     if (length(rows)) {
       if (any(!q$id[rows] %in% expected) || any(!workers[rows])) stop("Unexpected registered worker.")
       ts <- unique(w$task)[match(q$id[rows], expected)]
-      active <- c(active, w$gene[w$task %in% ts]); tasks <- tasks + length(rows)
+      active <- rbind(active, w[w$task %in% ts, c("gene", "unit"), drop = FALSE])
+      tasks <- tasks + length(rows)
     } else {
       receipts <- file.path(batch, paste0("started_", unique(w$task), ".rds"))
       if (any(!file.exists(receipts))) stop("A completed worker never entered R: ", batch,
@@ -188,8 +202,8 @@ spp_queue <- function(ctx, queue_file) {
       em_atomic_write(TRUE, file.path(batch, "closed.rds"))
     }
   }
-  if (anyDuplicated(active)) stop("Overlapping active gene assignments.")
-  list(genes = active, tasks = tasks)
+  spp_check_units(active)
+  list(genes = unique(active$gene), units = active, tasks = tasks)
 }
 spp_validation_attempts <- function(ctx, gene) {
   f <- file.path(spp_root(ctx), "validation_attempts", paste0(gene, ".rds"))
@@ -287,7 +301,13 @@ spp_plan <- function(ctx, capacity, queue_file) {
     spp_complete(ctx, index)
     return(list(status = "complete", iteration = ctx$iteration))
   }
+  split_genes <- if (exists("sps_genes", mode = "function")) sps_genes(ctx) else character()
+  if (capacity > 0L && length(split_genes)) {
+    work <- sps_plan(ctx, split_genes[!sre_ready(status[match(split_genes, genes)])], live, capacity)
+    if (nrow(work)) return(spp_write_batch(ctx, work))
+  }
   pending <- which(!sre_ready(status) & !genes %in% live$genes)
+  pending <- pending[!genes[pending] %in% split_genes]
   if (!length(pending) || capacity == 0L) return(list(status = "waiting", iteration = ctx$iteration))
   validate <- pending[status[pending] == "unvalidated" & file.exists(sre_result(ctx, genes[pending]))]
   action <- if (length(validate)) "validate" else "fit"
@@ -316,10 +336,13 @@ spp_plan <- function(ctx, capacity, queue_file) {
   }
   work <- data.frame(task = if (action == "validate") ceiling(seq_along(choose)/25) else seq_along(choose),
                      gene = genes[choose], action = action)
+  spp_write_batch(ctx, work)
+}
+spp_write_batch <- function(ctx, work) {
   dir.create(file.path(spp_root(ctx), "batches"), showWarnings = FALSE)
   batch <- tempfile("batch_", tmpdir = file.path(spp_root(ctx), "batches")); dir.create(batch)
   em_atomic_write(work, file.path(batch, "manifest.csv"), csv = TRUE)
   em_atomic_write(list(key = spp_key(ctx), manifest_md5 = unname(tools::md5sum(file.path(batch, "manifest.csv")))),
                   file.path(batch, "settings.rds"))
-  list(status = "batch", iteration = ctx$iteration, batch = batch, tasks = max(work$task), action = action)
+  list(status = "batch", iteration = ctx$iteration, batch = batch, tasks = max(work$task), action = work$action[1])
 }

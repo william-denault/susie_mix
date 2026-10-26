@@ -56,7 +56,8 @@ run_slide_prior_gene <- function(
 
     # --- misc ---
     temp_dir = file.path(project_dir, "temp_plink_slide_prior_em"),
-    previous_result = NULL
+    previous_result = NULL,
+    prepare_sink = NULL
 ) {
 
 
@@ -540,9 +541,6 @@ run_slide_prior_gene <- function(
                  max_iter = max_iter, tol = tol, min_abs_corr = min_abs_corr,
                  verbose = verbose)
     if (!is.null(warm)) args$model_init <- warm
-    fit <- do.call(susieRSlidePrior::susie, args)
-    tryCatch(spe_fit_counts(fit, prior, require_converged = FALSE),
-             error = function(e) em_stop_fit(conditionMessage(e)))
     predictor_map <- data.frame(predictor_index = seq_len(ncol(geno)),
                                  predictor_name = colnames(geno), snp = colnames(geno),
                                  coding = "slider")
@@ -551,14 +549,18 @@ run_slide_prior_gene <- function(
     r <- as.numeric(cor(geno, pheno$y))
     stat <- abs(r) * sqrt((length(pheno$y) - 2) / pmax(0, 1 - r^2))
     min_pv <- min(2 * pt(stat, df = length(pheno$y) - 2, lower.tail = FALSE))
-    list(fit_slide_prior = fit, delta_prior = prior,
-         slide_prior_lead_snp_tss_distance =
-           get_cs_lead_tss_distance(fit, predictor_map, tss),
-         predictor_map = predictor_map, sample_ids = ids,
+    metadata <- list(delta_prior = prior, predictor_map = predictor_map, sample_ids = ids,
          em_warm_started = !is.null(warm), n_SNP = ncol(geno),
          n_ind = length(pheno$y), mean_phe = mean(pheno$y),
          median_phe = median(pheno$y), median_read = median_read,
          mean_read = mean_read, min_pv = min_pv)
+    prepared <- list(args = args, metadata = metadata, tss = tss,
+                     rng_state = .Random.seed)
+    if (!is.null(prepare_sink)) {
+      prepare_sink(target_tissue, prepared)
+      return(list(prepared = TRUE))
+    }
+    spe_fit_prepared_slide_tissue(prepared, project_dir)
   }
 
   fits <- list()
@@ -612,4 +614,19 @@ run_slide_prior_gene <- function(
   attr(fits, "tissue_errors") <- tissue_errors
 
   fits
+}
+
+# The same fitter and output construction are used by whole-gene and tissue
+# workers. Preparation may save these inputs without running a regional fit.
+spe_fit_prepared_slide_tissue <- function(prepared, project_dir) {
+  source(file.path(project_dir, "script/scan_tissue_attempt/workhorse_utils.R"), local = TRUE)
+  source(file.path(project_dir, "script/scan_tissue_attempt/em_utils.R"), local = TRUE)
+  source(file.path(project_dir, "script/scan_tissue_attempt/slide_prior_em_utils.R"), local = TRUE)
+  fit <- do.call(susieRSlidePrior::susie, prepared$args)
+  tryCatch(spe_fit_counts(fit, prepared$metadata$delta_prior, require_converged = FALSE),
+           error = function(e) em_stop_fit(conditionMessage(e)))
+  c(list(fit_slide_prior = fit, delta_prior = prepared$metadata$delta_prior,
+         slide_prior_lead_snp_tss_distance =
+           get_cs_lead_tss_distance(fit, prepared$metadata$predictor_map, prepared$tss)),
+    prepared$metadata[setdiff(names(prepared$metadata), "delta_prior")])
 }

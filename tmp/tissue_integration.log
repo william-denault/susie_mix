@@ -1,0 +1,155 @@
+During startup - Warning messages:
+1: Setting LC_COLLATE=C.UTF-8 failed 
+2: Setting LC_CTYPE=C.UTF-8 failed 
+3: Setting LC_MONETARY=C.UTF-8 failed 
+4: Setting LC_TIME=C.UTF-8 failed 
+
+Attaching package: 'data.table'
+
+The following object is masked from 'package:base':
+
+    %notin%
+
+Importing covariate data.
+Importing gene expression data.
+Found 2 tissues for gene GENE :
+[1] "Brain" "Liver"
+Extracting genotype data from PLINK file.
+
+=====================================
+Tissue: Brain 
+=====================================
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 8. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+
+=====================================
+Tissue: Liver 
+=====================================
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 8. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+Importing covariate data.
+Importing gene expression data.
+Found 2 tissues for gene GENE :
+[1] "Brain" "Liver"
+Extracting genotype data from PLINK file.
+
+=====================================
+Tissue: Brain 
+=====================================
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 8. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+
+=====================================
+Tissue: Liver 
+=====================================
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 8. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+PASS: synthetic GTEx import, donor alignment, QC, association metadata, real discrete fitting and warm-start refit.
+Audited 1/1 genes
+retry 1
+Chromosome scope recorded: 0 genes excluded; 1 genes still need recovery.
+Importing covariate data.
+Importing gene expression data.
+Found 2 tissues for gene GENE :
+[1] "Brain" "Liver"
+Extracting genotype data from PLINK file.
+
+=====================================
+Tissue: Brain 
+=====================================
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 8. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+
+=====================================
+Tissue: Liver 
+=====================================
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 8. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+Audited 1/1 genes
+valid 1
+Recorded iteration 0 objective: -143.285565918721 across 2 fits.
+Recovery complete: all genes validated or explicitly audited; no new EM update submitted.
+Audited 1/1 genes
+valid 1
+Recorded iteration 0 objective: -143.285565918721 across 2 fits.
+Recovery complete: all genes validated or explicitly audited; no new EM update submitted.
+Prepared slider iteration 1 for 2 tissues and 1 chunks. Priors are frozen before submission.
+Audited 1/1 genes
+retry 1
+Importing covariate data.
+Importing gene expression data.
+Found 2 tissues for gene GENE :
+[1] "Brain" "Liver"
+Extracting genotype data from PLINK file.
+
+=====================================
+Tissue: Brain 
+=====================================
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 8. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+
+=====================================
+Tissue: Liver 
+=====================================
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 8. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+Audited 1/1 genes
+valid 1
+Recorded iteration 1 objective: -141.795862071867 across 2 fits.
+Recovery complete: all genes validated or explicitly audited; no new EM update submitted.
+PASS: recovery wrapper, actual L clipping, completed-iteration gate, original M-step and real warm-start recovery.
+Iteration 0: 1/1 resolved; 0 active tasks; 298 submission slots.
+Validated iteration 0; collected counts for 2 fits.
+Iteration 1: 1/1 resolved; 0 active tasks; 298 submission slots.
+Validated iteration 1; collected counts for 2 fits.
+Prepared slider iteration 2 for 2 tissues and 1 chunks. Priors are frozen before submission.
+Importing covariate data.
+Importing gene expression data.
+Found 2 tissues for gene GENE :
+[1] "Brain" "Liver"
+Extracting genotype data from PLINK file.
+
+=====================================
+Tissue: Brain 
+=====================================
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 8. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+
+=====================================
+Tissue: Liver 
+=====================================
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 8. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+Importing covariate data.
+Importing gene expression data.
+Found 2 tissues for gene GENE :
+[1] "Brain" "Liver"
+Extracting genotype data from PLINK file.
+
+=====================================
+Tissue: Brain 
+=====================================
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 8. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+
+=====================================
+Tissue: Liver 
+=====================================
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 8. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+Tissue splitting enabled for: GENE. Existing jobs finish normally; the controller adopts splitting when the gene is idle. No new controller is needed.
+Iteration 2: 0/1 resolved; 1 active tasks; 2 submission slots.
+Iteration 2: 0/1 resolved; 0 active tasks; 2 submission slots.
+Importing covariate data.
+Importing gene expression data.
+Found 2 tissues for gene GENE :
+[1] "Brain" "Liver"
+Extracting genotype data from PLINK file.
+
+=====================================
+Tissue: Brain 
+=====================================
+
+=====================================
+Tissue: Liver 
+=====================================
+Iteration 2: 0/1 resolved; 0 active tasks; 1 submission slots.
+Iteration 2: 0/1 resolved; 1 active tasks; 1 submission slots.
+Iteration 2: 0/1 resolved; 2 active tasks; 298 submission slots.
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 8. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+Iteration 2: 0/1 resolved; 0 active tasks; 298 submission slots.
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 8. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+Iteration 2: 0/1 resolved; 0 active tasks; 298 submission slots.
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 8. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+Iteration 2: 0/1 resolved; 0 active tasks; 298 submission slots.
+Iteration 2: 1/1 resolved; 0 active tasks; 298 submission slots.
+Validated iteration 2; collected counts for 2 fits.
+PASS: deployed-vs-refactored worker, real whole-gene-vs-tissue fits and EM counts, frozen cohort, concurrent tissues, whole-gene ownership, partial retry, idempotence, assembly barrier and changed-input detection.

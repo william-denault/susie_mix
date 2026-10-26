@@ -11,9 +11,10 @@ worker="$repo/job/slide_prior_parallel_worker"
 export PAR_WORKERS=0 PAR_OTHER=0 PAR_SIM=0 PAR_CONTROL=0 PAR_FAIL_QUEUE=0 PAR_SELF=1 PAR_STATUS=batch
 export PAR_FAIL_R=0 PAR_FAIL_ARRAY=0 PAR_FAIL_NEXT=0 PAR_AMBIGUOUS=0 PAR_FAIL_GENE=0 PAR_LOCK=0
 export PAR_ACTION=fit
+export PAR_UNIT=gene
 unset SUSIE_SLIDE_WORKERS SUSIE_SLIDE_POLL_MINUTES SUSIE_SLIDE_TARGET_ITERATION SUSIE_SLIDE_WAIT_FOR_SIMULATIONS
 module() { :; }
-flock() { [[ "$PAR_LOCK" == 0 ]]; }
+flock() { printf '%s\n' "$*" >> "$PAR_TEST/lock_calls"; [[ "$PAR_LOCK" == 0 ]]; }
 squeue() {
     [[ "$PAR_FAIL_QUEUE" == 0 ]] || return 1
     [[ "$*" == *--array* && "$*" == *--states=all* && "$*" == *%200j* ]] || return 1
@@ -40,9 +41,12 @@ Rscript() {
             local b="$SUSIE_MIX_PROJECT_DIR/results_slide_prior_em/iteration_000/recovery/parallel/batches/test"
             mkdir -p "$b"
             printf 'batch\n0\n%s\n%s\n%s\n' "$b" "$6" "$PAR_ACTION" ;;
-        task) printf 'G001\tvalidate\nG002\tvalidate\n' ;;
+        task)
+            if [[ "$PAR_UNIT" == gene ]]; then printf 'G001\tvalidate\nG002\tvalidate\n'
+            else printf 'G001\tfit\t%s\n' "$PAR_UNIT"; fi ;;
         gene)
             printf '%s\n' "$8" >> "$PAR_TEST/gene_calls"
+            printf '%s\n' "${9:-gene}" >> "$PAR_TEST/unit_calls"
             [[ "$PAR_FAIL_GENE" == 0 || "$8" != G001 ]] ;;
         *) return 1 ;;
     esac
@@ -108,6 +112,20 @@ export SLURM_ARRAY_TASK_ID=1 PAR_FAIL_GENE=1
 batch="$SUSIE_MIX_PROJECT_DIR/results_slide_prior_em/iteration_000/recovery/parallel/batches/test"
 if bash "$worker" "$SUSIE_MIX_PROJECT_DIR" 0 "$batch" >"$PAR_TEST/worker.out" 2>"$PAR_TEST/worker.err"; then exit 1; fi
 [[ $(cat "$PAR_TEST/gene_calls") == $'G001\nG002' ]]
+# Concurrent tissue units share the gene lock but own a separate exclusive
+# unit lock. Assembly takes the exclusive gene lock again.
+export PAR_FAIL_GENE=0 PAR_UNIT=tissue_001
+rm -f -- "$PAR_TEST/lock_calls" "$PAR_TEST/unit_calls"
+bash "$worker" "$SUSIE_MIX_PROJECT_DIR" 1 "$batch" >"$PAR_TEST/tissue.out" 2>"$PAR_TEST/tissue.err"
+grep -Fxq -- '-n -s 8' "$PAR_TEST/lock_calls"
+grep -Fxq -- '-n 9' "$PAR_TEST/lock_calls"
+[[ $(cat "$PAR_TEST/unit_calls") == tissue_001 ]]
+export PAR_UNIT=assemble
+rm -f -- "$PAR_TEST/lock_calls" "$PAR_TEST/unit_calls"
+bash "$worker" "$SUSIE_MIX_PROJECT_DIR" 1 "$batch" >"$PAR_TEST/assemble.out" 2>"$PAR_TEST/assemble.err"
+grep -Fxq -- '-n 8' "$PAR_TEST/lock_calls"
+[[ $(cat "$PAR_TEST/unit_calls") == assemble ]]
+export PAR_UNIT=gene
 echo 'PASS: 298 cap, single-slot refill, five-minute eligibility, simulation priority, other-job budget, duplicate controllers, failure/ambiguity guards, continued validation after a gene failure.'
 # A new continuation adopts sharing despite WAIT_FOR_SIMULATIONS=1 inherited
 # from an already submitted old controller. No second chain is launched.

@@ -5,10 +5,12 @@ publication_labels <- setNames(c("SuSiE", "SuSiE-MiX", "SuSiE-slide"), publicati
 publication_colors <- setNames(c("#2489FF", "#D81B60", "#009E73"), publication_methods)
 publication_shapes <- setNames(c(16, 17, 18), publication_methods)
 publication_lines <- setNames(c(1, 2, 4), publication_methods)
+publication_n <- 250L
+publication_pve_values <- c(.10, .20, .30, .40)
 
 # Requires simulation_plot_helpers.R (for seed-block calibration intervals).
 # Filter BEFORE pooling: an all-K summary cannot be trimmed after pooling.
-read_publication_simulation_data <- function(input_dir, max_causal = 4L,
+read_publication_simulation_data <- function(input_dir, max_causal = 5L,
                                              methods = publication_methods) {
   stopifnot(length(max_causal) == 1L, is.finite(max_causal),
             max_causal >= 1L, max_causal == as.integer(max_causal),
@@ -17,12 +19,22 @@ read_publication_simulation_data <- function(input_dir, max_causal = 4L,
                                  "pip_calibration_seed_counts.rds"))
   if (any(!file.exists(paths))) stop("Missing saved summaries:\n",
     paste(paths[!file.exists(paths)], collapse = "\n"),
-    "\nRun the full simulation summary script first.")
-  keep <- function(d) d$method %in% methods & d$K %in% seq_len(max_causal)
+    "\nRun generate_publication_figures() to build the new summaries first.")
+  cache <- readRDS(paths[3])
+  if (is.null(cache$signature$file) || !length(cache$signature$file) ||
+      any(!grepl(paste0("_n", publication_n, "_L10_"), cache$signature$file, fixed = TRUE)))
+    stop("Publication plots require the n=250, fitted-L=10 checkpoint summaries; ",
+         "run generate_publication_figures() instead of using the old input_data snapshots.")
+  keep <- function(d) d$method %in% methods & d$K %in% seq_len(max_causal) &
+    d$pve %in% publication_pve_values
   metrics <- read.csv(paths[1], stringsAsFactors = FALSE)
   metrics <- metrics[keep(metrics), , drop = FALSE]
   if (!nrow(metrics) || !setequal(unique(metrics$method), methods))
     stop("No complete set of requested methods in the selected causal counts.")
+  if (!setequal(unique(metrics$K), seq_len(max_causal)) ||
+      !setequal(unique(metrics$pve), publication_pve_values))
+    stop("Summaries must include causal counts 1 through ", max_causal,
+         " and PVE 10%, 20%, 30%, 40%.")
   cells <- split(metrics, interaction(metrics[c("scenario", "pve", "K")], drop = TRUE))
   for (d in cells) {
     if (nrow(d) != length(methods) || !setequal(d$method, methods) ||
@@ -49,7 +61,6 @@ read_publication_simulation_data <- function(input_dir, max_causal = 4L,
   pooled_curves$fpr <- pooled_curves$fp / pooled_baseline$fp[mt]
   pooled_curves$fdr <- with(pooled_curves, ifelse(tp + fp > 0, fp / (tp + fp), 0))
 
-  cache <- readRDS(paths[3])
   groups <- Filter(function(g) isTRUE(keep(g$meta)), cache$groups)
   calibration <- calibration_summary(groups)
   totals <- aggregate(calibration$n_causal, calibration[c("scenario", "pve", "K", "method")], sum)
@@ -63,5 +74,6 @@ read_publication_simulation_data <- function(input_dir, max_causal = 4L,
   pooled_calibration <- calibration_summary(groups, pool_K = TRUE)
   list(metrics = metrics, curves = curves, pooled_curves = pooled_curves,
        calibration = calibration, pooled_calibration = pooled_calibration,
-       paths = paths, max_causal = max_causal)
+       paths = paths, max_causal = max_causal, n = publication_n,
+       pve_values = publication_pve_values)
 }

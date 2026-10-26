@@ -12,15 +12,14 @@
 #   E:   Mean credible-set purity at PVE = 30%, all three methods.
 #   F:   Mean credible-set size at PVE = 30%, all three methods.
 #
-# Calibration and power/FDR pool available true causal counts K = 1 through 4.
+# Calibration and power/FDR pool true causal counts K = 1 through 5.
 # Calibration bars are the saved +/-2 seed-block empirical SE intervals.
 # Power/FDR pools TP and FP counts at each PIP threshold, preserving threshold
 # order; it does not average per-K rates or construct a monotone envelope.
 # In panel D's recessive-only row, the SuSiE segment below 1% power is omitted
 # from the display. Original and displayed curves are saved separately.
 # Open/filled circles mark the saved 0.95/0.80 PIP thresholds. Saved counts use
-# PIP >= cutoff; no PIPs equal these cutoffs in the selected PVE = 30% runs
-# (checked against the checkpoints), so these also give the strict > counts.
+# PIP >= cutoff, matching the threshold labels in the figure.
 # Purity = sum of CS minimum absolute correlations / number of reported CSs.
 # Purity shows dodged points without intervals or connecting lines, with a
 # shared lower y limit just below the lowest displayed mean.
@@ -35,7 +34,7 @@
 
 make_manuscript_simulation_figure <- function(
     project_dir = Sys.getenv("SUSIE_MIX_PROJECT_DIR", getwd()),
-    input_dir = file.path(project_dir, "input_data"),
+    input_dir = file.path(dirname(project_dir), "simulation results/n250_r300_v1/figures"),
     output_dir = file.path(project_dir, "figures/figure1"),
     calibration_pve = 0.10,
     performance_pve = 0.30,
@@ -43,7 +42,7 @@ make_manuscript_simulation_figure <- function(
     recessive_susie_min_power = 0.01,
     purity_padding = 0.01,
     purity_dodge_width = 0.72,
-    max_causal = 4L,
+    max_causal = 5L,
     width = 14.4,
     height = 7.2,
     base_size = 10,
@@ -98,7 +97,7 @@ make_manuscript_simulation_figure <- function(
 
   # Check that the pooled inputs describe the same available K values and
   # replicate counts as the metric summary; never silently label absent K = 5.
-  k_values <- sort(unique(purity$K))
+  k_values <- seq_len(max_causal)
   for (s in scenarios) for (m in methods) {
     pm <- purity[purity$scenario == s & purity$method == m, ]
     cm <- calibration_metrics[calibration_metrics$scenario == s &
@@ -108,7 +107,7 @@ make_manuscript_simulation_figure <- function(
     baseline <- cr[cr$threshold == 0, ]
     if (!identical(sort(pm$K), k_values) ||
         !identical(sort(cm$K), k_values)) {
-      stop("Available causal counts differ across the selected panels.")
+      stop("Every selected panel must include all causal counts 1 through ", max_causal, ".")
     }
     if (nrow(cb) != 10L || anyDuplicated(cb$bin) || any(cb$K != 0) ||
         any(cb$n_replicates != sum(cm$n_replicates)) ||
@@ -155,11 +154,11 @@ make_manuscript_simulation_figure <- function(
         any(table(d$scenario, d$method) != 1L)) {
       stop("Expected one saved curve point per scenario/method at PIP = ", cutoff)
     }
-    d$pip_cutoff <- sprintf(">%.2f", cutoff)
+    d$pip_cutoff <- sprintf(">=%.2f", cutoff)
     d
   }))
   threshold_markers$pip_cutoff <- factor(threshold_markers$pip_cutoff,
-                                       levels = c(">0.95", ">0.80"))
+                                       levels = c(">=0.95", ">=0.80"))
 
   theme_manuscript <- ggplot2::theme_bw(base_size = base_size, base_family = "sans") +
     ggplot2::theme(
@@ -234,7 +233,7 @@ make_manuscript_simulation_figure <- function(
       inherit.aes = FALSE, size = 2.6, stroke = 0.7, fill = "white",
       show.legend = c(color = FALSE, shape = TRUE)) +
     facet_rows() + method_scales(shape = FALSE) +
-    ggplot2::scale_shape_manual(name = "PIP", values = c(">0.95" = 21, ">0.80" = 16)) +
+    ggplot2::scale_shape_manual(name = "PIP", values = c(">=0.95" = 21, ">=0.80" = 16)) +
     ggplot2::scale_x_continuous(
       breaks = pretty(c(0, fdr_max), n = 3),
       expand = ggplot2::expansion(mult = 0.025)) +
@@ -309,7 +308,9 @@ make_manuscript_simulation_figure <- function(
     power_fdr_display = displayed_curves,
     power_fdr_omitted = curves[omit_curve_point, , drop = FALSE],
     purity = purity, cs_size = cs_size,
-    settings = list(methods = methods, labels = method_labels, colors = method_colors, max_causal = max_causal, scenarios = scenarios, causal_counts = k_values,
+    settings = list(methods = methods, labels = method_labels, colors = method_colors,
+                    n = saved$n, pve_values = saved$pve_values,
+                    max_causal = max_causal, scenarios = scenarios, causal_counts = k_values,
                     calibration_pve = calibration_pve, performance_pve = performance_pve,
                     fdr_max = fdr_max, power_limits = power_limits,
                     recessive_susie_min_power = recessive_susie_min_power,

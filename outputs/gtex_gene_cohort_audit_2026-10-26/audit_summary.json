@@ -1,0 +1,59 @@
+{
+  "audit_date": "2026-10-26",
+  "gencode26_autosomal_protein_coding_ids": 18901,
+  "gencode26_autosomal_protein_coding_symbols": 18884,
+  "original_manifest_symbols": 18468,
+  "excluded_X_Y_MT_symbols": 851,
+  "current_autosomal_scan_symbols": 17617,
+  "shared_reference_and_scan_symbols": 17550,
+  "reference_symbols_absent_from_scan": 1334,
+  "reference_ids_under_absent_symbols": 1338,
+  "scan_symbols_outside_v26_protein_coding": 67,
+  "missing_symbol_reasons": {
+    "Renamed protein-coding gene": 679,
+    "Absent from GTEx expression list": 505,
+    "Reclassified as non-protein-coding": 113,
+    "Stable ID absent from Ensembl 103": 37
+  },
+  "public_expression_rows": 56200,
+  "public_expression_symbols": 54592,
+  "reference_ids_absent_from_public_expression": 521,
+  "ensembl103_filter_reproduces_original_manifest_exactly": true,
+  "public_expression_symbols_match_local_list_exactly": true,
+  "synced_iteration000_statuses": {
+    "valid": 3629,
+    "retry": 13987,
+    "scope_excluded": 851,
+    "qc_excluded": 1
+  },
+  "synced_iteration000_autosomal_statuses": {
+    "valid": 3629,
+    "retry": 13987,
+    "qc_excluded": 1
+  },
+  "source_sha256": {
+    "data/genes_all.txt": "a10e512a30ec6ddbe3e3d756080487727d32d0980068646b7c771f16f8169b51",
+    "data/genes_protein_coding.txt": "89cb7e05019a1bd99302ffe020989d08c7df5564ccd5323db28637bd26ab0a61",
+    "results_slide_prior_em/iteration_000/manifest.csv": "57c464585ea9f3da142872a245a7ab8b217bad8dfcfe1d8c49ba990ab3872324",
+    "results_slide_prior_em/chromosome_exclusions.csv": "debbd1bce24066d7c127fc64c6b2a7c994ac685805c344165892c3de3495f266",
+    "results_slide_prior_em/iteration_000/recovery/audit.csv": "22c535f6993b63eed5326cefa73a53487c5d8b297d86e0a8fdc555804528520d",
+    "script/scan_tissue_attempt/get_gene_names.R": "1379449e9ac1517e2920457dfe6ad093a270fafabba2567b6c528e3967a4587c",
+    "script/scan_tissue_attempt/get_protein_coding_gene_names.R": "22f66e721fdfa8ab25ed6d3c7dd03875930928e72ee1979b5762edac013108c3",
+    "tmp/gtex_v8_api_gene_records.json": "dccdf0624694c11f58102302e8f65d5cee640f4a436928f80903841e82dc0b4a",
+    "tmp/Homo_sapiens.GRCh38.103.chr.gtf.gz": "1d6ce4bb3d16b4a6717b3d80388d2fd723d0367feb47a4b9b17b2592d7736700",
+    "tmp/gtex_v8_gene_median_tpm.gct.gz": "ee7201ff2f280b0de5657d4b08e9a240362d9757efed7f7bd5dba35a5f8617b8"
+  },
+  "public_sources": {
+    "GTEx reference gene API": "https://gtexportal.org/api/v2/reference/geneSearch",
+    "Ensembl 103 reference": "https://ftp.ensembl.org/pub/release-103/gtf/homo_sapiens/Homo_sapiens.GRCh38.103.chr.gtf.gz",
+    "GTEx v8 expression metadata": "https://storage.googleapis.com/adult-gtex/bulk-gex/v8/rna-seq/GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_median_tpm.gct.gz",
+    "GTEx collapsed gene model rules": "https://github.com/broadinstitute/gtex-pipeline/blob/master/gene_model/README.md"
+  },
+  "limitations": [
+    "No live RCC access; active job state was not queried.",
+    "Official uncollapsed Ensembl 103 annotation used. The custom RCC GTF is not local; its symbol selection is exactly reproduced.",
+    "GTEx public median TPM row metadata used. Its symbol set exactly matches the local list, but the RCC read-count matrix itself is not local.",
+    "Absent expression rows are not evidence of low expression. Exact per-gene removal by model construction was not reconstructed.",
+    "Stable IDs absent in release 103 may have been retired, merged, or replaced; their individual histories were not resolved."
+  ]
+}
