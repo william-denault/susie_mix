@@ -56,6 +56,7 @@ target.text = textValue;
 ## Discover
 
 ```ts
+const layoutPlaceholders = layout.placeholders.items;
 const layoutSummary = layout.placeholders.summary();
 const resolved = presentation.layouts.getById(layout.id);
 const importedGuides = layout.slideGuides;
@@ -65,6 +66,7 @@ const allVisibleEmptyPlaceholders = slide.placeholders.unfilled;
 const missingLayoutSlots = slide.placeholders.availableFromLayout;
 ```
 
+`layout.placeholders.items` lists the layout's placeholder shapes.
 These getters do not modify saved slide content.
 `items` includes filled placeholders. `editable` contains visible empty content
 shapes with positive bounds; `unfilled` also includes empty furniture.

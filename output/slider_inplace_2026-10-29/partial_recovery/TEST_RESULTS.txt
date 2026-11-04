@@ -1,0 +1,35 @@
+Local validation, 2026-10-29
+===========================
+
+13 Python tests:
+- START interruption preserves original, without initiating new compaction;
+- VACATED interruption completes the previously verified compact file;
+- replacement before receipt commit is adopted;
+- untouched results are neither hashed nor recompressed by transaction recovery;
+- changed originals or committed results are rejected;
+- corrupt escrow and unexpected scratch paths are rejected;
+- only recorded job IDs are selected, with pending resume first;
+- running resume, competing EM jobs, or wrong job names block cancellation;
+- mocked Slurm handoff submits on hold before cancellations and releases last;
+- live maintenance blocks finalization; unrelated simulations do not.
+
+R/Python integration with the installed slider package and synthetic fits:
+- historical full results retire while their prior/history metadata remains;
+- one previous-iteration result is really compacted with exact round-trip checks;
+- all other previous/current files remain byte-identical;
+- mixed compact/original checkpoint certificates validate after repair;
+- priors/history/settings/count files remain byte-identical;
+- uncached saved current output is queued for parallel VALIDATION, not fitting;
+- after that validation, only the missing gene is queued for fitting;
+- warm starts read the preserved scientific fields correctly;
+- the tested saved-call stripping workhorse is installed;
+- repeated finalization and metadata repair are safe;
+- unjournaled result modifications stop finalization.
+
+Python/R syntax, shell syntax, packaged SHA256 checks and LF shell launchers
+are checked. The original deployed storage bundle is unchanged.
+
+Limits: this is local validation, not a claim of RCC execution. Actual source
+hashes, original-state identity, live queue, scratch ownership, transaction
+checksums, result inventory, cached stamps, frozen history and checkpoint
+certificates must pass on RCC before a controller is submitted.

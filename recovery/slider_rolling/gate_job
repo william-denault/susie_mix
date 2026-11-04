@@ -1,0 +1,12 @@
+#!/bin/bash
+#SBATCH --job-name=slide_roll_gate
+#SBATCH --partition=broadwl
+#SBATCH --time=00:10:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=2G
+set -euo pipefail
+bundle=$1
+module load R/4.2.0
+exec python3 "$bundle/launch.py" gate "${@:2}"

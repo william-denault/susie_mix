@@ -1,0 +1,88 @@
+During startup - Warning messages:
+1: Setting LC_COLLATE=C.UTF-8 failed 
+2: Setting LC_CTYPE=C.UTF-8 failed 
+3: Setting LC_MONETARY=C.UTF-8 failed 
+4: Setting LC_TIME=C.UTF-8 failed 
+Validated iteration 0; collected counts for 2 fits.
+Validated iteration 1; collected counts for 2 fits.
+Validated iteration 2; collected counts for 2 fits.
+Validated iteration 3; collected counts for 2 fits.
+Validated iteration 4; collected counts for 2 fits.
+PASS: incomplete original 005 blocks initialization.
+Validated iteration 5; collected counts for 2 fits.
+Prepared iteration_006 in the same results folder. Original 005 fits, priors and counts preserved.
+Prepared iteration_006 in the same results folder. Original 005 fits, priors and counts preserved.
+PASS: 006 keeps the ordinary 005 prior update; 680 added IDs start cold; existing genes use unchanged 005 fits.
+Retirement prepared before 6 ; keep 5 and 6 full outputs.
+During startup - Warning messages:
+1: Setting LC_COLLATE=C.UTF-8 failed 
+2: Setting LC_CTYPE=C.UTF-8 failed 
+3: Setting LC_MONETARY=C.UTF-8 failed 
+4: Setting LC_TIME=C.UTF-8 failed 
+During startup - Warning messages:
+1: Setting LC_COLLATE=C.UTF-8 failed 
+2: Setting LC_CTYPE=C.UTF-8 failed 
+3: Setting LC_MONETARY=C.UTF-8 failed 
+4: Setting LC_TIME=C.UTF-8 failed 
+Retained checkpoint validates; every prior/history/count file is unchanged.
+Cleanup complete; retaining full iterations 005 and 006.
+$priors
+  tissue       w_01       w_02       w_03       w_04       w_05       w_06
+1 Tissue 0.05882353 0.05882353 0.05882353 0.05882353 0.05882353 0.05882353
+        w_07       w_08       w_09       w_10       w_11       w_12       w_13
+1 0.05882353 0.05882353 0.05882353 0.05882353 0.05882353 0.05882353 0.05882353
+        w_14       w_15       w_16       w_17 n_fits n_active free_mass
+1 0.05882353 0.05882353 0.05882353 0.05882353      2        6         6
+  prior_max_change m_step_q_gain source_elbo
+1     1.387779e-17             0         -24
+
+$audit
+   gene tissue issue active free_mass elbo detail
+1 GENEA Tissue   fit      3         3  -12       
+2 GENEB Tissue   fit      3         3  -12       
+
+$counts
+       tissue      w_01      w_02      w_03      w_04      w_05      w_06
+Tissue Tissue 0.3529412 0.3529412 0.3529412 0.3529412 0.3529412 0.3529412
+            w_07      w_08      w_09      w_10      w_11      w_12      w_13
+Tissue 0.3529412 0.3529412 0.3529412 0.3529412 0.3529412 0.3529412 0.3529412
+            w_14      w_15      w_16      w_17
+Tissue 0.3529412 0.3529412 0.3529412 0.3529412
+
+Iteration 6: 1/683 resolved; 0 active tasks; 298 submission slots.
+PASS: restartable cleanup retires 000..004 only; 005 certificate/warm starts remain valid; no premature M-step.
+Validated iteration 6; collected counts for 3 fits.
+PASS: added-gene counts enter the expanded E-step and M-step; old gene/tissue cohort is retained.
+Prepared slider iteration 7 for 1 tissues and 298 chunks. Priors are frozen before submission.
+Retirement prepared before 7 ; keep 6 and 7 full outputs.
+During startup - Warning messages:
+1: Setting LC_COLLATE=C.UTF-8 failed 
+2: Setting LC_CTYPE=C.UTF-8 failed 
+3: Setting LC_MONETARY=C.UTF-8 failed 
+4: Setting LC_TIME=C.UTF-8 failed 
+During startup - Warning messages:
+1: Setting LC_COLLATE=C.UTF-8 failed 
+2: Setting LC_CTYPE=C.UTF-8 failed 
+3: Setting LC_MONETARY=C.UTF-8 failed 
+4: Setting LC_TIME=C.UTF-8 failed 
+Retained checkpoint validates; every prior/history/count file is unchanged.
+Cleanup complete; retaining full iterations 006 and 007.
+Validated iteration 7; collected counts for 3 fits.
+PASS: before 7 cleanup preserves all history/counts, keeps previous warm starts, and maintains the expanded cohort.
+Prepared slider iteration 8 for 1 tissues and 298 chunks. Priors are frozen before submission.
+Retirement prepared before 8 ; keep 7 and 8 full outputs.
+During startup - Warning messages:
+1: Setting LC_COLLATE=C.UTF-8 failed 
+2: Setting LC_CTYPE=C.UTF-8 failed 
+3: Setting LC_MONETARY=C.UTF-8 failed 
+4: Setting LC_TIME=C.UTF-8 failed 
+During startup - Warning messages:
+1: Setting LC_COLLATE=C.UTF-8 failed 
+2: Setting LC_CTYPE=C.UTF-8 failed 
+3: Setting LC_MONETARY=C.UTF-8 failed 
+4: Setting LC_TIME=C.UTF-8 failed 
+Retained checkpoint validates; every prior/history/count file is unchanged.
+Cleanup complete; retaining full iterations 007 and 008.
+Validated iteration 8; collected counts for 3 fits.
+PASS: before 8 cleanup preserves all history/counts, keeps previous warm starts, and maintains the expanded cohort.
+PASS: numerical EM helpers unchanged; same results folder through 008. FIXTURE: C:/Document/Serieux/Travail/Data_analysis_and_papers/susie_mix/tmp\inplace_integration_3c5c3ed7489d 

@@ -1,0 +1,20 @@
+#!/bin/bash
+#SBATCH --job-name=slide_next_setup
+#SBATCH --partition=broadwl
+#SBATCH --time=06:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=16G
+set -euo pipefail
+bundle=$1; project=$2; recovery=$3
+module load R/4.2.0
+export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+(cd "$bundle" && sha256sum -c SHA256SUMS >/dev/null)
+if [[ ! -f "$project/results_slide_prior_em/inplace_expansion_2026-10-29/INITIALIZED.json" ]]; then
+  Rscript --vanilla "$bundle/preflight.R" "$bundle" "$project"
+  python3 "$bundle/check_bim.py" "$bundle" \
+    /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim
+  python3 "$bundle/inplace.py" init "$project" "$recovery"
+fi
+exec python3 "$bundle/inplace.py" start "$project"

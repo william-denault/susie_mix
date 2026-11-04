@@ -1,0 +1,51 @@
+Local validation, 2026-10-28
+===========================
+
+1. Real susieRSlidePrior 0.3.0 fitter, R 4.6.1, synthetic genotypes:
+   Five warm-started fits reproduced recursive-call growth.
+   Removing call from the warm start produced an IDENTICAL next fit after
+   excluding only the output call. All remaining numeric and metadata fields
+   compared with identical(), not a relaxed tolerance.
+
+2. Ten Python transaction/scope tests PASS:
+   - verified replacement and repeat/resume;
+   - failure after source removal retains verified scratch escrow and resumes;
+   - failure after replacement but before receipt commit resumes;
+   - failed scientific verification preserves the source;
+   - corrupt escrow blocks further replacement;
+   - hard-linked sources are not vacated;
+   - externally modified committed outputs are rejected;
+   - no-op results preserve original bytes and timestamp;
+   - receipt export records verified content hashes.
+   - backup-named and later iteration directories are outside the selected scope.
+
+3. Synthetic three-iteration metadata fixture PASS:
+   - complete prior/history/settings/count files remain byte-for-byte unchanged;
+   - all remaining result fields round-trip exactly;
+   - completion certificates still validate;
+   - current completed gene is reused, only the missing gene is scheduled;
+   - repeat finalization is safe;
+   - retirement of a still-needed warm-start checkpoint is refused;
+   - retirement of older full results repairs the retained predecessor stamps.
+
+4. Synthetic expanded-cohort integration PASS:
+   - two original fits are reused under exactly the same fitting prior;
+   - 680 distinct expression IDs are added to a separate manifest;
+   - only new genes are scheduled in the seeded E-step;
+   - incomplete new genes block the M-step;
+   - an added informative fit contributes its counts to the unchanged M-step;
+   - the next iteration is prepared and reads original fits for warm starts;
+   - original result checksums remain unchanged;
+   - duplicate historical C2orf61 symbols dispatch by their separate stable IDs;
+   - original genes retain their original symbol-based selection.
+   Windows used byte-identical copies as stand-ins for Linux symlinks in this
+   fixture; the production initializer uses symlinks and checks their targets.
+
+5. R source parsing, Python syntax, shell syntax and packaged SHA256 checks
+   were checked before delivery. The existing deployed M-step and scheduling
+   code are reused; the original scheduler is not replaced.
+
+Limits: these tests do not establish that the RCC data contain all 680 usable
+genes or that all those fits converge. The bundle's RCC metadata/BIM preflight,
+source hashes, content comparisons and completion barriers enforce those
+checks on the actual inputs. No RCC files/jobs were accessed from this chat.

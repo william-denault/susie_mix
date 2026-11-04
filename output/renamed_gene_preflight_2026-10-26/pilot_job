@@ -1,0 +1,18 @@
+#!/bin/bash
+#SBATCH --job-name=rename_pilot
+#SBATCH --output=rename_pilot_%A_%a.out
+#SBATCH --error=rename_pilot_%A_%a.err
+#SBATCH --partition=broadwl
+#SBATCH --time=23:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=48G
+set -euo pipefail
+bundle=$1
+module load R/4.2.0
+export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+mkdir -p "$bundle/pilot/locks"
+exec 9>"$bundle/pilot/locks/task_${SLURM_ARRAY_TASK_ID}.lock"
+flock -n 9 || { echo 'Pilot task already running.' >&2; exit 1; }
+Rscript --vanilla "$bundle/pilot.R" "$bundle" "$SLURM_ARRAY_TASK_ID"

@@ -1,0 +1,42 @@
+Local validation, 2026-10-28
+===========================
+
+Python safety/queue tests:
+  interruption immediately after unlink, retry, and repeated retry;
+  externally modified/replaced file blocks deletion;
+  unexpected file blocks deletion before any planned file is removed;
+  changed snapshot blocks deletion;
+  current/previous iteration cannot enter the deletion scope;
+  redirected/symlink results directory rejected;
+  prior/count files preserved, completion certificate archived idempotently;
+  live workers/original controllers block cleanup; unrelated simulations do not;
+  launch gate waits for existing jobs and refuses competing expanded launches;
+  iteration 040 retires only through 038, keeping 039 and 040;
+  byte-identical copy is rejected where a hard-link handoff is required.
+
+R/Python integration with synthetic outputs and installed slider package 0.3.0:
+  unfinished original 005 blocks expansion;
+  actual NTFS hard links reuse the original results (no copy stand-ins);
+  original 005 fitting priors and complete 000..005 history are byte-identical;
+  seed planner schedules only added IDs, and incomplete additions block pooling;
+  added informative fit contributes its exact counts to the unchanged M-step;
+  next iteration is 006, retaining the original numbering;
+  source full files retire without changing their hard-linked expanded copies;
+  deliberate interruption after unlink resumes at each of three cleanup barriers;
+  retained certificates and warm starts validate after 005/006 retirement;
+  old pooled counts and all prior/history/settings files remain unchanged;
+  repeated cleanup barrier is harmless after current results have been written;
+  numerical EM helpers are byte-identical to the deployed baseline.
+
+The supplied shell launchers and generated branch shell scripts are syntax
+checked. Python and R sources and packaged payload hashes are checked.
+
+Earlier storage bundle's real-fitter test remains applicable: removing only
+saved calls preserved the complete next fit, after excluding output call, with
+identical(), not an approximate numerical comparison. This bundle does not
+change that patch or the fitter.
+
+Limits: local synthetic tests are not RCC end-to-end tests. The actual 680
+candidate input mappings/variant windows and package/source identities must
+pass preflight on RCC. Availability does not guarantee informative fits or
+EM convergence by 040. No current RCC job was changed by this implementation.

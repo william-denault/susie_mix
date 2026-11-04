@@ -12,8 +12,9 @@ Use the presentation facades to create PowerPoint-style decks in TypeScript.
 - **Config-first authoring**: pass config objects into create/add APIs and grouped setters when the API provides them.
 - **String values**: options such as geometry, fit, alignment, chart type, line style, and connector kind are strings; reference pages list exact small unions and grep targets for huge catalogs.
 - **Inline docs types**: reference pages include illustrative `type ... = { ... }` blocks. Treat them as schema-shaped authoring guidance, not imports.
-- Inspect with `presentation.inspect({ select, include, fileName })`. Filter kinds inside JSONPath `select` and pass an array of fields for `include`. See [legacy exceptions](./references/inspect.md#legacy-compatibility).
+- Inspect with `presentation.inspect({ select, include, fileName })`: `select: "$.slides[0].elements[*]"` reads every element on the first slide; optional `include: ["id", "text"]` returns only their IDs and text. Optional `fileName: "content.ndjson"` chooses the local NDJSON output filename; omit it in Spaces and return the result's `.records`. See [inspection](./references/inspect.md).
 - **Authoring surfaces**: `slide.compose(...)` covers rows, columns, grids, layers, and token strings. Config-first facade APIs cover exact positions, fixed chrome, native charts/tables/images, and imported deck edits.
+- **Slide deletion**: `presentation.slides.delete([0, 2])` deletes the original zero-based indexes; `presentation.slides.delete(slide.id)` deletes one slide. `presentation.delete(id)` also accepts a current, unambiguous `Slide.id`; use canonical IDs from `inspect` or `layout` when IDs collide.
 
 ## Common Routes
 
@@ -62,7 +63,7 @@ const snapshot = await presentation.inspect({
   select: "$.slides[*]",
   include: ["id", "index", "elements.id", "elements.kind", "elements.text"],
 });
-const help = presentation.help("*", {
+const help = presentation.help({
   search: "chart axis labels",
   include: ["index", "notes"],
   maxChars: 4000,
@@ -166,7 +167,9 @@ tags default `width` to `"fill"` when you omit it.
 ## Core API Sequence
 
 - Create presentations with `Presentation.create({ slideSize })` to control default slide dimensions.
-- Add slides with `presentation.slides.add({ layout, layoutId })` or `presentation.slides.insert({ after, ... })`.
+- Add slides with `const slide = presentation.slides.add({ layout, layoutId })`; insert with `const { slide: inserted, index } = presentation.slides.insert({ after, layout, layoutId })` (`index` is zero-based at insertion).
+- Both accept `layout` (exact, case-sensitive name) or `layoutId` (raw `Layout.id`, takes precedence); omit both for the default layout.
+- `after` accepts a slide from this presentation or an existing zero-based index; omitted/`null` appends.
 - Use `slide.compose(nodeOrJsx, { frame, baseUnit })` for compose-first layouts. JSX lowers into the same compose runtime as the helper-based API.
 - Author content with config-first calls: `slide.shapes.add({ geometry, position, fill, line })`, `slide.images.add({ ... })`, `slide.tables.add({ ... })`, and `slide.charts.add(chartType, { ... })`.
 - Format whole-shape text with grouped configs such as `shape.text.style = { fontSize, bold, color, alignment }`.
@@ -176,7 +179,7 @@ tags default `width` to `"fill"` when you omit it.
 - Export deck montages for overview review with `presentation.export({ format: "webp", montage: true })`.
 - Export layout JSON for placement investigations with `slide.export({ format: "layout" })`.
 - Control editor gridlines and imported guides with `presentation.view`.
-- Search API help with `presentation.help(query, { search, include, maxChars })`.
+- Search API help with `presentation.help({ query, search, include, maxChars })`.
 - Run high-level edits with `presentation.scripts.run(kind, options)`; see [`references/presentation.spec.md`](./references/presentation.spec.md) for the script surface.
 
 ## Output Map

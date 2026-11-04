@@ -1,0 +1,26 @@
+During startup - Warning messages:
+1: Setting LC_COLLATE=C.UTF-8 failed 
+2: Setting LC_CTYPE=C.UTF-8 failed 
+3: Setting LC_MONETARY=C.UTF-8 failed 
+4: Setting LC_TIME=C.UTF-8 failed 
+Package version: 0.3.0 
+    call <- match.call()
+    fit$call <- call 
+ iteration converged fit_bytes call_bytes compressed_bytes
+         0      TRUE   2340696    1102024           740330
+         1      TRUE   4681216    3442832          1478315
+         2      TRUE   7021736    5783352          2216389
+         3      TRUE   9362256    8123872          2955516
+         4      TRUE  11702776   10464392          3689768
+ without_call_compressed_bytes embedded_previous_fits call_contains_genotypes
+                        691111                      0                    TRUE
+                        691060                      1                    TRUE
+                        690947                      2                    TRUE
+                        690865                      3                    TRUE
+                        689837                      4                    TRUE
+Largest current-fit fields (excluding call):
+    alpha_delta         mu_grid        mu2_grid genotype_counts           alpha 
+         237600          237600          237600           44688           44440 
+             mu             mu2    lbf_variable 
+          44440           44440           44440 
+Next fit identical with/without warm-start call: TRUE 

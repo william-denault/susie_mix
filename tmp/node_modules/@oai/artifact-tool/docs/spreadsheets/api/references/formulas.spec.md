@@ -12,6 +12,7 @@ sheet.getRange("A1:B2").values = [
 
 sheet.getRange("C1:C2").formulas = [["=A1+B1"], ["=A2+B2"]];
 workbook.recalculate();
+workbook.recalculate({ all: true });
 ```
 
 Strings starting with `=` assigned through `values` are treated as formulas.

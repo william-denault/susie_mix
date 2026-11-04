@@ -1,0 +1,7 @@
+a <- commandArgs(TRUE)
+if(length(a)!=2L) stop("Usage: check_source.R BUNDLE PROJECT")
+source(file.path(a[1],"maintenance.R")); load_helpers(a[1])
+root <- file.path(a[2],"results_slide_prior_em")
+if(max(read.csv(file.path(root,"prior_history.csv"))$iteration)!=5L) stop("Original run must finish at 005")
+invisible(spp_require_complete(a[2],file.path(root,"iteration_005")))
+cat("Original iteration 005 has a valid completion certificate.\n")

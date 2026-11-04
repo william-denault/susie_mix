@@ -1,0 +1,145 @@
+During startup - Warning messages:
+1: Setting LC_COLLATE=C.UTF-8 failed 
+2: Setting LC_CTYPE=C.UTF-8 failed 
+3: Setting LC_MONETARY=C.UTF-8 failed 
+4: Setting LC_TIME=C.UTF-8 failed 
+
+Attaching package: 'data.table'
+
+The following object is masked from 'package:base':
+
+    %notin%
+
+Importing covariate data.
+Importing gene expression data.
+Found 2 tissues for gene GENE :
+[1] "Brain" "Liver"
+Extracting genotype data from PLINK file.
+
+=====================================
+Tissue: Brain 
+=====================================
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 8. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+
+=====================================
+Tissue: Liver 
+=====================================
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 8. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+Importing covariate data.
+Importing gene expression data.
+Found 2 tissues for gene GENE :
+[1] "Brain" "Liver"
+Extracting genotype data from PLINK file.
+
+=====================================
+Tissue: Brain 
+=====================================
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 8. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+
+=====================================
+Tissue: Liver 
+=====================================
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 8. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+PASS: synthetic GTEx import, donor alignment, QC, association metadata, real discrete fitting and warm-start refit.
+Registered S3 methods overwritten by 'susieR':
+  method                                         from            
+  coef.mr.ash                                    susieRSlidePrior
+  coef.susie                                     susieRSlidePrior
+  predict.mr.ash                                 susieRSlidePrior
+  predict.susie                                  susieRSlidePrior
+  print.slot_prior                               susieRSlidePrior
+  print.summary.susie                            susieRSlidePrior
+  print.summary.susie_post_outcome_configuration susieRSlidePrior
+  summary.susie                                  susieRSlidePrior
+  summary.susie_post_outcome_configuration       susieRSlidePrior
+
+Attaching package: 'susieR'
+
+The following objects are masked from 'package:susieRSlidePrior':
+
+    absolute.order, block_coordinate_ascent, calc_z, coef.mr.ash,
+    coef.susie, compute_marginal_bhat_shat, compute_suff_stat,
+    estimate_s_rss, get.full.posterior, get_cs_correlation,
+    get_objective, ibss_finalize, ibss_initialize, is_symmetric_matrix,
+    kriging_rss, mr.ash, mr.ash.rss, path.order,
+    post_loglik_prior_hook, pre_loglik_prior_hook, predict.mr.ash,
+    predict.susie, print.summary.susie,
+    print.summary.susie_post_outcome_configuration,
+    slot_prior_betabinom, slot_prior_poisson, summary.susie,
+    summary.susie_post_outcome_configuration, susie, susie_auto,
+    susie_get_cs, susie_get_cs_attainable, susie_get_lfsr,
+    susie_get_niter, susie_get_objective, susie_get_pip,
+    susie_get_posterior_mean, susie_get_posterior_samples,
+    susie_get_posterior_sd, susie_get_prior_variance,
+    susie_get_residual_variance, susie_init_coef, susie_plot,
+    susie_plot_changepoint, susie_plot_iteration,
+    susie_post_outcome_configuration, susie_rss, susie_rss_control,
+    susie_rss_lambda, susie_ser, susie_ss, susie_trendfilter,
+    susie_workhorse, univar.order, univariate_regression
+
+Importing covariate data.
+Importing gene expression data.
+Found 2 tissues for gene GENE :
+[1] "Brain" "Liver"
+Extracting genotype data from PLINK file.
+
+=====================================
+Tissue: Brain 
+=====================================
+Running weighted SuSiE-mix for Brain 
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 22. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+
+=====================================
+Tissue: Liver 
+=====================================
+Running weighted SuSiE-mix for Liver 
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 22. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+Importing covariate data.
+Importing gene expression data.
+Found 2 tissues for gene GENE :
+[1] "Brain" "Liver"
+Extracting genotype data from PLINK file.
+
+=====================================
+Tissue: Brain 
+=====================================
+Running weighted SuSiE-mix for Brain 
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 22. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+
+=====================================
+Tissue: Liver 
+=====================================
+Running weighted SuSiE-mix for Liver 
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 22. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+PASS: mix stable-ID selection matches original numerical fits despite duplicate old symbols and renamed annotation.
+Importing covariate data.
+Importing gene expression data.
+Found 2 tissues for gene GENE :
+[1] "Brain" "Liver"
+Extracting genotype data from PLINK file.
+
+=====================================
+Tissue: Brain 
+=====================================
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 8. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+
+=====================================
+Tissue: Liver 
+=====================================
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 8. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+Importing covariate data.
+Importing gene expression data.
+Found 2 tissues for gene GENE :
+[1] "Brain" "Liver"
+Extracting genotype data from PLINK file.
+
+=====================================
+Tissue: Brain 
+=====================================
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 8. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+
+=====================================
+Tissue: Liver 
+=====================================
+HINT: nrow(X) = 80 >= 2 * ncol(X) = 8. Consider precomputing sufficient statistics with compute_suff_stat() and fitting with susie_ss() instead -- this avoids holding X in memory at every iteration and lets you reuse XtX across multiple y.
+PASS: slider stable-ID selection matches original numerical fits despite duplicate old symbols and renamed annotation.

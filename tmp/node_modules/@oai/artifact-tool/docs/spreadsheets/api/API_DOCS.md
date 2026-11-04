@@ -146,7 +146,7 @@ collaborative edits occurred.
 | Serialized data | `workbook.toProto()`                          | Serializable workbook proto                   |
 | Inspect records | `await workbook.inspect(options)`             | Structured records and NDJSON                 |
 | Cell search     | `workbook.findCells(options)`                 | Matches with sheet/address/value/formula info |
-| Help records    | `workbook.help(query, options)`               | Bounded NDJSON API help records               |
+| Help records    | `workbook.help(options)`               | Bounded NDJSON API help records               |
 | Image preview   | `workbook.export({ format: "png" })`          | Workbook/sheet/range render blob              |
 | PDF             | `workbook.export({ format: "pdf" })`          | PDF `Blob`                                    |
 | Layout JSON     | `workbook.export({ format: "layout" })`       | Typed grid and style evidence                 |

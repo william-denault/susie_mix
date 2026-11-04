@@ -6,19 +6,23 @@ and review workflows.
 
 ## Query
 
+Pass one options object. Omit `query` to search the whole catalog.
+
 ```ts
-const result = presentation.help(query, {
-  search,
-  include,
-  maxChars,
+const result = presentation.help({
+  include: ["index", "examples"],
+  maxChars: 12000,
 });
 console.log(result.ndjson);
+
+const focused = presentation.help({ search: "images.add", maxChars: 3000 });
+const exact = presentation.help({ query: "slide.images.add", include: ["examples"] });
 ```
 
 Example output for `query = "*"` with `include = ["index", "examples"]`:
 
 ```text
-{"kind":"api","name":"presentation.help","summary":"Search the presentation JS API and template catalog.","tags":["help","docs","examples","presentation.help"],"examples":[{"summary":"Find shape editing APIs","code":"const result = presentation.help('*', {\n  search: 'slide.shapes.delete|shape.delete|slide.shapes.add|deleteAll',\n  include: ['index', 'examples', 'notes'],\n  maxChars: 12000,\n});\nconsole.log(result.ndjson);"}]}
+{"kind":"api","name":"presentation.help","summary":"Search the presentation JS API and template catalog.","tags":["help","docs","examples","presentation.help"],"examples":[{"summary":"Find shape editing APIs","code":"const result = presentation.help({\n  search: 'slide.shapes.delete|shape.delete|slide.shapes.add|deleteAll',\n  include: ['index', 'examples', 'notes'],\n  maxChars: 12000,\n});\nconsole.log(result.ndjson);"}]}
 {"kind":"api","name":"slide.shapes.add","summary":"Add a preset/custom/connector shape to a slide.","tags":["shape","shapes.add","rectangle","ellipse","connector","slide.shapes.add"],"examples":[{"summary":"Create a styled rectangle","code":"const shape = slide.shapes.add({\n  geometry: 'roundRect',\n  position: { left: 72, top: 96, width: 320, height: 120 },\n  fill: { type: 'solid', color: 'accent1' },\n  line: { style: 'solid', fill: 'accent2', width: 2 },\n});\nshape.text = 'Launch plan';"}]}
 {"kind":"template","name":"agenda","summary":"Agenda slide with a title and list body.","examples":[{"summary":"Apply the agenda template","code":"presentation.apply(presentation.template('agenda'));"}]}
 ```
@@ -46,7 +50,7 @@ Use `search` as a case-insensitive regular expression over the JSON lines after
 the primary query has selected records:
 
 ```ts
-const focused = presentation.help("*", {
+const focused = presentation.help({
   search:
     "slide\\.shapes\\.delete|shape\\.delete|slide\\.shapes\\.add|deleteAll",
   include: ["index", "examples", "notes"],
@@ -72,11 +76,13 @@ index, examples, notes
 `include` accepts either an array or a comma-separated string:
 
 ```ts
-const shapeExamples = presentation.help("slide.shapes.add", {
+const shapeExamples = presentation.help({
+  query: "slide.shapes.add",
   include: ["examples", "notes"],
 });
 
-const templateExamples = presentation.help("template*", {
+const templateExamples = presentation.help({
+  query: "template*",
   include: "index,examples",
 });
 ```
@@ -85,6 +91,7 @@ const templateExamples = presentation.help("template*", {
 
 ```ts
 type PresentationHelpOptions = {
+  query?: string;
   include?: string[] | string;
   search?: string;
   maxChars?: number;
@@ -141,7 +148,8 @@ If output exceeds `maxChars`, the final line is a notice record and
 
 ```ts
 // Find the public API surface for the edit.
-const shapeHelp = presentation.help("shape*", {
+const shapeHelp = presentation.help({
+  query: "shape*",
   include: ["index", "examples", "notes"],
   maxChars: 8000,
 });
@@ -165,7 +173,8 @@ const snapshot = await presentation.inspect({
 ## Imported Templates
 
 ```ts
-const templates = presentation.help("template*", {
+const templates = presentation.help({
+  query: "template*",
   include: ["index", "examples"],
   maxChars: 4000,
 });
@@ -180,7 +189,8 @@ Use template help to discover the available names before calling
 
 ```ts
 // List the top-level deck APIs.
-const deckApis = presentation.help("presentation*", {
+const deckApis = presentation.help({
+  query: "presentation*",
   include: "index",
   maxChars: 6000,
 });
@@ -188,7 +198,7 @@ const deckApis = presentation.help("presentation*", {
 
 ```ts
 // Search broadly, then filter by regex.
-const hits = presentation.help("*", {
+const hits = presentation.help({
   search: "chart|axis|legend",
   include: ["index", "examples"],
   maxChars: 8000,
@@ -197,7 +207,8 @@ const hits = presentation.help("*", {
 
 ```ts
 // Pull examples for one exact API.
-const examples = presentation.help("slide.charts.add", {
+const examples = presentation.help({
+  query: "slide.charts.add",
   include: ["examples", "notes"],
   maxChars: 4000,
 });
@@ -205,7 +216,8 @@ const examples = presentation.help("slide.charts.add", {
 
 ```ts
 // Pair help with inspect for focused edits.
-const help = presentation.help("shape.text.replace", {
+const help = presentation.help({
+  query: "shape.text.replace",
   include: ["examples", "notes"],
 });
 const before = await presentation.inspect({

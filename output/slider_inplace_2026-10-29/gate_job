@@ -1,0 +1,13 @@
+#!/bin/bash
+#SBATCH --job-name=slide_next_gate
+#SBATCH --partition=broadwl
+#SBATCH --time=00:15:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=8G
+set -euo pipefail
+bundle=$1
+shift
+module load R/4.2.0
+exec python3 "$bundle/launch.py" gate "$@"

@@ -4,14 +4,12 @@
 presentation tree with [RFC 9535 JSONPath](https://www.rfc-editor.org/rfc/rfc9535.html).
 The [JSON Schema](./inspect.schema.json) describes its content and layout fields.
 `select` finds nodes; `include` chooses exact fields from those nodes.
-Use this form for new queries and when updating queries for slides, elements,
-layouts, or speaker notes. Filter by element kind inside `select`, as in
+Filter by element kind inside `select`, as in
 `$.slides[*].elements[?(@.kind == 'chart')]`.
 
-Queries with `select` accept only `select`, `include`, and `fileName`.
-Deprecated options such as `kind`, `search`, `target`, and `maxChars` cannot be
-mixed into them. Use an array for `include`. The legacy overloads expect a
-string and can fail with `t.split is not a function` if passed an array.
+Queries accept `select`, an optional `include` array, and an optional `fileName`.
+`include: ["id", "index"]` projects those exact fields from each selected node.
+For comment threads, see [Comments](./comments.md).
 
 ## Read content
 
@@ -77,8 +75,7 @@ for example, `$.slides[*].title` returns title strings.
 Use `search(@.text, 'overview|steps')` for a text pattern, or `match()` to match
 the entire string. Patterns follow [I-Regexp](https://www.rfc-editor.org/rfc/rfc9485.html).
 Use `==` for literal text containing dollar signs, backslashes, or other regex
-characters. The deprecated `search` option treats the text as a JavaScript
-regex, where `$` marks the end of the string.
+characters.
 
 `length()` measures a value, `count()` counts selected nodes, and `value()`
 extracts a value when a query selects exactly one node. Filters use `==` and
@@ -144,17 +141,3 @@ type PresentationInspectQueryResult = {
   readonly message?: string;
 };
 ```
-
-## Legacy compatibility
-
-Use `select` for new queries. The earlier `kind` and record-filter overloads
-are deprecated.
-
-Keep a legacy call only when an integration needs its old record format, the
-installed runtime lacks `select`, or the query targets comment threads.
-The current JSONPath tree includes slides, elements, layouts, and notes.
-Comment threads still require the legacy queries in [Comments](./comments.md).
-
-With `select`, use an array for `include` and omit `kind`, `search`,
-`target`, `limit`, `offset`, and `maxChars`. Legacy overloads use a
-string for `include`. Convert the whole query when switching between forms.

@@ -1,0 +1,23 @@
+#!/bin/bash
+#SBATCH --job-name=slide_expand_setup
+#SBATCH --partition=broadwl
+#SBATCH --time=06:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=16G
+set -euo pipefail
+bundle=$1
+mode=$2
+shift 2
+module load R/4.2.0
+export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+case "$mode" in
+  preflight)
+    Rscript --vanilla "$bundle/preflight.R" "$bundle" "$1"
+    python3 "$bundle/check_bim.py" "$bundle" \
+      /project2/mstephens/gtex/GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv.bim
+    ;;
+  init|start) exec python3 "$bundle/expansion.py" "$mode" "$@" ;;
+  *) echo 'Choose preflight, init or start.' >&2; exit 1 ;;
+esac

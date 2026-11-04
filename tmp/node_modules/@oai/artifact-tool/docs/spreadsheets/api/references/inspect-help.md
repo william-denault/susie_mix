@@ -103,7 +103,7 @@ count.
 ## Help
 
 ```ts
-const help = workbook.help("*", {
+const help = workbook.help({
   search: "colorScheme|worksheet.charts.add",
   include: ["index", "examples", "notes"],
   maxChars: 12000,
@@ -141,10 +141,20 @@ const after = await workbook.inspect({
 });
 ```
 
+## Help Queries
+
+```ts
+const focused = workbook.help({ search: "charts", maxChars: 3000 });
+const exact = workbook.help({ query: "worksheet.charts.add", include: ["examples"] });
+```
+
+Omit `query` to search the whole catalog.
+
 ## Inline Types
 
 ```ts
 type WorkbookHelpOptions = {
+  query?: string;
   include?: string[] | string;
   search?: string;
   maxChars?: number;

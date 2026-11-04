@@ -1,0 +1,14 @@
+#!/bin/bash
+#SBATCH --job-name=susie_mix_backup
+#SBATCH --output=susie_mix_backup_%j.out
+#SBATCH --error=susie_mix_backup_%j.err
+#SBATCH --partition=broadwl
+#SBATCH --time=23:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=8G
+set -euo pipefail
+bundle=$1; project=$2; destination=$3
+shift 3
+python3 "$bundle/backup_full.py" "$project" "$destination" "$@"

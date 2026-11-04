@@ -60,7 +60,7 @@ await output.save(`${outputDir}/output.xlsx`);
 - Drawing offsets/extents use pixels (`rowOffsetPx`, `colOffsetPx`, `widthPx`, `heightPx`).
 
 ## API Discovery Policy (Strict)
-- Use this quick API surface first.
+- Start with the examples below. For more detail on a feature, follow the [API reference map](api/API_DOCS.md#reference-map).
 - Use `workbook.help(...)` only when the supplied public documentation leaves a required operation unclear. Start with one bounded exact feature/path lookup, such as `range.dataValidation` or `chart.series.add`.
 - If that lookup returns no useful match, one bounded reformulation is allowed. Stop after those two attempts; do not repeat similar queries, inspect package internals/prototypes/nearby tests, or invent enum values and setters. Use a documented equivalent that preserves the task.
 - The examples below are alternatives for the relevant operation, not a discovery checklist to execute in full.
