@@ -1,166 +1,133 @@
-# Figure 1: count tables, ECDFs and posterior coding support
+# Figure 1: final EM SuSiE-mix versus additive SuSiE
 
-Open `script/analysis/plot_figure1_em.R` in RStudio on RCC and click **Source**:
+Open `script/analysis/plot_figure1_em.R` in RStudio on RCC and click **Source**.
+The script uses the existing project helpers; copy/sync the new entry script and
+`figure1_em_utils.R` into the project's `script/analysis/` directory together.
+It does not run SuSiE or restart EM.
 
 ```r
 source("/project2/mstephens/wdenault/susie_mix/script/analysis/plot_figure1_em.R")
 ```
 
-Sync the updated entry script and `figure1_em_utils.R` into the existing project's
-`script/analysis/` directory together. They reuse `em_analysis_utils.R`,
-`em_cs_agreement_utils.R`, `generate_summary_results.R` and
-`script/scan_tissue_attempt/em_utils.R`. The existing `plot_cs_agreement_em.R`
-remains the original prior-based figure; run **plot_figure1_em.R** for this revision.
+The settings at the top default to project
+`/project2/mstephens/wdenault/susie_mix`, GTEx directory
+`/project2/mstephens/gtex`, and `iteration = "latest"`. If the project is elsewhere,
+edit `project_dir`, or set `SUSIE_MIX_PROJECT_DIR`. Set `iteration = 18L` for a
+permanently pinned iteration-18 figure.
 
-This version uses **base R only**. It reads saved EM fits and summaries; it does
-not refit models, run PLINK or load GTEx expression/genotype files.
+“Latest” is resolved **once**, using `prior_history.csv`, the iteration manifest,
+completion markers, result files and coding priors. An incomplete newer iteration
+is skipped with a warning. Completion is not itself a claim of EM convergence.
+All panels use that one iteration's `weighted_fit_mix` fits. Old baseline weighted
+fits, unweighted SuSiE-mix and SuSiE-slide are not used as EM results.
 
-## Settings and inputs
+## Required inputs
 
-The editable settings block defaults to:
+- Matching EM summaries under `results_em/iteration_NNN/summary/`, including
+  `em_summary_metadata.rds`, `res_summary.RData`, and `res_cs_summary.RData`.
+  If missing or stale, run `script/analysis/generate_summary_results_em.R` first,
+  with the same iteration setting. CS summaries must include `cs_snps` and
+  `cs_size_snps`; regenerate summaries if using an older summary schema.
+- Original baseline fits under `results/`, and selected EM fits under
+  `results_em/iteration_NNN/results/`. CYP4F11's saved fits and summary are checked
+  for matching CS counts, lead identities/codings, memberships and PIPs.
+- The GTEx v8 subject/sample annotations, gene-read GCT, GRCh38 gene GTF, genotype
+  PLINK dataset and `plink2` executable already used by the existing expression
+  scripts. Filenames are defined in `fig1_reconstruct_example()`.
+- R packages **data.table** and **matrixStats** for the existing GTEx reconstruction
+  helper. Graphics, tables and replotting use base R; no ggplot2 or susieR required.
 
-- Project: `/project2/mstephens/wdenault/susie_mix`. Edit `project_dir` or set
-  `SUSIE_MIX_PROJECT_DIR` if needed.
-- `iteration = "latest"`: resolved once to the latest completed EM iteration.
-  Use `18L` to pin iteration 18.
-- Minimum marginal **additive P < 1e-8**, **mean reads >=100**, **>=1 CS in either
-  model**. Missing filter values and missing EM fits do not enter the cohort.
-- `minimum_tissue_regions = 100L`: only the threshold for choosing the four
-  tissue tables. It does **not** restrict the global headlines, ECDFs or panel D.
-- `show_plot = interactive()`: PNG/PDF are saved, then the RStudio preview is
-  displayed. Use Zoom or open the PDF to read the complete figure.
+Use an RCC RStudio session with sufficient memory for the original GTEx expression
+reconstruction pipeline. This reads the gene-read matrix to reconstruct library
+sizes, even though panel D displays just one gene. Temporary PLINK extraction uses
+R's `tempdir()` and the existing unique-prefix cleanup helper.
 
-Required files are the selected iteration's completed manifest, markers, priors,
-raw `results/*.rds` files, and matching `summary/res_summary.RData`,
-`summary/res_cs_summary.RData`, `summary/em_summary_metadata.rds`.
-If summaries are missing or stale, run `generate_summary_results_em.R` first
-with the same iteration. The CS summary must include `component`, `cs_snps`,
-`cs_size_snps` and lead fields.
+## One cohort, four panels
 
-The script reads each cohort gene's EM file once for panel D and prints progress
-every 100 genes. Saved CS counts, components, membership, lead identity/coding and
-PIP must agree with the summaries. Malformed probabilities, missing selected
-fits or mismatches stop the run; there is no fallback to older or baseline
-weighted fits. Completion checks do not independently establish EM convergence.
+The parent cohort is gene-tissue regions with **minimum marginal additive
+P < 1e-8, mean reads >= 100, and at least one CS in either model**. Missing EM fits
+and missing filter values are excluded. No tissue-size cutoff is imposed. These
+are gene-tissue regions, not unique genes or independent replications.
 
-## Panels and denominators
+| Panel | Display and denominator |
+| --- | --- |
+| A | Pooled and tissue-level region outcome bars. Same count/same biological lead multiset; same count/changed leads; fewer EM CSs with both models positive; SuSiE only; more EM CSs with both positive; EM only; unavailable lead identity. The colors are mutually exclusive, and all regions contribute. |
+| B | Same-lead retention among all matched CS pairs, then lead separation versus coding-specific EM lead PIP for changed pairs. Color = EM coding; shape = CS membership overlap. Invalid PIPs are audited and omitted from the scatter only. |
+| C | SuSiE versus EM absolute lead-to-TSS distance for the same changed-pair population, with both usable distances. Below the diagonal = closer in EM. No PIP threshold; missing, inconsistent or stale TSS records are audited. |
+| D | CYP4F11 / Adrenal Gland, checked to be in the same parent cohort. Saved regional predictor PIPs and genotype–expression plot at its recessive EM lead, preferring a lead shared with additive SuSiE. |
 
-**A — Four CS-count tables, plus overall agreement.** Keep the four tissues with
-the highest CS-count disagreement rate among tissues meeting the table threshold.
-Ties prefer larger region counts, then tissue name. Rows are additive SuSiE CS
-counts; columns are EM counts; cells are exact numbers of gene-tissue regions.
-The 0/0 cell is outside the cohort. The headline is:
+B and C are defined subsets of the parent cohort, rather than new region cohorts.
+Their valid-data denominators can differ and are printed. Matching first reserves
+exact biological lead IDs (ignoring coding), then minimizes total one-to-one
+physical distance for the remaining CSs. Extra CSs are exported, not forced into
+pairs. Different alleles at the same coordinate remain different leads with zero
+physical separation. The log1p axes retain zero. CS overlap uses unique biological
+SNP membership and Jaccard, also ignoring coding.
 
-```text
-number of cohort regions with n_add == n_em / all cohort regions
-```
+D must pass the same filters; the script stops rather than relaxing selection if
+CYP4F11 / Adrenal Gland no longer qualifies or has no recessive EM lead. Its
+phenotype and genotypes are reconstructed with the existing GTEx pipeline and
+aligned to the saved predictors and sample count. Conditional expression subtracts
+the other EM CS leads' fitted contributions from a joint OLS regression. The
+additive/recessive lines are descriptive OLS curves on that adjusted expression,
+**not fitted SuSiE posterior predictions or independent validation**. The saved
+tables include the unadjusted transformed phenotype, group counts, means and
+conditioning coefficients (in the RDS bundle).
 
-It is not an average of the four displayed tissue rates.
+Lead identity, CS membership, coding and CS counts answer different questions.
+Neither a physical lead shift nor TSS proximity alone establishes improved causal
+localization. Coding-specific lead PIP is not a CS-existence probability. A selected
+example does not establish genome-wide nonadditivity. Simulations can provide the
+calibration and ground-truth assessment that the real-data comparisons cannot.
 
-**B — Lead-distance ECDFs, plus overall lead retention.** The headline is the
-fraction of all matched CS pairs with exactly the same biological variant ID,
-ignoring coding. Matching first reserves identical leads, then minimizes total
-one-to-one physical distance among remaining CSs in each region.
+## Outputs and redraws
 
-The three curves retain the original definitions:
-1. Changed leads in matched pairs.
-2. Extra EM CSs to the nearest SuSiE lead.
-3. Extra SuSiE CSs to the nearest EM lead.
-
-Nearest-lead references are not additional one-to-one matches. Model-only
-regions have no other-model lead, so their extra CSs are excluded from these
-curves and counted in the note/audit. Identical matched leads enter the headline,
-but not the changed-pair ECDF. Different alleles at the same coordinate remain
-different leads with zero distance. The `log10(1 + bp)` axis retains zero.
-
-**C — TSS-distance ECDFs for exactly the extra-CS groups in B.** Plot absolute
-lead-to-TSS distances, excluding missing values, and show both the valid TSS
-sample size and corresponding B denominator. Model-only regions remain excluded.
-The two groups are not paired observations, and TSS proximity does not establish
-causal accuracy. This preserves the preferred figure's C population.
-
-**D — Posterior coding support in the same cohort.** For each EM component
-associated with a reported credible set, calculate:
-
-```text
-q(component, coding) = sum of alpha[component, predictor]
-                      across ALL predictors with that coding
-```
-
-Use the full component posterior, including mass outside the reported credible
-set. Additive, recessive and dominant probabilities sum to one (within numerical
-tolerance). Do not replace them with lead-coding counts, sums of PIPs, or the
-learned coding priors; do not truncate/renormalize to CS members. Components
-without reported CSs are excluded.
-
-Average these probabilities with **equal weight per reported EM CS** within each
-tissue. The plot shows mean recessive and dominant support; additive support
-remains in the denominator and is reported in the pooled headline and tables.
-The pooled mean is across all selected EM CSs, not an unweighted tissue average.
-Tissues are ordered by mean recessive + dominant support, with their EM CS counts
-at the right. The number of CSs is a descriptive denominator, not a claim of
-independent replications.
-
-All cohort regions remain in the audit. Regions with no EM CS have no component
-to average; they are not assigned zero nonadditive probability. A tissue with no
-EM CS remains displayed with undefined support and an explicit label. Panel D is
-posterior support **among reported CS components**, not the fraction of regions
-that truly have nonadditive effects.
-
-## Outputs
-
-Each run creates a separate directory:
+By default each run creates:
 
 ```text
 results_em/iteration_NNN/descriptive_results/figure1/run_YYYYMMDD_HHMMSS_PID/
+    figure1_em.pdf                  # Vector figure, 15 x 12 inches
+    figure1_em.png                  # 3750 x 3000 pixels
+    figure1_caption.txt             # Definitions and calculated denominators
+    figure1_plot_data.rds           # Frozen plotting data and provenance
+    metrics.csv
+    overall.csv
+    tissue_outcomes.csv
+    tissue_count_table.csv          # Exact CS-count contingency counts
+    cohort.csv                     # Included regions and outcomes
+    region_audit.csv               # Included/excluded region reasons
+    matched_cs_pairs.csv            # Matching, PIPs, Jaccard, TSS and panel flags
+    unpaired_cs.csv                 # Extra CSs; nearest-lead distances and TSS
+    membership_audit.csv
+    priors.csv
+    example_leads.csv
+    example_regional.csv
+    example_groups.csv
+    example_expression.csv         # Anonymous individual plotting values
+    sessionInfo.txt
 ```
 
-The console prints the directory, also available as:
+The path is printed in the console and available as `figure1_result$output_dir`.
+The PNG/PDF are written before the optional RStudio Plots display. Use **Zoom**
+or open the PDF for the full layout. If the Plots pane is too small, set
+`show_plot = FALSE` and view the saved files.
 
-```r
-figure1_result$output_dir
-```
+For a fast redraw without GTEx data or installed reconstruction packages, set
+`plot_data_file` to the exported `figure1_plot_data.rds` in the entry settings and
+Source again. Replotting keeps the export's iteration, cohort, CYP4F11 data and
+any synthetic-data label. A conflicting explicit iteration is rejected. The
+`latest` setting in replot mode means the frozen export, not a new scan of results.
 
-Main outputs:
-
-- `figure1_em.pdf` (vector, 16 x 12.5 inches) and `figure1_em.png` (4000 x 3125).
-- `figure1_caption.txt`, `figure1_plot_data.rds`, `sessionInfo.txt`.
-- `metrics.csv`: headline numerators, denominators and rates.
-- `cohort.csv`, `region_audit.csv`: included regions and all selection reasons.
-- `tissue_ranking.csv`, `selected_tissues.csv`, `tissue_cs_count_tables.csv`
-  (the four tables), `tissue_count_table.csv` (counts across all cohort tissues).
-- `matched_cs_pairs.csv`, `unpaired_cs.csv`, `lead_retention_summary.csv`,
-  `lead_distance_summary.csv`, `tss_distance_summary.csv`, `orphan_cs_rows.csv`.
-- `coding_cs_support.csv`: each reported EM CS's full additive/recessive/dominant
-  posterior support, component index and posterior mass inside the CS.
-- `coding_region_audit.csv`: validates how many reported components each cohort
-  region contributes, including zero-CS regions.
-- `coding_tissue_support.csv`, `coding_overall_support.csv`: the exact D data.
-- `priors_used.csv`: provenance only; these are **not** the D values.
-
-For a fast redraw, set `plot_data_file` to the exported
-`figure1_plot_data.rds` in the entry settings and Source again. This uses the
-export's frozen iteration and cohort, without raw fits. A conflicting explicit
-iteration is rejected.
-
-The previous CYP4F11/scatter version's `figure1_em_v1` bundles do not contain the
-required posterior coding data and are intentionally rejected. Run once on RCC
-with `plot_data_file = NULL` to generate the new v2 bundle. Existing exported
-files are not modified by the default new-run output path.
-
-## Validation
+## Local validation
 
 ```text
 Rscript --vanilla script/analysis/tests/test_figure1_em.R
 ```
 
-The test uses synthetic saved EM fits and summaries, with 27 tissues and a newer
-unfinished iteration. It runs the actual RStudio Source entry, checks the shared
-cohort and both headline denominators, compares A-C data directly with the
-original table/ECDF implementation, verifies full-alpha coding probabilities
-(including mass outside the CS and excluding non-reported components), rejects
-stale/mismatched inputs, and tests zero-CS tissues, empty ECDFs and frozen redraws.
-It renders PNG/PDF and a small-device preview without GTEx inputs or extra
-packages. Previews under `tmp/figure1_em_v2_validation/` are explicitly synthetic.
-Real results still require the EM files on RCC.
-
+This base-R test builds synthetic summaries and saved fits, exercises the actual EM
+discovery/summary/join pipeline (including a newer incomplete iteration), verifies
+shared-cohort counts, matching, membership, TSS exclusions and expression adjustment,
+and renders all four panels. Only external GTEx reconstruction is replaced. It also
+checks the Source entry's replot route and the zero-changed-leads case. Synthetic
+previews in `tmp/figure1_em_validation/` are explicitly labelled and are not GTEx
+results. Real-data execution still needs the inputs on RCC.

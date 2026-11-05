@@ -1,0 +1,44 @@
+.libPaths(c("tmp/slider_prior_impl/library","C:/Users/willi/AppData/Local/R/win-library/4.6",.libPaths()))
+code<-normalizePath("output/slider_online_015_2026-11-05",winslash="/")
+source(file.path(code,"engine.R"));mb_load(code)
+set.seed(104);X<-matrix(rbinom(160*6,2,.35),160,6);X[,6]<-0;X[1:8,6]<-1
+colnames(X)<-paste0("snp",1:6);y<-X[,1]+.5*(X[,1]==1)+rnorm(160,sd=.4)
+priors<-data.frame(tissue="Brain",matrix(1/17,1,17,dimnames=list(NULL,spe_columns())))
+a<-list(X=X,y=y,L=10,min_obs=5,standardize=FALSE,estimate_prior_method="EM",
+        delta_grid=spe_grid(),delta_prior=spe_prior(priors,"Brain"),max_iter=5000,tol=1e-5)
+fit<-do.call(susieRSlidePrior::susie,a)
+out<-structure(list(Brain=list(fit_slide_prior=fit,sample_ids=as.character(1:160))),em_iteration=14L)
+sre_validate(out,list(iteration=14L,priors=priors,settings=spe_settings()))
+sm<-spe_summarize_gene(out,"G",priors)
+project<-tempfile("online_real_",tmpdir=normalizePath("tmp",winslash="/"));dir.create(project)
+root<-file.path(project,"results_slide_prior_em");dir.create(root)
+branch<-file.path(project,"workflows/slider_online_015_025");dir.create(branch,recursive=TRUE)
+seed<-file.path(branch,"seed");dir.create(file.path(seed,"results"),recursive=TRUE)
+mb_save(out,file.path(seed,"results/G.rds"));mb_save(priors,file.path(seed,"source_priors.csv"),TRUE)
+old<-data.frame(iteration=14L,source_iteration=13L,priors)
+mb_save(old,file.path(seed,"source_prior_history.csv"),TRUE);mb_save(old,file.path(root,"prior_history.csv"),TRUE)
+m<-list(settings=spe_settings(),packages=mb_packages(),genes="G",datadir="unused",source_project=project,
+        map=mb_read(file.path(code,"renamed_gene_map.csv"))[FALSE,],source_iteration=14L,
+        initial_fits=1L,cohorts=list(G=spp_cohort(out)),counts=sm$counts,initial_priors=mb_weights(sm$counts,priors))
+mb_save(m,file.path(seed,"metadata.rds"));f<-file.path(seed,"results/G.rds");info<-file.info(f)
+mb_save(data.frame(gene="G",size=info$size,mtime=as.numeric(info$mtime),md5=mb_md5(f)),file.path(seed,"expected.csv"),TRUE)
+dir.create(file.path(branch,"plan"));writeLines("G",file.path(branch,"plan/genes.txt"))
+groups<-paste0("../../results_slide_prior_em/iteration_",c("015","016"))
+plan<-data.frame(stage=1:2,iteration=15:16,phase=c("minibatch","full"),pass=1,batch=1,rho=c(.3,1),
+                group=groups,results_dir=paste0(groups,"/results"),directory=paste0(groups,"/batches/batch_01"),genes_file="plan/genes.txt")
+mb_save(plan,file.path(branch,"stages.csv"),TRUE);mb_initialize(branch,seed)
+real_gene<-function(target_gene,tissue_priors,previous_result,...) {
+  args<-a;args$delta_prior<-spe_prior(tissue_priors,"Brain")
+  warm<-previous_result$Brain$fit_slide_prior;warm$call<-NULL;args$model_init<-warm
+  list(Brain=list(fit_slide_prior=do.call(susieRSlidePrior::susie,args),sample_ids=as.character(1:160)))
+}
+for(i in 1:2) {
+  mb_prepare(branch);d<-file.path(branch,plan$directory[i]);mb_worker(branch,d,"G",real_gene)
+  x<-readRDS(file.path(d,"input.rds"));result<-readRDS(file.path(x$result_dir,"G.rds"))
+  stopifnot(result$Brain$fit_slide_prior$converged,is.null(result$Brain$fit_slide_prior$call),attr(result,"em_iteration")==14+i)
+  serial<-spe_summarize_gene(result,"G",x$priors);cached<-readRDS(file.path(d,"summaries/G.rds"))
+  stopifnot(isTRUE(all.equal(serial$counts,cached$counts,tolerance=1e-12)))
+  mb_commit(branch,d);mb_history(branch)
+  if(i==2L)stopifnot(all(mb_read(file.path(d,"history.csv"))$batch==0L))
+}
+cat("PASS: real slider warm starts with shared scan folders, batch provenance, online/full updates and history.\n")

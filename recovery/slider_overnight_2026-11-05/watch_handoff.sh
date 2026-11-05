@@ -1,0 +1,40 @@
+#!/bin/bash
+# Retry only transient launch waits; do not alter the immutable online bundle.
+# Optional paths and retry interval support isolated tests.
+set -u
+bundle=${1:-/home/wdenault/slider_online_014_2026-11-05}
+branch=${2:-/project2/mstephens/wdenault/susie_mix/workflows/slider_online_014_024}
+cd "$bundle" || exit 1
+attempt_log="handoff_overnight_attempt_$$.log"
+while (( SECONDS < 86400 )); do
+    if [ -e "$branch/ERROR.json" ]; then
+        echo 'STOP: Online workflow has ERROR.json; leaving it unchanged.'
+        exit 1
+    fi
+    bash start.sh --resume --handoff > "$attempt_log" 2>&1
+    rc=$?
+    cat "$attempt_log"
+    if [ "$rc" -eq 0 ]; then
+        echo 'SUCCESS: Handoff launcher completed; Slurm now manages the continuation.'
+        exit 0
+    fi
+    if grep -Fxq 'STOP: A branch controller is already queued/running' "$attempt_log"; then
+        if [ -e "$branch/pending_submission.json" ]; then
+            echo 'STOP: Controller exists but submission receipt is unresolved; inspect pending_submission.json.'
+            exit 1
+        fi
+        echo 'SUCCESS: An online controller is already queued or running; no duplicate submitted.'
+        exit 0
+    fi
+    if grep -Fxq -e 'STOP: No safe pending-controller window; retry --resume --handoff' \
+        -e 'STOP: No safe submission window/free slots; retry --resume later' \
+        -e 'STOP: [Errno 11] Resource temporarily unavailable' "$attempt_log"; then
+        echo 'Still waiting; retrying the existing verified launcher.'
+        sleep "${SLIDER_WATCH_RETRY_SECONDS:-20}"
+    else
+        echo 'STOP: Unexpected failure; no automatic retry or state changes.'
+        exit "$rc"
+    fi
+done
+echo 'STOP: No successful handoff within 24 hours; inspect the log.'
+exit 1

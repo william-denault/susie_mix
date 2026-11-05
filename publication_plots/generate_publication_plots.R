@@ -1,7 +1,8 @@
 # Open this file in RStudio and click Source (or run source() on its full path).
 # Required for Figure 1: install.packages(c("ggplot2", "patchwork"))
 # Use the original n=500 publication snapshots, including the finite slide prior.
-# Generate all panels and Figure 1 for causal counts 1:4; no models are fit.
+# Generate the selected manuscript panels and Figure 1 for K=1:4.
+# Pure-architecture calibration, pooled power--FDR, and no ROC plots; no fits.
 
 # Locate this script, so Source works even when RStudio's working directory differs.
 .publication_script_file <- local({

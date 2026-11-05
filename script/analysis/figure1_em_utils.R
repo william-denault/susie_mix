@@ -1,376 +1,480 @@
-# Figure 1 v2: four count tables, two ECDFs and posterior coding support.
-# Source em_analysis_utils.R and em_cs_agreement_utils.R first. Base R only.
+# Figure 1 calculations and graphics. Base R except lazy GTEx reconstruction.
+# Source em_analysis_utils.R and em_cs_agreement_utils.R first.
+fig1_coding_colors <- c(additive = "#397DA2", recessive = "#C65A30",
+                        dominant = "#168578", unknown = "#858585")
+fig1_outcome_colors <- c(same_leads = "#BCD5D2", changed_leads = "#4A87A6",
+  fewer_em = "#E2B581", susie_only = "#BA7544", more_em = "#8470A8",
+  em_only = "#554472", unknown_leads = "#B9B9B9")
+fig1_outcome_labels <- c(same_leads = "Same count + same leads", changed_leads = "Same count + changed leads",
+  fewer_em = "Fewer EM CSs (both >0)", susie_only = "SuSiE only",
+  more_em = "More EM CSs (both >0)", em_only = "EM only", unknown_leads = "Same count; leads unavailable")
 fig1_fmt <- function(x) format(x, big.mark = ",", trim = TRUE, scientific = FALSE)
-fig1_pct <- function(x) if (is.finite(x)) sprintf("%.1f%%", 100 * x) else "NA"
-fig1_members <- function(x) {
-  if (is.na(x) || !nzchar(trimws(x))) return(character())
-  unique(trimws(strsplit(x, ";", fixed = TRUE)[[1L]]))
+fig1_members <- function(s) {
+  if (is.na(s) || !nzchar(trimws(s))) return(character())
+  unique(trimws(strsplit(s, ";", fixed = TRUE)[[1L]]))
 }
 
 summarize_figure1_em <- function(res, cs, priors, settings) {
-  z <- summarize_em_cs_agreement(res, cs, settings$association_threshold,
-    settings$minimum_mean_reads, settings$minimum_tissue_regions, em_priors = priors)
-  r <- z$region_audit[z$region_audit$count_eligible, , drop = FALSE]
+  em_agreement_require(cs, c("cs_snps", "cs_size_snps"), "Figure 1 CS summary")
+  base <- summarize_em_cs_agreement(res, cs, settings$association_threshold,
+    settings$minimum_mean_reads, minimum_tissue_regions = 1L, em_priors = priors)
+  audit <- base$region_audit
+  r <- audit[audit$count_eligible, , drop = FALSE]
   if (!nrow(r)) stop("No regions pass the shared Figure 1 cohort filters.")
-  z$schema <- "figure1_em_tables_ecdf_v2"
-  z$settings <- settings
-  z$cohort <- r
-  p <- z$matched_cs_pairs
-  z$metrics <- data.frame(
-    n_regions = nrow(r), n_genes = length(unique(r$gene)), n_tissues = length(unique(r$tissue)),
-    n_add_cs = sum(r$n_add), n_em_cs = sum(r$n_em),
-    n_same_count = sum(r$n_add == r$n_em), n_different_count = sum(r$n_add != r$n_em),
-    count_agreement_rate = mean(r$n_add == r$n_em),
-    n_pairs = nrow(p), n_same_lead = sum(p$same_lead_snp), n_changed_lead = sum(!p$same_lead_snp),
-    lead_retention_rate = if (nrow(p)) mean(p$same_lead_snp) else NA_real_,
-    n_matching_unavailable_regions = sum(r$matching_status != "matched"),
-    n_model_only_extra_cs = sum(!z$unpaired_cs$other_model_has_cs))
-  # The selected four tissues affect A only; the headline, B, C and D use all tissues.
-  z$tissue_count_table <- as.data.frame(table(tissue = r$tissue, n_add = r$n_add, n_em = r$n_em))
-  names(z$tissue_count_table)[4L] <- "n_regions"
-  z$tissue_count_table <- z$tissue_count_table[z$tissue_count_table$n_regions > 0, ]
-  # Do not retain a prior-based panel under the new posterior panel's name.
-  z$tissue_coding_priors <- NULL
-  z$priors_used <- priors
-  z
-}
+  r$outcome <- "unknown_leads"
+  same <- r$n_add == r$n_em
+  r$outcome[which(same & r$lead_status == "ok" & r$n_shared_leads == r$n_add)] <- "same_leads"
+  r$outcome[which(same & r$lead_status == "ok" & r$n_shared_leads < r$n_add)] <- "changed_leads"
+  r$outcome[r$n_em < r$n_add & r$n_em > 0] <- "fewer_em"
+  r$outcome[r$n_em == 0] <- "susie_only"
+  r$outcome[r$n_em > r$n_add & r$n_add > 0] <- "more_em"
+  r$outcome[r$n_add == 0] <- "em_only"
+  categories <- names(fig1_outcome_colors)
+  overall <- data.frame(outcome = categories, n_regions = as.integer(table(factor(r$outcome, categories))))
+  overall$fraction <- overall$n_regions / nrow(r)
+  tissue <- as.data.frame(table(tissue = r$tissue, outcome = factor(r$outcome, categories)))
+  names(tissue)[3L] <- "n_regions"
+  tissue$denominator <- ave(tissue$n_regions, tissue$tissue, FUN = sum)
+  tissue$fraction <- tissue$n_regions / tissue$denominator
+  counts <- as.data.frame(table(tissue = r$tissue, n_add = r$n_add, n_em = r$n_em))
+  names(counts)[4L] <- "n_regions"
+  counts <- counts[counts$n_regions > 0, ]
 
-# Read each selected gene once. Sum the FULL component posterior over each
-# coding, not only predictors inside the 95% CS, and not SNP PIPs.
-fig1_collect_coding_support <- function(context, cohort, cs) {
-  source(file.path(context$project_dir, "script/analysis/generate_summary_results.R"), local = TRUE)
+  # Only the CSs in this parent cohort are carried into panels B/C and the audit.
   cs <- as.data.frame(cs, stringsAsFactors = FALSE)
-  em_agreement_require(cs, c("component", "cs_snps", "cs_size_snps"), "Posterior coding CS summary")
   cs$region_id <- em_agreement_key(cs$gene, cs$tissue)
-  cs <- cs[cs$model_key == "weighted_fit_mix" & cs$region_id %in% cohort$region_id, , drop = FALSE]
-  if (anyDuplicated(cs[c("region_id", "cs_number")])) stop("Duplicate EM CS summary rows.")
-  cs_parts <- split(cs, cs$region_id)
-  by_gene <- split(cohort, cohort$gene)
-  classes <- c("additive", "recessive", "dominant")
-  rows <- list()
-  audit <- cohort[c("region_id", "gene", "tissue", "n_em")]
-  audit$n_components_used <- 0L
-  audit$status <- ifelse(audit$n_em > 0, "pending", "no_em_cs")
-  message("Reading posterior coding support for ", length(by_gene), " cohort genes...")
-  for (g in seq_along(by_gene)) {
-    r <- by_gene[[g]]; gene <- names(by_gene)[g]
-    if (!gene %in% context$manifest$gene) stop("Cohort gene absent from the EM manifest: ", gene)
-    file <- file.path(context$iteration_dir, "results", paste0(gene, ".rds"))
-    fits <- readRDS(file)
-    if (!is.list(fits) || !is.null(fits[["error"]]) ||
-        !isTRUE(attr(fits, "em_iteration", exact = TRUE) == context$iteration))
-      stop("Invalid selected-iteration EM gene result: ", gene)
-    if (is.null(names(fits)) || anyNA(names(fits)) || anyDuplicated(names(fits)))
-      stop("Invalid EM tissue names for ", gene)
-    for (i in seq_len(nrow(r))) {
-      label <- paste(gene, r$tissue[i], sep = " / ")
-      x <- fits[[r$tissue[i]]]
-      if (!is.list(x)) stop("Missing EM tissue fit: ", label)
-      fit <- x$weighted_fit_mix
-      if (!is.matrix(fit$alpha) || !isTRUE(fit$converged)) stop("Missing or unconverged EM fit: ", label)
-      map <- as.data.frame(x$mix_predictor_map)
-      validate_predictor_map(fit, map, label)
-      if (anyNA(map$coding) || any(!map$coding %in% classes) || anyDuplicated(map$predictor_name))
-        stop("Invalid EM predictor codings/names: ", label)
-      expected_prior <- unlist(context$priors[match(r$tissue[i], context$priors$tissue),
-        c("pi_add", "pi_rec", "pi_dom")], use.names = FALSE)
-      observed_prior <- x$mix_coding_prior[classes]
-      if (length(observed_prior) != 3L || anyNA(expected_prior) ||
-          !isTRUE(all.equal(unname(observed_prior), expected_prior, tolerance = 1e-10)))
-        stop("Saved EM prior does not match selected iteration: ", label)
-      sets <- get_cs(fit)
-      part <- cs_parts[[r$region_id[i]]]
-      if (is.null(part)) part <- cs[FALSE, , drop = FALSE]
-      if (length(sets) != r$n_em[i] || nrow(part) != r$n_em[i] ||
-          !setequal(part$cs_number, seq_along(sets)))
-        stop("Saved EM CS count and summary disagree: ", label, ". Regenerate EM summaries.")
-      if (!length(sets)) next
-      components <- fit$sets$cs_index
-      if (length(components) != length(sets) || anyNA(components) ||
-          any(components < 1 | components > nrow(fit$alpha) | components != floor(components)) ||
-          anyDuplicated(components)) stop("Invalid CS-to-component mapping: ", label)
-      alpha <- fit$alpha[components, , drop = FALSE]
-      if (any(!is.finite(alpha)) || any(alpha < 0 | alpha > 1) ||
-          any(abs(rowSums(alpha) - 1) > 1e-6))
-        stop("Reported-CS component posteriors must be finite probabilities summing to one: ", label)
-      for (j in seq_along(sets)) {
-        s <- part[part$cs_number == j, , drop = FALSE]
-        indices <- sets[[j]]
-        if (!is.numeric(indices) || !length(indices) || anyNA(indices) ||
-            any(indices < 1 | indices > nrow(map) | indices != floor(indices)) || anyDuplicated(indices))
-          stop("Invalid CS predictor indices: ", label)
-        lead <- get_cs_lead_predictor(fit, sets, j)
-        ids <- unique(as.character(map$snp[indices]))
-        if (!isTRUE(s$component == components[j]) ||
-            !isTRUE(s$lead_snp == map$snp[lead]) || !isTRUE(s$lead_coding == map$coding[lead]) ||
-            !isTRUE(s$cs_size_snps == length(ids)) || !setequal(fig1_members(s$cs_snps), ids) ||
-            length(fit$pip) != nrow(map) || !is.finite(fit$pip[lead]) ||
-            !isTRUE(all.equal(as.numeric(s$lead_pip), as.numeric(fit$pip[lead]), tolerance = 1e-8)))
-          stop("Saved EM CS and summary disagree: ", label, " / CS ", j, ". Regenerate EM summaries.")
-        support <- vapply(classes, function(coding) sum(alpha[j, map$coding == coding]), numeric(1))
-        rows[[length(rows) + 1L]] <- data.frame(
-          region_id = r$region_id[i], gene = gene, tissue = r$tissue[i], em_iteration = context$iteration,
-          cs_number = j, component = components[j], lead_snp = s$lead_snp, lead_coding = s$lead_coding,
-          lead_pip = s$lead_pip, cs_size_snps = length(ids), alpha_sum = sum(alpha[j, ]),
-          posterior_additive = support[1], posterior_recessive = support[2], posterior_dominant = support[3],
-          posterior_mass_inside_cs = sum(alpha[j, indices]), row.names = NULL)
-      }
-      k <- match(r$region_id[i], audit$region_id)
-      audit$n_components_used[k] <- length(sets); audit$status[k] <- "included"
+  cs <- cs[cs$region_id %in% r$region_id & cs$model_key %in% c("susie_add", "weighted_fit_mix"), ]
+  cs$cs_id <- paste(cs$region_id, cs$model_key, cs$cs_number, sep = "|")
+  if (anyDuplicated(cs$cs_id)) stop("Duplicate CS IDs in the Figure 1 cohort.")
+  members <- lapply(cs$cs_snps, fig1_members)
+  cs$membership_status <- vapply(seq_len(nrow(cs)), function(i) {
+    ids <- members[[i]]
+    if (!length(ids) || !all(em_agreement_coordinates(ids)$valid)) return("missing_or_invalid_members")
+    if (!is.finite(cs$cs_size_snps[i]) || length(ids) != cs$cs_size_snps[i]) return("size_mismatch")
+    if (!cs$lead_snp[i] %in% ids) return("lead_absent_from_members")
+    "ok"
+  }, character(1))
+  p <- base$matched_cs_pairs
+  a <- match(p$additive_cs_id, cs$cs_id); m <- match(p$em_cs_id, cs$cs_id)
+  if (anyNA(c(a, m))) stop("Matched CS absent from cohort summary.")
+  p$additive_lead_pip <- cs$lead_pip[a]
+  p$additive_size_snps <- cs$cs_size_snps[a]; p$em_size_snps <- cs$cs_size_snps[m]
+  p$em_lead_coding[!p$em_lead_coding %in% names(fig1_coding_colors)] <- "unknown"
+  p$valid_pip <- is.finite(p$em_lead_pip) & p$em_lead_pip >= 0 & p$em_lead_pip <= 1
+  p$jaccard <- rep(NA_real_, nrow(p))
+  for (i in which(cs$membership_status[a] == "ok" & cs$membership_status[m] == "ok"))
+    p$jaccard[i] <- length(intersect(members[[a[i]]], members[[m[i]]])) /
+      length(union(members[[a[i]]], members[[m[i]]]))
+  p$overlap <- ifelse(is.na(p$jaccard), "Unknown", ifelse(p$jaccard == 1, "Identical",
+    ifelse(p$jaccard == 0, "Disjoint", "Partial")))
+  p$add_abs_tss_bp <- abs(cs$distance_to_tss_kb[a]) * 1000
+  p$em_abs_tss_bp <- abs(cs$distance_to_tss_kb[m]) * 1000
+  p$tss_status <- ifelse(is.finite(p$add_abs_tss_bp) & is.finite(p$em_abs_tss_bp),
+                          "ok", "missing_distance")
+  # Reject stale workhorse distances attached to a different component lead.
+  for (idx in list(a, m)) {
+    if (all(c("distance_source", "workhorse_lead_snp") %in% names(cs))) {
+      bad <- grepl("workhorse", cs$distance_source[idx], ignore.case = TRUE) &
+        (is.na(cs$workhorse_lead_snp[idx]) | cs$workhorse_lead_snp[idx] != cs$lead_snp[idx])
+      p$tss_status[which(bad)] <- "workhorse_lead_mismatch"
     }
-    if (g %% 100L == 0L || g == length(by_gene)) message("  Read ", g, " / ", length(by_gene), " genes.")
+    if ("chromosome_matches_tss" %in% names(cs))
+      p$tss_status[which(cs$chromosome_matches_tss[idx] %in% FALSE)] <- "tss_chromosome_mismatch"
+    if ("lead_position" %in% names(cs)) {
+      pos <- em_agreement_coordinates(cs$lead_snp[idx])$pos
+      p$tss_status[which(is.finite(cs$lead_position[idx]) & cs$lead_position[idx] != pos)] <- "lead_coordinate_mismatch"
+    }
+    if ("tss_position" %in% names(cs)) {
+      expected <- abs(em_agreement_coordinates(cs$lead_snp[idx])$pos - cs$tss_position[idx])
+      observed <- abs(cs$distance_to_tss_kb[idx]) * 1000
+      p$tss_status[which(is.finite(expected) & is.finite(observed) & abs(expected - observed) > 1)] <- "tss_distance_mismatch"
+    }
   }
-  support <- if (length(rows)) do.call(rbind, rows) else data.frame(
-    region_id = character(), gene = character(), tissue = character(), em_iteration = integer(),
-    cs_number = integer(), component = integer(), lead_snp = character(), lead_coding = character(),
-    lead_pip = numeric(), cs_size_snps = integer(), alpha_sum = numeric(),
-    posterior_additive = numeric(), posterior_recessive = numeric(), posterior_dominant = numeric(),
-    posterior_mass_inside_cs = numeric())
-  stopifnot(nrow(support) == sum(cohort$n_em), all(audit$n_components_used == audit$n_em))
-  list(cs = support, regions = audit)
-}
-
-fig1_add_coding_summary <- function(z, support) {
-  z$coding_cs_support <- support$cs
-  z$coding_region_audit <- support$regions
-  columns <- paste0("posterior_", c("additive", "recessive", "dominant"))
-  aggregate_one <- function(tissue, r, d) {
-    means <- if (nrow(d)) colMeans(d[columns]) else setNames(rep(NA_real_, 3L), columns)
-    data.frame(tissue = tissue, n_cohort_regions = nrow(r), n_regions_with_em_cs = sum(r$n_em > 0),
-      n_em_cs = nrow(d), mean_additive = unname(means[1]), mean_recessive = unname(means[2]),
-      mean_dominant = unname(means[3]), mean_nonadditive = unname(means[2] + means[3]))
+  if ("tss_position" %in% names(cs)) {
+    bad <- is.finite(cs$tss_position[a]) & is.finite(cs$tss_position[m]) & cs$tss_position[a] != cs$tss_position[m]
+    p$tss_status[which(bad)] <- "different_tss_annotations"
   }
-  z$coding_tissue_support <- do.call(rbind, lapply(sort(unique(z$cohort$tissue)), function(tissue)
-    aggregate_one(tissue, z$cohort[z$cohort$tissue == tissue, ],
-      support$cs[support$cs$tissue == tissue, , drop = FALSE])))
-  z$coding_overall_support <- aggregate_one("All tissues", z$cohort, support$cs)
-  z
+  p$tss_delta_bp <- ifelse(p$tss_status == "ok", p$em_abs_tss_bp - p$add_abs_tss_bp, NA_real_)
+  p$panel_b <- !p$same_lead_snp & p$valid_pip
+  p$panel_c <- !p$same_lead_snp & p$tss_status == "ok"
+  changed <- p[!p$same_lead_snp, , drop = FALSE]
+  tc <- p[p$panel_c, , drop = FALSE]
+  metrics <- data.frame(n_regions = nrow(r), n_genes = length(unique(r$gene)), n_tissues = length(unique(r$tissue)),
+    n_add_cs = sum(r$n_add), n_em_cs = sum(r$n_em), n_same_count = sum(same),
+    n_matching_unavailable_regions = sum(r$matching_status != "matched"), n_pairs = nrow(p),
+    n_same_lead = sum(p$same_lead_snp), n_changed_lead = nrow(changed),
+    n_changed_zero_bp = sum(changed$distance_bp == 0), n_panel_b = sum(p$panel_b),
+    n_changed_missing_pip = sum(!changed$valid_pip),
+    n_changed_over10kb = sum(changed$distance_bp > 1e4),
+    n_changed_over100kb = sum(changed$distance_bp > 1e5), n_panel_c = nrow(tc),
+    n_changed_missing_tss = sum(changed$tss_status != "ok"),
+    n_tss_closer = sum(tc$tss_delta_bp < 0), n_tss_equal = sum(tc$tss_delta_bp == 0),
+    n_tss_farther = sum(tc$tss_delta_bp > 0),
+    median_tss_delta_kb = if (nrow(tc)) median(tc$tss_delta_bp) / 1000 else NA_real_)
+  list(schema = "figure1_em_v1", iteration = base$iteration, settings = settings, metrics = metrics,
+    overall = overall, tissue_outcomes = tissue, tissue_count_table = counts,
+    cohort = r, region_audit = audit, matched_cs_pairs = p, unpaired_cs = base$unpaired_cs,
+    membership_audit = cs[c("gene", "tissue", "model_key", "cs_number", "membership_status")],
+    priors = priors)
 }
 
-fig1_distance_axis <- function(xmax) {
-  ticks <- c(0, 10^(0:8))
-  labels <- c("0", "1 bp", "10 bp", "100 bp", "1 kb", "10 kb", "100 kb", "1 Mb", "10 Mb", "100 Mb")
-  keep <- log10(1 + ticks) <= xmax
-  axis(1, at = log10(1 + ticks[keep]), labels = labels[keep], cex.axis = .75)
+fig1_reconstruct_example <- function(context, tissue_result, settings) {
+  needed <- c("data.table", "matrixStats")
+  absent <- needed[!vapply(needed, requireNamespace, logical(1), quietly = TRUE)]
+  if (length(absent)) stop("GTEx reconstruction requires installed R packages: ", paste(absent, collapse = ", "))
+  source(file.path(context$project_dir, "script/analysis/fit_mix_expression_plot_utils.R"), local = TRUE)
+  d <- settings$datadir
+  files <- c(subject_pheno_file = "GTEx_Analysis_v8_Annotations_SubjectPhenotypesDS.txt.gz",
+    sample_attr_file = "GTEx_Analysis_v8_Annotations_SampleAttributesDS.txt.gz",
+    expr_file = "GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_reads.gct.gz",
+    gtf_file = "Homo_sapiens.GRCh38.103.chr.reformatted.collapse_only.gene.gtf.gz")
+  paths <- setNames(file.path(d, files), names(files))
+  if (any(!file.exists(paths))) stop("Missing GTEx inputs: ", paste(paths[!file.exists(paths)], collapse = ", "))
+  plink <- file.path(d, "plink2")
+  if (!file.exists(plink)) stop("PLINK2 executable not found: ", plink)
+  shared <- do.call(load_fit_mix_expression_inputs, c(as.list(paths), list(gene_annotation_function =
+    file.path(context$project_dir, "script/scan_tissue_attempt/get_gene_annotations.R"))))
+  gene <- prepare_fit_mix_gene_data(settings$example_gene, shared, context$baseline_dir,
+    temp_dir = tempdir(), plink_exec = plink,
+    geno_file = file.path(d, "GTEx_Analysis_2017-06-05_v8_WholeGenomeSeq_866Indiv"),
+    cis_window = 5e5, min_maf_plink = 0, min_maf = .05, hwe_thresh = 1e-8)
+  # The shared reconstruction helper calls this slot susie_mix. Explicitly use EM.
+  tissue_result$susie_mix <- tissue_result$weighted_fit_mix
+  prepare_fit_mix_tissue_data(gene, settings$example_gene, settings$example_tissue,
+    tissue_result, min_samples = 0L, min_n_rec = 5L)
 }
 
-# Coordinates of a right-continuous ECDF, including its jump at zero.
-fig1_ecdf_steps <- function(values, xmax) {
-  d <- sort(values[is.finite(values)])
-  if (!length(d)) return(data.frame(x = numeric(), y = numeric()))
-  x <- sort(unique(d))
-  data.frame(x = c(0, log10(1 + x), xmax), y = c(0, findInterval(x, d) / length(d), 1))
+fig1_example <- function(context, summary_cs, result, settings, reconstruct = fig1_reconstruct_example) {
+  id <- em_agreement_key(settings$example_gene, settings$example_tissue)
+  row <- result$cohort[result$cohort$region_id == id, , drop = FALSE]
+  if (nrow(row) != 1L) stop(settings$example_gene, " / ", settings$example_tissue,
+    " is outside the shared cohort. Filters will not be relaxed for panel D.")
+  source(file.path(context$project_dir, "script/analysis/generate_summary_results.R"), local = TRUE)
+  join <- em_join_gene; environment(join) <- environment()
+  x <- join(file.path(context$iteration_dir, "results", paste0(settings$example_gene, ".rds")), context)[[settings$example_tissue]]
+  if (is.null(x)) stop("Example is absent from the selected EM result.")
+  leads <- points <- list()
+  for (model in c("susie_add", "weighted_fit_mix")) {
+    fit <- x[[model]]
+    map <- as.data.frame(x[[if (model == "susie_add") "add_predictor_map" else "mix_predictor_map"]])
+    map <- map[order(map$predictor_index), , drop = FALSE]
+    validate_predictor_map(fit, map, paste("Example", model))
+    sets <- get_cs(fit)
+    if (length(sets) != if (model == "susie_add") row$n_add else row$n_em)
+      stop("Example CS count differs between summary and saved fit; regenerate EM summaries.")
+    if (length(fit$pip) != nrow(map) || any(!is.finite(fit$pip) | fit$pip < 0 | fit$pip > 1))
+      stop("Invalid saved example predictor PIPs.")
+    coords <- em_agreement_coordinates(map$snp)
+    if (any(!coords$valid) || length(unique(coords$chr)) != 1L) stop("Invalid example predictor coordinates.")
+    points[[model]] <- data.frame(model = model, snp = map$snp, coding = map$coding,
+      position = coords$pos, chromosome = coords$chr, pip = fit$pip)
+    for (i in seq_along(sets)) {
+      k <- get_cs_lead_predictor(fit, sets, i)
+      ids <- unique(map$snp[sets[[i]]])
+      s <- summary_cs[summary_cs$gene == settings$example_gene & summary_cs$tissue == settings$example_tissue &
+                        summary_cs$model_key == model & summary_cs$cs_number == i, , drop = FALSE]
+      if (nrow(s) != 1L || !isTRUE(s$lead_snp == map$snp[k]) || !isTRUE(s$lead_coding == map$coding[k]) ||
+          !isTRUE(all.equal(as.numeric(s$lead_pip), as.numeric(fit$pip[k]), tolerance = 1e-8)) ||
+          !setequal(fig1_members(s$cs_snps), ids))
+        stop("Example CS summary disagrees with saved ", model, " CS ", i, "; regenerate summaries.")
+      leads[[length(leads) + 1L]] <- data.frame(model = model, cs_number = i, predictor_index = k,
+        predictor_name = map$predictor_name[k], snp = map$snp[k], coding = map$coding[k], pip = fit$pip[k],
+        size_snps = length(ids), position = coords$pos[k],
+        left = min(em_agreement_coordinates(ids)$pos), right = max(em_agreement_coordinates(ids)$pos))
+    }
+  }
+  leads <- do.call(rbind, leads); points <- do.call(rbind, points)
+  em <- leads[leads$model == "weighted_fit_mix", , drop = FALSE]
+  choices <- em[em$coding == settings$example_coding, , drop = FALSE]
+  if (!nrow(choices)) stop("Example has no ", settings$example_coding, " EM lead in iteration ", context$iteration, ".")
+  shared <- choices$snp %in% leads$snp[leads$model == "susie_add"]
+  focal <- choices[order(!shared, -choices$pip, choices$cs_number)[1L], , drop = FALSE]
+  message("Reconstructing ", settings$example_gene, " / ", settings$example_tissue, " from GTEx inputs...")
+  d <- reconstruct(context, x, settings)
+  expected <- as.data.frame(x$mix_predictor_map)
+  expected <- expected[order(expected$predictor_index), ]
+  if (!identical(colnames(d$geno_mix), as.character(expected$predictor_name)) ||
+      !isTRUE(length(d$y) == x$n_ind) || nrow(d$geno_mix) != length(d$y) ||
+      nrow(d$geno_for_counts) != length(d$y) || any(!is.finite(d$y)) ||
+      any(!is.finite(d$geno_mix))) stop("Reconstructed example sample/predictor mismatch.")
+  if (!focal$snp %in% colnames(d$geno_for_counts)) stop("Focal SNP absent from reconstructed genotypes.")
+  g <- as.numeric(d$geno_for_counts[, focal$snp])
+  if (anyNA(g) || any(!g %in% 0:2) || !all(0:2 %in% g)) stop("Example requires observed genotype groups 0, 1 and 2.")
+  focal_code <- switch(focal$coding, additive = g, recessive = as.numeric(g == 2), dominant = as.numeric(g >= 1))
+  if (!isTRUE(all.equal(unname(d$geno_mix[, focal$predictor_index]), focal_code)))
+    stop("Focal coding does not agree with reconstructed minor-allele dosage.")
+  # Same conditional-expression convention as existing example scripts: fit all
+  # EM CS leads jointly, then subtract the other leads' fitted contributions.
+  other <- setdiff(unique(em$predictor_index), focal$predictor_index)
+  nuisance <- d$geno_mix[, other, drop = FALSE]
+  design <- cbind(intercept = 1, focal = focal_code, nuisance)
+  joint <- lm.fit(design, d$y)
+  if (joint$rank != ncol(design) || any(!is.finite(joint$coefficients)))
+    stop("Conditional example expression has a rank-deficient lead design.")
+  y <- as.numeric(d$y - if (length(other)) nuisance %*% joint$coefficients[-c(1L, 2L)] else 0)
+  fit_a <- lm.fit(cbind(1, g), y)$coefficients
+  fit_r <- lm.fit(cbind(1, as.numeric(g == 2)), y)$coefficients
+  groups <- do.call(rbind, lapply(0:2, function(i) data.frame(dosage = i, n = sum(g == i),
+    mean = mean(y[g == i]), sd = sd(y[g == i]))))
+  groups$additive_ols <- fit_a[1L] + fit_a[2L] * groups$dosage
+  groups$recessive_ols <- fit_r[1L] + fit_r[2L] * as.numeric(groups$dosage == 2)
+  list(gene = settings$example_gene, tissue = settings$example_tissue, n = length(y),
+    focal = focal, shared_lead = focal$snp %in% leads$snp[leads$model == "susie_add"],
+    leads = leads, regional = points, groups = groups,
+    expression = data.frame(dosage = g, transformed_expression = as.numeric(d$y), conditional_expression = y),
+    adjusted_for = expected$predictor_name[other], conditioning_coefficients = setNames(joint$coefficients, colnames(design)),
+    region = row, chromosome = unique(points$chromosome))
+}
+
+fig1_distance_axis <- function(side, max_bp) {
+  ticks <- c(0, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8)
+  labels <- c("0", "100 bp", "1 kb", "10 kb", "100 kb", "1 Mb", "10 Mb", "100 Mb")
+  keep <- ticks <= max_bp
+  axis(side, at = log10(1 + ticks[keep]), labels = labels[keep], las = 1, cex.axis = .8)
 }
 
 plot_figure1_em <- function(z, file = NULL) {
-  if (!identical(z$schema, "figure1_em_tables_ecdf_v2") || is.null(z$coding_tissue_support))
-    stop("This plot requires the v2 tables/ECDF/posterior-support bundle; rerun on RCC.")
+  if (!identical(z$schema, "figure1_em_v1") || is.null(z$example)) stop("Incomplete Figure 1 bundle.")
   if (!is.null(file)) {
-    if (tolower(tools::file_ext(file)) == "pdf") pdf(file, width = 16, height = 12.5, useDingbats = FALSE)
-    else png(file, width = 4000, height = 3125, res = 250,
+    if (tolower(tools::file_ext(file)) == "pdf") pdf(file, width = 15, height = 12, useDingbats = FALSE)
+    else png(file, width = 3750, height = 3000, res = 250,
       type = if (capabilities("cairo")) "cairo" else getOption("bitmapType"))
     on.exit(dev.off(), add = TRUE)
   }
-  old <- par(no.readonly = TRUE); on.exit(par(old), add = TRUE, after = FALSE)
-  scale <- if (is.null(file)) min(1, dev.size("in") / c(16, 12.5)) else 1
-  par(family = "sans", cex = scale, mex = scale, mgp = c(2.1, .7, 0),
-      col.axis = "#444444", col.lab = "#333333", las = 1, xaxs = "i", yaxs = "i")
+  old <- par(no.readonly = TRUE)
+  on.exit(par(old), add = TRUE, after = FALSE)
+  drawing_scale <- if (is.null(file)) min(1, dev.size("in") / c(15, 12)) else 1
+  par(family = "sans", col.axis = "#454545", col.lab = "#333333", cex = drawing_scale, mex = drawing_scale,
+      xaxs = "i", yaxs = "i", las = 1, mgp = c(2.0, .65, 0))
+  # Fixed page coordinates keep the four panel titles aligned across exports.
   par(fig = c(0, 1, 0, 1), mar = rep(0, 4))
   plot.new(); plot.window(c(0, 1), c(0, 1))
-  text(.5, .975, paste0("SuSiE versus EM SuSiE-mix | iteration ", z$iteration), font = 2, cex = 1.5)
-  m <- z$metrics
-  text(.5, .949, sprintf("P < %s | mean reads >= %s | >=1 CS in either model | %s regions across %s tissues",
-    format(z$settings$association_threshold, scientific = TRUE), z$settings$minimum_mean_reads,
-    fig1_fmt(m$n_regions), m$n_tissues), cex = .94, col = "#555555")
-  titles <- c("A   CS-count agreement: four high-disagreement tissues",
-              "B   How far do leads differ? All tissues",
-              "C   Distance to TSS for the extra leads in B",
-              "D   Posterior coding support in the same cohort")
-  for (i in 1:4) text(if (i %% 2L) .018 else .533, if (i <= 2L) .911 else .466,
-    titles[i], adj = 0, font = 2, cex = 1.03)
-  text(.022, .879, sprintf("%s same CS count overall  |  %s / %s regions",
-    fig1_pct(m$count_agreement_rate), fig1_fmt(m$n_same_count), fig1_fmt(m$n_regions)),
-    adj = 0, font = 2, cex = 1.03, col = "#287D72")
-  text(.553, .879, sprintf("%s of matched leads retained  |  %s / %s pairs",
-    fig1_pct(m$lead_retention_rate), fig1_fmt(m$n_same_lead), fig1_fmt(m$n_pairs)),
-    adj = 0, font = 2, cex = 1.03, col = "#346B94")
-  text(.5, .039, sprintf("Same parent cohort in A-D. Table ranking: CS-count disagreement rate, minimum n = %s; B-D use all cohort tissues.",
-    z$settings$minimum_tissue_regions), cex = .76, col = "#555555")
-  text(.5, .024, sprintf("Distance matching is descriptive, not evidence of shared signals or LD. Matching unavailable for %s selected regions.",
-    fig1_fmt(m$n_matching_unavailable_regions)), cex = .76, col = "#555555")
-  if (!is.null(z$preview_label)) text(.5, .008, z$preview_label, font = 2, col = "#B32929", cex = .77)
+  text(.5, .976, "Fine-mapping under additive and mixed genetic models", font = 2, cex = 1.55)
+  m <- z$metrics; ex <- z$example; p <- z$matched_cs_pairs
+  subtitle <- sprintf("EM iteration %s  |  %s gene-tissue regions  |  %s genes  |  %s tissues",
+    z$iteration, fig1_fmt(m$n_regions), fig1_fmt(m$n_genes), m$n_tissues)
+  text(.5, .949, subtitle, cex = 1.02, col = "#555555")
+  text(.018, .914, "A", adj = 0, font = 2, cex = 1.4)
+  text(.048, .914, "Signal architecture across tissues", adj = 0, font = 2, cex = 1.15)
+  text(.52, .914, "B", adj = 0, font = 2, cex = 1.4)
+  text(.55, .914, "Lead changes and posterior support", adj = 0, font = 2, cex = 1.15)
+  text(.018, .464, "C", adj = 0, font = 2, cex = 1.4)
+  text(.048, .464, "Do lead changes move toward the TSS?", adj = 0, font = 2, cex = 1.15)
+  text(.52, .464, "D", adj = 0, font = 2, cex = 1.4)
+  text(.55, .464, paste0(ex$gene, ": ", if (ex$shared_lead) "shared variant, different coding" else "genotype and expression"),
+       adj = 0, font = 2, cex = 1.15)
+  text(.5, .026, sprintf("Shared cohort: additive P < %s; mean reads >= %s; >=1 CS in either model. B/C: matched CS subsets; D: one included region.",
+    format(z$settings$association_threshold, scientific = TRUE), z$settings$minimum_mean_reads), cex = .78, col = "#555555")
+  if (!is.null(z$preview_label)) text(.5, .009, z$preview_label, font = 2, col = "#B32929", cex = .9)
 
-  # A: literal count tables from the established comparison, with a pooled headline.
-  par(fig = c(.012, .495, .492, .856), mar = rep(0, 4), new = TRUE)
-  plot.new(); plot.window(c(0, 1), c(0, 1))
-  text(.5, .981, "Rows: SuSiE CSs  |  Columns: EM CSs  |  Cells: region counts", cex = .75)
-  if (!nrow(z$selected_tissues)) text(.5, .5, "No tissue meets the table-ranking threshold.")
-  for (i in seq_len(nrow(z$selected_tissues))) {
-    f <- z$selected_tissues[i, ]; tab <- z$tissue_cs_count_tables[z$tissue_cs_count_tables$tissue == f$tissue, ]
-    levels <- sort(unique(tab$additive_cs_count)); k <- length(levels)
-    left <- if (i %% 2L) .055 else .56; top <- if (i <= 2L) .79 else .33
-    w <- .39 / k; h <- .285 / k
-    text(left + .195, top + .13, f$tissue, font = 2, cex = .9, col = "#B75C32")
-    text(left + .195, top + .09, sprintf("Disagreement rank %s | n = %s", f$disagreement_rank, fig1_fmt(f$n_regions)), cex = .67)
-    text(left + .195, top + .052, sprintf("Same: %s (%s) | Different: %s", f$same_cs_count,
-      fig1_pct(f$agreement_rate), f$different_cs_count), cex = .67)
-    for (a in seq_len(k)) for (b in seq_len(k)) {
-      n <- tab$n_regions[tab$additive_cs_count == levels[a] & tab$em_cs_count == levels[b]]
-      x <- left + (b - 1L) * w; y <- top - a * h
-      fill <- adjustcolor(if (a == b) "#287D72" else "#C16A40",
-        alpha.f = if (n) .10 + .58 * sqrt(n / max(tab$n_regions)) else .025)
-      rect(x, y, x + w, y + h, col = fill, border = "#E0E4E7", lwd = .5)
-      text(x + w / 2, y + h / 2, if (levels[a] == 0 && levels[b] == 0) "-" else n, cex = min(.8, 6.6 / k))
-    }
-    text(left - .015, top - (seq_len(k) - .5) * h, levels, adj = 1, cex = min(.8, 6.6 / k))
-    text(left + (seq_len(k) - .5) * w, top + .015, levels, cex = min(.8, 6.6 / k))
+  # A: one outcome per region, with every tissue represented and no ranking cutoff.
+  par(fig = c(.005, .495, .578, .893), mar = c(1.8, 7.9, .15, 3.1), new = TRUE)
+  t <- z$tissue_outcomes
+  tids <- unique(as.character(t$tissue))
+  agree <- vapply(tids, function(s) sum(t$fraction[t$tissue == s & t$outcome %in% c("same_leads", "changed_leads", "unknown_leads")]), numeric(1))
+  tids <- tids[order(agree, tids)]
+  n <- length(tids)
+  plot.new(); plot.window(c(0, 1), c(0, n + 3))
+  abline(v = c(.25, .5, .75, 1), col = "#EEEEEE")
+  bar <- function(d, y, h) {
+    right <- cumsum(d$fraction); left <- c(0, head(right, -1))
+    rect(left, y - h, right, y + h, border = NA, col = fig1_outcome_colors[as.character(d$outcome)])
   }
-
-  # B and C retain the populations and ECDF definitions in the preferred figure.
-  colors <- c("#346B94", "#B75C32", "#7B68A5")
-  ecdf_panel <- function(values, fig, ylab, xlabel, legends, cols, ltys) {
-    par(fig = fig, mar = c(3.3, 4.5, .6, 1), new = TRUE)
-    finite <- unlist(values); finite <- finite[is.finite(finite)]
-    xmax <- max(log10(1 + 1e6), if (length(finite)) log10(1 + max(finite)) else 0)
-    plot(NA, xlim = c(0, xmax), ylim = c(0, 1.035), axes = FALSE,
-      xlab = xlabel, ylab = "", cex.lab = .85)
-    mtext(ylab, side = 2, line = 3.2, las = 0, cex = .85 * scale)
-    fig1_distance_axis(xmax)
-    axis(2, at = seq(0, 1, .25), labels = paste0(seq(0, 100, 25), "%"), cex.axis = .82)
-    abline(h = seq(0, 1, .25), col = "#EEEEEE")
-    abline(v = log10(1 + c(1e4, 1e5)), lty = 3, col = "#CCCCCC")
-    for (j in seq_along(values)) {
-      steps <- fig1_ecdf_steps(values[[j]], xmax)
-      if (nrow(steps)) lines(steps$x, steps$y, type = "s", col = cols[j], lty = ltys[j], lwd = 2)
-    }
-    legend("bottomright", legends, col = cols, lty = ltys, lwd = 2, bty = "o", box.col = NA,
-      bg = "white", cex = .72)
-    if (!length(finite)) text(xmax / 2, .55, "No eligible distances")
+  bar(z$overall, n + 2.1, .48)
+  text(0, n + 2.1, "All tissues", pos = 2, xpd = NA, font = 2, cex = .83)
+  text(1, n + 2.1, fig1_fmt(m$n_regions), pos = 4, xpd = NA, font = 2, cex = .78)
+  for (i in seq_along(tids)) {
+    d <- t[as.character(t$tissue) == tids[i], ]
+    y <- n - i + 1
+    bar(d, y, .34)
+    text(0, y, tids[i], pos = 2, xpd = NA, cex = min(.83, 20 / n))
+    text(1, y, fig1_fmt(unique(d$denominator)), pos = 4, xpd = NA, cex = min(.77, 19 / n))
   }
-  labels <- sprintf("%s (n = %s)", names(z$distances),
-    vapply(z$distances, function(d) fig1_fmt(sum(is.finite(d))), character(1)))
-  ecdf_panel(z$distances, c(.51, .985, .545, .852), "Cumulative fraction of CS leads",
-    "Lead-SNP distance (logarithmic spacing; zero retained)", labels, colors, 1:3)
-  par(fig = c(.55, .985, .492, .537), mar = rep(0, 4), new = TRUE)
+  axis(1, at = seq(0, 1, .25), labels = paste0(seq(0, 100, 25), "%"), cex.axis = .8)
+  par(fig = c(.02, .49, .493, .574), mar = rep(0, 4), new = TRUE)
   plot.new(); plot.window(c(0, 1), c(0, 1))
-  text(0, .77, sprintf("Curves exclude %s identical pairs and %s extra CSs in model-only regions.",
-    fig1_fmt(m$n_same_lead), fig1_fmt(m$n_model_only_extra_cs)), adj = 0, cex = .72)
-  text(0, .25, "Changed pairs use one-to-one matches; extra CSs use the nearest other-model lead.", adj = 0, cex = .7, col = "#555555")
+  active <- z$overall$outcome[z$overall$n_regions > 0]
+  labels <- sprintf("%s (%.1f%%)", fig1_outcome_labels[active], 100 * z$overall$fraction[match(active, z$overall$outcome)])
+  legend("topleft", legend = labels, fill = fig1_outcome_colors[active], border = NA,
+         bty = "n", ncol = 2, cex = .78, x.intersp = .6, y.intersp = 1.1)
+  text(.01, .15, "Rows ordered by CS-count agreement; numbers give region counts.", adj = 0, cex = .75, col = "#555555")
 
-  labels <- sprintf("%s (TSS n = %s / %s in B)", names(z$tss_distances),
-    vapply(z$tss_distances, function(d) fig1_fmt(sum(is.finite(d))), character(1)),
-    vapply(z$tss_distances, function(d) fig1_fmt(length(d)), character(1)))
-  ecdf_panel(z$tss_distances, c(.01, .495, .105, .436), "Cumulative fraction of extra CS leads",
-    "Absolute lead-SNP distance to gene TSS (logarithmic spacing)", labels, colors[2:3], 2:3)
-  par(fig = c(.045, .495, .058, .097), mar = rep(0, 4), new = TRUE)
+  # B: all paired leads in the retention strip; changed leads in the scatter.
+  par(fig = c(.56, .975, .82, .897), mar = rep(0, 4), new = TRUE)
   plot.new(); plot.window(c(0, 1), c(0, 1))
-  text(0, .78, sprintf("Same extra CSs as B; %s missing TSS distances excluded.",
-    fig1_fmt(sum(z$tss_distance_summary$n_missing_tss))), adj = 0, cex = .73)
-  text(0, .24, "Model-only regions excluded from both ECDFs. TSS proximity does not establish accuracy.", adj = 0, cex = .69, col = "#555555")
-
-  # D: equal weight per reported-CS component, pooled over the shared cohort.
-  ov <- z$coding_overall_support
-  par(fig = c(.555, .985, .407, .444), mar = rep(0, 4), new = TRUE)
-  plot.new(); plot.window(c(0, 1), c(0, 1))
-  text(0, .8, sprintf("All %s EM CSs: additive %s | recessive %s | dominant %s",
-    fig1_fmt(ov$n_em_cs), fig1_pct(ov$mean_additive), fig1_pct(ov$mean_recessive), fig1_pct(ov$mean_dominant)),
-    adj = 0, cex = .78)
-  text(0, .22, "Mean component posterior probabilities; additive mass retained.", adj = 0, cex = .74, col = "#555555")
-  par(fig = c(.515, .985, .105, .405), mar = c(3.3, 8.6, .4, 2.9), new = TRUE)
-  d <- z$coding_tissue_support
-  d <- d[order(-d$mean_nonadditive, d$tissue, na.last = TRUE), ]
-  n <- nrow(d); yy <- rev(seq_len(n))
-  xmax <- max(c(.01, d$mean_recessive, d$mean_dominant), na.rm = TRUE) * 1.08
-  plot(NA, xlim = c(0, xmax), ylim = c(.2, n + 2.8), axes = FALSE,
-    xlab = "Mean posterior coding support", ylab = "", cex.lab = .85)
-  ticks <- pretty(c(0, xmax), n = 5); ticks <- ticks[ticks >= 0 & ticks <= xmax]
-  axis(1, at = ticks, labels = paste0(format(100 * ticks, trim = TRUE), "%"), cex.axis = .8)
-  # axis() silently skips crowded labels; explicitly draw every cohort tissue.
-  text(0, yy, d$tissue, pos = 2, xpd = NA, cex = min(.74, 17.5 / max(1, n)))
-  abline(v = ticks, col = "#EEEEEE"); abline(h = yy, col = "#F3F3F3")
-  cc <- c("#9A6BB0", "#C18B35")
-  for (j in 1:2) {
-    v <- d[[c("mean_recessive", "mean_dominant")[j]]]
-    segments(0, yy + c(.13, -.13)[j], v, yy + c(.13, -.13)[j], col = adjustcolor(cc[j], .45), lwd = 1.2)
-    points(v, yy + c(.13, -.13)[j], pch = c(16, 15)[j], col = cc[j], cex = .67)
+  retained <- if (m$n_pairs) m$n_same_lead / m$n_pairs else 0
+  rect(0, .45, retained, .67, col = fig1_outcome_colors["same_leads"], border = NA)
+  rect(retained, .45, 1, .67, col = fig1_outcome_colors["changed_leads"], border = NA)
+  text(0, .93, sprintf("%s / %s paired leads retained (%.1f%%)", fig1_fmt(m$n_same_lead),
+    fig1_fmt(m$n_pairs), 100 * retained), adj = 0, font = 2, cex = .9)
+  text(0, .13, sprintf("%s changed leads; %s shown with a valid PIP", fig1_fmt(m$n_changed_lead), fig1_fmt(m$n_panel_b)), adj = 0, cex = .8)
+  par(fig = c(.515, .985, .57, .819), mar = c(3, 4.3, .4, .8), new = TRUE)
+  b <- p[p$panel_b, , drop = FALSE]
+  max_bp <- max(c(1e5, b$distance_bp)) * 1.08
+  plot(NA, xlim = c(0, log10(1 + max_bp)), ylim = c(-.02, 1.09), axes = FALSE,
+       xlab = "Lead-SNP separation (log1p scale)", ylab = "EM lead PIP (coding-specific)", cex.lab = .9)
+  fig1_distance_axis(1, max_bp); axis(2, at = c(0, .5, 1), cex.axis = .8)
+  abline(h = c(0, .5, 1), col = "#E8E8E8", lty = c(1, 2, 1))
+  abline(v = log10(1 + c(1e4, 1e5)), col = "#E8E8E8", lty = 2)
+  shapes <- c(Identical = 16, Partial = 17, Disjoint = 4, Unknown = 1)
+  if (nrow(b)) points(log10(1 + b$distance_bp), b$em_lead_pip, pch = shapes[b$overlap],
+                     col = adjustcolor(fig1_coding_colors[b$em_lead_coding], .7), cex = .8)
+  # At most three distinct genes; explicit simple placement avoids label crowds.
+  label <- b[b$em_lead_pip >= .9 & b$distance_bp > 1e4, , drop = FALSE]
+  label <- label[order(-label$em_lead_pip, -label$distance_bp, label$gene), ]
+  label <- head(label[!duplicated(label$gene), ], 3L)
+  if (nrow(label)) {
+    x <- log10(1 + label$distance_bp); y <- label$em_lead_pip
+    ly <- seq(1.055, .86, length.out = nrow(label))
+    lx <- pmax(.3, pmin(log10(1 + max_bp) - .65, x - .5))
+    segments(x, y, lx, ly, col = "#888888", lwd = .6)
+    text(lx, ly, label$gene, cex = .7)
   }
-  text(xmax, yy, fig1_fmt(d$n_em_cs), pos = 4, xpd = NA, cex = min(.7, 17 / max(1, n)))
-  text(xmax, n + 1, "CSs", pos = 4, xpd = NA, cex = .72)
-  if (any(d$n_em_cs == 0)) text(0, yy[d$n_em_cs == 0], "No EM CS", pos = 4, cex = .65, col = "#777777")
-  legend("top", c("Recessive", "Dominant"), col = cc, pch = c(16, 15), ncol = 2, bty = "n", cex = .8)
-  par(fig = c(.555, .985, .058, .097), mar = rep(0, 4), new = TRUE)
+  if (!nrow(b)) text(log10(1 + max_bp) / 2, .6, "No changed leads with a valid PIP")
+  par(fig = c(.55, .98, .49, .565), mar = rep(0, 4), new = TRUE)
   plot.new(); plot.window(c(0, 1), c(0, 1))
-  text(0, .78, "Each reported EM CS contributes its full component posterior; counts shown at right.", adj = 0, cex = .71)
-  text(0, .24, "This is posterior support among reported CSs, not the fraction of nonadditive regions.", adj = 0, cex = .7, col = "#555555")
+  cl <- if (any(p$em_lead_coding == "unknown")) 1:4 else 1:3
+  legend("topleft", c("Additive", "Recessive", "Dominant", "Unknown coding")[cl], col = fig1_coding_colors[cl], pch = 16, ncol = length(cl),
+    bty = "n", cex = .8, x.intersp = .5)
+  legend(.0, .57, paste(c("Identical", "Partial", "Disjoint", "Unknown"), "CSs"),
+    pch = shapes, ncol = 4, bty = "n", cex = .73, x.intersp = .5)
+  text(0, .05, sprintf("%s unpaired CSs; %s regions with unavailable matching (audited).",
+    fig1_fmt(nrow(z$unpaired_cs)), fig1_fmt(m$n_matching_unavailable_regions)), adj = 0, cex = .73, col = "#555555")
+
+  # C: paired distances for the SAME changed-lead population, not two unmatched distributions.
+  par(fig = c(.015, .495, .108, .436), mar = c(3.4, 5.3, 2.3, .8), new = TRUE)
+  cdat <- p[p$panel_c, , drop = FALSE]
+  max_tss <- max(c(1e5, cdat$add_abs_tss_bp, cdat$em_abs_tss_bp)) * 1.12
+  lim <- c(0, log10(1 + max_tss))
+  plot(NA, xlim = lim, ylim = lim, axes = FALSE, xlab = "SuSiE |lead - TSS| (log1p scale)",
+       ylab = "", cex.lab = .9)
+  mtext("EM |lead - TSS| (log1p scale)", side = 2, line = 3.6, las = 0, cex = .9 * drawing_scale)
+  fig1_distance_axis(1, max_tss); fig1_distance_axis(2, max_tss)
+  abline(0, 1, col = "#666666", lty = 2)
+  if (nrow(cdat)) points(log10(1 + cdat$add_abs_tss_bp), log10(1 + cdat$em_abs_tss_bp),
+    col = adjustcolor(fig1_coding_colors[cdat$em_lead_coding], .65), pch = shapes[cdat$overlap], cex = .85)
+  text(lim[2] * .04, lim[2] * .91, "EM farther from TSS", adj = 0, col = "#666666", cex = .8)
+  text(lim[2] * .96, lim[2] * .10, "EM closer to TSS", adj = 1, col = "#666666", cex = .8)
+  title(sub = NULL, main = sprintf("%s changed pairs with both TSS distances (%s unavailable)",
+    fig1_fmt(m$n_panel_c), fig1_fmt(m$n_changed_missing_tss)), adj = 0, font.main = 1, cex.main = .85)
+  par(fig = c(.06, .49, .055, .10), mar = rep(0, 4), new = TRUE)
+  plot.new(); plot.window(c(0, 1), c(0, 1))
+  text(0, .8, sprintf("Closer: %s   |   Equal: %s   |   Farther: %s   |   Median change: %s kb",
+    m$n_tss_closer, m$n_tss_equal, m$n_tss_farther, format(round(m$median_tss_delta_kb, 1), trim = TRUE)), adj = 0, cex = .8)
+  text(0, .28, "Colors and shapes as in B. Proximity to TSS does not establish causal accuracy.", adj = 0, cex = .74, col = "#555555")
+
+  # D: saved predictor PIPs and conditional expression from exactly this cohort region.
+  par(fig = c(.52, .985, .287, .434), mar = c(2.9, 4.1, 1.9, .8), new = TRUE)
+  span <- range(c(ex$leads$left, ex$leads$right))
+  mid <- mean(span); half <- max(diff(span) / 2 + 1e4, 2.5e4)
+  span <- c(mid - half, mid + half)
+  pp <- ex$regional[ex$regional$position >= span[1] & ex$regional$position <= span[2], ]
+  plot(NA, xlim = span / 1e6, ylim = c(0, 1.1), xlab = paste0("Chromosome ", ex$chromosome, " position (Mb, GRCh38)"),
+    ylab = "Predictor PIP", axes = FALSE, cex.lab = .83)
+  axis(1, cex.axis = .74); axis(2, at = c(0, .5, 1), cex.axis = .74)
+  abline(h = .5, col = "#E6E6E6", lty = 2)
+  abline(v = ex$focal$position / 1e6, col = "#D0D0D0", lty = 2)
+  for (model in c("susie_add", "weighted_fit_mix")) {
+    d <- pp[pp$model == model, ]
+    cols <- if (model == "susie_add") rep("#777777", nrow(d)) else unname(fig1_coding_colors[d$coding])
+    points(d$position / 1e6, d$pip, col = adjustcolor(cols, .65),
+      pch = if (model == "susie_add") 1 else 16, cex = if (model == "susie_add") .75 else .65)
+  }
+  title(main = sprintf("%s | %s samples | %s SuSiE CS / %s EM CSs", ex$tissue,
+    fig1_fmt(ex$n), ex$region$n_add, ex$region$n_em), adj = 0, font.main = 1, cex.main = .85)
+  legend("topright", c("SuSiE", "EM A", "EM R", "EM D"), pch = c(1, 16, 16, 16),
+    col = c("#777777", fig1_coding_colors[1:3]), ncol = 4, bty = "n", cex = .63, x.intersp = .5)
+  par(fig = c(.52, .985, .096, .28), mar = c(2.8, 4.1, 2.1, .8), new = TRUE)
+  d <- ex$expression; g <- ex$groups
+  yr <- range(c(d$conditional_expression, g$additive_ols, g$recessive_ols)); pad <- max(.15, diff(yr) * .08)
+  plot(NA, xlim = c(-.4, 2.4), ylim = yr + c(-pad, pad), axes = FALSE,
+    xlab = "Minor-allele dosage", ylab = "Conditional expression", cex.lab = .83)
+  axis(1, at = 0:2, labels = paste0(0:2, "  (n=", g$n, ")"), cex.axis = .77)
+  axis(2, cex.axis = .74)
+  # Deterministic anonymous jitter: does not alter the user's random-number state.
+  jitter <- ((seq_len(nrow(d)) * .61803398875) %% 1 - .5) * .24
+  points(d$dosage + jitter, d$conditional_expression, pch = 16, col = adjustcolor("#777777", .3), cex = .55)
+  lines(0:2, g$additive_ols, col = fig1_coding_colors["additive"], lwd = 2, lty = 2)
+  lines(0:2, g$recessive_ols, col = fig1_coding_colors["recessive"], lwd = 2)
+  points(0:2, g$mean, pch = 21, bg = "white", col = "#222222", cex = 1.05, lwd = 1.3)
+  title(main = sprintf("%s | EM %s PIP %.3f", sub("_b38.*$", "", ex$focal$snp),
+    ex$focal$coding, ex$focal$pip), adj = 0, font.main = 1, cex.main = .84)
+  legend("topleft", c("Additive OLS", "Recessive OLS", "Group mean"),
+    col = c(fig1_coding_colors[c("additive", "recessive")], "#222222"), lty = c(2, 1, NA),
+    pch = c(NA, NA, 21), pt.bg = "white", ncol = 3, bty = "n", cex = .67, x.intersp = .5)
+  par(fig = c(.55, .985, .047, .09), mar = rep(0, 4), new = TRUE)
+  plot.new(); plot.window(c(0, 1), c(0, 1))
+  extra <- ex$leads[ex$leads$model == "weighted_fit_mix" & ex$leads$cs_number != ex$focal$cs_number, ]
+  line <- if (nrow(extra)) paste(sprintf("CS %s: %s SNPs, lead PIP %.3f", extra$cs_number,
+    extra$size_snps, extra$pip), collapse = "; ") else "No other EM CS in this region."
+  text(0, .83, paste0("Other EM CSs: ", line), adj = 0, cex = .73)
+  text(0, .31, "Expression adjusted for other EM CS leads; OLS curves are descriptive.", adj = 0, cex = .73, col = "#555555")
   invisible(z)
 }
 
 fig1_caption <- function(z) {
-  m <- z$metrics; d <- z$coding_overall_support
-  c("Figure 1. SuSiE versus EM SuSiE-mix.",
-    sprintf("One parent cohort: %s gene-tissue regions across %s tissues, iteration %s. Minimum marginal additive P < %s, mean reads >= %s, >=1 CS in either model. These are gene-tissue regions, not independent genes.",
-      m$n_regions, m$n_tissues, z$iteration, z$settings$association_threshold, z$settings$minimum_mean_reads),
-    sprintf("A. Overall CS-count agreement: %s / %s (%s). Four tissues with highest disagreement rate among tissues with >=%s cohort regions; ties use larger region count, then tissue name. The ranking cutoff affects only table selection, not other panels or the headline. Rows are SuSiE counts; columns are EM counts; cells are exact region counts. The 0/0 cell is outside the cohort.",
-      m$n_same_count, m$n_regions, fig1_pct(m$count_agreement_rate), z$settings$minimum_tissue_regions),
-    sprintf("B. Exact biological lead retention: %s / %s one-to-one matched CS pairs (%s), ignoring coding. Reserve identical variant IDs first, then minimize total physical distance for remaining CSs. ECDFs display changed pairs and extra CSs with a counterpart-model CS. Extra-CS distances are to the nearest other-model lead and are not one-to-one matches. %s model-only extra CSs have no defined nearest lead and are omitted. %s selected regions have unavailable matching and are audited.",
-      m$n_same_lead, m$n_pairs, fig1_pct(m$lead_retention_rate), m$n_model_only_extra_cs, m$n_matching_unavailable_regions),
-    "B/C. ECDFs use log10(1 + distance in bp), retaining zero. Distinct alleles at the same coordinate are different leads with zero physical separation. Physical matching does not establish shared causal signals or LD.",
-    sprintf("C. Absolute lead-to-gene-TSS distance for precisely the two extra-CS groups in B, excluding %s missing distances. Model-only regions remain excluded. The two ECDFs are descriptive, unmatched groups; TSS proximity is not a ground-truth accuracy measure.",
-      sum(z$tss_distance_summary$n_missing_tss)),
-    sprintf("D. Posterior coding support from the selected iteration's saved weighted_fit_mix fits in the same cohort. For each component l with a reported CS, q(l,c) = sum_j alpha(l,j) over ALL predictors j with coding c (additive, recessive, dominant), including predictors outside the reported CS. Average q equally across reported-CS components within each tissue. No PIP threshold, hard lead-coding assignment, CS truncation/renormalization, or refitting is used. %s EM CSs from %s / %s cohort regions contribute. Regions with zero EM CSs have no component to average and remain in the region audit; tissues with zero EM CSs have undefined support, not zero support.",
-      d$n_em_cs, d$n_regions_with_em_cs, d$n_cohort_regions),
-    sprintf("D pooled support, weighted by CS count: additive %s; recessive %s; dominant %s. Additive probability remains in the denominator although only recessive and dominant probabilities are shown by tissue. Tissues are ordered by mean recessive+dominant posterior support. These are model posterior probabilities among reported-CS components, not the proportion of loci that truly have nonadditive effects.",
-      fig1_pct(d$mean_additive), fig1_pct(d$mean_recessive), fig1_pct(d$mean_dominant)),
-    "The selected iteration is resolved once from completion markers, manifest and priors. Latest completed does not itself establish convergence across EM iterations. Coding priors are used only for provenance checks and are not panel D. Saved fit counts, component indices, memberships, lead IDs/codings and PIPs must match the EM summary.",
+  m <- z$metrics
+  c("Figure 1. Fine-mapping under additive and mixed genetic models.",
+    sprintf("One parent cohort: %s gene-tissue regions, %s genes, %s tissues; EM iteration %s. Minimum marginal additive P < %s, mean read count >= %s, and at least one CS in either model.",
+      m$n_regions, m$n_genes, m$n_tissues, z$iteration, z$settings$association_threshold, z$settings$minimum_mean_reads),
+    "A. Mutually exclusive region outcomes, pooled and for all eligible tissues. Same leads means the same multiset of biological variant IDs, ignoring coding; it does not imply identical CS membership. Tissue order uses CS-count agreement, not expression sample size.",
+    sprintf("B. %s one-to-one CS pairs: %s identical biological leads and %s changed leads; %s changed pairs have valid coding-specific EM PIPs. Reserve identical lead IDs first, then minimize total physical distance among remaining CSs within each region. Extra CSs are not forced into pairs: %s are exported separately. Matching is descriptive and is not evidence of shared causal signals or LD.",
+      m$n_pairs, m$n_same_lead, m$n_changed_lead, m$n_panel_b, nrow(z$unpaired_cs)),
+    "B/C. Colors denote the EM lead's coding. Shapes denote biological-SNP CS membership: identical (Jaccard=1), partial (0<Jaccard<1), disjoint (Jaccard=0), or unknown. Coding-specific PIP is not the posterior probability that a CS exists. Log1p axes retain zero distance, including different alleles at the same position.",
+    sprintf("C. The changed-lead pairs in B's parent population, paired by gene and tissue; %s have two usable TSS distances and %s do not. EM minus SuSiE absolute TSS distance: %s closer, %s equal, %s farther; median %.3f kb. This panel has no PIP threshold. TSS proximity alone is not evidence of improved causal localization.",
+      m$n_panel_c, m$n_changed_missing_tss, m$n_tss_closer, m$n_tss_equal, m$n_tss_farther, m$median_tss_delta_kb),
+    sprintf("D. %s / %s, an included cohort region with %s samples. Regional points are saved predictor PIPs, not summed across codings. The window includes all CS members plus padding. The focal %s lead is %s, PIP %.6f. Genotypes are minor-allele dosage from the original reconstruction pipeline.",
+      z$example$gene, z$example$tissue, z$example$n, z$example$focal$coding, z$example$focal$snp, z$example$focal$pip),
+    "D. Reconstructed phenotype uses the existing library-size adjustment, log1p, rank-normalization, sex residualization and second rank-normalization pipeline. For conditional expression, regress this phenotype jointly on the EM CS lead predictors; subtract contributions of all other EM leads. Lines are additive and recessive ordinary least-squares fits to this same adjusted phenotype; circles are observed group means. This selected example illustrates coding, not independent validation or a formal model-comparison test.",
+    "EM coding priors were learned on the full EM fitting data, not re-estimated in this display cohort. Latest means latest completed iteration verified by manifests, markers and priors; convergence across EM iterations must be established separately. The selected iteration and summary provenance are saved with the figure.",
     if (!is.null(z$preview_label)) z$preview_label)
 }
 
 write_figure1_em <- function(z, output_dir, show_plot = FALSE) {
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-  tables <- c("metrics", "cohort", "region_audit", "tissue_ranking", "selected_tissues", "tissue_cs_count_tables",
-    "tissue_count_table", "matched_cs_pairs", "unpaired_cs", "lead_retention_summary", "lead_distance_summary",
-    "tss_distance_summary", "orphan_cs_rows", "coding_cs_support", "coding_region_audit",
-    "coding_tissue_support", "coding_overall_support", "priors_used")
+  tables <- c("metrics", "overall", "tissue_outcomes", "tissue_count_table", "cohort", "region_audit",
+              "matched_cs_pairs", "unpaired_cs", "membership_audit", "priors")
   for (nm in tables) write.csv(z[[nm]], file.path(output_dir, paste0(nm, ".csv")), row.names = FALSE)
+  for (nm in c("leads", "regional", "groups", "expression"))
+    write.csv(z$example[[nm]], file.path(output_dir, paste0("example_", nm, ".csv")), row.names = FALSE)
   writeLines(fig1_caption(z), file.path(output_dir, "figure1_caption.txt"))
   writeLines(capture.output(sessionInfo()), file.path(output_dir, "sessionInfo.txt"))
   saveRDS(z, file.path(output_dir, "figure1_plot_data.rds"))
   plot_figure1_em(z, file.path(output_dir, "figure1_em.pdf"))
   plot_figure1_em(z, file.path(output_dir, "figure1_em.png"))
   if (show_plot) tryCatch(plot_figure1_em(z), error = function(e)
-    message("Files saved; on-screen preview failed: ", conditionMessage(e), ". Open figure1_em.pdf."))
+    message("Files saved, but the on-screen preview failed: ", conditionMessage(e),
+      ". Open figure1_em.pdf or enlarge the Plots pane and call plot_figure1_em(figure1_result)."))
   message("Figure 1 saved to: ", normalizePath(output_dir, winslash = "/"))
   invisible(output_dir)
 }
 
-run_figure1_em <- function(settings) {
+run_figure1_em <- function(settings, reconstruct = fig1_reconstruct_example) {
   if (is.null(settings$plot_data_file)) {
     context <- em_analysis_context(settings$project_dir, settings$iteration)
     summaries <- em_load_summary(context)
-    message("Building the shared cohort, four tissue tables and ECDFs...")
+    message("Building the shared Figure 1 cohort and matching CSs...")
     result <- summarize_figure1_em(summaries$res, summaries$cs, context$priors, settings)
-    support <- fig1_collect_coding_support(context, result$cohort, summaries$cs)
-    result <- fig1_add_coding_summary(result, support)
     result$preview_label <- settings$preview_label
+    result$example <- fig1_example(context, summaries$cs, result, settings, reconstruct)
     result$provenance <- list(iteration = context$iteration, iteration_dir = context$iteration_dir,
       summary_metadata = summaries$metadata, generated_at = format(Sys.time(), tz = "UTC", usetz = TRUE),
-      coding_method = "Full alpha row summed by coding; equal weight per reported-CS component")
+      example_baseline_file = file.path(context$baseline_dir, paste0(settings$example_gene, ".rds")),
+      example_em_file = file.path(context$iteration_dir, "results", paste0(settings$example_gene, ".rds")),
+      reconstruction = "fit_mix_expression_plot_utils.R; MAF > .05; HWE >= 1e-8; min_n_rec=5; cis_window=500kb")
   } else {
     result <- readRDS(settings$plot_data_file)
-    if (!identical(result$schema, "figure1_em_tables_ecdf_v2"))
-      stop("Older/incompatible Figure 1 bundle: rerun on RCC with plot_data_file = NULL to calculate posterior support.")
+    if (!identical(result$schema, "figure1_em_v1")) stop("Unsupported Figure 1 plot-data file.")
     if (as.character(settings$iteration) != "latest" && as.character(settings$iteration) != as.character(result$iteration))
       stop("Requested iteration differs from the exported plot data.")
-    message("Replotting frozen iteration ", result$iteration, "; all cohort settings come from the export.")
+    message("Replotting frozen EM iteration ", result$iteration, "; cohort and example come from the export.")
   }
   output <- settings$output_dir
   if (is.null(output)) output <- file.path(settings$project_dir, "results_em", sprintf("iteration_%03d", result$iteration),
     "descriptive_results", "figure1", paste0("run_", format(Sys.time(), "%Y%m%d_%H%M%S"), "_", Sys.getpid()))
   result$output_dir <- output
-  write_figure1_em(result, output, isTRUE(settings$show_plot))
-  message("Shared cohort: ", fig1_fmt(result$metrics$n_regions), " regions; count agreement ",
-    fig1_pct(result$metrics$count_agreement_rate), "; matched-lead retention ",
-    fig1_pct(result$metrics$lead_retention_rate), ".")
+  write_figure1_em(result, output, settings$show_plot)
+  message("Shared cohort: ", fig1_fmt(result$metrics$n_regions), " regions; ", result$metrics$n_tissues,
+    " tissues. Example: ", result$example$gene, " / ", result$example$tissue, ".")
   invisible(result)
 }
-

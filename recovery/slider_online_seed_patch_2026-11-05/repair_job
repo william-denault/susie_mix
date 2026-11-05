@@ -1,0 +1,14 @@
+#!/bin/bash
+#SBATCH --job-name=slide_seed_repair
+#SBATCH --partition=broadwl
+#SBATCH --time=23:00:00
+#SBATCH --mem=16G
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+set -euo pipefail
+cd "$1"
+sha256sum -c SHA256SUMS >/dev/null
+module load R/4.2.0
+export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+exec python3 repair.py

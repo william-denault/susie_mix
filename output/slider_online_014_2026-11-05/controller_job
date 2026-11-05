@@ -1,0 +1,13 @@
+#!/bin/bash
+#SBATCH --job-name=slide_mb_control
+#SBATCH --partition=broadwl
+#SBATCH --time=23:00:00
+#SBATCH --mem=16G
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --open-mode=append
+set -euo pipefail
+module load R/4.2.0
+export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+exec python3 "$1/code/minibatch.py" control "$1"

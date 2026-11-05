@@ -1,0 +1,41 @@
+.libPaths(c("tmp/slider_prior_impl/library","C:/Users/willi/AppData/Local/R/win-library/4.6",.libPaths()))
+code<-normalizePath("output/slider_minibatch_2026-11-04",winslash="/")
+source(file.path(code,"engine.R"));mb_load(code)
+set.seed(104)
+X<-matrix(rbinom(160*6,2,.35),160,6);X[,6]<-0;X[1:8,6]<-1
+colnames(X)<-paste0("snp",1:6)
+y<-X[,1]+.5*(X[,1]==1)+rnorm(160,sd=.4)
+priors<-data.frame(tissue="Brain",matrix(1/17,1,17,dimnames=list(NULL,spe_columns())))
+a<-list(X=X,y=y,L=10,min_obs=5,standardize=FALSE,estimate_prior_method="EM",
+        delta_grid=spe_grid(),delta_prior=spe_prior(priors,"Brain"),max_iter=5000,tol=1e-5)
+fit<-do.call(susieRSlidePrior::susie,a)
+out<-structure(list(Brain=list(fit_slide_prior=fit,sample_ids=as.character(1:160))),em_iteration=12L)
+ctx<-list(iteration=12L,priors=priors,settings=spe_settings());sre_validate(out,ctx)
+sm<-spe_summarize_gene(out,"G",priors)
+branch<-tempfile("mb_real_",tmpdir=normalizePath("tmp",winslash="/"));dir.create(branch)
+seed<-file.path(branch,"seed");dir.create(file.path(seed,"results"),recursive=TRUE)
+mb_save(out,file.path(seed,"results/G.rds"));mb_save(priors,file.path(seed,"source_priors.csv"),TRUE)
+m<-list(settings=spe_settings(),packages=mb_packages(),genes="G",datadir="unused",
+        map=mb_read(file.path(code,"renamed_gene_map.csv"))[FALSE,],source_iteration=12L,
+        initial_fits=1L,cohorts=list(G=spp_cohort(out)),counts=sm$counts,initial_priors=mb_weights(sm$counts,priors))
+mb_save(m,file.path(seed,"metadata.rds"));f<-file.path(seed,"results/G.rds");info<-file.info(f)
+mb_save(data.frame(gene="G",size=info$size,mtime=as.numeric(info$mtime),md5=mb_md5(f)),file.path(seed,"expected.csv"),TRUE)
+dir.create(file.path(branch,"plan"));writeLines("G",file.path(branch,"plan/genes.txt"))
+mb_save(data.frame(stage=1:2,phase=c("minibatch","full"),pass=1,batch=c(1,0),rho=c(.3,1),
+                   directory=c("passes/pass_001/batch_01","full_em/iteration_001"),genes_file="plan/genes.txt"),
+         file.path(branch,"stages.csv"),TRUE)
+mb_initialize(branch,seed)
+real_gene<-function(target_gene,tissue_priors,previous_result,...) {
+  args<-a;args$delta_prior<-spe_prior(tissue_priors,"Brain")
+  warm<-previous_result$Brain$fit_slide_prior;warm$call<-NULL;args$model_init<-warm
+  list(Brain=list(fit_slide_prior=do.call(susieRSlidePrior::susie,args),sample_ids=as.character(1:160)))
+}
+for(d in c("passes/pass_001/batch_01","full_em/iteration_001")) {
+  mb_prepare(branch);d<-file.path(branch,d);mb_worker(branch,d,"G",real_gene)
+  result<-readRDS(file.path(d,"results/G.rds"));x<-readRDS(file.path(d,"input.rds"))
+  stopifnot(result$Brain$fit_slide_prior$converged,is.null(result$Brain$fit_slide_prior$call))
+  serial<-spe_summarize_gene(result,"G",x$priors);cached<-readRDS(file.path(d,"summaries/G.rds"))
+  stopifnot(isTRUE(all.equal(serial$counts,cached$counts,tolerance=1e-12)))
+  mb_commit(branch,d)
+}
+cat("PASS: real susieRSlidePrior fits, full posterior warm starts, validated summaries and minibatch/full M-steps.\n")

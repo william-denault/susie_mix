@@ -20,8 +20,6 @@ make_publication_simulation_figures <- function(
   n_value <- publication_n
   target_coverage <- .95
   roc_max_fpr <- fdr_max <- .25
-  write_roc_all_L <- TRUE
-  write_roc_pages <- FALSE
   scenario_rows <- lapply(1:3, function(k) {
     vapply(combn(5L, k, simplify = FALSE), function(ids) {
       counts <- integer(5L)
@@ -173,7 +171,7 @@ draw_figure <- function(metric, scenarios, only_K = NULL, y_limits = NULL,
   title_text <- paste0(titles[metric], "  |  n = ", n_value)
   if (!is.null(only_K)) title_text <- paste0(title_text, "  |  L = ", only_K, " causal SNP",
                                           if (only_K == 1) "" else "s")
-  if (is_pip && is.null(only_K)) title_text <- paste0(title_text, "  |  Causal counts up to ", max_causal, " pooled")
+  if (is_pip && !is_fdr && is.null(only_K)) title_text <- paste0(title_text, "  |  Causal counts up to ", max_causal, " pooled")
   if (length(methods) == 1L) title_text <- paste0(title_text, "  |  ", method_labels[methods])
   mtext(title_text, side = 3, outer = TRUE, line = 1.2, font = 2, cex = 1.1)
   mtext(if (is_calibration) "Mean PIP within bin" else if (is_fdr) "Empirical FDR" else if (is_roc) "False positive rate" else "Number of causal SNPs",
@@ -215,35 +213,18 @@ for (metric in c("coverage", "purity", "power", "cs_size")) {
     save_figure(metric, scenario_groups[[group]], paste0(metric, "_", group))
 }
 
-save_roc_figures <- function(metric = "roc") {
-  for (group in names(scenario_groups)) {
-    scenarios <- scenario_groups[[group]]
-    min_K <- length(strsplit(scenarios[1L], " + ", fixed = TRUE)[[1L]])
-    ks <- seq.int(min_K, max_causal)
-    for (k in ks) {
-      save_figure(metric, scenarios, paste0(metric, "_", group, "_L", k), only_K = k)
-    }
-    if (write_roc_all_L) {
-      save_figure(metric, scenarios, paste0(metric, "_", group, "_all_L"))
-    }
-    if (write_roc_pages) {
-      # Also share the range across pages of the optional combined PDF.
-      y_limits <- figure_y_limits(metric, figure_data(metric, scenarios, only_K = ks), c(0, fdr_max))
-      pdf(file.path(output_dir, paste0(metric, "_", group, "_by_L.pdf")),
-          width = 16, height = 2.0 * length(scenarios) + 1.4, useDingbats = FALSE)
-      tryCatch(for (k in ks) draw_figure(metric, scenarios, only_K = k, y_limits = y_limits), finally = dev.off())
-    }
-  }
-}
 for (group in names(scenario_groups))
   save_figure("power", scenario_groups[[group]], paste0("power_", group, "_zoom_075_1"),
               y_limits = c(.75, 1))
-save_roc_figures()
-save_roc_figures("power_fdr")
+# Manuscript selection: only counts-pooled power--FDR curves; no ROC plots.
+for (group in names(scenario_groups))
+  save_figure("power_fdr", scenario_groups[[group]],
+              paste0("power_fdr_", group, "_all_L"))
 
 save_calibration_figures <- function() {
-  # Calibration exports always pool all L and show one method per figure.
-  for (group in names(scenario_groups)) {
+  # Calibration is restricted to single-coding architectures (the pure group).
+  # Pool the selected causal counts and show one method per figure.
+  for (group in "pure") {
     for (method in method_names) {
       method_suffix <- tolower(gsub("[^[:alnum:]]+", "_", method_labels[method]))
       save_figure("pip_calibration", scenario_groups[[group]],

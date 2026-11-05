@@ -1,7 +1,7 @@
 # Simulation figures for publication
 
 Open `generate_publication_plots.R` in RStudio and click **Source** to refresh
-all publication panels and Figure 1. It finds its own folder, so RStudio's
+the selected publication panels and Figure 1. It finds its own folder, so RStudio's
 working directory does not need to match. From the repository root, this is:
 
 ```r
@@ -58,16 +58,19 @@ is excluded: the publication label **SuSiE-slide always refers to SuSiE-slide-pr
 Data exports retain the original identifiers to avoid ambiguity.
 
 True causal counts **K = 1–4** are included (pairs start at 2; triples at 3).
-Both pooled calibration and pooled ROC/power–FDR curves are recomputed after
+Both pooled calibration and pooled power–FDR curves are recomputed after
 filtering K. Calibration retains its existing seed-block empirical error bars.
 The fitted SuSiE upper bound L remains 10; it is not the true causal count K.
 
 - `coverage_<group>`, `purity_<group>`, `cs_size_<group>`: value versus causal count.
 - `power_<group>`: current power scale, 0–1.
 - `power_<group>_zoom_075_1`: the same points/bars with the y-axis restricted to 0.75–1.
-- `roc_<group>_L<K>`, `power_fdr_<group>_L<K>`: curves for each applicable K up to 4.
-- `roc_<group>_all_L`, `power_fdr_<group>_all_L`: curves pooled across applicable K up to 4.
-- `pip_calibration_<group>_all_L_<method>`: one method per calibration figure.
+- `power_fdr_<group>_all_L`: curves pooled across applicable K up to 4.
+  The title omits the causal-count pooling suffix; the manuscript captions
+  describe the pooling. Per-K power–FDR figures and all ROC figures are omitted.
+- `pip_calibration_pure_all_L_<method>`: one method per calibration figure,
+  restricted to architectures with a single coding type. Mixed-architecture
+  calibration figures are omitted.
 - `figure1/main_simulations`: the updated six-column manuscript figure. Column F
   shows mean credible-set size (unique biological SNPs per reported CS) at 30% PVE,
   against 1–4 causal SNPs, with the existing CS-size error bars and one shared
@@ -91,3 +94,7 @@ labels and colors live in `script/sim/publication_plot_helpers.R`.
 
 The saved CSV/RDS tables and `publication_settings.rds` record the exact plotted
 data, method mapping, causal-count selection, offsets, axis ranges, and source hashes.
+
+The manuscript supplement contains 33 selected simulation figures plus the
+slider illustration (S1–S34). Older unselected outputs remain available for
+collaborator discussions but are not regenerated or included in the manuscript.
