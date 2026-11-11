@@ -1,0 +1,275 @@
+"""Pause one pending controller, drain its workers, upgrade code, release it."""
+import contextlib, hashlib, importlib.util, os, re, shutil, subprocess, sys, time
+from pathlib import Path
+import support
+import replan
+from support import read, atomic, encoded, write, digest, move
+HERE=Path(__file__).resolve().parent
+BRANCH=Path('/project2/mstephens/wdenault/susie_mix/workflows/slider_online_015_025')
+TAG='taper_025_030_2026-11-10'
+
+def runtime():
+    support.HERE=HERE
+    return support.runtime()
+
+def state_dir(branch):return branch/'repairs'/TAG
+
+def details(job):
+    mb=runtime();command=['scontrol','show','job','-o',str(job)]
+    if os.environ.get('SLURM_JOB_ID'):
+        with mb.wait_for_scheduler():text=mb.queue_output(command,os.environ.copy())
+    else:text=mb.queue_output(command,os.environ.copy())
+    return dict(re.findall(r'(\w+)=(\S+)',text))
+
+def control_action(action,job):
+    if action not in ('hold','release'):raise RuntimeError('Unsupported controller action')
+    return subprocess.run(['scontrol',action,job],check=True,stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE,universal_newlines=True,timeout=60)
+
+def identity(info,branch,mb):
+    cfg=read(branch/'config.json')
+    if info.get('JobName')!=mb.names(cfg)[0] or info.get('UserId','').split('(')[0]!=os.environ['USER'] or \
+       info.get('WorkDir')!=str(branch) or info.get('Command')!=str(branch/'code/controller_job'):
+        raise RuntimeError('Controller identity does not match this workflow')
+
+def release(branch,mb):
+    state=state_dir(branch);target=state/'hold.json'
+    if not target.exists():return
+    held=read(target);job=held['job']
+    while True:
+        rows=mb.queue()
+        if not any(r['job']==job for r in rows):
+            atomic(state/'release.json',dict(job=job,already_absent=True,time=time.time()));return
+        try:info=details(job)
+        except subprocess.CalledProcessError:
+            if not any(r['job']==job for r in mb.queue()):continue
+            raise
+        identity(info,branch,mb)
+        if info.get('Priority')!='0':break
+        try:control_action('release',job)
+        except (subprocess.TimeoutExpired,subprocess.CalledProcessError,OSError) as exc:
+            if not mb.transient_queue_error(exc):raise
+            print('Release response delayed; checking the exact controller before retrying.',flush=True)
+            time.sleep(20)
+        # Read back state; a lost acknowledgement must not cause a blind action.
+    atomic(state/'release.json',dict(job=job,time=time.time()))
+    print('Released existing controller '+job+'; completed genes and queued work are reused.',flush=True)
+
+def validate_baseline(branch,mb,allow_pending=False):
+    support.verify_manifest(branch/'code',(HERE/'baseline_SHA256SUMS').read_bytes())
+    mb.verify_inputs(branch)
+    cfg=read(branch/'config.json')
+    if cfg.get('bundle_sha256')!=digest(HERE/'baseline_SHA256SUMS') or \
+       any(cfg.get(k)!=v for k,v in dict(source_iteration=14,rho=.8,passes=16,batches=61,full_steps=8).items()):
+        raise RuntimeError('Unexpected installed code/configuration; no change made')
+    expected=replan.baseline_schedule()
+    if cfg.get('schedule_change',{}).get('tag')!='extend_024_038_2026-11-09' or \
+       cfg.get('iteration_schedule')!=expected or cfg.get('online_schedule')!=[
+        dict(iteration=r['iteration'],batches=r['batches'],rho=r['rho']) for r in expected if r['phase']=='minibatch']:
+        raise RuntimeError('Unexpected installed schedule; no change made')
+    if (branch/'ERROR.json').exists():raise RuntimeError('Existing workflow failure: inspect it before changing the schedule')
+    if not allow_pending and (branch/'pending_submission.json').exists():
+        raise RuntimeError('Unresolved submission after draining: leaving it unchanged')
+
+def protected(branch,mb):
+    root=Path(read(branch/'config.json')['source'])/'results_slide_prior_em'
+    paths={branch/n for n in ('state.rds','model.rds','progress.csv','prior_history.csv','latest_priors.csv','original_prior_history.csv')}
+    paths.update((branch/'plan').rglob('*.txt'))
+    paths.update((branch/'tasks').glob('task_*/task.json'))
+    paths.update((branch/'tasks').glob('task_*/submission.json'))
+    paths.add(branch/read(branch/'config.json')['runtime_order_file'])
+    paths.update(root/n for n in ('prior_history.csv','prior_history_long.csv','online_latest_priors.csv','iteration_summary.csv'))
+    for d in root.glob('iteration_0*'):
+        if d.name>='iteration_015':
+            paths.update(d.glob('*.csv'))
+            for b in (d/'batches').glob('*'):
+                paths.update(b.glob('*.csv'));paths.update(b.glob('*.rds'))
+    return {str(p):digest(p) for p in paths if p.is_file()}
+
+def verify_protected(plan):
+    for p,wanted in plan['protected'].items():
+        if digest(p)!=wanted:raise RuntimeError('Analysis changed while paused: '+p)
+    for p,wanted in plan.get('result_stamps',{}).items():
+        stat=Path(p).stat()
+        if dict(size=stat.st_size,mtime_ns=stat.st_mtime_ns)!=wanted:
+            raise RuntimeError('Saved gene result changed during upgrade: '+p)
+
+def drained(branch,mb):
+    rows=mb.queue();own=mb.names(read(branch/'config.json'))
+    if mb.legacy_jobs(rows):raise RuntimeError('Legacy slider jobs reappeared')
+    if (state_dir(branch)/'idle.json').exists():
+        return not any(r['name'] in own for r in rows)
+    job=read(state_dir(branch)/'hold.json')['job']
+    target=[r for r in rows if r['job']==job]
+    if len(target)!=1 or target[0]['name']!=own[0] or target[0]['state']!='PENDING':
+        raise RuntimeError('Held controller changed; refusing to install')
+    info=details(job);identity(info,branch,mb)
+    if info.get('Priority')!='0':raise RuntimeError('Controller is no longer held')
+    return not any(r['name'] in own and r['job']!=job for r in rows)
+
+def inspect_checkpoint(branch,state):
+    subprocess.check_call([os.environ.get('RSCRIPT','Rscript'),'--vanilla',
+        str(HERE/'inspect_state.R'),str(branch),str(state)])
+
+def install(branch,mb):
+    state=state_dir(branch);planfile=state/'PLAN.json'
+    old=(HERE/'baseline_SHA256SUMS').read_bytes();new=(HERE/'runtime/SHA256SUMS').read_bytes()
+    if not drained(branch,mb):raise RuntimeError('Workers/controllers still active; no code swap')
+    with mb.lock(branch/'.launch.lock'),mb.lock(branch/'.controller.lock'):
+        if not planfile.exists():
+            validate_baseline(branch,mb)
+            before=state/'before';before.mkdir(exist_ok=True)
+            for name in ('config.json','frozen_inputs.json','stages.csv'):
+                shutil.copyfile(str(branch/name),str(before/name))
+            inspect_checkpoint(branch,state)
+            cfg,stages,files,summary=replan.prepare(branch,mb,state)
+            root=Path(cfg['source'])/'results_slide_prior_em'
+            result_stamps={str(p):mb.stamp(p) for i in (23,24,25) for p in (root/('iteration_%03d/results'%i)).glob('*.rds')}
+            cfg['bundle_sha256']=hashlib.sha256(new).hexdigest()
+            config_bytes=encoded(cfg)
+            files.update({'stages.csv':stages,'config.json':config_bytes})
+            frozen=read(branch/'frozen_inputs.json')
+            for rel,data in files.items():frozen[rel]=hashlib.sha256(data).hexdigest()
+            files['frozen_inputs.json']=encoded(frozen)
+            updates={}
+            for rel,data in files.items():
+                after=state/'after'/rel;write(after,data)
+                current=branch/rel
+                updates[rel]=dict(after=after.relative_to(state).as_posix(),
+                    old=digest(current) if current.exists() else None,new=hashlib.sha256(data).hexdigest())
+            atomic(state/'SCHEDULE.json',summary)
+            atomic(planfile,dict(branch=str(branch),new_manifest=hashlib.sha256(new).hexdigest(),
+                protected=protected(branch,mb),updates=updates,schedule=summary,
+                result_stamps=result_stamps,time=time.time()))
+        plan=read(planfile)
+        if plan['branch']!=str(branch) or plan['new_manifest']!=hashlib.sha256(new).hexdigest():
+            raise RuntimeError('Different upgrade transaction')
+        verify_protected(plan)
+        support.patch_code(branch,state,old,new)
+        for rel,change in plan['updates'].items():
+            target=support.inside(branch/rel,branch);after=state/change['after']
+            current=digest(target) if target.exists() else None
+            if current not in (change['old'],change['new']) or digest(after)!=change['new']:
+                raise RuntimeError('Plan/configuration changed during upgrade: '+rel)
+            write(target,after.read_bytes())
+        mb.HASH_CACHE.clear();mb.verify_code(branch/'code');mb.verify_inputs(branch);verify_protected(plan)
+        atomic(state/'INSTALLED.json',dict(time=time.time(),analysis_preserved=True,worker_jobs_cancelled=0,schedule=plan['schedule']))
+        schedule=plan['schedule']
+        print('Installed: finish 024 unchanged; 025..026 online 61 batches/rho=0.8; 027 rho=0.5; 028 rho=0.3; full 029..030.',flush=True)
+        print('Existing batch membership and longest-first runtime ordering preserved.',flush=True)
+        print('Preserved all started work through iteration %03d; %d total update stages. No fitted results, running counts or prior history changed.'%
+              (schedule['kept_through_iteration'],schedule['total_stages']),flush=True)
+
+def recover(branch,mb):
+    state=state_dir(branch)
+    if (state/'PLAN.json').exists() and not (state/'INSTALLED.json').exists():install(branch,mb)
+    # With no PLAN, installed code was never touched; release the pending job.
+    release(branch,mb)
+    if (state/'INSTALLED.json').exists() and (state/'idle.json').exists():
+        with mb.lock(branch/'.launch.lock'):
+            if (state/'CONTINUED.json').exists():return
+            if (branch/'ERROR.json').exists() or (branch/'pending_submission.json').exists():
+                raise RuntimeError('Unresolved submission/failure remains; not duplicating continuation')
+            rows=mb.submission_queue(branch,1,20*3600)
+            controllers=[r for r in rows if r['name']==mb.names(read(branch/'config.json'))[0]]
+            if controllers:
+                atomic(state/'CONTINUED.json',dict(existing=[r['job'] for r in controllers],time=time.time()))
+                return
+            job=mb.submit(branch,'controller',rows)
+            atomic(state/'CONTINUED.json',dict(job=job,time=time.time()))
+            print('Submitted controller '+job+' to continue the frozen schedule through 030.',flush=True)
+
+def gate(branch=BRANCH):
+    mb=runtime();state=state_dir(branch);state.mkdir(parents=True,exist_ok=True)
+    support.verify_manifest(HERE,(HERE/'SHA256SUMS').read_bytes())
+    with mb.wait_for_scheduler(),mb.lock(state/'gate.lock'):
+        if (state/'INSTALLED.json').exists():recover(branch,mb);return
+        if (state/'hold.json').exists() or (state/'idle.json').exists():
+            # A restarted gate first restores any interrupted transaction.
+            recover(branch,mb)
+            if not (state/'INSTALLED.json').exists():raise RuntimeError('Previous attempt released; inspect its log before retrying')
+            return
+        validate_baseline(branch,mb,allow_pending=True)
+        launch=read(HERE/'launch.json')
+        if launch.get('gate')!=os.environ.get('SLURM_JOB_ID') or not launch.get('watchdog'):
+            raise RuntimeError('No confirmed recovery job; refusing to hold a controller')
+        watchdog=details(launch['watchdog'])
+        if watchdog.get('JobName')!='slide_taper_recover' or watchdog.get('UserId','').split('(')[0]!=os.environ['USER'] or \
+           watchdog.get('WorkDir')!=str(HERE) or watchdog.get('Command')!=str(HERE/'recover_job') or \
+           ('afterany:'+launch['gate']) not in watchdog.get('Dependency',''):
+            raise RuntimeError('Recovery-job identity/dependency mismatch')
+        deadline=time.monotonic()+18*3600
+        try:
+            while not (state/'hold.json').exists() and not (state/'idle.json').exists():
+                if (branch/'DONE.json').exists():print('Analysis already complete; no upgrade required.',flush=True);return
+                rows=mb.queue();ctl=mb.names(read(branch/'config.json'))[0]
+                # The previous patch's afterany recovery job can still release
+                # its recorded controller. Let it finish before a new hold.
+                if any(r['name'] in ('slide_extend_gate','slide_extend_recover') for r in rows):
+                    if time.monotonic()>deadline:raise RuntimeError('Previous upgrade jobs have not finished; current EM is unchanged')
+                    print('Waiting for the previous schedule-upgrade jobs to finish before holding a controller.',flush=True)
+                    time.sleep(30)
+                    continue
+                candidates=[r for r in rows if r['name']==ctl and r['state']=='PENDING']
+                if not candidates and not any(r['name']==ctl for r in rows):
+                    if not any(r['name'] in mb.names(read(branch/'config.json')) for r in rows):
+                        atomic(state/'idle.json',dict(time=time.time()))
+                        print('No workflow jobs remain; upgrading the stopped checkpoint without cancelling work.',flush=True)
+                        break
+                if candidates:
+                    if len(candidates)!=1:raise RuntimeError('Multiple pending controllers; refusing to guess')
+                    job=candidates[0]['job'];info=details(job);identity(info,branch,mb)
+                    if info.get('JobState')=='PENDING' and info.get('Priority')!='0':
+                        atomic(state/'hold.json',dict(job=job,time=time.time(),original_priority=info['Priority']))
+                        # If the RPC fails after being accepted, recovery still knows the exact job.
+                        control_action('hold',job)
+                        info=details(job);identity(info,branch,mb)
+                        if info.get('JobState')!='PENDING' or info.get('Priority')!='0':
+                            raise RuntimeError('Controller started before hold; leaving its work unchanged')
+                        print('Temporarily held pending controller '+job+'; every gene job continues.',flush=True)
+                        break
+                    if info.get('Priority')=='0':raise RuntimeError('Controller was already held by another action')
+                if time.monotonic()>deadline:raise RuntimeError('No pending-controller window within 18 hours')
+                time.sleep(20)
+            while not drained(branch,mb):
+                if time.monotonic()>deadline:raise RuntimeError('Drain deadline reached; restoring normal continuation')
+                print('Waiting for already-submitted gene jobs/current controller to finish; no jobs cancelled.',flush=True)
+                time.sleep(30)
+            install(branch,mb)
+        finally:
+            # The afterany recovery job also executes this after TIMEOUT/node failure.
+            recover(branch,mb)
+
+def launch():
+    mb=runtime();support.verify_manifest(HERE,(HERE/'SHA256SUMS').read_bytes())
+    ledger=HERE/'launch.json';pending=HERE/'launcher_pending.json'
+    with mb.lock(HERE/'.launch.lock'):
+        if ledger.exists() or pending.exists():raise RuntimeError('Upgrade was already submitted or has an uncertain receipt; inspect launch.json/logs, do not duplicate it')
+        if len(mb.queue())>298:raise RuntimeError('Two free submission slots are needed; current EM is unchanged. Retry after some jobs finish.')
+        (HERE/'logs').mkdir(exist_ok=True)
+        cmd=['sbatch','--parsable','--exclude=midway2-0003,midway2-0011','--hold',
+             '--chdir='+str(HERE),'--output='+str(HERE/'logs/gate_%j.out'),'--error='+str(HERE/'logs/gate_%j.err'),
+             str(HERE/'gate_job'),str(HERE)]
+        atomic(pending,dict(kind='gate',command=cmd))
+        job=subprocess.check_output(cmd,universal_newlines=True,timeout=120).strip().split(';')[0]
+        if not job.isdigit():raise RuntimeError('Ambiguous gate submission')
+        atomic(ledger,dict(gate=job));pending.unlink()
+        cmd=['sbatch','--parsable','--exclude=midway2-0003,midway2-0011','--dependency=afterany:'+job,
+             '--chdir='+str(HERE),'--output='+str(HERE/'logs/recover_%j.out'),'--error='+str(HERE/'logs/recover_%j.err'),
+             str(HERE/'recover_job'),str(HERE)]
+        atomic(pending,dict(kind='watchdog',command=cmd))
+        watchdog=subprocess.check_output(cmd,universal_newlines=True,timeout=120).strip().split(';')[0]
+        if not watchdog.isdigit():raise RuntimeError('Ambiguous recovery-job submission')
+        atomic(ledger,dict(gate=job,watchdog=watchdog));pending.unlink()
+        control_action('release',job)
+        print('Submitted upgrade gate '+job+' and recovery job '+watchdog+'. No gene jobs are cancelled.',flush=True)
+
+if __name__=='__main__':
+    try:
+        if sys.argv[1]=='launch':launch()
+        elif sys.argv[1]=='gate':gate()
+        elif sys.argv[1]=='recover':
+            mb=runtime();state=state_dir(BRANCH);state.mkdir(parents=True,exist_ok=True)
+            with mb.wait_for_scheduler(),mb.lock(state/'gate.lock'):recover(BRANCH,mb)
+        else:raise RuntimeError('Unknown mode')
+    except Exception as exc:print('STOP: '+str(exc),file=sys.stderr);sys.exit(1)

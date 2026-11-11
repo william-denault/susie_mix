@@ -1,0 +1,12 @@
+#!/bin/bash
+#SBATCH --job-name=slide_cleanup_gate
+#SBATCH --partition=broadwl
+#SBATCH --time=23:00:00
+#SBATCH --mem=1G
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+set -euo pipefail
+cd "$1"
+sha256sum -c SHA256SUMS >/dev/null
+exec python3 -u upgrade.py gate

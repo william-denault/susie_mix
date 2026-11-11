@@ -72,7 +72,7 @@ shape.text.set([
       "Open the",
       {
         run: " rollout notes",
-        style: { underline: "sng", color: "#2563eb" },
+        style: { underline: "sng" },
         link: { uri: "https://example.com", isExternal: true },
       },
     ],
@@ -81,6 +81,15 @@ shape.text.set([
 ```
 
 The paragraph-object form is the non-JSX peer of `<paragraph>...</paragraph>`. Use it when the text needs paragraph metadata plus authored runs.
+
+## Hyperlink Colors
+
+```ts
+const range = shape.text.get("Read more");
+range.link = { uri: "https://example.com", isExternal: true }; // Theme link color.
+range.color = "#8d22c8"; // Set a custom link color.
+range.link = undefined; // The underlying text style is retained.
+```
 
 ## JSX Rich Text
 
@@ -102,7 +111,7 @@ slide.compose(
     >
       Open the
       <run
-        textStyle={{ underline: "sng", color: "#2563eb" }}
+        textStyle={{ underline: "sng" }}
         link={{ uri: "https://example.com", isExternal: true }}
       >
         {" rollout notes"}

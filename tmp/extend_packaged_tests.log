@@ -1,0 +1,138 @@
+test_absence_is_not_rejection (test_receipts_order.ReceiptsOrderTests.test_absence_is_not_rejection) ... ok
+test_bad_resource_request_not_retried (test_receipts_order.ReceiptsOrderTests.test_bad_resource_request_not_retried) ... Submission response failed: Command '['sbatch']' returned non-zero exit status 1. Invalid partition name specified
+ok
+test_changed_result_not_accepted (test_receipts_order.ReceiptsOrderTests.test_changed_result_not_accepted) ... ok
+test_delayed_accounting_returns_no_ack (test_receipts_order.ReceiptsOrderTests.test_delayed_accounting_returns_no_ack) ... ok
+test_multiple_arrays_are_rejected (test_receipts_order.ReceiptsOrderTests.test_multiple_arrays_are_rejected) ... ok
+test_partial_failure_is_not_cleared (test_receipts_order.ReceiptsOrderTests.test_partial_failure_is_not_cleared) ... ok
+test_repair_matches_all_130_receipts_and_preserves_files (test_receipts_order.ReceiptsOrderTests.test_repair_matches_all_130_receipts_and_preserves_files) ... ok
+test_runtime_latest_success_and_stable_median_fallback (test_receipts_order.ReceiptsOrderTests.test_runtime_latest_success_and_stable_median_fallback) ... ok
+test_submit_lost_ack_recovers_without_second_sbatch (test_receipts_order.ReceiptsOrderTests.test_submit_lost_ack_recovers_without_second_sbatch) ... Submission response failed: Command '['sbatch']' returned non-zero exit status 1. sbatch: error: Batch job submission failed: Unexpected message received
+Submitted workers 50014103
+ok
+test_wrong_identity_is_rejected (test_receipts_order.ReceiptsOrderTests.test_wrong_identity_is_rejected) ... ok
+Reading saved worker timings to order future submissions; no result RDS files are loaded.
+Installed: 024..025 online 61 batches/rho=0.8; 026..028 rho=0.5; 029..033 rho=0.3; full 034..038.
+Observed runtimes for 0/18263 genes; longest predicted jobs submitted first within each batch.
+Preserved all started work through iteration 023; 708 total update stages. No fitted results, running counts or prior history changed.
+test_changed_analysis_blocks_install (test_upgrade.UpgradeTests.test_changed_analysis_blocks_install) ... ok
+Reading saved worker timings to order future submissions; no result RDS files are loaded.
+test_completed_023_is_supported (test_upgrade.UpgradeTests.test_completed_023_is_supported) ... ok
+Temporarily held pending controller 101; every gene job continues.
+Waiting for already-submitted gene jobs/current controller to finish; no jobs cancelled.
+Reading saved worker timings to order future submissions; no result RDS files are loaded.
+Installed: 024..025 online 61 batches/rho=0.8; 026..028 rho=0.5; 029..033 rho=0.3; full 034..038.
+Observed runtimes for 0/18263 genes; longest predicted jobs submitted first within each batch.
+Preserved all started work through iteration 023; 708 total update stages. No fitted results, running counts or prior history changed.
+Released existing controller 101; completed genes and queued work are reused.
+Stage 96 minibatch pass 7 batch 3: 300/300 validated; 0 active workers.
+Stage 708 full pass 8 batch 1: 18263/18263 validated; 0 active workers.
+Completed the frozen schedule through iteration 038.
+test_controller_continues_beyond_95_and_finishes_at_708 (test_upgrade.UpgradeTests.test_controller_continues_beyond_95_and_finishes_at_708) ... ok
+test_existing_error_is_never_cleared (test_upgrade.UpgradeTests.test_existing_error_is_never_cleared) ... ok
+Temporarily held pending controller 101; every gene job continues.
+Waiting for already-submitted gene jobs/current controller to finish; no jobs cancelled.
+Reading saved worker timings to order future submissions; no result RDS files are loaded.
+Released existing controller 101; completed genes and queued work are reused.
+test_install_failure_before_plan_restores_continuation (test_upgrade.UpgradeTests.test_install_failure_before_plan_restores_continuation) ... ok
+Submitted upgrade gate 501 and recovery job 502. No gene jobs are cancelled.
+test_launch_orders_held_gate_watchdog_then_release (test_upgrade.UpgradeTests.test_launch_orders_held_gate_watchdog_then_release) ... ok
+Temporarily held pending controller 101; every gene job continues.
+Waiting for already-submitted gene jobs/current controller to finish; no jobs cancelled.
+Reading saved worker timings to order future submissions; no result RDS files are loaded.
+Installed: 024..025 online 61 batches/rho=0.8; 026..028 rho=0.5; 029..033 rho=0.3; full 034..038.
+Observed runtimes for 0/18263 genes; longest predicted jobs submitted first within each batch.
+Preserved all started work through iteration 023; 708 total update stages. No fitted results, running counts or prior history changed.
+Released existing controller 101; completed genes and queued work are reused.
+test_live_gate_drains_preserves_and_releases (test_upgrade.UpgradeTests.test_live_gate_drains_preserves_and_releases) ... ok
+Reading saved worker timings to order future submissions; no result RDS files are loaded.
+Installed: 024..025 online 61 batches/rho=0.8; 026..028 rho=0.5; 029..033 rho=0.3; full 034..038.
+Observed runtimes for 0/18263 genes; longest predicted jobs submitted first within each batch.
+Preserved all started work through iteration 023; 708 total update stages. No fitted results, running counts or prior history changed.
+Released existing controller 101; completed genes and queued work are reused.
+test_new_plan_write_interruption_recovers_without_partial_install_release (test_upgrade.UpgradeTests.test_new_plan_write_interruption_recovers_without_partial_install_release) ... ok
+test_no_confirmed_watchdog_no_hold (test_upgrade.UpgradeTests.test_no_confirmed_watchdog_no_hold) ... ok
+test_no_install_while_workers_active (test_upgrade.UpgradeTests.test_no_install_while_workers_active) ... ok
+test_other_failure_never_cleared (test_upgrade.UpgradeTests.test_other_failure_never_cleared) ... ok
+Reading saved worker timings to order future submissions; no result RDS files are loaded.
+test_plan_61_batches_rhos_prefix_and_final_full_steps (test_upgrade.UpgradeTests.test_plan_61_batches_rhos_prefix_and_final_full_steps) ... ok
+Waiting for the previous schedule-upgrade jobs to finish before holding a controller.
+Temporarily held pending controller 101; every gene job continues.
+Reading saved worker timings to order future submissions; no result RDS files are loaded.
+Installed: 024..025 online 61 batches/rho=0.8; 026..028 rho=0.5; 029..033 rho=0.3; full 034..038.
+Observed runtimes for 0/18263 genes; longest predicted jobs submitted first within each batch.
+Preserved all started work through iteration 023; 708 total update stages. No fitted results, running counts or prior history changed.
+Released existing controller 101; completed genes and queued work are reused.
+test_previous_patch_watchdog_finishes_before_new_hold (test_upgrade.UpgradeTests.test_previous_patch_watchdog_finishes_before_new_hold) ... ok
+test_python36 (test_upgrade.UpgradeTests.test_python36) ... ok
+Reading saved worker timings to order future submissions; no result RDS files are loaded.
+Reconciled array 50014103: 130 successful workers preserved; iteration 023 will resume.
+Installed: 024..025 online 61 batches/rho=0.8; 026..028 rho=0.5; 029..033 rho=0.3; full 034..038.
+Observed runtimes for 0/18263 genes; longest predicted jobs submitted first within each batch.
+Preserved all started work through iteration 023; 708 total update stages. No fitted results, running counts or prior history changed.
+Submitted controller 777 to finish 023, then run the frozen schedule through 038.
+test_recovery_after_first_error_marker_is_archived (test_upgrade.UpgradeTests.test_recovery_after_first_error_marker_is_archived) ... ok
+Released existing controller 101; completed genes and queued work are reused.
+test_recovery_releases_hold_without_install_plan (test_upgrade.UpgradeTests.test_recovery_releases_hold_without_install_plan) ... ok
+Release response delayed; checking the exact controller before retrying.
+Released existing controller 101; completed genes and queued work are reused.
+test_release_timeout_checks_state_before_another_action (test_upgrade.UpgradeTests.test_release_timeout_checks_state_before_another_action) ... ok
+Release response delayed; checking the exact controller before retrying.
+Released existing controller 101; completed genes and queued work are reused.
+test_release_transient_failure_retries_while_still_held (test_upgrade.UpgradeTests.test_release_transient_failure_retries_while_still_held) ... ok
+Temporarily held pending controller 101; every gene job continues.
+Waiting for already-submitted gene jobs/current controller to finish; no jobs cancelled.
+Reading saved worker timings to order future submissions; no result RDS files are loaded.
+Installed: 024..025 online 61 batches/rho=0.8; 026..028 rho=0.5; 029..033 rho=0.3; full 034..038.
+Observed runtimes for 0/18263 genes; longest predicted jobs submitted first within each batch.
+Preserved all started work through iteration 023; 708 total update stages. No fitted results, running counts or prior history changed.
+Released existing controller 101; completed genes and queued work are reused.
+Released existing controller 101; completed genes and queued work are reused.
+test_repeat_completed_upgrade_only_releases (test_upgrade.UpgradeTests.test_repeat_completed_upgrade_only_releases) ... ok
+Reading saved worker timings to order future submissions; no result RDS files are loaded.
+test_resume_uses_upgraded_settings_and_never_rebuilds_plan (test_upgrade.UpgradeTests.test_resume_uses_upgraded_settings_and_never_rebuilds_plan) ... ok
+test_scontrol_read_timeout_is_retried (test_upgrade.UpgradeTests.test_scontrol_read_timeout_is_retried) ... ok
+test_started_024_refused_even_without_results (test_upgrade.UpgradeTests.test_started_024_refused_even_without_results) ... ok
+Resumed frozen schedule in C:\Document\Serieux\Travail\Data_analysis_and_papers\susie_mix\tmp\transition_upgrade_u3jjvhmb\project\results_slide_prior_em
+No workflow jobs remain; upgrading the stopped checkpoint without cancelling work.
+Reading saved worker timings to order future submissions; no result RDS files are loaded.
+Reconciled array 50014103: 130 successful workers preserved; iteration 023 will resume.
+Installed: 024..025 online 61 batches/rho=0.8; 026..028 rho=0.5; 029..033 rho=0.3; full 034..038.
+Observed runtimes for 0/18263 genes; longest predicted jobs submitted first within each batch.
+Preserved all started work through iteration 023; 708 total update stages. No fitted results, running counts or prior history changed.
+Submitted controller 777 to finish 023, then run the frozen schedule through 038.
+test_stopped_023_repair_and_schedule_upgrade_are_one_transaction (test_upgrade.UpgradeTests.test_stopped_023_repair_and_schedule_upgrade_are_one_transaction) ... ok
+No workflow jobs remain; upgrading the stopped checkpoint without cancelling work.
+Reading saved worker timings to order future submissions; no result RDS files are loaded.
+Installed: 024..025 online 61 batches/rho=0.8; 026..028 rho=0.5; 029..033 rho=0.3; full 034..038.
+Observed runtimes for 0/18263 genes; longest predicted jobs submitted first within each batch.
+Preserved all started work through iteration 023; 708 total update stages. No fitted results, running counts or prior history changed.
+Submitted controller 777 to finish 023, then run the frozen schedule through 038.
+test_stopped_idle_upgrade_submits_once_and_watchdog_does_not_duplicate (test_upgrade.UpgradeTests.test_stopped_idle_upgrade_submits_once_and_watchdog_does_not_duplicate) ... ok
+test_submitted_024_task_refused (test_upgrade.UpgradeTests.test_submitted_024_task_refused) ... ok
+test_unknown_owner_or_changed_cohort_refused (test_upgrade.UpgradeTests.test_unknown_owner_or_changed_cohort_refused) ... ok
+test_user_held_controller_not_released (test_upgrade.UpgradeTests.test_user_held_controller_not_released) ... ok
+Reading saved worker timings to order future submissions; no result RDS files are loaded.
+Installed: 024..025 online 61 batches/rho=0.8; 026..028 rho=0.5; 029..033 rho=0.3; full 034..038.
+Observed runtimes for 0/18263 genes; longest predicted jobs submitted first within each batch.
+Preserved all started work through iteration 023; 708 total update stages. No fitted results, running counts or prior history changed.
+Released existing controller 101; completed genes and queued work are reused.
+test_watchdog_finishes_interrupted_code_swap (test_upgrade.UpgradeTests.test_watchdog_finishes_interrupted_code_swap) ... ok
+Reading saved worker timings to order future submissions; no result RDS files are loaded.
+Installed: 024..025 online 61 batches/rho=0.8; 026..028 rho=0.5; 029..033 rho=0.3; full 034..038.
+Observed runtimes for 0/18263 genes; longest predicted jobs submitted first within each batch.
+Preserved all started work through iteration 023; 708 total update stages. No fitted results, running counts or prior history changed.
+Released existing controller 101; completed genes and queued work are reused.
+test_watchdog_finishes_interrupted_configuration_update (test_upgrade.UpgradeTests.test_watchdog_finishes_interrupted_configuration_update) ... ok
+Reading saved worker timings to order future submissions; no result RDS files are loaded.
+Installed: 024..025 online 61 batches/rho=0.8; 026..028 rho=0.5; 029..033 rho=0.3; full 034..038.
+Observed runtimes for 0/18263 genes; longest predicted jobs submitted first within each batch.
+Preserved all started work through iteration 023; 708 total update stages. No fitted results, running counts or prior history changed.
+Released existing controller 101; completed genes and queued work are reused.
+test_watchdog_finishes_interrupted_stage_plan_update (test_upgrade.UpgradeTests.test_watchdog_finishes_interrupted_stage_plan_update) ... ok
+test_wrong_controller_identity_not_held (test_upgrade.UpgradeTests.test_wrong_controller_identity_not_held) ... ok
+
+----------------------------------------------------------------------
+Ran 41 tests in 150.410s
+
+OK

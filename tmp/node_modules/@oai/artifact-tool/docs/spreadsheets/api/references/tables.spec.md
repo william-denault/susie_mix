@@ -87,7 +87,7 @@ const table = sheet.tables.add("A1:D5", true, "DataTable");
 table.rows.add(null, [["West", "Ava", 12, 14]]);
 
 sheet.getRange(table.address).format = {
-  font: { name: "Aptos" },
+  font: { name: "Arial" },
   wrapText: true,
 };
 ```

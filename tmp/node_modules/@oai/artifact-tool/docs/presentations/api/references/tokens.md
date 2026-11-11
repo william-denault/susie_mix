@@ -398,7 +398,7 @@ Use object `style` for exact text settings that tokens do not cover:
 ```tsx
 <paragraph
   style={{
-    typeface: "Aptos",
+    typeface: "Arial",
     fontSize: 22,
     color: "slate-700",
     alignment: "center",
@@ -412,7 +412,7 @@ Use object `style` for exact text settings that tokens do not cover:
 Use a compact style string when the exact settings fit on one line:
 
 ```tsx
-<paragraph style="font: italic 600 20px Aptos; color: slate-700; leading: 1.25; align: center">
+<paragraph style="font: italic 600 20px Arial; color: slate-700; leading: 1.25; align: center">
   Compact exact text config
 </paragraph>
 ```

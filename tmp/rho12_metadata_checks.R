@@ -1,0 +1,17 @@
+source("script/scan_tissue_attempt/plot_slider_prior_history.R")
+f <- "tmp/transition_integrated_e0806a5a1c1c/results_slide_prior_em/prior_history.csv"
+h <- read.csv(f, check.names=FALSE)
+pdf("tmp/rho12_plot_check.pdf")
+z <- plot_slider_prior_history(h, ncol=2)
+stopifnot(identical(z$completed_online_iterations,15:20))
+x <- h[h$iteration<17 | (h$iteration==17 & h$batch<=9),]
+z <- plot_slider_prior_history(x,ncol=2)
+stopifnot(identical(z$completed_online_iterations,15:16))
+dev.off()
+invisible(parse("brouillon_check_slider_results_clean.R"))
+p <- tempfile("rho12_inspect_",tmpdir="tmp");dir.create(p)
+writeLines("synthetic metadata",file.path(p,"fit"))
+saveRDS(list(stage=15L,latest=data.frame(gene=c("T","F",paste0("G",3:18263)),path=file.path(p,"fit"),priors=file.path(p,"fit"))),file.path(p,"state.rds"))
+status <- system2(file.path(R.home("bin"),"Rscript"),shQuote(c("--vanilla","recovery/slider_online_rho05_12_patch_2026-11-06/inspect_state.R",p,p)))
+stopifnot(status==0,read.csv(file.path(p,"checkpoint.csv"))$genes==18263,nchar(readLines(file.path(p,"cohort.txt"))[1])==1)
+cat("PASS: history plots identify 9/12-batch ends without marking partial passes; read-only checkpoint inspector preserves all 18,263 literal IDs.\n")

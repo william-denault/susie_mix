@@ -13,12 +13,16 @@ const image = slide.images.add({
   blob: imageBytes,
   contentType: "image/png",
   alt: "Product screenshot",
+  hyperlink: { uri, isExternal: true },
   fit: "cover",
   position: { left: 72, top: 120, width: 520, height: 320 },
   crop: { left: 0.02, top: 0, right: 0.04, bottom: 0 },
   geometry: "roundRect",
   borderRadius: "rounded-2xl",
 });
+
+image.hyperlink = { uri: nextUri, isExternal: true };
+image.hyperlink = undefined;
 ```
 
 ## Path Reference And Inline SVG
@@ -50,6 +54,7 @@ type ImageSource =
 
 type ImageAddOptions = ImageSource & {
   alt?: string;
+  hyperlink?: { uri: string; isExternal: boolean; action?: string };
   fit?: "contain" | "cover";
   contentType?: string;
   position?: { left?: number; top?: number; width?: number; height?: number };

@@ -1,0 +1,51 @@
+test_control_enables_wait_and_restores_context_even_on_error (test_queue_retry.QueueTests.test_control_enables_wait_and_restores_context_even_on_error) ... ok
+test_controller_waits_through_long_outage_at_same_operation (test_queue_retry.QueueTests.test_controller_waits_through_long_outage_at_same_operation) ... ok
+test_interactive_outage_has_bounded_wait (test_queue_retry.QueueTests.test_interactive_outage_has_bounded_wait) ... ok
+test_known_transient_failures_retry (test_queue_retry.QueueTests.test_known_transient_failures_retry) ... ok
+test_permanent_or_malformed_response_stops (test_queue_retry.QueueTests.test_permanent_or_malformed_response_stops) ... ok
+test_timeout_retries_actual_queue_read_not_empty_snapshot (test_queue_retry.QueueTests.test_timeout_retries_actual_queue_read_not_empty_snapshot) ... ok
+test_active_jobs_are_left_alone (test_repair.RepairTests.test_active_jobs_are_left_alone) ... ok
+test_ambiguous_submission_is_not_retried (test_repair.RepairTests.test_ambiguous_submission_is_not_retried) ... ok
+Checking five committed updates and all 12176 saved results.
+test_changed_fit_blocks_repair (test_repair.RepairTests.test_changed_fit_blocks_repair) ... ok
+Checking five committed updates and all 12176 saved results.
+Dry-running the batch-6 commit with validated summaries; no fitting.
+Scheduler-query repair verified: 12 validated results preserved; five prior updates unchanged.
+Resuming the batch-6 commit, then batch 7; no completed gene needs refitting.
+Stage 6 minibatch pass 1 batch 6: 2/2 validated; 0 active workers.
+test_controller_retries_at_each_read_without_replaying_commit_or_submission (test_repair.RepairTests.test_controller_retries_at_each_read_without_replaying_commit_or_submission) ... ok
+Checking five committed updates and all 12176 saved results.
+Dry-running the batch-6 commit with validated summaries; no fitting.
+test_failed_preflight_keeps_error_and_old_code (test_repair.RepairTests.test_failed_preflight_keeps_error_and_old_code) ... ok
+Checking five committed updates and all 12176 saved results.
+Dry-running the batch-6 commit with validated summaries; no fitting.
+Scheduler-query repair verified: 12 validated results preserved; five prior updates unchanged.
+Resuming the batch-6 commit, then batch 7; no completed gene needs refitting.
+test_interrupted_install_is_resumable (test_repair.RepairTests.test_interrupted_install_is_resumable) ... ok
+Checking five committed updates and all 12176 saved results.
+test_missing_receipt_blocks_repair (test_repair.RepairTests.test_missing_receipt_blocks_repair) ... ok
+Checking five committed updates and all 12176 saved results.
+test_other_error_is_not_cleared (test_repair.RepairTests.test_other_error_is_not_cleared) ... ok
+test_python36 (test_repair.RepairTests.test_python36) ... ok
+Checking five committed updates and all 12176 saved results.
+Dry-running the batch-6 commit with validated summaries; no fitting.
+Scheduler-query repair verified: 12 validated results preserved; five prior updates unchanged.
+Resuming the batch-6 commit, then batch 7; no completed gene needs refitting.
+Scheduler-query repair already complete; checking continuation.
+test_repeat_does_not_roll_back_progress (test_repair.RepairTests.test_repeat_does_not_roll_back_progress) ... ok
+Checking five committed updates and all 12176 saved results.
+Dry-running the batch-6 commit with validated summaries; no fitting.
+Scheduler-query repair verified: 12 validated results preserved; five prior updates unchanged.
+Resuming the batch-6 commit, then batch 7; no completed gene needs refitting.
+test_saved_fits_five_updates_and_receipts_unchanged (test_repair.RepairTests.test_saved_fits_five_updates_and_receipts_unchanged) ... ok
+Checking five committed updates and all 12176 saved results.
+Dry-running the batch-6 commit with validated summaries; no fitting.
+Scheduler-query repair verified: 12 validated results preserved; five prior updates unchanged.
+Resuming the batch-6 commit, then batch 7; no completed gene needs refitting.
+Stage 6 minibatch pass 1 batch 6: 1/2 validated; 0 active workers.
+test_worker_submission_waits_for_fresh_queue_after_timeout (test_repair.RepairTests.test_worker_submission_waits_for_fresh_queue_after_timeout) ... ok
+
+----------------------------------------------------------------------
+Ran 18 tests in 9.249s
+
+OK

@@ -8,6 +8,7 @@
 const shape = slide.shapes.add({
   geometry,
   name,
+  hyperlink: { uri, isExternal: true },
   position,
   fill,
   line,
@@ -19,6 +20,8 @@ const shape = slide.shapes.add({
 });
 
 shape.position = nextPosition;
+shape.hyperlink = { uri: nextUri, isExternal: true };
+shape.hyperlink = undefined;
 ```
 
 `geometry` is a string preset shape name, `"textbox"`, `"connector"`, or `"custom"`.
@@ -63,6 +66,7 @@ type PositionConfig = {
 type PresetShapeConfig = {
   geometry: ShapePresetName;
   name?: string;
+  hyperlink?: { uri: string; isExternal: boolean; action?: string };
   position?: PositionConfig;
   fill?: FillConfig;
   line?: LineConfig;

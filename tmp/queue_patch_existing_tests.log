@@ -1,0 +1,50 @@
+test_ambiguous_submission_is_not_retried (test_handoff_and_finish.RecoveryTests.test_ambiguous_submission_is_not_retried) ... ok
+Original iteration 014 certified; continuing to online 015.
+test_certified_finish_unlocks_online_seed (test_handoff_and_finish.RecoveryTests.test_certified_finish_unlocks_online_seed) ... ok
+test_existing_015_refused_before_hold (test_handoff_and_finish.RecoveryTests.test_existing_015_refused_before_hold) ... ok
+Finishing original 014: submitted 2 fit tasks in array 777; existing outputs reused.
+test_finish_reuses_saved_results_and_delegates_only_missing_tasks (test_handoff_and_finish.RecoveryTests.test_finish_reuses_saved_results_and_delegates_only_missing_tasks) ... ok
+Finishing original 014: 298 active fitting/validation tasks; waiting for completions.
+test_full_budget_no_new_workers (test_handoff_and_finish.RecoveryTests.test_full_budget_no_new_workers) ... ok
+Replaced held pending controller 456; every fitting/validation job is preserved.
+Handoff secured: the new controller will finish/certify 014, then start online 015.
+Replaced held pending controller 456; every fitting/validation job is preserved.
+Handoff secured: the new controller will finish/certify 014, then start online 015.
+Replaced held pending controller 456; every fitting/validation job is preserved.
+Handoff secured: the new controller will finish/certify 014, then start online 015.
+test_handoff_accepts_unknown_or_past_estimates_and_preserves_workers (test_handoff_and_finish.RecoveryTests.test_handoff_accepts_unknown_or_past_estimates_and_preserves_workers) ... ok
+test_identity_failure_precedes_any_mutation (test_handoff_and_finish.RecoveryTests.test_identity_failure_precedes_any_mutation) ... ok
+test_no_cancel_if_hold_does_not_take_effect (test_handoff_and_finish.RecoveryTests.test_no_cancel_if_hold_does_not_take_effect) ... ok
+Submitted controller 903
+test_one_minute_continuation_has_dependency_and_budget (test_handoff_and_finish.RecoveryTests.test_one_minute_continuation_has_dependency_and_budget) ... ok
+test_real_slurm_reason_format_is_normalized (test_handoff_and_finish.RecoveryTests.test_real_slurm_reason_format_is_normalized) ... ok
+Replaced held pending controller 456; every fitting/validation job is preserved.
+Handoff secured: the new controller will finish/certify 014, then start online 015.
+test_resume_after_cancel_does_not_cancel_again (test_handoff_and_finish.RecoveryTests.test_resume_after_cancel_does_not_cancel_again) ... ok
+Handoff secured: the new controller will finish/certify 014, then start online 015.
+test_running_race_is_released_not_cancelled (test_handoff_and_finish.RecoveryTests.test_running_race_is_released_not_cancelled) ... ok
+test_built_manifest_has_literal_lf_and_names_match_archive (test_packaging.PackagingTest.test_built_manifest_has_literal_lf_and_names_match_archive) ... ok
+test_balanced_numbered_plan (test_scheduler.Tests.test_balanced_numbered_plan) ... ok
+test_boundary_refuses_existing_015 (test_scheduler.Tests.test_boundary_refuses_existing_015) ... ok
+test_no_cleanup_while_original_jobs_exist (test_scheduler.Tests.test_no_cleanup_while_original_jobs_exist) ... ok
+Waiting for the existing jobs to finish and certify iteration 014.
+test_old_jobs_gate_seed_and_do_not_touch_history (test_scheduler.Tests.test_old_jobs_gate_seed_and_do_not_touch_history) ... ok
+test_owned_directories_and_cleanup (test_scheduler.Tests.test_owned_directories_and_cleanup) ... ERROR
+test_python36 (test_scheduler.Tests.test_python36) ... ok
+test_reserves_legacy_successor_slot (test_scheduler.Tests.test_reserves_legacy_successor_slot) ... ok
+
+======================================================================
+ERROR: test_owned_directories_and_cleanup (test_scheduler.Tests.test_owned_directories_and_cleanup)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Document\Serieux\Travail\Data_analysis_and_papers\susie_mix\recovery\slider_online_queue_patch_2026-11-06\runtime\tests\test_scheduler.py", line 38, in test_owned_directories_and_cleanup
+    mb.pin([dict(gene='G',source=str(src),size=st.st_size,mtime=st.st_mtime)],pin)
+  File "C:\Document\Serieux\Travail\Data_analysis_and_papers\susie_mix\recovery\slider_online_queue_patch_2026-11-06\runtime\minibatch.py", line 271, in pin
+    if not dst.exists(): os.link(str(src),str(dst),follow_symlinks=False)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [WinError 5] Access is denied: 'C:\\Document\\Serieux\\Travail\\Data_analysis_and_papers\\susie_mix\\tmp\\online_scheduler_vmt6tzf1\\project\\results_slide_prior_em\\iteration_014\\results\\G.rds' -> 'C:\\Document\\Serieux\\Travail\\Data_analysis_and_papers\\susie_mix\\tmp\\online_scheduler_vmt6tzf1\\project\\workflows\\slider_online_015_025\\seed\\snapshot_001\\results\\G.rds'
+
+----------------------------------------------------------------------
+Ran 20 tests in 1.534s
+
+FAILED (errors=1)

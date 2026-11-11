@@ -1,0 +1,12 @@
+.libPaths(c("tmp/slider_prior_impl/library","C:/Users/willi/AppData/Local/R/win-library/4.6",.libPaths()))
+code<-normalizePath("output/slider_online_015_2026-11-05",winslash="/")
+source(file.path(code,"engine.R"));mb_load(code)
+root<-trimws(readLines("tmp/slider_646_fixture_path.txt"))
+project<-normalizePath(file.path(root,"project"),winslash="/")
+dest<-tempfile("online_capture_",tmpdir=normalizePath("tmp",winslash="/"))
+stopifnot(inherits(try(mb_capture(code,project,dest,648L,649L),silent=TRUE),"try-error"),!dir.exists(dest))
+mb_capture(code,project,dest,648L,649L,8L)
+m<-readRDS(file.path(dest,"metadata.rds"))
+stopifnot(m$source_iteration==8L,length(m$genes)==648L,nrow(m$map)==646L,
+          file.exists(file.path(dest,"source_prior_history.csv")),file.exists(file.path(dest,"capture.csv")))
+cat("PASS: wrong production boundary refused; certified fixture capture and unchanged scientific-code checks.\n")

@@ -9,7 +9,7 @@ conditional formatting, and `workbook.colorScheme` for workbook theme colors.
 range.format = {
   fill: "#f8fafc",
   font: {
-    name: "Aptos",
+    name: "Arial",
     bold: true,
     underline: "single",
     color: "#0f172a",

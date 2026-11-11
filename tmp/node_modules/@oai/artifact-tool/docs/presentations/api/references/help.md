@@ -6,7 +6,8 @@ and review workflows.
 
 ## Query
 
-Pass one options object. Omit `query` to search the whole catalog.
+Call `presentation.help()` for the API index, or pass one options object.
+Omit `query` to search the whole catalog.
 
 ```ts
 const result = presentation.help({

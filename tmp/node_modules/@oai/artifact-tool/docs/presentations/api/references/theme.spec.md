@@ -5,10 +5,10 @@ Themes provide default fonts, named colors, and text style tokens.
 ## Default Font
 
 ```ts
-presentation.theme.defaultFont = "Aptos";
+presentation.theme.defaultFont = "Arial";
 ```
 
-New presentations default to Aptos. Set `defaultFont: string` once during setup
+New presentations default to Arial. Set `defaultFont: string` once during setup
 to choose the theme's Latin heading and body font. Shape text with no explicit
 `typeface` inherits the theme; a local `typeface` overrides it. The choice persists with
 the presentation. Imported presentations retain their existing font schemes;

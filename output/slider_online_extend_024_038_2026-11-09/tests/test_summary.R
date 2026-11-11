@@ -1,0 +1,21 @@
+.libPaths(c("tmp/slider_prior_impl/library","C:/Users/willi/AppData/Local/R/win-library/4.6",.libPaths()))
+code<-normalizePath("recovery/slider_online_extend_024_038_2026-11-09/runtime",winslash="/")
+source(file.path(code,"engine.R"));mb_load(code)
+branch<-tempfile("transition_summary_",tmpdir=normalizePath("tmp",winslash="/"));dir.create(branch)
+dir.create(file.path(branch,"plan/extend_024_038"),recursive=TRUE)
+writeLines("G",file.path(branch,"plan/old.txt"));writeLines("G",file.path(branch,"plan/extend_024_038/new.txt"))
+plan<-data.frame(stage=1:2,iteration=23:24,phase=c("full","minibatch"),rho=c(1,.8),
+  directory=c("old","new"),genes_file=c("plan/old.txt","plan/extend_024_038/new.txt"))
+mb_save(plan,file.path(branch,"stages.csv"),TRUE)
+model<-list(genes="G",source_iteration=14)
+wide<-data.frame(iteration=c(13L,14L,23L))
+summary<-mb_iteration_summary(branch,plan,list(stage=1L),model,wide)
+stopifnot(identical(summary$status,c("historical","source_checkpoint","completed","planned")),
+  summary$submission_order[3]=="original_then_longest_observed_first",summary$submission_order[4]=="longest_observed_first",
+  summary$batches[3]==0L,summary$batches[4]==1L)
+dir.create(file.path(branch,"new"));saveRDS(list(),file.path(branch,"new/input.rds"))
+summary<-mb_iteration_summary(branch,plan,list(stage=1L),model,wide)
+stopifnot(summary$status[4]=="running",summary$updates_completed[4]==0L)
+summary<-mb_iteration_summary(branch,plan,list(stage=2L),model,wide)
+stopifnot(summary$status[4]=="completed",summary$rho[4]==.8)
+cat("PASS: summary statuses, historical distinction, rho, full batch zero, and recorded submission ordering.\n")

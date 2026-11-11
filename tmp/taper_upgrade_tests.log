@@ -1,0 +1,112 @@
+test_025_may_start_or_complete_because_it_is_unchanged (test_upgrade.UpgradeTests.test_025_may_start_or_complete_because_it_is_unchanged) ... ok
+test_026_directory_or_task_refused (test_upgrade.UpgradeTests.test_026_directory_or_task_refused) ... ok
+Installed: finish 024 unchanged; 025..026 online 61 batches/rho=0.8; 027 rho=0.5; 028 rho=0.3; full 029..030.
+Existing batch membership and longest-first runtime ordering preserved.
+Preserved all started work through iteration 025; 400 total update stages. No fitted results, running counts or prior history changed.
+test_changed_analysis_blocks_install (test_upgrade.UpgradeTests.test_changed_analysis_blocks_install) ... ok
+Temporarily held pending controller 101; every gene job continues.
+Waiting for already-submitted gene jobs/current controller to finish; no jobs cancelled.
+Installed: finish 024 unchanged; 025..026 online 61 batches/rho=0.8; 027 rho=0.5; 028 rho=0.3; full 029..030.
+Existing batch membership and longest-first runtime ordering preserved.
+Preserved all started work through iteration 025; 400 total update stages. No fitted results, running counts or prior history changed.
+Released existing controller 101; completed genes and queued work are reused.
+Stage 96 minibatch pass 7 batch 3: 300/300 validated; 0 active workers.
+test_controller_stops_at_400_not_708 (test_upgrade.UpgradeTests.test_controller_stops_at_400_not_708) ... ERROR
+test_exact_schedule_cohort_old_assignments_and_runtime_order (test_upgrade.UpgradeTests.test_exact_schedule_cohort_old_assignments_and_runtime_order) ... ok
+test_existing_error_is_never_cleared (test_upgrade.UpgradeTests.test_existing_error_is_never_cleared) ... ok
+No workflow jobs remain; upgrading the stopped checkpoint without cancelling work.
+Installed: finish 024 unchanged; 025..026 online 61 batches/rho=0.8; 027 rho=0.5; 028 rho=0.3; full 029..030.
+Existing batch membership and longest-first runtime ordering preserved.
+Preserved all started work through iteration 025; 400 total update stages. No fitted results, running counts or prior history changed.
+Submitted controller 777 to continue the frozen schedule through 030.
+test_idle_upgrade_submits_once_and_watchdog_does_not_duplicate (test_upgrade.UpgradeTests.test_idle_upgrade_submits_once_and_watchdog_does_not_duplicate) ... ok
+Temporarily held pending controller 101; every gene job continues.
+Waiting for already-submitted gene jobs/current controller to finish; no jobs cancelled.
+Released existing controller 101; completed genes and queued work are reused.
+test_install_failure_before_plan_restores_continuation (test_upgrade.UpgradeTests.test_install_failure_before_plan_restores_continuation) ... ok
+Submitted upgrade gate 501 and recovery job 502. No gene jobs are cancelled.
+test_launch_orders_held_gate_watchdog_then_release (test_upgrade.UpgradeTests.test_launch_orders_held_gate_watchdog_then_release) ... ok
+Temporarily held pending controller 101; every gene job continues.
+Waiting for already-submitted gene jobs/current controller to finish; no jobs cancelled.
+Installed: finish 024 unchanged; 025..026 online 61 batches/rho=0.8; 027 rho=0.5; 028 rho=0.3; full 029..030.
+Existing batch membership and longest-first runtime ordering preserved.
+Preserved all started work through iteration 025; 400 total update stages. No fitted results, running counts or prior history changed.
+Released existing controller 101; completed genes and queued work are reused.
+test_live_gate_drains_preserves_and_releases (test_upgrade.UpgradeTests.test_live_gate_drains_preserves_and_releases) ... ok
+Installed: finish 024 unchanged; 025..026 online 61 batches/rho=0.8; 027 rho=0.5; 028 rho=0.3; full 029..030.
+Existing batch membership and longest-first runtime ordering preserved.
+Preserved all started work through iteration 025; 400 total update stages. No fitted results, running counts or prior history changed.
+Released existing controller 101; completed genes and queued work are reused.
+test_new_plan_write_interruption_recovers_without_partial_install_release (test_upgrade.UpgradeTests.test_new_plan_write_interruption_recovers_without_partial_install_release) ... ok
+test_no_confirmed_watchdog_no_hold (test_upgrade.UpgradeTests.test_no_confirmed_watchdog_no_hold) ... ok
+test_no_install_while_workers_active (test_upgrade.UpgradeTests.test_no_install_while_workers_active) ... ok
+test_pending_submission_can_drain_but_must_be_resolved_before_install (test_upgrade.UpgradeTests.test_pending_submission_can_drain_but_must_be_resolved_before_install) ... ok
+Waiting for the previous schedule-upgrade jobs to finish before holding a controller.
+Temporarily held pending controller 101; every gene job continues.
+Installed: finish 024 unchanged; 025..026 online 61 batches/rho=0.8; 027 rho=0.5; 028 rho=0.3; full 029..030.
+Existing batch membership and longest-first runtime ordering preserved.
+Preserved all started work through iteration 025; 400 total update stages. No fitted results, running counts or prior history changed.
+Released existing controller 101; completed genes and queued work are reused.
+test_previous_patch_watchdog_finishes_before_new_hold (test_upgrade.UpgradeTests.test_previous_patch_watchdog_finishes_before_new_hold) ... ok
+test_python36 (test_upgrade.UpgradeTests.test_python36) ... ok
+Released existing controller 101; completed genes and queued work are reused.
+test_recovery_releases_hold_without_install_plan (test_upgrade.UpgradeTests.test_recovery_releases_hold_without_install_plan) ... ok
+Release response delayed; checking the exact controller before retrying.
+Released existing controller 101; completed genes and queued work are reused.
+test_release_timeout_checks_state_before_another_action (test_upgrade.UpgradeTests.test_release_timeout_checks_state_before_another_action) ... ok
+Release response delayed; checking the exact controller before retrying.
+Released existing controller 101; completed genes and queued work are reused.
+test_release_transient_failure_retries_while_still_held (test_upgrade.UpgradeTests.test_release_transient_failure_retries_while_still_held) ... ok
+Temporarily held pending controller 101; every gene job continues.
+Waiting for already-submitted gene jobs/current controller to finish; no jobs cancelled.
+Installed: finish 024 unchanged; 025..026 online 61 batches/rho=0.8; 027 rho=0.5; 028 rho=0.3; full 029..030.
+Existing batch membership and longest-first runtime ordering preserved.
+Preserved all started work through iteration 025; 400 total update stages. No fitted results, running counts or prior history changed.
+Released existing controller 101; completed genes and queued work are reused.
+Released existing controller 101; completed genes and queued work are reused.
+test_repeat_completed_upgrade_only_releases (test_upgrade.UpgradeTests.test_repeat_completed_upgrade_only_releases) ... ok
+test_resume_uses_upgraded_settings_and_never_rebuilds_plan (test_upgrade.UpgradeTests.test_resume_uses_upgraded_settings_and_never_rebuilds_plan) ... ok
+test_scientific_and_scheduler_runtime_identical_to_baseline (test_upgrade.UpgradeTests.test_scientific_and_scheduler_runtime_identical_to_baseline) ... ok
+test_scontrol_read_timeout_is_retried (test_upgrade.UpgradeTests.test_scontrol_read_timeout_is_retried) ... ok
+test_unknown_owner_or_changed_cohort_refused (test_upgrade.UpgradeTests.test_unknown_owner_or_changed_cohort_refused) ... ok
+test_user_held_controller_not_released (test_upgrade.UpgradeTests.test_user_held_controller_not_released) ... ok
+Resumed frozen schedule in C:\Document\Serieux\Travail\Data_analysis_and_papers\susie_mix\tmp\transition_taper_c7zmzpxt\project\results_slide_prior_em
+Installed: finish 024 unchanged; 025..026 online 61 batches/rho=0.8; 027 rho=0.5; 028 rho=0.3; full 029..030.
+Existing batch membership and longest-first runtime ordering preserved.
+Preserved all started work through iteration 025; 400 total update stages. No fitted results, running counts or prior history changed.
+Released existing controller 101; completed genes and queued work are reused.
+test_watchdog_finishes_interrupted_code_swap (test_upgrade.UpgradeTests.test_watchdog_finishes_interrupted_code_swap) ... ok
+Installed: finish 024 unchanged; 025..026 online 61 batches/rho=0.8; 027 rho=0.5; 028 rho=0.3; full 029..030.
+Existing batch membership and longest-first runtime ordering preserved.
+Preserved all started work through iteration 025; 400 total update stages. No fitted results, running counts or prior history changed.
+Released existing controller 101; completed genes and queued work are reused.
+test_watchdog_finishes_interrupted_configuration_update (test_upgrade.UpgradeTests.test_watchdog_finishes_interrupted_configuration_update) ... ok
+Installed: finish 024 unchanged; 025..026 online 61 batches/rho=0.8; 027 rho=0.5; 028 rho=0.3; full 029..030.
+Existing batch membership and longest-first runtime ordering preserved.
+Preserved all started work through iteration 025; 400 total update stages. No fitted results, running counts or prior history changed.
+Released existing controller 101; completed genes and queued work are reused.
+test_watchdog_finishes_interrupted_stage_plan_update (test_upgrade.UpgradeTests.test_watchdog_finishes_interrupted_stage_plan_update) ... ok
+test_wrong_controller_identity_not_held (test_upgrade.UpgradeTests.test_wrong_controller_identity_not_held) ... ok
+
+======================================================================
+ERROR: test_controller_stops_at_400_not_708 (test_upgrade.UpgradeTests.test_controller_stops_at_400_not_708)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Document\Serieux\Travail\Data_analysis_and_papers\susie_mix\recovery\slider_online_taper_025_030_2026-11-10\tests\test_upgrade.py", line 293, in test_controller_stops_at_400_not_708
+    self.assertEqual(s.read(self.branch/'DONE.json')['stages'],400)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Document\Serieux\Travail\Data_analysis_and_papers\susie_mix\recovery\slider_online_taper_025_030_2026-11-10\support.py", line 17, in read
+    def read(path): return json.loads(Path(path).read_text())
+                                      ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\willi\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\pathlib.py", line 1027, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\willi\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\pathlib.py", line 1013, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Document\\Serieux\\Travail\\Data_analysis_and_papers\\susie_mix\\tmp\\transition_taper_4g_nlj1p\\project\\workflows\\slider_online_015_025\\DONE.json'
+
+----------------------------------------------------------------------
+Ran 29 tests in 159.467s
+
+FAILED (errors=1)
